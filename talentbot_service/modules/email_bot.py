@@ -10,22 +10,20 @@ import random
 # Common utils
 from talentbot_service.common.models.user import TalentbotAuth
 # App specific imports
-from talentbot_service.modules.constants import MAILGUN_FROM, AUTHENTICATION_FAILURE_MSG
+from talentbot_service.common.talent_config_manager import TalentConfigKeys
+from talentbot_service.modules.constants import AUTHENTICATION_FAILURE_MSG
 from talentbot_service.modules.talent_bot import TalentBot
-from talentbot_service import logger
-# 3rd party import
-import requests
+from talentbot_service import logger, app
+from talentbot_service.common.utils.amazon_ses import send_email
 
 
 class EmailBot(TalentBot):
     """
     This class handles bot-user communication through Email
     """
-    def __init__(self, mailgun_api_key, mailgun_sending_endpoint, questions, bot_name,
+    def __init__(self, questions, bot_name,
                  bot_image, error_messages):
         super(EmailBot, self).__init__(questions, bot_name, error_messages)
-        self.mailgun_api_key = mailgun_api_key
-        self.mailgun_sending_endpoint = mailgun_sending_endpoint
         self.bot_image = bot_image
 
     def authenticate_user(self, email_id, subject, email_body):
@@ -41,13 +39,12 @@ class EmailBot(TalentBot):
             return True, email_body, user_id[0]
         return False, None, None
 
-    def reply(self, recipient, subject, message, sender):
+    def reply(self, recipient, subject, message):
         """
         Sends Email to the recipient via mailgun API
         :param str recipient: Email sender
         :param str subject: Subject of email
         :param str message: Email response message
-        :param str sender: Email will be sent from this email_id
         :return: response from mailgun API
         :rtype: response
         """
@@ -56,10 +53,8 @@ class EmailBot(TalentBot):
                                                      ' table-cell; vertical-align:'\
                                                      ' top;margin-left: 1%;">' + message +\
                '</h5></html>'
-        response = requests.post(self.mailgun_sending_endpoint, auth=("api", self.mailgun_api_key),
-                                 data={"from": sender, "to": recipient, "subject": subject,
-                                       "html": html
-                                       })
+        response = send_email(source=app.config[TalentConfigKeys.BOT_SOURCE_EMAIL], subject=subject, body=None,
+                              html_body=html, email_format='html', to_addresses=[recipient])
         logger.info('Mail reply "%s", to %s' % (message, recipient))
         return response
 
@@ -78,10 +73,9 @@ class EmailBot(TalentBot):
                 if not response_generated:
                     raise IndexError
                 response_generated = self.clean_response_message(response_generated)
-                self.reply(recipient, subject, "<br />".join(response_generated.split("\n")), MAILGUN_FROM)
+                self.reply(recipient, subject, "<br />".join(response_generated.split("\n")))
             except (IndexError, NameError, KeyError):
                 error_response = random.choice(self.error_messages)
-                self.reply(recipient, subject, error_response, MAILGUN_FROM)
+                self.reply(recipient, subject, error_response)
         else:  # User not authenticated
-            self.reply(AUTHENTICATION_FAILURE_MSG, recipient)
-
+            self.reply(recipient, subject, AUTHENTICATION_FAILURE_MSG)

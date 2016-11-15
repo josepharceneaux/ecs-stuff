@@ -763,7 +763,7 @@ class QuestionHandler(object):
         if len(blasts) > ZERO:  # Preparing representable response
             # interaction_rate means open_rate in case of EmailCampaign and reply_rate or click_rate in case of SMS
             # and Push Campaigns
-            interaction_rate = cls.calculate_percentage(total_opens, total_sends)
+            interaction_rate = cls.calculate_percentage(total_opens, total_sends if total_sends != 0 else 1)
             # What text should be displayed in response (click rate, open rate or reply rate)
             interaction_type = 'open' if campaign_type == EMAIL_CAMPAIGN else 'click' if \
                 campaign_type == SMS_CAMPAIGN else 'reply'
