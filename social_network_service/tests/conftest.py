@@ -23,8 +23,9 @@ from social_network_service.common.campaign_services.tests.conftest import (meet
                                                                             meetup_event_data, meetup_group,
                                                                             EVENT_DATA, eventbrite_event,
                                                                             test_eventbrite_credentials, eventbrite,
-                                                                            eventbrite_venue, organizer_in_db,
-                                                                            event_in_db, VENDORS)
+                                                                            eventbrite_venue, event_in_db, VENDORS,
+                                                                            test_eventbrite_credentials_same_domain,
+                                                                            eventbrite_venue_same_domain, organizer_in_db)
 
 # Models
 from social_network_service.common.models.db import db
@@ -37,6 +38,7 @@ from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.utils.handy_functions import send_request
 
 # Application Specific
+from social_network_service.modules.social_network.eventbrite import Eventbrite
 from social_network_service.social_network_app import app
 from social_network_service.common.constants import FACEBOOK
 
@@ -58,7 +60,7 @@ def facebook():
 
 
 @pytest.fixture()
-def eventbrite_event_data(eventbrite, eventbrite_venue, test_eventbrite_credentials, organizer_in_db):
+def eventbrite_event_data(eventbrite, eventbrite_venue, test_eventbrite_credentials):
     """
     This fixture creates a dictionary containing event data to create event on Eventbrite social network.
     It uses eventbrite SocialNetwork model object, venue for eventbrite and an organizer to create event data
@@ -66,13 +68,21 @@ def eventbrite_event_data(eventbrite, eventbrite_venue, test_eventbrite_credenti
     data = EVENT_DATA.copy()
     data['social_network_id'] = eventbrite['id']
     data['venue_id'] = eventbrite_venue['id']
-    data['organizer_id'] = organizer_in_db['id']
 
     return data
 
 
+@pytest.fixture(scope="session", autouse=True)
+def everbrite_webhook(test_eventbrite_credentials):
+    with app.app_context():
+        try:
+            Eventbrite.create_webhook(test_eventbrite_credentials)
+        except:
+            pass
+
+
 @pytest.fixture(scope="function")
-def meetup_event_second(test_meetup_credentials, meetup, meetup_venue_second, organizer_in_db,
+def meetup_event_second(test_meetup_credentials, meetup, meetup_venue_second,
                         token_first, meetup_event_data):
     """
     This creates another event for Meetup for user_first
@@ -124,7 +134,7 @@ def meetup_event_dict_second(meetup_event_second, talent_pool_session_scope):
 
 
 @pytest.fixture(scope="function")
-def eventbrite_event_second(test_eventbrite_credentials, eventbrite, eventbrite_venue_second, organizer_in_db,
+def eventbrite_event_second(test_eventbrite_credentials, eventbrite, eventbrite_venue_second,
                             token_first):
     """
     This method create a dictionary data to create event on eventbrite.
@@ -135,7 +145,6 @@ def eventbrite_event_second(test_eventbrite_credentials, eventbrite, eventbrite_
     event['title'] = 'Eventbrite ' + event['title']
     event['social_network_id'] = eventbrite['id']
     event['venue_id'] = eventbrite_venue_second['id']
-    event['organizer_id'] = organizer_in_db['id']
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=event)
     assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
 
@@ -148,7 +157,6 @@ def eventbrite_event_second(test_eventbrite_credentials, eventbrite, eventbrite_
 
     _event = response_get.json()['event']
     _event['venue_id'] = _event['venue']['id']
-    _event['organizer_id'] = _event['event_organizer']['id']
     del _event['venue']
     del _event['event_organizer']
 
@@ -243,7 +251,7 @@ def venue_in_db_second(request):
 
 
 @pytest.fixture()
-def get_test_event_eventbrite(user_first, eventbrite, eventbrite_venue, organizer_in_db, token_first):
+def get_test_event_eventbrite(user_first, eventbrite, eventbrite_venue, token_first):
     """
     This fixture returns data (dictionary) to create eventbrite events
     """
@@ -251,14 +259,13 @@ def get_test_event_eventbrite(user_first, eventbrite, eventbrite_venue, organize
     eventbrite_dict = EVENT_DATA.copy()
     eventbrite_dict['social_network_id'] = eventbrite['id']
     eventbrite_dict['venue_id'] = eventbrite_venue['id']
-    eventbrite_dict['organizer_id'] = organizer_in_db['id']
     eventbrite_dict['user_id'] = user_first['id']
 
     return eventbrite_dict
 
 
 @pytest.fixture()
-def get_test_event_meetup(user_first, meetup, meetup_venue, meetup_group, organizer_in_db, token_first):
+def get_test_event_meetup(user_first, meetup, meetup_venue, meetup_group, token_first):
     """
     This fixture returns data (dictionary) to create meetup and eventbrite events
     """
@@ -301,7 +308,7 @@ def eventbrite_missing_data(request, eventbrite_event_data):
 
 
 @pytest.fixture(params=['description', 'social_network_group_id', 'group_url_name', 'start_datetime', 'max_attendees',
-                        'venue_id', 'organizer_id'], scope='function')
+                        'venue_id'], scope='function')
 def meetup_missing_data(request, meetup_event_data):
     """
     This fixture returns meetup data and a key will be deleted from data to test

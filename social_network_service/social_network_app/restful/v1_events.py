@@ -10,15 +10,18 @@ from flask.ext.restful import Resource
 
 # Application specific imports
 from social_network_service.common.error_handling import *
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import Event
+from social_network_service.common.models.user import User
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.routes import SocialNetworkApi
+from social_network_service.modules.constants import SORT_TYPES
 from social_network_service.modules.utilities import add_organizer_venue_data
 from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.modules.utilities import process_event, delete_events
 from social_network_service.common.utils.handy_functions import get_valid_json_data
-from social_network_service.common.utils.api_utils import api_route, ApiResponse, generate_pagination_headers
-
+from social_network_service.common.utils.api_utils import api_route, ApiResponse, generate_pagination_headers, \
+    get_pagination_params
 
 events_blueprint = Blueprint('events_api', __name__)
 api = TalentApi()
@@ -76,14 +79,29 @@ class Events(Resource):
                     500 (Internal Server Error)
 
         """
-        data = request.values
-        per_page = data.get('per_page', 10)
-        page = data.get('page', 1)
+        page, per_page = get_pagination_params(request)
+        search = request.args.get('search')
+        sort_by = request.args.get('sort_by', 'start_datetime')
+        sort_type = request.args.get('sort_type', 'desc')
+        user_id = request.args.get('user_id')
 
-        events = Event.get_by_domain_id(request.user.domain_id).order_by(Event.start_datetime.desc())
-        events = events.paginate(per_page=per_page, page=page).items
-        events = map(add_organizer_venue_data, events)
-        headers = generate_pagination_headers(len(events), per_page, page)
+        if user_id:
+            if user_id.isdigit():
+                user_id = long(user_id)
+            else:
+                raise InvalidUsage('user_id is not a valid number, Given: %s' % user_id)
+
+        social_network_id = request.args.get('social_network_id')
+        if social_network_id:
+            if social_network_id.isdigit():
+                social_network_id = long(social_network_id)
+            else:
+                raise InvalidUsage('social_network_id is not a valid number, Given: %s' % social_network_id)
+        query = Event.get_events_query(request.user, search=search, sort_type=sort_type, sort_by=sort_by,
+                                       user_id=user_id, social_network_id=social_network_id)
+        results = query.paginate(per_page=per_page, page=page)
+        events = map(add_organizer_venue_data, results.items)
+        headers = generate_pagination_headers(results.total, per_page, page)
         if events:
             return ApiResponse(response=dict(events=events), headers=headers)
         else:

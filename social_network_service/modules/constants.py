@@ -24,6 +24,7 @@ MEETUP_VENUE = 'https://api.meetup.com/{}'
 
 # Vendors to be mocked goes here
 MOCK_VENDORS = [MEETUP]
+SORT_TYPES = ('asc', 'desc')
 EVENTBRITE_USER_AGENT = 'Eventbrite Webhooks'
 ACTIONS = {
     'created': 'event.created',
@@ -31,3 +32,12 @@ ACTIONS = {
     'updated': 'event.updated',
     'unpublished': 'event.unpublished'
 }
+
+MEETUP_EVENT_STATUS = {
+    'upcoming': 'upcoming',
+    'proposed': 'proposed',
+    'suggested': 'suggested',
+    'canceled': 'canceled',
+    'deleted': 'deleted'
+}
+

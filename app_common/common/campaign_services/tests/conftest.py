@@ -26,6 +26,7 @@ from ...utils.handy_functions import send_request
 from ...models.event_organizer import EventOrganizer
 from ...talent_config_manager import TalentConfigKeys, TalentEnvs
 from ...models.user import UserSocialNetworkCredential
+from ...utils.test_utils import add_social_network_credentials, add_test_venue
 from ...routes import (SocialNetworkApiUrl, EmailCampaignApiUrl)
 from ..tests.modules.helper_functions import (EVENT_DATA, create_email_campaign_with_base_id,
                                               create_an_rsvp_in_database)
@@ -167,8 +168,6 @@ def meetup_event_data(meetup, meetup_venue, meetup_group):
     and an organizer to create event data
     """
     data = EVENT_DATA.copy()
-    if data.get('organizer_id'):
-        del data['organizer_id']
     data['social_network_id'] = meetup['id']
     data['venue_id'] = meetup_venue['id']
     data['group_url_name'] = meetup_group['urlname']
@@ -217,46 +216,16 @@ def test_eventbrite_credentials(request, user_first, eventbrite):
     Create eventbrite social network credentials for this user so
     we can create event on Eventbrite.com
     """
-    eventbrite_key = EVENTBRITE.title()
-    # Store and use redis for eventbrite access_token
-    if not redis_store2.get(eventbrite_key):
-        redis_store2.set(eventbrite_key,
-                         json.dumps(dict(
-                             access_token=test_app.config[TalentConfigKeys.EVENTBRITE_ACCESS_TOKEN]
-                         )))
+    return add_social_network_credentials(test_app, eventbrite, user_first)
 
-    # Get the key value pair of access_token and refresh_token
-    eventbrite_kv = json.loads(redis_store2.get(eventbrite_key))
 
-    social_network_id = eventbrite['id']
-    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
-                                                                                     social_network_id)
-
-    if not user_credentials:
-        user_credentials = UserSocialNetworkCredential(
-            social_network_id=social_network_id,
-            user_id=int(user_first['id']),
-            access_token=eventbrite_kv['access_token'])
-        UserSocialNetworkCredential.save(user_credentials)
-
-    social_network_id = eventbrite['id']
-    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
-                                                                                     social_network_id)
-    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
-    if env == TalentEnvs.DEV:
-        payload = {'endpoint_url': SocialNetworkApiUrl.WEBHOOK % user_credentials.user_id,
-                   'actions': 'event.published'}
-        url = user_credentials.social_network.api_url + "/webhooks/"
-        response = send_request('post', url, user_credentials.access_token, params=payload, is_json=False)
-        print('Webhook Creation', payload, response.text, url, user_credentials.access_token)
-        assert response.status_code == codes.OK
-        webhook_id = response.json()['id']
-
-        def finalizer():
-            send_request('delete', url + '/%s' % webhook_id, user_credentials.access_token)
-
-        request.addfinalizer(finalizer)
-    return user_credentials
+@pytest.fixture(scope="session", autouse=True)
+def test_eventbrite_credentials_same_domain(user_same_domain, eventbrite):
+    """
+    Create eventbrite social network credentials for this user so
+    we can create event on Eventbrite.com
+    """
+    return add_social_network_credentials(test_app, eventbrite, user_same_domain)
 
 
 @pytest.fixture(scope="session")
@@ -264,24 +233,15 @@ def eventbrite_venue(user_first, eventbrite, token_first):
     """
     This fixture returns eventbrite venue in getTalent database
     """
-    social_network_id = eventbrite['id']
-    venue = {
-        "social_network_id": social_network_id,
-        "user_id": user_first['id'],
-        "zip_code": "54600",
-        "address_line_2": "H# 163, Block A",
-        "address_line_1": "New Muslim Town",
-        "latitude": 0,
-        "longitude": 0,
-        "state": "Punjab",
-        "city": "Lahore",
-        "country": "Pakistan"
-    }
+    return add_test_venue(token_first, user_first, eventbrite)
 
-    response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
-    assert response_post.status_code == codes.created, response_post.text
-    venue_id = response_post.json()['id']
-    return {'id': venue_id}
+
+@pytest.fixture(scope="session")
+def eventbrite_venue_same_domain(user_same_domain, eventbrite, token_same_domain):
+    """
+    This fixture returns eventbrite venue in getTalent database for user_same_domain
+    """
+    return add_test_venue(token_same_domain, user_same_domain, eventbrite)
 
 
 @pytest.fixture(scope="session")
@@ -292,11 +252,11 @@ def organizer_in_db(user_first):
     social_network = SocialNetwork.get_by_name(EVENTBRITE.title())
     organizer = {
         "user_id": user_first['id'],
-        "name": "Saad Abdullah",
+        "name": "Zohaib Ijaz 5555",
         "email": "testemail@gmail.com",
         "about": "He is a testing engineer",
         "social_network_id": social_network.id,
-        "social_network_organizer_id": "11000067214"
+        "social_network_organizer_id": "11576432727"
     }
 
     organizer_obj = EventOrganizer(**organizer)
@@ -308,7 +268,7 @@ def organizer_in_db(user_first):
 
 
 @pytest.fixture(scope="session")
-def eventbrite_event(test_eventbrite_credentials, eventbrite, eventbrite_venue, organizer_in_db, token_first):
+def eventbrite_event(test_eventbrite_credentials, eventbrite, eventbrite_venue, token_first):
     """
     This method create a dictionary data to create event on eventbrite.
     It uses meetup SocialNetwork model object, venue for meetup
@@ -318,7 +278,6 @@ def eventbrite_event(test_eventbrite_credentials, eventbrite, eventbrite_venue, 
     event['title'] = 'Eventbrite ' + event['title'] + fake.uuid4()
     event['social_network_id'] = eventbrite['id']
     event['venue_id'] = eventbrite_venue['id']
-    event['organizer_id'] = organizer_in_db['id']
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=event)
     assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
 

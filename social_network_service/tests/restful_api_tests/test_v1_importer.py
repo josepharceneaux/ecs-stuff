@@ -209,7 +209,7 @@ class Test_Event_Importer(object):
 
 
 @pytest.mark.skipif(ENV != TalentEnvs.DEV, reason='TODO: Need to create mock endpoints for importer')
-def test_event_import_to_create_new_event(user_first, token_first, event_data, meetup, meetup_group):
+def test_event_import_to_create_new_event(user_first, token_first, event_data, meetup, everbrite_webhook, meetup_group):
     """
     Test Eventbrite and Meetup events importer.
     We will create a event using api and then we will delete that event from database. After few seconds,
