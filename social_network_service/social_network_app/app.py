@@ -83,6 +83,7 @@ def callback(user_id):
 
 @app.route(SocialNetworkApi.WEBHOOK, methods=['POST'])
 def eventbrite_webhook_endpoint(user_id):
+    logger.info('Webhook Endpoint: Received a request with this data: %s' % request.data)
     if EVENTBRITE_USER_AGENT in str(request.user_agent):
         data = request.json
         action_type = data['config']['action']

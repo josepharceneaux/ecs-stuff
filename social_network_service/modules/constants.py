@@ -33,3 +33,11 @@ ACTIONS = {
     'unpublished': 'event.unpublished'
 }
 
+MEETUP_EVENT_STATUS = {
+    'upcoming': 'upcoming',
+    'proposed': 'proposed',
+    'suggested': 'suggested',
+    'canceled': 'canceled',
+    'deleted': 'deleted'
+}
+

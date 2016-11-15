@@ -24,7 +24,7 @@ from social_network_service.common.models.user import UserSocialNetworkCredentia
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
-from social_network_service.modules.constants import ACTIONS, MEETUP_STREAM_API_URL
+from social_network_service.modules.constants import ACTIONS, MEETUP_STREAM_API_URL, MEETUP_EVENT_STATUS
 from social_network_service.modules.event.meetup import Meetup
 from social_network_service.modules.event.eventbrite import Eventbrite as EventbriteEventBase
 from social_network_service.modules.social_network.meetup import Meetup as MeetupSocialNetwork
@@ -123,19 +123,31 @@ def fetch_meetup_event(event, group, meetup):
         logger = app.config[TalentConfigKeys.LOGGER]
         logger.info('Going to process Meetup Event: %s' % event)
         try:
-            time.sleep(10)  # wait for event creation api to save event in database otherwise there can be duplicate
+            time.sleep(5)  # wait for event creation api to save event in database otherwise there can be duplicate
             # event created in database (one by api and other by importer)
             group = db.session.merge(group)
             meetup = db.session.merge(meetup)
-            meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
-            meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials, social_network=meetup)
-            event_url = get_url(meetup_sn, SocialNetworkUrls.EVENT).format(event['id'])
-            response = http_request('get', event_url, headers=meetup_sn.headers)
-            if response.ok:
-                event = response.json()
-                event = meetup_event_base.event_sn_to_gt_mapping(event)
-                logger.info('Event imported successfully : %s' % event.to_json())
-        except Exception as e:
+
+            if event['status'] == MEETUP_EVENT_STATUS['upcoming']:
+                meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
+                meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials, social_network=meetup)
+                event_url = get_url(meetup_sn, SocialNetworkUrls.EVENT).format(event['id'])
+                response = http_request('get', event_url, headers=meetup_sn.headers)
+                if response.ok:
+                    event = response.json()
+                    event = meetup_event_base.event_sn_to_gt_mapping(event)
+                    logger.info('Event imported successfully : %s' % event.to_json())
+            elif event['status'] in [MEETUP_EVENT_STATUS['canceled'], MEETUP_EVENT_STATUS['deleted']]:
+                event_id = event['id']
+                event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(group.user.id,
+                                                                                     meetup.id,
+                                                                                     event_id
+                                                                                     )
+                if event_in_db:
+                    Event.delete(event_in_db)
+                    logger.info('Delete Meetup event from gt database, event: %s' % event_in_db.to_json())
+
+        except Exception:
             logger.exception('Failed to save event: %s' % event)
 
 
@@ -146,10 +158,11 @@ def fetch_eventbrite_event(user_id, event_url, action_type):
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
-        logger.info('Going to process Evenbrite Event: %s' % event_url)
+        logger.info('Going to process Eventbrite Event: %s' % event_url)
         try:
             eventbrite = SocialNetwork.get_by_name('Eventbrite')
             if action_type in [ACTIONS['created'], ACTIONS['published']]:
+                logger.info('Event Published on Eventbrite, Event URL: %s' % event_url)
                 eventbrite_sn = EventbriteSocialNetwork(user_id=user_id, social_network_id=eventbrite.id)
                 eventbrite_event_base = EventbriteEventBase(headers=eventbrite_sn.headers,
                                                             user_credentials=eventbrite_sn.user_credentials,
@@ -169,6 +182,9 @@ def fetch_eventbrite_event(user_id, event_url, action_type):
                 if event_in_db:
                     Event.delete(event_in_db)
                     logger.info('Delete event from gt database, event: %s' % event_in_db.to_json())
+                else:
+                    logger.info("Event unpublished from Eventbrite but it does not exist, don't worry. Event URL: %s"
+                                % event_url)
             elif action_type == ACTIONS['updated']:
                 pass  # We are handling update action yet because it causes duplicate entries
 

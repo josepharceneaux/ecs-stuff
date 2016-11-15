@@ -209,7 +209,7 @@ class Meetup(SocialNetworkBase):
                     access_token=self.access_token,
                     refresh_token=refresh_token,
                     member_id=self.user_credentials.member_id)
-                status = self.save_user_credentials_in_db(user_credentials_dict)
+                status = SocialNetworkBase.save_user_credentials_in_db(user_credentials_dict)
                 logger.debug("Access token has been refreshed for %s(UserId:%s)."
                              % (self.user.name, self.user.id))
             except Exception:
@@ -312,3 +312,39 @@ class Meetup(SocialNetworkBase):
         venue_data['user_id'] = self.user.id
         venue_data['social_network_venue_id'] = venue_id
         return SocialNetworkBase.save_venue(venue_data)
+
+    @classmethod
+    def save_user_credentials_in_db(cls, user_credentials):
+        """
+        :param user_credentials: User's social network credentials for Meetup.
+        :type user_credentials: dict
+        - This overrides the SocialNetworkBase class method
+            save_user_credentials_in_db() because in case of user credentials
+            related to Eventbrite, we also need to create webhook.
+        - It first saves the credentials in db, gets the Meetup Groups by calling
+            import_meetup_groups()using Meetup's API and updates the record in db.
+        **See Also**
+        .. seealso:: save_user_credentials_in_db() function defined in
+            SocialNetworkBase class inside social_network_service/base.py.
+        .. seealso::POST method of end point ProcessAccessToken()
+            defined in social network Rest API inside
+            social_network_service/app/restful/social_network.py.
+        """
+        user_credentials_in_db = super(cls,
+                                       cls).save_user_credentials_in_db(user_credentials)
+        meetup = cls(user_id=user_credentials_in_db.user_id,
+                     social_network_id=user_credentials_in_db.social_network.id)
+        meetup.import_meetup_groups()
+        return user_credentials_in_db
+
+    @classmethod
+    def disconnect(cls, user_id, social_network):
+        """
+        Delete user credentials for Meetup and delete all MeetupGroup from db that belong to this user.
+        :param int | long user_id: user id
+        :param int | long social_network: social network model object
+        """
+        user_credentials = super(cls, cls).disconnect(user_id, social_network)
+        MeetupGroup.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        MeetupGroup.session.commit()
+        return user_credentials

@@ -429,7 +429,7 @@ class SocialNetworkBase(object):
                 data = dict(user_id=user_credentials.user_id,
                             social_network_id=user_credentials.social_network_id,
                             member_id=member_id)
-                self.save_user_credentials_in_db(data)
+                SocialNetworkBase.save_user_credentials_in_db(data)
             else:
                 # Error has been logged inside http_request()
                 pass
@@ -545,8 +545,8 @@ class SocialNetworkBase(object):
             return self.refresh_access_token()
         return access_token_status
 
-    @staticmethod
-    def save_user_credentials_in_db(user_credentials):
+    @classmethod
+    def save_user_credentials_in_db(cls, user_credentials):
         """
         :param user_credentials: user's social network credentials
         :type user_credentials: dict
@@ -599,3 +599,20 @@ class SocialNetworkBase(object):
         venue = Venue(**venue_data)
         Venue.save(venue)
         return venue
+
+    @classmethod
+    def connect(cls, user_id, social_network, code):
+        access_token, refresh_token = cls.get_access_and_refresh_token(
+            user_id, social_network, code_to_get_access_token=code)
+        user_credentials_dict = dict(user_id=user_id,
+                                     social_network_id=social_network.id,
+                                     access_token=access_token,
+                                     refresh_token=refresh_token)
+        cls.save_user_credentials_in_db(user_credentials_dict)
+
+    @classmethod
+    def disconnect(cls, user_id, social_network):
+        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_id, social_network.id)
+        if user_credentials:
+            UserSocialNetworkCredential.delete(user_credentials)
+        return user_credentials

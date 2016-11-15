@@ -38,6 +38,7 @@ from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.utils.handy_functions import send_request
 
 # Application Specific
+from social_network_service.modules.social_network.eventbrite import Eventbrite
 from social_network_service.social_network_app import app
 from social_network_service.common.constants import FACEBOOK
 
@@ -69,6 +70,11 @@ def eventbrite_event_data(eventbrite, eventbrite_venue, test_eventbrite_credenti
     data['venue_id'] = eventbrite_venue['id']
 
     return data
+
+
+@pytest.fixture(scope="session", autouse=True)
+def everbrite_webhook(test_eventbrite_credentials):
+    Eventbrite.create_webhook(test_eventbrite_credentials)
 
 
 @pytest.fixture(scope="function")

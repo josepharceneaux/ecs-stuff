@@ -507,16 +507,11 @@ class DisconnectSocialNetworkResource(Resource):
         social_network = SocialNetwork.get_by_id(social_network_id)
         if not social_network:
             raise ResourceNotFound("Social Network not found")
-        # creating class object for respective social network
-        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_id, social_network.id)
-        if user_credentials:
-            UserSocialNetworkCredential.delete(user_credentials)
-            if social_network.name == MEETUP.title():
-                MeetupGroup.query.filter_by(user_id=user_credentials.user_id).delete(synchronize_session=False)
-                MeetupGroup.session.commit()
-            return dict(messsage='User has been disconnected from social network (name: %s)' % social_network.name)
 
-        return dict(messsage='User is already disconnected from social network (name: %s)' % social_network.name)
+        # Get social network specific Social Network class
+        social_network_class = get_class(social_network.name, 'social_network')
+        social_network_class.disconnect(user_id, social_network)
+        return dict(messsage='User has been disconnected from social network (name: %s)' % social_network.name)
 
 
 @api.route(SocialNetworkApi.VENUES)
@@ -1154,17 +1149,7 @@ class ProcessAccessTokenResource(Resource):
         if social_network:
             # Get social network specific Social Network class
             social_network_class = get_class(social_network.name, 'social_network')
-            # call specific class method to save user credentials and webhook in case of Eventbrite
-            access_token, refresh_token = social_network_class.get_access_and_refresh_token(
-                user_id, social_network, code_to_get_access_token=code)
-            user_credentials_dict = dict(user_id=user_id,
-                                         social_network_id=social_network.id,
-                                         access_token=access_token,
-                                         refresh_token=refresh_token)
-            social_network_class.save_user_credentials_in_db(user_credentials_dict)
-            if social_network.name.lower() == MEETUP:
-                meetup = social_network_class(user_id=user_id)
-                meetup.import_meetup_groups()
+            social_network_class.connect(user_id, social_network, code)
             return dict(message='User credentials added successfully'), 201
         else:
             raise ResourceNotFound('Social Network not found')
