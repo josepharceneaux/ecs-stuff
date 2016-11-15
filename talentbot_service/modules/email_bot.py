@@ -14,8 +14,6 @@ from talentbot_service.modules.constants import MAILGUN_FROM, AUTHENTICATION_FAI
 from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger
 from talentbot_service.common.utils.amazon_ses import send_email
-# 3rd party import
-import requests
 
 
 class EmailBot(TalentBot):
