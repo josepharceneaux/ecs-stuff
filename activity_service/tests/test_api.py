@@ -155,7 +155,8 @@ def test_pipeline_create_and_read(user_fixture, token_fixture):
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
     assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
-    assert {u'count': 1, u'image': u'pipeline.png', u'readable_text': u'You created a pipeline: <b>test_PL1</b>.'} in activities['activities']
+    assert any(activity['readable_text'] == u'You created a pipeline: <b>test_PL1</b>.' for activity in
+        activities['activities'])
 
 def test_talentPool_create_and_read(user_fixture, token_fixture):
     # Create a talent pool activity.
@@ -178,7 +179,7 @@ def test_talentPool_create_and_read(user_fixture, token_fixture):
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
     assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
-    assert {u'count': 1, u'image': u'talent_pool.png', u'readable_text': u'You created a Talent Pool: <b>test_pool1</b>.'} in activities['activities']
+    assert any(activity['readable_text'] == u'You created a Talent Pool: <b>test_pool1</b>.' for activity in activities['activities'])
 
 
 def test_dumblist_create_and_read(user_fixture, token_fixture):
@@ -202,7 +203,7 @@ def test_dumblist_create_and_read(user_fixture, token_fixture):
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
     assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
-    assert {u'count': 1, u'image': u'dumblist.png', u'readable_text': u'You created a list: <b>dumblist1</b>.'} in activities['activities']
+    assert any(activity['readable_text'] == u'You created a list: <b>dumblist1</b>.' for activity in activities['activities'])
 
 
 def test_health_check():
