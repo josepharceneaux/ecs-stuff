@@ -10,9 +10,10 @@ import random
 # Common utils
 from talentbot_service.common.models.user import TalentbotAuth
 # App specific imports
-from talentbot_service.modules.constants import AUTHENTICATION_FAILURE_MSG, SOURCE_EMAIL_ADDRESS
+from talentbot_service.common.talent_config_manager import TalentConfigKeys
+from talentbot_service.modules.constants import AUTHENTICATION_FAILURE_MSG
 from talentbot_service.modules.talent_bot import TalentBot
-from talentbot_service import logger
+from talentbot_service import logger, app
 from talentbot_service.common.utils.amazon_ses import send_email
 
 
@@ -52,8 +53,8 @@ class EmailBot(TalentBot):
                                                      ' table-cell; vertical-align:'\
                                                      ' top;margin-left: 1%;">' + message +\
                '</h5></html>'
-        response = send_email(source=SOURCE_EMAIL_ADDRESS, subject=subject, body=None, html_body=html,
-                              email_format='html', to_addresses=[recipient])
+        response = send_email(source=app.config[TalentConfigKeys.BOT_SOURCE_EMAIL], subject=subject, body=None,
+                              html_body=html, email_format='html', to_addresses=[recipient])
         logger.info('Mail reply "%s", to %s' % (message, recipient))
         return response
 
