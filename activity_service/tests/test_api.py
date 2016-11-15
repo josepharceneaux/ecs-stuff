@@ -69,10 +69,15 @@ def test_recent_readable(token_fixture):
     response = requests.get(test_url,
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
     assert response.status_code == requests.codes.ok
+    response_content = json.loads(response.content)
     assert len(json.loads(response.content)['activities']) == 1
-    assert json.loads(response.content)['activities'][0]['count'] == 4
-    assert json.loads(response.content)['activities'][0]['image'] == 'notification.png'
-    assert json.loads(response.content)['activities'][0]['readable_text'] == '4 users have joined'
+    assert response_content['activities'][0]['count'] == 4
+    assert response_content['activities'][0]['image'] == 'notification.png'
+    assert response_content['activities'][0]['readable_text'] == '4 users have joined'
+
+
+def test_recent_readable_with_dates(token_fixture):
+    pass
 
 
 def test_bulk_create_and_read(user_fixture, token_fixture):
