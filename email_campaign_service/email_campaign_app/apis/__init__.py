@@ -11,4 +11,3 @@ if app.config[TalentConfigKeys.ENV_KEY] not in [TalentEnvs.DEV, TalentEnvs.JENKI
 
     # Schedule job for getting email-conversations
     schedule_job_for_email_conversations()
-

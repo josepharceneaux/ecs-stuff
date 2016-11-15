@@ -71,15 +71,10 @@ def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
     db.session.commit()
 
 
-def create_email_campaign(user_id, oauth_token, name, subject, description,
-                          _from, reply_to, body_html,
-                          body_text, list_ids, email_client_id=None,
-                          frequency_id=None,
-                          email_client_credentials_id=None,
-                          base_campaign_id=None,
-                          start_datetime=None,
-                          end_datetime=None,
-                          template_id=None):
+def create_email_campaign(user_id, oauth_token, name, subject, description, _from, reply_to, body_html,
+                          body_text, list_ids, email_client_id=None, frequency_id=None,
+                          email_client_credentials_id=None, base_campaign_id=None, start_datetime=None,
+                          end_datetime=None, template_id=None):
     """
     Creates a new email campaign.
     Schedules email campaign.
@@ -87,18 +82,12 @@ def create_email_campaign(user_id, oauth_token, name, subject, description,
     :return: newly created email_campaign's id
     """
     frequency = Frequency.get_seconds_from_id(frequency_id)
-    email_campaign = EmailCampaign(name=name,
-                                   user_id=user_id,
-                                   is_hidden=0,
-                                   subject=subject,
+    email_campaign = EmailCampaign(name=name, user_id=user_id, is_hidden=0, subject=subject,
                                    description=description,
                                    _from=get_or_set_valid_value(_from, basestring, '').strip(),
                                    reply_to=get_or_set_valid_value(reply_to, basestring, '').strip(),
-                                   body_html=body_html,
-                                   body_text=body_text,
-                                   start_datetime=start_datetime,
-                                   end_datetime=end_datetime,
-                                   frequency_id=frequency_id if frequency_id else None,
+                                   body_html=body_html, body_text=body_text, start_datetime=start_datetime,
+                                   end_datetime=end_datetime, frequency_id=frequency_id if frequency_id else None,
                                    email_client_id=email_client_id,
                                    email_client_credentials_id=email_client_credentials_id
                                    if email_client_credentials_id else None,
@@ -113,8 +102,7 @@ def create_email_campaign(user_id, oauth_token, name, subject, description,
                                  % user_id)
 
     # create email_campaign_smartlist record
-    create_email_campaign_smartlists(smartlist_ids=list_ids,
-                                     email_campaign_id=email_campaign.id)
+    create_email_campaign_smartlists(smartlist_ids=list_ids, email_campaign_id=email_campaign.id)
 
     # if it's a client from api, we don't schedule campaign sends, we create it on the fly.
     # also we enable tracking by default for the clients.
