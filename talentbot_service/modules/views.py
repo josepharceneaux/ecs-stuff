@@ -6,7 +6,6 @@ Facebook, Email, SMS and Slack
 from multiprocessing import Process
 # Common utils
 from talentbot_service.common.error_handling import InvalidUsage
-from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.models.user import TalentbotAuth
 from talentbot_service.common.routes import TalentBotApi
 from talentbot_service.common.utils.api_utils import ApiResponse
@@ -17,21 +16,19 @@ from talentbot_service.modules.facebook_bot import FacebookBot
 from talentbot_service.modules.slack_bot import SlackBot
 from talentbot_service.modules.sms_bot import SmsBot
 from talentbot_service.modules.process_scheduler import ProcessScheduler
-from constants import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH, QUESTIONS, BOT_NAME, \
-    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID,  SLACK_AUTH_URI
+from constants import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH, QUESTIONS, BOT_NAME, BOT_IMAGE,\
+    TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID, SLACK_AUTH_URI
 from talentbot_service import app, logger
 # 3rd party imports
 from flask import request
 from urllib import quote
 from slackclient import SlackClient
 
-mailgun_api_key = app.config[TalentConfigKeys.MAILGUN_API_KEY]
 slack_bot = SlackBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
 sms_bot = SmsBot(bot_name=BOT_NAME, error_messages=ERROR_MESSAGE,
                  standard_sms_length=STANDARD_MSG_LENGTH, twilio_account_sid=TWILIO_ACCOUNT_SID,
                  twilio_auth_token=TWILIO_AUTH_TOKEN, twilio_number=TWILIO_NUMBER, questions=QUESTIONS)
-email_bot = EmailBot(mailgun_api_key, MAILGUN_SENDING_ENDPOINT, QUESTIONS, BOT_NAME, BOT_IMAGE,
-                     ERROR_MESSAGE)
+email_bot = EmailBot(QUESTIONS, BOT_NAME, BOT_IMAGE, ERROR_MESSAGE)
 facebook_bot = FacebookBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
 
 
