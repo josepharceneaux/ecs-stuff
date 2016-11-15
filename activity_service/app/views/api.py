@@ -40,6 +40,7 @@ def get_activities(page):
     start_datetime, end_datetime = None, None
     valid_user_id = request.user.id
     is_aggregate_request = request.args.get('aggregate') == '1'
+    aggregate_limit = request.args.get('aggregate_limit')
     start_param = request.args.get('start_datetime')
     end_param = request.args.get('end_datetime')
     api_id = uuid4()
@@ -54,7 +55,8 @@ def get_activities(page):
     if is_aggregate_request:
         return jsonify({
             'activities': tam.get_recent_readable(
-                valid_user_id, start_datetime=start_datetime, end_datetime=end_datetime
+                valid_user_id, start_datetime=start_datetime, end_datetime=end_datetime,
+                limit=aggregate_limit
             )
         })
 
@@ -352,7 +354,7 @@ class TalentActivityManager(object):
         if end_datetime:
             filters.append(Activity.added_time<=end_datetime)
 
-        activities = Activity.query.filter(*filters).limit(200)
+        activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc()).limit(200)
         logger.info("{} fetched activities in {} seconds".format(
             self.call_id, time() - start_time)
         )
@@ -382,8 +384,8 @@ class TalentActivityManager(object):
                                                                          activity_aggregate['count'],
                                                                          current_user)
                 activity_aggregate['image'] = self.MESSAGES[activity.type][2]
-                activity_aggregate['start'] = aggregate_start
-                activity_aggregate['end'] = aggregate_end
+                activity_aggregate['start'] = aggregate_start.strftime(DATE_FORMAT)
+                activity_aggregate['end'] = aggregate_end.strftime(DATE_FORMAT)
 
                 aggregate_start, aggregate_end = datetime.today(), EPOCH
                 aggregated_activities.append(activity_aggregate)
