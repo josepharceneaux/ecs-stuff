@@ -59,11 +59,15 @@ class TestEmailCampaignSends(object):
         If primary email is not found then email-campaign will be sent to latest emails added for candidates.
         And sends of email campaign should be equal to 2
         """
-        CampaignsTestsHelpers.assert_campaign_blasts(sent_campaign_multiple_email, 1, access_token=access_token_first, timeout=100)
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_multiple_email, 2, abort_time_for_sends=300)
+        expected_sends = 2
+        expected_blasts = 1
+        CampaignsTestsHelpers.assert_campaign_blasts(sent_campaign_multiple_email, expected_blasts,
+                                                     access_token=access_token_first,
+                                                     timeout=100)
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_multiple_email, expected_sends)
         response = requests.get(self.URL % sent_campaign_multiple_email.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
-        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=expected_sends, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
         assert json_resp['campaign_id'] == sent_campaign_multiple_email.id
         assert json_resp['candidate_id'] == sent_campaign_multiple_email.sends[0].candidate_id
