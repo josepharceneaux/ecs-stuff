@@ -74,7 +74,8 @@ def eventbrite_event_data(eventbrite, eventbrite_venue, test_eventbrite_credenti
 
 @pytest.fixture(scope="session", autouse=True)
 def everbrite_webhook(test_eventbrite_credentials):
-    Eventbrite.create_webhook(test_eventbrite_credentials)
+    with app.app_context():
+        Eventbrite.create_webhook(test_eventbrite_credentials)
 
 
 @pytest.fixture(scope="function")
