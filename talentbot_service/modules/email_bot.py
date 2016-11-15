@@ -78,4 +78,3 @@ class EmailBot(TalentBot):
                 self.reply(recipient, subject, error_response)
         else:  # User not authenticated
             self.reply(recipient, subject, AUTHENTICATION_FAILURE_MSG)
-

@@ -84,9 +84,9 @@ EMAIL_CAMPAIGN = 'Email Campaign'
 PUSH_CAMPAIGN = 'Push Campaign'
 SMS_CAMPAIGN = 'SMS Campaign'
 ZERO = 0
-env_key = app.config.get(TalentConfigKeys.ENV_KEY)
+env = app.config.get(TalentConfigKeys.ENV_KEY)
 SOURCE_EMAIL_ADDRESS = 'bot@imports.gettalent.com' if \
-    (env_key == TalentEnvs.PROD) else 'bot-staging@imports.gettalent.com'
+    (env == TalentEnvs.PROD) else 'bot-staging@imports.gettalent.com'
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
