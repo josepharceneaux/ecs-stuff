@@ -39,7 +39,7 @@ def test_reponse_is_user_filtered(token_fixture):
     test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1'
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
-    assert json.loads(response.content)['total_count'] == 4
+    assert json.loads(response.content)['total_count'] == 32
 
 
 def test_response_can_be_time_filtered(token_fixture):
@@ -72,7 +72,7 @@ def test_recent_readable(token_fixture):
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
     assert response.status_code == requests.codes.ok
     response_content = json.loads(response.content)
-    assert len(response_content['activities']) == 1
+    assert len(response_content['activities']) == 5
     assert response_content['activities'][0]['count'] == 4
     assert response_content['activities'][0]['image'] == 'notification.png'
     assert response_content['activities'][0]['readable_text'] == '4 users have joined'
