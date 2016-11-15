@@ -16,6 +16,7 @@ ALL_EMAIL_CAMPAIGN_FIELDS = ["id",
                              "is_hidden",
                              "talent_pipelines",
                              "list_ids",
+                             "scheduler_task_id",
                              "email_client_credentials_id",
                              "base_campaign_id"]
 

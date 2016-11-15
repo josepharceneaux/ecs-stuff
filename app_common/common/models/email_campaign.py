@@ -85,6 +85,7 @@ class EmailCampaign(db.Model):
                        "is_hidden": self.is_hidden,
                        "talent_pipelines": talent_pipelines,
                        "list_ids": [smart_list.id for smart_list in smart_lists],
+                       "scheduler_task_id": self.scheduler_task_id,
                        "email_client_credentials_id": self.email_client_credentials_id,
                        "base_campaign_id": self.base_campaign_id}
 

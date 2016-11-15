@@ -96,7 +96,7 @@ class TestSendSmsCampaign(object):
 
     def test_post_with_invalid_campaign_id(self, access_token_first):
         """
-        This is a test to update a campaign which does not exist in database.
+        This is a test to send a campaign which does not exist in database.
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(SmsCampaign,
                                                                self.HTTP_METHOD,

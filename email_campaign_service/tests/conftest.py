@@ -11,6 +11,9 @@ __author__ = 'basit'
 # Standard Library
 from datetime import timedelta
 
+# Third Party
+from requests import codes
+
 # Application Specific
 # Common fixtures
 from email_campaign_service.common.tests.conftest import *
@@ -41,7 +44,6 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   create_email_campaign_with_merge_tags)
 
 GRAPHQL_BASE_URL = GraphqlServiceApiUrl.GRAPHQL
-
 EMAIL_CAMPAIGN_TYPES = [EmailCampaignTypes.WITHOUT_CLIENT, EmailCampaignTypes.WITH_CLIENT]
 
 
@@ -92,6 +94,21 @@ def campaign_with_two_candidates(email_campaign_of_user_first, access_token_firs
     campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline, email_campaign_of_user_first,
                                                count=2)
     return campaign
+
+
+@pytest.fixture()
+def scheduled_campaign(access_token_first, talent_pipeline):
+    """
+    This returns campaign id which was scheduled to be sent after some time.
+    """
+    campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, fake.word())
+    campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(days=1))
+    response = create_email_campaign_via_api(access_token_first, campaign_data)
+    assert response.status_code == codes.CREATED
+    resp_object = response.json()
+    assert 'campaign' in resp_object
+    assert resp_object['campaign']['id']
+    return {'id': resp_object['campaign']['id']}
 
 
 @pytest.fixture()
