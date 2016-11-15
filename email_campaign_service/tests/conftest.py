@@ -5,12 +5,14 @@
 
 This file contains fixtures for tests of email-campaign-service
 """
-from requests import codes
 
 __author__ = 'basit'
 
 # Standard Library
 from datetime import timedelta
+
+# Third Party
+from requests import codes
 
 # Application Specific
 # Common fixtures
@@ -97,7 +99,7 @@ def campaign_with_two_candidates(email_campaign_of_user_first, access_token_firs
 @pytest.fixture()
 def scheduled_campaign(access_token_first, talent_pipeline):
     """
-    This returns a campaign which was scheduled to be sent after some time.
+    This returns campaign id which was scheduled to be sent after some time.
     """
     campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, fake.word())
     campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(days=1))
