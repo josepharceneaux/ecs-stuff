@@ -9,6 +9,7 @@ import requests
 from activity_service.common.utils.handy_functions import random_word
 from activity_service.common.models.misc import Activity
 from activity_service.common.routes import ActivityApiUrl
+from activity_service.tests import constants as C
 from .fixtures import activities_fixture
 from .fixtures import candidate_fixture
 from .fixtures import candidate_source_fixture
@@ -18,6 +19,7 @@ from .fixtures import domain_fixture
 from .fixtures import org_fixture
 from .fixtures import token_fixture
 from .fixtures import user_fixture
+
 
 DATE_INPUT_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
@@ -70,14 +72,37 @@ def test_recent_readable(token_fixture):
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
     assert response.status_code == requests.codes.ok
     response_content = json.loads(response.content)
-    assert len(json.loads(response.content)['activities']) == 1
+    assert len(response_content['activities']) == 1
     assert response_content['activities'][0]['count'] == 4
     assert response_content['activities'][0]['image'] == 'notification.png'
     assert response_content['activities'][0]['readable_text'] == '4 users have joined'
 
 
 def test_recent_readable_with_dates(token_fixture):
-    pass
+    TEST_URL = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
+    HEADERS = {'Authorization': 'Bearer {}'.format(token_fixture.access_token)}
+
+    response = requests.get(TEST_URL, headers=HEADERS)
+    response_content = json.loads(response.content)
+    activities = response_content['activities']
+    assert response.status_code == requests.codes.ok
+    assert len(activities) == 5
+    for aggregate in activities:
+        start_dt = datetime.strptime(aggregate['start'], DATE_INPUT_FORMAT)
+        end_dt = datetime.strptime(aggregate['end'], DATE_INPUT_FORMAT)
+        if 'You updated' in aggregate['readable_text']:
+            assert start_dt.day == C.CANDIDATE_UPDATE_START.day
+            assert end_dt.day == (start_dt + timedelta(days=6)).day
+        if 'You deleted' in aggregate['readable_text']:
+            assert start_dt.day == C.SMARTLIST_DELETE_START.day
+            assert end_dt.day == (start_dt + timedelta(days=6)).day
+        if 'You created' in aggregate['readable_text']:
+            assert start_dt.day == C.EVENT_CREATE_START.day
+            assert end_dt.day == (start_dt + timedelta(days=6)).day
+        if 'candidates opened' in aggregate['readable_text']:
+            assert start_dt.day == C.CAMPAIGN_EMAIL_OPEN_START.day
+            assert end_dt.day == (start_dt + timedelta(days=6)).day
+
 
 
 def test_bulk_create_and_read(user_fixture, token_fixture):
