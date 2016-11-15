@@ -260,8 +260,8 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
             tag="a",
             attribute="href"
         )
-
-    # Add custom HTML. Doesn't technically belong in this function, but since we have access to the BeautifulSoup object, let's do it here.
+    # Add custom HTML. Doesn't technically belong in this function, but since we have access to the BeautifulSoup
+    # object, let's do it here.
     if new_html and custom_html:
         soup = soup or BeautifulSoup(new_html)
         body_tag = soup.find(name="body") or soup.find(name="html")
@@ -295,7 +295,7 @@ def convert_html_tag_attributes(soup, conversion_function, tag="a",
     items = soup.findAll(tag)
     replacements = 0
     for item in items:
-        if item[attribute]:
+        if item.get(attribute):
             item[attribute] = conversion_function(item[attribute])
             replacements += 1
             if convert_first_only:

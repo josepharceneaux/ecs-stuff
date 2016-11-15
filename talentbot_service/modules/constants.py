@@ -4,6 +4,7 @@ This script contains Talentbot constants
 from talentbot_service.common.models.sms_campaign import SmsCampaignBlast
 from talentbot_service.common.models.email_campaign import EmailCampaignBlast
 from talentbot_service.common.models.push_campaign import PushCampaignBlast
+
 BOT_NAME = "gtbot"
 AT_BOT = ""
 READ_WEB_SOCKET_DELAY = 1
@@ -31,9 +32,6 @@ FACEBOOK_MESSAGE_LIMIT = 319
 FACEBOOK_MESSAGE_SPLIT_COUNT = 200
 TEXT_MESSAGE_MAX_LENGTH = 152
 STANDARD_MSG_LENGTH = 160
-MAILGUN_SENDING_ENDPOINT = "https://api.mailgun.net/v3/sandbox59cbb160934f43d7839e1788604c2c06." \
-                           "mailgun.org/messages"
-MAILGUN_FROM = "TalentBot <postmaster@sandbox59cbb160934f43d7839e1788604c2c06.mailgun.org>"
 QUESTIONS = ['how many users are in my domain', 'how many candidates are there with skills',
              'how many candidates from zipcode',
              'what is the top performing campaign from',

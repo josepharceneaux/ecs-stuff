@@ -110,7 +110,7 @@ class TestResourceEvents(object):
 
     def test_events_post_no_event_organizer(self, token_first, test_event):
         """
-        Post event using invalid event_organizer i.e equal to -1. response should be 500 with 4054 error code
+        Post event using invalid event_organizer i.e equal to -1. response should be 201
         (Event organizer not found)
             url -> localhost:8007/v1/events
         """
@@ -127,11 +127,7 @@ class TestResourceEvents(object):
             assert response.status_code == codes.BAD_REQUEST, "Response: {}".format(response.text)
             return
         else:
-            assert response.status_code == codes.NOT_FOUND, "Response: {}".format(response.text)
-        response = response.json()
-
-        assert 'error' in response and response['error']['code'] == EventOrganizerNotFound.error_code, \
-            'Event organizer not found'
+            assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
 
     def test_events_post_no_venue(self, token_first, test_event):
         """

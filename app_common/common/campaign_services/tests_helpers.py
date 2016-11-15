@@ -30,7 +30,7 @@ from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..utils.test_utils import get_fake_dict, get_and_assert_zero, delete_smartlist
 from ..tests.fake_testing_data_generator import FakeCandidatesData
-from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl)
+from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl, EmailCampaignApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
                               ResourceNotFound, UnprocessableEntity, InternalServerError)
 from ..inter_service_calls.candidate_pool_service_calls import (create_smartlist_from_api,
@@ -348,7 +348,7 @@ class CampaignsTestsHelpers(object):
         :param int expected_status: Expected status code
         """
         raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
-        assert response.status_code == expected_status
+        assert response.status_code == expected_status, response.text
         assert response.json()
         db.session.commit()
         blasts = campaign.blasts.all()
@@ -368,10 +368,11 @@ class CampaignsTestsHelpers(object):
         :param positive campaign_id: Id of campaign
         :param type(t) campaign_service_urls: routes url class. e.g PushCampaignApiUrl or SmsCampaignApiUrl
         """
-        if campaign_service_urls and campaign_service_urls not in (PushCampaignApiUrl, SmsCampaignApiUrl):
+        if campaign_service_urls and campaign_service_urls not in (PushCampaignApiUrl, SmsCampaignApiUrl,
+                                                                   EmailCampaignApiUrl):
             raise InternalServerError('see docs for valid value of campaign_service_urls')
         response_post = send_request('post', url, access_token)
-        assert response_post.status_code == requests.codes.OK
+        assert response_post.status_code == requests.codes.OK, response_post.text
         assert getattr(campaign_service_urls, 'SENDS')
         get_and_assert_zero(getattr(campaign_service_urls, 'SENDS') % campaign_id, 'sends', access_token)
 
