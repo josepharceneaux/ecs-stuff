@@ -34,7 +34,7 @@ class Activity(db.Model):
         activities without initializing activity_service.
         """
         #########################################################################################
-        #   LEGACY CODES
+        #   LEGACY CODES - DO NOT ADD NEW CODES HERE
         #########################################################################################
 
         # params=dict(formattedName)
@@ -90,13 +90,6 @@ class Activity(db.Model):
         # Dumblists
         # TODO
 
-        CAMPAIGN_SMS_CREATE = 28
-
-        # Push campaign
-        CAMPAIGN_PUSH_CREATE = 29
-        CAMPAIGN_PUSH_SEND = 30
-        CAMPAIGN_PUSH_CLICK = 31
-
     ####################################################################################################
     #   V2.0+ Codes
     #   Activity Codes are set up in blocks of 100 to avoid search for the last used int.
@@ -123,8 +116,14 @@ class Activity(db.Model):
         # SPREADSHEET_IMPORT_SERVICE 700-799
         # DASHBOARD_SERVICE 800-899
         # SCHEDULER_SERVICE 900-999
+
         # SMS_CAMPAIGN_SERVICE 1000-1099
+        CAMPAIGN_SMS_CREATE = 1000
+
         # EMAIL_CAMPAIGN_SERVICE 1100-1199
+        CAMPAIGN_PUSH_CREATE = 1100
+        CAMPAIGN_PUSH_SEND = 1101
+        CAMPAIGN_PUSH_CLICK = 1102
 
     def __repr__(self):
         return "<Activity: (id = {})>".format(self.id)
