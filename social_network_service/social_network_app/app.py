@@ -56,6 +56,9 @@ def authorize():
     In case of meetup the querystring args contain 'state'
     and in case of eventbrite the querystring args does not contain 'state' parameter
     """
+    error = request.args.get('error')
+    if error:
+        return redirect(SocialNetworkApiUrl.SUBSCRIBE % error)
     code = request.args.get('code')
     url = SocialNetworkApiUrl.SUBSCRIBE % code
     if len(code) == MEETUP_CODE_LENGTH:
