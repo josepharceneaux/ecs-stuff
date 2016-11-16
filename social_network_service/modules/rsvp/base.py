@@ -159,7 +159,7 @@ class RSVPBase(object):
             self.user = User.get_by_id(self.user_credentials.user_id)
             self.user_token = Token.get_by_user_id(self.user_credentials.user_id)
             if not self.user_token.access_token:
-                raise InternalServerError('Unable to create candidate candidateaccess_token is null')
+                raise InternalServerError('access_token not found for user(id:%s)' % self.user_credentials.user_id)
         else:
             raise UserCredentialsNotFound('User Credentials are empty/none')
 
@@ -504,16 +504,14 @@ class RSVPBase(object):
         :return attendee:
         :rtype: Attendee
         """
-        candidate_in_db = \
-            Candidate.get_by_first_last_name_owner_user_id_source_id_product(
-                attendee.first_name,
-                attendee.last_name,
-                attendee.gt_user_id,
-                attendee.candidate_source_id,
-                attendee.source_product_id)
+        candidate_in_db = Candidate.filter_by_keywords(first_name=attendee.first_name,
+                                                       last_name=attendee.last_name,
+                                                       user_id=attendee.gt_user_id,
+                                                       source_id=attendee.candidate_source_id,
+                                                       source_product_id=attendee.source_product_id)
 
         # To create candidates, user must have be associated with talent_pool
-        talent_pools = TalentPool.filter_by_keywords(**{'user_id': attendee.gt_user_id})
+        talent_pools = TalentPool.filter_by_keywords(user_id=attendee.gt_user_id)
         talent_pool_ids = map(lambda talent_pool: talent_pool.id, talent_pools)
 
         if not talent_pool_ids:
@@ -532,13 +530,12 @@ class RSVPBase(object):
 
         # Update if already exist
         if candidate_in_db:
-            candidate_id = candidate_in_db.id
+            candidate_id = candidate_in_db[0].id
             data = dict(candidates=[data])
 
             # Get candidate's social network if already exist
             candidate_social_network_in_db = \
-                CandidateSocialNetwork.get_by_candidate_id_and_sn_id(
-                    candidate_id, attendee.social_network_id)
+                CandidateSocialNetwork.get_by_candidate_id_and_sn_id(candidate_id, attendee.social_network_id)
             if candidate_social_network_in_db:
                 social_network_data.update({'id': candidate_social_network_in_db.id})
 
