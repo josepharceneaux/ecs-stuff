@@ -55,16 +55,16 @@ def test_get_events_pagination(token_first, eventbrite_event, meetup_event):
     assert response['data']['events'] == []
 
 
-def test_get_event_relationship_objects(token_first, eventbrite_event, organizer_in_db):
-    """
-    This test validates that by adding model relationships and their fields will work and Graphql will return those
-    relationships data as well. e.g. in this case, we are getting event_organizer data inside events data
-    """
-    fields = Event.get_fields(relationships=('event_organizer',))
-    query = get_query('events', fields)
-    response = get_graphql_data(query, token_first)
-    assert 'errors' not in response, 'Response: %s\nQuery: %s' % (response, query)
-    validate_graphql_response('events', response['data'], fields, is_array=True)
+# def test_get_event_relationship_objects(token_first, eventbrite_event, organizer_in_db):
+#     """
+#     This test validates that by adding model relationships and their fields will work and Graphql will return those
+#     relationships data as well. e.g. in this case, we are getting event_organizer data inside events data
+#     """
+#     fields = Event.get_fields(relationships=('event_organizer',))
+#     query = get_query('events', fields)
+#     response = get_graphql_data(query, token_first)
+#     assert 'errors' not in response, 'Response: %s\nQuery: %s' % (response, query)
+#     validate_graphql_response('events', response['data'], fields, is_array=True)
 
 
 def test_get_venue(token_first, eventbrite_venue):
@@ -74,15 +74,6 @@ def test_get_venue(token_first, eventbrite_venue):
     response = assert_valid_response('venue', Venue, token_first, eventbrite_venue['id'])
     venue = response['data']['venue']
     assert venue['id'] == eventbrite_venue['id']
-
-
-def test_get_organizer(token_first, organizer_in_db):
-    """
-    This test validates that `organizer` and `organizers` queries are working fine. it also matches requested
-     organizer's id with returned data.
-    """
-    response = assert_valid_response('organizer', EventOrganizer, token_first, organizer_in_db['id'])
-    assert response['data']['organizer']['id'] == organizer_in_db['id']
 
 
 def test_get_social_network(token_first, eventbrite):

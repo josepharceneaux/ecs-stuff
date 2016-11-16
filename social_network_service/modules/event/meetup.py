@@ -254,14 +254,14 @@ class Meetup(EventBase):
             description=event.get('description', ''),
             social_network_id=self.social_network.id,
             user_id=self.user.id,
-            venue_id=venue.id,
+            venue_id=venue.id if venue else None,
             # group id and urlName are required fields to edit an event
             # so should raise exception if Null
             social_network_group_id=event['group']['id'],
             group_url_name=event['group']['urlname'],
             # Let's drop error logs if venue has no address, or if address
             # has no longitude/latitude
-            url=event['event_url'],
+            url=event.get('event_url'),
             start_datetime=start_time,
             end_datetime=end_time,
             registration_instruction='',

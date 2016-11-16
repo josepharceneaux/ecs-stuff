@@ -16,6 +16,8 @@ import time
 import requests
 
 # Application imports
+from celery.result import AsyncResult
+
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.models.db import db
 from social_network_service.common.models.candidate import SocialNetwork
@@ -76,33 +78,30 @@ def import_meetup_events(start_datetime=None):
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
-        start_datetime = start_datetime or (datetime.datetime.utcnow().strftime("%s") + "000")
-        try:
-            url = MEETUP_STREAM_API_URL % start_datetime
-            meetup = SocialNetwork.get_by_name('Meetup')
-            if not meetup:
-                raise InternalServerError('Unable to find Meetup social network in gt database')
+        meetup = SocialNetwork.get_by_name('Meetup')
+        if not meetup:
+            raise InternalServerError('Unable to find Meetup social network in gt database')
 
-            while True:
-                try:
-                    response = requests.get(url, stream=True)
-                    for raw_event in response.iter_lines():
-                        if raw_event:
-                            try:
-                                event = json.loads(raw_event)
-                                group_id = event['group']['id']
-                                MeetupGroup.session.commit()
-                                group = MeetupGroup.get_by_group_id(group_id)
-                                if group:
-                                    logger.info('Going to save event: %s' % event)
-                                    fetch_meetup_event.apply_async((event, group, meetup))
-                            except Exception:
-                                logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
-                except Exception as e:
-                    logger.warning('Some bad data caused main loop to break. Cause: %s' % e)
-
-        except Exception as e:
-            logger.exception(e.message)
+        while True:
+            try:
+                url = MEETUP_STREAM_API_URL
+                response = requests.get(url, stream=True, timeout=30)
+                for raw_event in response.iter_lines():
+                    if raw_event:
+                        try:
+                            event = json.loads(raw_event)
+                            group_id = event['group']['id']
+                            MeetupGroup.session.commit()
+                            group = MeetupGroup.get_by_group_id(group_id)
+                            if group:
+                                logger.info('Going to save event: %s' % event)
+                                fetch_meetup_event.apply_async((event, group, meetup))
+                        except Exception:
+                            logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
+                            rollback()
+            except Exception as e:
+                logger.warning('Out of main loop. Cause: %s' % e)
+                rollback()
 
 
 @celery.task(name="fetch_meetup_event")
@@ -149,6 +148,7 @@ def fetch_meetup_event(event, group, meetup):
 
         except Exception:
             logger.exception('Failed to save event: %s' % event)
+            rollback()
 
 
 @celery.task(name="fetch_eventbrite_event")
@@ -190,3 +190,23 @@ def fetch_eventbrite_event(user_id, event_url, action_type):
 
         except Exception:
             logger.exception('Failed to save event. URL: %s' % event_url)
+            rollback()
+
+
+@celery.task
+def error_callback(uuid):
+    with app.app_context():
+        logger = app.config[TalentConfigKeys.LOGGER]
+        print uuid
+        result = AsyncResult(uuid)
+        exc = result.get(propagate=False)
+        logger.error('Task {0} raised exception: {1!r}\n{2!r}'.format(
+            uuid, exc, result.traceback))
+        db.session.rollback()
+
+
+def rollback():
+    try:
+        db.session.rollback()
+    except Exception:
+        pass

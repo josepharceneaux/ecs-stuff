@@ -276,5 +276,6 @@ class Eventbrite(SocialNetworkBase):
         :param int | long social_network: social network model object
         """
         user_credentials = super(cls, cls).disconnect(user_id, social_network)
-        cls.delete_webhooks(user_credentials)
+        if user_credentials:
+            cls.delete_webhooks(user_credentials)
         return user_credentials
