@@ -78,15 +78,14 @@ def import_meetup_events(start_datetime=None):
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
-        start_datetime = start_datetime or (datetime.datetime.utcnow().strftime("%s") + "000")
-        url = MEETUP_STREAM_API_URL % start_datetime
         meetup = SocialNetwork.get_by_name('Meetup')
         if not meetup:
             raise InternalServerError('Unable to find Meetup social network in gt database')
 
         while True:
             try:
-                response = requests.get(url, stream=True)
+                url = MEETUP_STREAM_API_URL
+                response = requests.get(url, stream=True, timeout=30)
                 for raw_event in response.iter_lines():
                     if raw_event:
                         try:
@@ -101,7 +100,7 @@ def import_meetup_events(start_datetime=None):
                             logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
                             rollback()
             except Exception as e:
-                logger.warning('Some bad data caused main loop to break. Cause: %s' % e)
+                logger.warning('Out of main loop. Cause: %s' % e)
                 rollback()
 
 
