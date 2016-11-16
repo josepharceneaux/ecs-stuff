@@ -63,15 +63,11 @@ class TalentPipelineApi(Resource):
                 raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
             if not candidate_count:
-                talent_pipeline_dict = talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
-                                                               get_growth_function=get_pipeline_growth,
-                                                               email_campaign_count=email_campaign_count)
+                talent_pipeline_dict = talent_pipeline.to_dict(email_campaign_count=email_campaign_count)
             else:
-                talent_pipeline_dict = talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
-                                                               get_growth_function=get_pipeline_growth,
+                talent_pipeline_dict = talent_pipeline.to_dict(email_campaign_count=email_campaign_count,
                                                                include_candidate_count=True,
-                                                               get_candidate_count=get_talent_pipeline_stat_for_given_day,
-                                                               email_campaign_count=email_campaign_count)
+                                                               get_candidate_count=get_talent_pipeline_stat_for_given_day)
 
             talent_pipeline_dict.update({'engagement_score': engagement_score_of_pipeline(talent_pipeline_id)})
             return {'talent_pipeline': talent_pipeline_dict}
@@ -97,49 +93,53 @@ class TalentPipelineApi(Resource):
             if owner_user_id and is_number(owner_user_id) and not User.query.get(int(owner_user_id)):
                 raise InvalidUsage("User: (%s) doesn't exist in system")
 
-            if sort_by not in ('growth', 'added_time', 'name', 'engagement_score'):
+            if sort_by not in ('added_time', 'name', 'engagement_score'):
                 raise InvalidUsage('Value of sort parameter is not valid')
 
             if owner_user_id:
-                talent_pipelines = TalentPipeline.query.join(User).filter(and_(
+                talent_pipelines_query = TalentPipeline.query.join(User).filter(and_(
                         TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id,
                         User.id == int(owner_user_id), or_(TalentPipeline.name.ilike(
                                 '%' + search_keyword + '%'), TalentPipeline.description.ilike(
-                                '%' + search_keyword + '%')))).all()
+                                '%' + search_keyword + '%'))))
             else:
-                talent_pipelines = TalentPipeline.query.join(User).filter(and_(
+                talent_pipelines_query = TalentPipeline.query.join(User).filter(and_(
                         TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id, or_(
                                 TalentPipeline.name.ilike('%' + search_keyword + '%'),
-                                TalentPipeline.description.ilike('%' + search_keyword + '%')))).all()
+                                TalentPipeline.description.ilike('%' + search_keyword + '%'))))
+
+            total_number_of_talent_pipelines = talent_pipelines_query.count()
+
+            if sort_by != "engagement_score":
+                if sort_by == 'added_time':
+                    sort_attribute = TalentPipeline.added_time
+                else:
+                    sort_attribute = TalentPipeline.name
+                talent_pipelines = talent_pipelines_query.order_by(
+                        sort_attribute.asc() if sort_type == 'ASC' else sort_attribute.desc()).paginate(page, per_page, False)
+                talent_pipelines = talent_pipelines.items
+            else:
+                talent_pipelines = talent_pipelines_query.all()
 
             if not candidate_count:
                 talent_pipelines_data = [
-                    talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
-                                            get_growth_function=get_pipeline_growth,
-                                            email_campaign_count=email_campaign_count)
+                    talent_pipeline.to_dict(email_campaign_count=email_campaign_count)
                     for talent_pipeline in talent_pipelines]
             else:
                 talent_pipelines_data = [
-                    talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
-                                            get_growth_function=get_pipeline_growth, include_candidate_count=True,
-                                            get_candidate_count=get_talent_pipeline_stat_for_given_day,
-                                            email_campaign_count=email_campaign_count)
+                    talent_pipeline.to_dict(include_candidate_count=True, email_campaign_count=email_campaign_count,
+                                            get_candidate_count=get_talent_pipeline_stat_for_given_day)
                     for talent_pipeline in talent_pipelines]
 
+            for talent_pipeline_data in talent_pipelines_data:
+                talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
+
             if sort_by == 'engagement_score':
-                for talent_pipeline_data in talent_pipelines_data:
-                    talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
+                talent_pipelines_data = sorted(
+                        talent_pipelines_data, key=lambda talent_pipeline_data: talent_pipeline_data[sort_by],
+                        reverse=(False if sort_type == 'ASC' else True))
 
-            talent_pipelines_data = sorted(talent_pipelines_data, key=lambda talent_pipeline_data: talent_pipeline_data[
-                sort_by], reverse=(False if sort_type == 'ASC' else True))
-
-            total_number_of_talent_pipelines = len(talent_pipelines_data)
-
-            talent_pipelines_data = talent_pipelines_data[(page - 1) * per_page:page * per_page]
-
-            if sort_by != 'engagement_score':
-                for talent_pipeline_data in talent_pipelines_data:
-                    talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
+                talent_pipelines_data = talent_pipelines_data[(page - 1) * per_page:page * per_page]
 
             headers = generate_pagination_headers(total_number_of_talent_pipelines, per_page, page)
 

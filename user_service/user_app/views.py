@@ -88,7 +88,7 @@ def forgot_password():
 
     redis_store.setex(alphanumeric_token, token, PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS)
 
-    reset_password_url = get_web_app_url() + "/reset-password/%s" % token
+    reset_password_url = get_web_app_url() + "/reset-password/'%s'" % token
 
     name = user.first_name or user.last_name or 'User'
     send_reset_password_email(email, name, reset_password_url, alphanumeric_token)
@@ -103,7 +103,7 @@ def reset_password(token):
         # Check if token is six characters long (For Mobile).  If so, it's actually the token key
         alphanumeric_token = ''
         if len(token) == 6:
-            alphanumeric_token = token
+            alphanumeric_token = token.strip("'")
             token = redis_store.get(alphanumeric_token)
 
         email = URLSafeTimedSerializer(app.config["SECRET_KEY"]).loads(token, salt=PASSWORD_RECOVERY_JWT_SALT,
