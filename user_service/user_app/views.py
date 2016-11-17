@@ -107,7 +107,7 @@ def reset_password(token):
             alphanumeric_token = token
             token = redis_store.get(alphanumeric_token)
 
-        email = URLSafeTimedSerializer("414917220fcccbd2d293cc49fd8h29e3b479384b2e7bac03").loads(token, salt=PASSWORD_RECOVERY_JWT_SALT,
+        email = URLSafeTimedSerializer(app.config["SECRET_KEY"]).loads(token, salt=PASSWORD_RECOVERY_JWT_SALT,
                                                                        max_age=PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS)
 
         user = User.query.filter_by(email=email).first()
