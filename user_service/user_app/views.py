@@ -75,7 +75,7 @@ def forgot_password():
         raise InvalidUsage("A valid username should be provided")
 
     user = User.query.filter_by(email=email).first()
-    if not user:
+    if not user or user.is_disabled:
         raise NotFoundError(error_message="User with username: %s doesn't exist" % email)
 
     token = URLSafeTimedSerializer(app.config["SECRET_KEY"]).dumps(email, salt=PASSWORD_RECOVERY_JWT_SALT)
@@ -102,8 +102,9 @@ def reset_password(token):
     try:
         # Check if token is six characters long (For Mobile).  If so, it's actually the token key
         alphanumeric_token = ''
+        token = token.strip("'")
         if len(token) == 6:
-            alphanumeric_token = token.strip("'")
+            alphanumeric_token = token
             token = redis_store.get(alphanumeric_token)
 
         email = URLSafeTimedSerializer(app.config["SECRET_KEY"]).loads(token, salt=PASSWORD_RECOVERY_JWT_SALT,
