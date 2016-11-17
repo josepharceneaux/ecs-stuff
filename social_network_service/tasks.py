@@ -298,7 +298,7 @@ def process_meetup_rsvp(rsvp, group, meetup):
             meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
             meetup_rsvp_object = MeetupRsvp(user_credentials=meetup_sn.user_credentials, social_network=meetup)
             attendee = meetup_rsvp_object.post_process_rsvp(rsvp)
-            if attendee.rsvp_id:
+            if attendee and attendee.rsvp_id:
                 logger.info('RSVP imported successfully. rsvp:%s' % rsvp)
             else:
                 logger.info('RSVP already present in database. rsvp:%s' % rsvp)
