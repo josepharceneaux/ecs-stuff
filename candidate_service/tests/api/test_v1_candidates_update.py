@@ -260,6 +260,333 @@ class TestUpdateCandidate(object):
         assert CandidateEmail.get_by_id(_id=email_1_id).address == email_1
         assert CandidateEmail.get_by_id(_id=email_2_id).address == email_2
 
+    def test_add_duplicate_custom_fields(self, access_token_first, candidate_first, domain_custom_fields):
+        """
+        Test: Attempt to add identical custom fields to candidate's records
+        """
+        custom_field_value = fake.word()
+        data = {'candidates': [
+            {
+                'id': candidate_first.id,
+                'custom_fields': [
+                    {'custom_field_id': domain_custom_fields[0].id, 'value': custom_field_value},
+                    {'custom_field_id': domain_custom_fields[0].id, 'value': custom_field_value}
+                ]
+            }
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's custom fields and ensure only one has been added
+        get_resp = send_request('get', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate_custom_fields']) == 1
+
+    def test_add_duplicate_aois(self, access_token_first, candidate_first, domain_aois):
+        """
+        Test: Attempt to add identical areas of interest to candidate's records
+        """
+        custom_field_value = fake.word()
+        data = {'candidates': [
+            {
+                'id': candidate_first.id,
+                'areas_of_interest': [
+                    {'area_of_interest_id': domain_aois[0].id},
+                    {'area_of_interest_id': domain_aois[0].id}
+                ]
+            }
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's areas of interest and ensure only one has been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['areas_of_interest']) == 1
+
+    def test_add_duplicate_addresses(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical addresses to candidate's records
+        """
+        data = {'candidates': [
+            {
+                'id': candidate_first.id,
+                'addresses': [{'city': 'San Jose', 'state': 'CA'}, {'city': 'San Jose', 'state': 'CA'}]
+            }
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's addresses and ensure only one has been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['addresses']) == 1
+
+    def test_add_duplicate_educations(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical educations to candidate's records
+        """
+        education_data = {
+            'school_name': 'westvalley', 'school_type': 'college', 'city': fake.city(),
+            'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean(),
+            'degrees': [{
+                'type': 'ms', 'title': 'masters of science', 'start_year': 2002, 'start_month': 11,
+                'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
+                    {
+                        'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
+                    }]
+            }]
+        }
+        data = {'candidates': [
+            {'id': candidate_first.id, 'educations': [education_data, education_data]}
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's educations and ensure only one has been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['educations']) == 1
+
+    def test_add_duplicate_educations_degrees(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical education degrees to candidate's records
+        """
+        education_data = {
+            'school_name': 'westvalley', 'school_type': 'college', 'city': fake.city(),
+            'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean(),
+            'degrees': [
+                {
+                    'type': 'ms', 'title': 'masters of science', 'start_year': 2002, 'start_month': 11,
+                    'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
+                    {
+                        'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
+                    }
+                ],
+
+                },
+                {
+                    'type': 'ms', 'title': 'masters of science', 'start_year': 2002, 'start_month': 11,
+                    'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
+                    {
+                        'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
+                    }
+                ],
+
+                }
+            ]
+        }
+        data = {'candidates': [{'id': candidate_first.id, 'educations': [education_data]}]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's educations and ensure only one education & education degree have been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['educations']) == 1
+        assert len(get_resp.json()['candidate']['educations'][0]['degrees']) == 1
+
+    def test_add_duplicate_educations_degree_bullets(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical education degree bullets to candidate's records
+        """
+        education_data = {
+            'school_name': 'westvalley', 'school_type': 'college', 'city': fake.city(),
+            'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean(),
+            'degrees': [
+                {
+                    'type': 'ms', 'title': 'masters of science', 'start_year': 2002, 'start_month': 11,
+                    'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets':
+                    [
+                        {
+                            'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
+                        },
+                        {
+                            'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
+                        }
+                    ],
+
+                }
+            ]
+        }
+        data = {'candidates': [{'id': candidate_first.id, 'educations': [education_data]}]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's educations and ensure only one education, education degree, and bullet have been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['educations']) == 1
+        assert len(get_resp.json()['candidate']['educations'][0]['degrees']) == 1
+        assert len(get_resp.json()['candidate']['educations'][0]['degrees'][0]['bullets']) == 1
+
+    def test_add_duplicate_emails(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical emails to candidate's records
+        """
+        data = {'candidates': [
+            {
+                'id': candidate_first.id,
+                'emails': [{'address': 'shali+company@example.com'}, {'address': 'shali+company@example.com'}]
+            }
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's emails and ensure only one has been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['emails']) == 1
+
+    def test_add_duplicate_experiences(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical experiences to candidate's records
+        """
+        experience_data = {
+            'organization': 'apple', 'position': 'engineer',
+            'start_year': 2008, 'end_year': 2012, 'start_month': 10, 'end_month': 2,
+            'bullets': [{'description': 'job = sucked'}]
+        }
+
+        data = {'candidates': [
+            {'id': candidate_first.id, 'work_experiences': [experience_data, experience_data]}
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's experiences and ensure only one has been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['work_experiences']) == 1
+
+    def test_add_duplicate_experience_bullet(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical experience bullet to candidate's records
+        """
+        experience_data = {
+            'organization': 'apple', 'position': 'engineer', 'bullets': [
+                {'description': 'job = sucked'}, {'description': 'job = sucked'}]
+        }
+
+        data = {'candidates': [
+            {'id': candidate_first.id, 'work_experiences': [experience_data, experience_data]}
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's experiences and ensure only one experience & one experience bullet has been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['work_experiences']) == 1
+        assert len(get_resp.json()['candidate']['work_experiences'][0]['bullets']) == 1
+
+    def test_add_duplicate_phones(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical phones to candidate's records
+        """
+        data = {'candidates': [
+            {
+                'id': candidate_first.id,
+                'phones': [{'value': '4086667778'}, {'value': '4086667778'}]
+            }
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's phones and ensure only one has been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['phones']) == 1
+
+    def test_add_duplicate_military_services(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical military services to candidate's records
+        """
+        data = {'candidates': [
+            {
+                'id': candidate_first.id,
+                'military_services': [{'status': 'active'}, {'status': 'active'}]
+            }
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's military services and ensure only one has been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['military_services']) == 1
+
+    def test_add_duplicate_preferred_locations(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical preferred locations to candidate's records
+        """
+        data = {'candidates': [
+            {
+                'id': candidate_first.id,
+                'preferred_locations': [{'city': 'cancun'}, {'city': 'cancun'}]
+            }
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's preferred locations and ensure only one has been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['preferred_locations']) == 1
+
+    def test_add_duplicate_skills(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical skills to candidate's records
+        """
+        data = {'candidates': [
+            {
+                'id': candidate_first.id,
+                'skills': [{'name': 'python'}, {'name': 'python'}]
+            }
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's skills and ensure only one has been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['skills']) == 1
+
+    def test_add_duplicate_social_networks(self, access_token_first, candidate_first):
+        """
+        Test: Attempt to add identical social networks to candidate's records
+        """
+        data = {'candidates': [
+            {
+                'id': candidate_first.id,
+                'social_networks': [
+                    {'name': 'Facebook', 'profile_url': 'www.facebook.com/1'},
+                    {'name': 'Facebook', 'profile_url': 'www.facebook.com/1'}
+                ]
+            }
+        ]}
+
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve candidate's social networks and ensure only one has been added
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['social_networks']) == 1
+
 
 class TestUpdateCandidateAddress(object):
     # TODO Commenting out randomly failing test case so build passes. -OM
