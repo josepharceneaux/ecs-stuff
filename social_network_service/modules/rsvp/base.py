@@ -426,8 +426,7 @@ class RSVPBase(object):
         if source_product:
             attendee.source_product_id = source_product.id
         else:
-            raise ProductNotFound('No product found for Social Network '
-                                  '%s. User Id: %s'
+            raise ProductNotFound('No product found for Social Network %s. User Id: %s'
                                   % (self.social_network.name, self.user.id))
         return attendee
 
@@ -584,19 +583,13 @@ class RSVPBase(object):
         :rtype: Attendee
         """
 
-        rsvp_in_db = \
-            RSVP.get_by_vendor_rsvp_id_candidate_id_vendor_id_event_id(
-                attendee.vendor_rsvp_id,
-                attendee.candidate_id,
-                attendee.social_network_id,
-                attendee.event.id)
-        data = {
-            'candidate_id': attendee.candidate_id,
-            'event_id': attendee.event.id,
-            'social_network_rsvp_id': attendee.vendor_rsvp_id,
-            'social_network_id': attendee.social_network_id,
-            'status': attendee.rsvp_status,
-            'datetime': attendee.added_time
+        rsvp_in_db = RSVP.get_by_vendor_rsvp_id_candidate_id_vendor_id_event_id(attendee.vendor_rsvp_id,
+                                                                                attendee.candidate_id,
+                                                                                attendee.social_network_id,
+                                                                                attendee.event.id)
+        data = {'candidate_id': attendee.candidate_id, 'event_id': attendee.event.id,
+                'social_network_rsvp_id': attendee.vendor_rsvp_id, 'social_network_id': attendee.social_network_id,
+                'status': attendee.rsvp_status, 'datetime': attendee.added_time
         }
         if rsvp_in_db:
             rsvp_in_db.update(**data)

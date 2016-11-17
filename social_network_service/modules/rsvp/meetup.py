@@ -180,7 +180,7 @@ class Meetup(RSVPBase):
             .. seealso:: process_rsvps() method in RSVPBase class inside
             social_network_service/rsvp/base.py for more insight.
         """
-        member_url = self.api_url + '/member/' + str(rsvp['member']['member_id']) + '?sign=true'
+        member_url = self.api_url + '/member/' + str(rsvp['member']['member_id']) + '?access_token=' + self.access_token
         response = http_request('GET', member_url, headers=self.headers, user_id=self.user.id)
         if response.ok:
             try:
@@ -201,13 +201,14 @@ class Meetup(RSVPBase):
                 attendee.social_network_id = self.social_network.id
                 attendee.rsvp_status = rsvp['response']
                 attendee.vendor_rsvp_id = rsvp['rsvp_id']
+                # TODO: This won't work now, need to figure out a way
                 attendee.vendor_img_link = "<img class='pull-right' " \
                                            "style='width:60px;height:30px'" \
                                            " src='/web/static/images" \
                                            "/activities/meetup_logo.png'/>"
                 # get event from database
-                social_network_event_id = rsvp['event']['id']
-                epoch_time = rsvp['created']
+                social_network_event_id = rsvp['event']['event_id']
+                epoch_time = rsvp['mtime']
                 dt = milliseconds_since_epoch_to_dt(epoch_time)
                 attendee.added_time = dt
                 assert social_network_event_id is not None

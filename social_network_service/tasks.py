@@ -158,6 +158,7 @@ def import_meetup_rsvps(start_datetime=None):
         logger = app.config[TalentConfigKeys.LOGGER]
         start_datetime = start_datetime or (datetime.datetime.utcnow().strftime("%s") + "000")
         try:
+            logger.info("RSVP streaming started for Meetup")
             url = MEETUP_RSVPS_STREAM_API_URL % start_datetime
             meetup = SocialNetwork.get_by_name('Meetup')
             if not meetup:
@@ -167,13 +168,16 @@ def import_meetup_rsvps(start_datetime=None):
                 try:
                     response = requests.get(url, stream=True)
                     for raw_rsvp in response.iter_lines():
+                    # for raw_rsvp in [1]:
                         if raw_rsvp:
                             try:
                                 rsvp = json.loads(raw_rsvp)
+                                # rsvp = {u'group': {u'group_city': u'Mountain View', u'group_lat': 37.38, u'group_urlname': u'Python-Learning-Meetup', u'group_name': u'Python Learning Meetup', u'group_lon': -122.08, u'group_topics': [{u'topic_name': u'Linux', u'urlkey': u'linux'}, {u'topic_name': u'Open Source', u'urlkey': u'opensource'}, {u'topic_name': u'Python', u'urlkey': u'python'}, {u'topic_name': u'Functional Programming in Python', u'urlkey': u'functional-programming-in-python'}, {u'topic_name': u'Python Web Development', u'urlkey': u'python-web-development'}, {u'topic_name': u'Open Source Python', u'urlkey': u'open-source-python'}, {u'topic_name': u'Software Development', u'urlkey': u'softwaredev'}, {u'topic_name': u'Web Development', u'urlkey': u'web-development'}, {u'topic_name': u'Computer programming', u'urlkey': u'computer-programming'}], u'group_state': u'CA', u'group_id': 18837203, u'group_country': u'us'}, u'rsvp_id': 1639760447, u'venue': {u'lat': 31.537783, u'venue_id': 17028862, u'lon': 74.347748, u'venue_name': u'Lahore, Pakistan '}, u'visibility': u'public', u'event': {u'event_name': u'Testing event importer', u'event_id': u'235620735', u'event_url': u'https://www.meetup.com/Python-Learning-Meetup/events/235620735/', u'time': 1480561200000}, u'member': {u'member_name': u'getTalent, Inc.', u'member_id': 190979089}, u'guests': 0, u'mtime': 1479414331441, u'response': u'yes'}
                                 group_id = rsvp['group']['group_id']
                                 group = MeetupGroup.get_by_group_id(group_id)
                                 if group:
-                                    logger.info('Going to save rsvp: %s' % rsvp)
+                                    logger.info('Going to save Meetup rsvp for user(id:%s).\nrsvp:%s'
+                                                % (group.user_id, rsvp))
                                     process_meetup_rsvp.apply_async((rsvp, group, meetup))
                             except Exception:
                                 logger.exception('Error occurred while parsing rsvp data, Date: %s' % raw_rsvp)
@@ -293,19 +297,13 @@ def process_meetup_rsvp(rsvp, group, meetup):
             meetup = db.session.merge(meetup)
             meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
             meetup_rsvp_object = MeetupRsvp(user_credentials=meetup_sn.user_credentials, social_network=meetup)
-            meetup_rsvp_object.post_process_rsvp(rsvp)
-            logger.info('Event imported successfully : %s' % rsvp)
-            # event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(group.user.id,
-            #                                                                      meetup.id,
-            #                                                                      event_id
-            #                                                                      )
-            # if event_in_db:
-            #     Event.delete(event_in_db)
-            #     logger.info("Meetup event has been deleted from gt database. event:`%s`" % event_in_db.to_json())
-            # else:
-            #     logger.info("Meetup event not found in database. event:`%s`." % rsvp)
+            attendee = meetup_rsvp_object.post_process_rsvp(rsvp)
+            if attendee.rsvp_id:
+                logger.info('RSVP imported successfully. rsvp:%s' % rsvp)
+            else:
+                logger.info('RSVP already present in database. rsvp:%s' % rsvp)
         except Exception:
-            logger.exception('Failed to save event: %s' % rsvp)
+            logger.exception('Failed to save rsvp: %s' % rsvp)
 
 
 @celery.task(name="fetch_eventbrite_event")

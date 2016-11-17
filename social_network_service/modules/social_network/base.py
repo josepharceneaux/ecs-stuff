@@ -479,13 +479,11 @@ class SocialNetworkBase(object):
             # If hit rate limit reached for eventbrite, too many requests
             elif response.status_code == 429:
                 data = response.json()
-                raise HitLimitReached('Error: %s, %s' %
-                                      (data.get('error_description'), data.get('error')))
+                logger.error("HitLimit reached for user(id:%s). Error:%s" % self.user.id, data)
+                raise HitLimitReached('Error: %s, %s' % (data.get('error_description'), data.get('error')))
             else:
-                logger.debug("Access token has expired for %s(UserId:%s)."
-                             " Social Network is %s."
-                             % (self.user.name, self.user.id,
-                                self.social_network.name))
+                logger.debug("Access token has expired for %s(UserId:%s). Social Network is %s."
+                             % (self.user.name, self.user.id, self.social_network.name))
         except requests.RequestException as error:
             raise AccessTokenHasExpired('Error: %s, Please '
                                         'connect with %s again from "Profile" page.'
