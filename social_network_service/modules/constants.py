@@ -10,7 +10,7 @@ from social_network_service.common.constants import MEETUP
 APPLICATION_BASED_AUTH_URL = 'https://api.twitter.com/oauth2/token'
 MEETUP_STREAM_API_URL = "http://stream.meetup.com/2/open_events?since_count=10"
 MEETUP_CODE_LENGTH = 32
-QUEUE_NAME = 'social_network'
+QUEUE_NAME = 'social_network_queue'
 EVENTBRITE = 'eventbrite'
 FACEBOOK = 'facebook'
 TASK_ALREADY_SCHEDULED = 6057
