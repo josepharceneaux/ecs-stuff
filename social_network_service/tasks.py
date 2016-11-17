@@ -78,6 +78,7 @@ def import_meetup_events(start_datetime=None):
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
+        logger.info('Meetup Event Importer started at UTC: %s' % datetime.datetime.utcnow())
         meetup = SocialNetwork.get_by_name('Meetup')
         if not meetup:
             raise InternalServerError('Unable to find Meetup social network in gt database')
