@@ -130,26 +130,21 @@ class Eventbrite(RSVPBase):
         """
         # get event_id
         social_network_event_id = rsvp['event_id']
-        event = Event.get_by_user_id_social_network_id_vendor_event_id(
-            self.user.id, self.social_network.id,
-            social_network_event_id)
+        event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id,
+                                                                       self.social_network.id,
+                                                                       social_network_event_id)
         if not event:
-            logger.info('Event is not present in db, '
-                        'social_network_event_id is '
-                        '%s. User Id: %s'
-                        % (social_network_event_id,
-                           self.user.id))
+            logger.info('Event is not present in db, social_network_event_id is '
+                        '%s. User Id: %s' % (social_network_event_id, self.user.id))
             return None
 
-        created_datetime = datetime.strptime(rsvp['created'][:19],
-                                             "%Y-%m-%dT%H:%M:%S")
+        created_datetime = datetime.strptime(rsvp['created'][:19], "%Y-%m-%dT%H:%M:%S")
         attendee = Attendee()
         attendee.first_name = rsvp['profile']['first_name']
         attendee.full_name = rsvp['profile']['name']
         attendee.last_name = rsvp['profile']['last_name']
         attendee.added_time = created_datetime
-        attendee.rsvp_status = 'yes' \
-            if rsvp['status'].lower() == 'placed' else rsvp['status']
+        attendee.rsvp_status = 'yes' if rsvp['status'].lower() == 'placed' else rsvp['status']
         attendee.email = rsvp['profile']['email']
         attendee.vendor_rsvp_id = rsvp['id']
         attendee.gt_user_id = self.user.id
