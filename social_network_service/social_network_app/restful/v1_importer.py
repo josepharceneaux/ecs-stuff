@@ -76,8 +76,8 @@ class RsvpEventImporter(Resource):
         if not (social_network.lower() in [MEETUP, EVENTBRITE]):
             raise InvalidUsage("No social network with name {} found.".format(social_network))
 
-        if mode == 'event_importer':
-            import_meetup_events.apply_async()
+        # if mode == 'event_importer':
+        #     import_meetup_events.apply_async()
         return dict(message="{} are being imported.".format(mode.upper()))
 
 

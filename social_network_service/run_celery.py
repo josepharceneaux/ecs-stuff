@@ -18,7 +18,7 @@ from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.tasks import import_meetup_events
 
 try:
-    # import_meetup_events.apply_async()
+    import_meetup_events.apply_async(countdown=15)
     celery_app.start(argv=CELERY_WORKER_ARGS + [QUEUE_NAME])
     logger.info("Celery worker has been started successfully for %s" % app.import_name)
 

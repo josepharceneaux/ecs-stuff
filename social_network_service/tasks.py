@@ -87,6 +87,7 @@ def import_meetup_events(start_datetime=None):
             try:
                 url = MEETUP_STREAM_API_URL
                 response = requests.get(url, stream=True, timeout=30)
+                logger.info('Meetup Stream Response Status: %s' % response.status_code)
                 for raw_event in response.iter_lines():
                     if raw_event:
                         try:
