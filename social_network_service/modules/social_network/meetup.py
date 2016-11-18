@@ -136,10 +136,15 @@ class Meetup(SocialNetworkBase):
         if response.ok:
             groups = response.json()['results']
             for group in groups:
-                meetup_group = MeetupGroup.get_by_user_id_and_group_id(self.user.id, group['id'])
+                meetup_group = MeetupGroup.get_by_group_id(group['id'])
+
                 if meetup_group:
-                    raise ForbiddenError('This Meetup account is already associated with another user',
-                                         error_code=MEETUP_ACCOUNT_ALREADY_EXISTS)
+                    if meetup_group.user_id != self.user.id:
+                        raise ForbiddenError('This Meetup account is already associated with user (id: %s). '
+                                             'User (id: %s) tried to connect' % (meetup_group.user_id, self.user.id),
+                                             error_code=MEETUP_ACCOUNT_ALREADY_EXISTS)
+                    meetup_groups.append(meetup_group.to_json())
+                    continue
                 meetup_group = MeetupGroup(
                     group_id=group['id'],
                     user_id=self.user.id,
@@ -330,11 +335,13 @@ class Meetup(SocialNetworkBase):
             defined in social network Rest API inside
             social_network_service/app/restful/social_network.py.
         """
-        user_id, social_network_id = user_credentials['user_id'], user_credentials['social_network_id']
-        meetup = cls(user_id=user_id, social_network_id=social_network_id)
-        meetup.import_meetup_groups()
-        user_credentials_in_db = super(cls,
-                                       cls).save_user_credentials_in_db(user_credentials)
+        user_credentials_in_db = super(cls, cls).save_user_credentials_in_db(user_credentials)
+        try:
+            meetup = cls(user_id=user_credentials_in_db.user_id, social_network_id=user_credentials.social_network_id)
+            meetup.import_meetup_groups()
+        except Exception:
+            user_credentials_in_db.delete()
+            raise
         return user_credentials_in_db
 
     @classmethod
