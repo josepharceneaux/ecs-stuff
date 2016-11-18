@@ -501,6 +501,7 @@ class RSVPBase(object):
         :return attendee:
         :rtype: Attendee
         """
+        request_method = 'post'
         candidate_in_db = Candidate.filter_by_keywords(first_name=attendee.first_name,
                                                        last_name=attendee.last_name,
                                                        user_id=attendee.gt_user_id,
@@ -529,7 +530,8 @@ class RSVPBase(object):
         # Update if already exist
         if candidate_in_db:
             candidate_id = candidate_in_db[0].id
-            data = dict(candidates=[data])
+            data.update({'id': candidate_id})
+            request_method = 'patch'
 
             # Get candidate's social network if already exist
             candidate_social_network_in_db = \
@@ -552,7 +554,8 @@ class RSVPBase(object):
 
         attendee.candidate_id = create_or_update_candidate(oauth_token=self.user_token.access_token,
                                                            data=dict(candidates=[data]),
-                                                           return_candidate_ids_only=True)
+                                                           return_candidate_ids_only=True,
+                                                           request_method=request_method)
 
         return attendee
 

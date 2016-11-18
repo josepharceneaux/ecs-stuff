@@ -72,6 +72,7 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
                              mode, user_id, e.message)
 
 
+@celery.task(name="import_meetup_events")
 def import_meetup_events(start_datetime=None):
     """
     This task starts at service startup and then it keeps fetching events using Meetup stream API.
@@ -98,13 +99,14 @@ def import_meetup_events(start_datetime=None):
                             group = MeetupGroup.get_by_group_id(group_id)
                             if group:
                                 logger.info('Going to save event: %s' % event)
-                                fetch_meetup_event.apply_async((event, group, meetup))
+                                fetch_meetup_event.delay(event)
                         except Exception:
                             logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
                             rollback()
             except Exception as e:
-                logger.warning('Out of main loop. Cause: %s' % e)
+                logger.warning('Out of main loop, Will start again in 10 seconds. Cause: %s' % e)
                 rollback()
+                time.sleep(10)
 
 
 def import_meetup_rsvps(start_datetime=None):
@@ -186,7 +188,7 @@ def import_meetup_rsvps(start_datetime=None):
 
 
 @celery.task(name="fetch_meetup_event")
-def fetch_meetup_event(event, group, meetup):
+def fetch_meetup_event(event):
     """
     This celery task is for an individual event to be processed. When `rsvp_events_importer` task finds that some
     event belongs to getTalent user, it passes this event to this task for further processing.
@@ -196,8 +198,6 @@ def fetch_meetup_event(event, group, meetup):
 
     If an event contains venue information, is is save in `venue` table or updated an existing venue.
     :param dict event: event dictionary from meetup
-    :param MeetupGroup group: MeetupGroup Object
-    :param SocialNetwork meetup: SocialNetwork object for meetup
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
@@ -205,8 +205,8 @@ def fetch_meetup_event(event, group, meetup):
         try:
             time.sleep(5)  # wait for event creation api to save event in database otherwise there can be duplicate
             # event created in database (one by api and other by importer)
-            group = db.session.merge(group)
-            meetup = db.session.merge(meetup)
+            group = MeetupGroup.get_by_group_id(event['group']['id'])
+            meetup = SocialNetwork.get_by_name('Meetup')
 
             if event['status'] == MEETUP_EVENT_STATUS['upcoming']:
                 meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)

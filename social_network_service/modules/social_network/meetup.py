@@ -13,11 +13,11 @@ from requests import codes
 from social_network_service.common.models.event import MeetupGroup
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
-from social_network_service.common.error_handling import InternalServerError, InvalidUsage
+from social_network_service.common.error_handling import InternalServerError, InvalidUsage, ForbiddenError
 from social_network_service.modules import custom_codes
 from social_network_service.modules.constants import MEETUP_VENUE
 from social_network_service.modules.custom_codes import (VENUE_EXISTS_IN_GT_DATABASE,
-                                                         INVALID_MEETUP_RESPONSE)
+                                                         INVALID_MEETUP_RESPONSE, MEETUP_ACCOUNT_ALREADY_EXISTS)
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
 from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import logger
@@ -137,23 +137,23 @@ class Meetup(SocialNetworkBase):
             groups = response.json()['results']
             for group in groups:
                 meetup_group = MeetupGroup.get_by_user_id_and_group_id(self.user.id, group['id'])
-                if not meetup_group:
-                    meetup_group = MeetupGroup(
-                        group_id=group['id'],
-                        user_id=self.user.id,
-                        name=group['name'],
-                        url_name=group['urlname'],
-                        description=group.get('description'),
-                        created_datetime=group.get('created'),
-                        visibility=group.get('visibility'),
-                        country=group.get('country'),
-                        state=group.get('state'),
-                        city=group.get('city'),
-                        timezone=group.get('timezone')
-                    )
-                    MeetupGroup.save(meetup_group)
-                else:
-                    logger.info('Meetup Group (group_id: %s) is already in gt database' % meetup_group.group_id)
+                if meetup_group:
+                    raise ForbiddenError('This Meetup account is already associated with another user',
+                                         error_code=MEETUP_ACCOUNT_ALREADY_EXISTS)
+                meetup_group = MeetupGroup(
+                    group_id=group['id'],
+                    user_id=self.user.id,
+                    name=group['name'],
+                    url_name=group['urlname'],
+                    description=group.get('description'),
+                    created_datetime=group.get('created'),
+                    visibility=group.get('visibility'),
+                    country=group.get('country'),
+                    state=group.get('state'),
+                    city=group.get('city'),
+                    timezone=group.get('timezone')
+                )
+                MeetupGroup.save(meetup_group)
                 meetup_groups.append(meetup_group.to_json())
         return meetup_groups
 
@@ -330,11 +330,11 @@ class Meetup(SocialNetworkBase):
             defined in social network Rest API inside
             social_network_service/app/restful/social_network.py.
         """
+        user_id, social_network_id = user_credentials['user_id'], user_credentials['social_network_id']
+        meetup = cls(user_id=user_id, social_network_id=social_network_id)
+        meetup.import_meetup_groups()
         user_credentials_in_db = super(cls,
                                        cls).save_user_credentials_in_db(user_credentials)
-        meetup = cls(user_id=user_credentials_in_db.user_id,
-                     social_network_id=user_credentials_in_db.social_network.id)
-        meetup.import_meetup_groups()
         return user_credentials_in_db
 
     @classmethod
@@ -344,7 +344,7 @@ class Meetup(SocialNetworkBase):
         :param int | long user_id: user id
         :param int | long social_network: social network model object
         """
-        user_credentials = super(cls, cls).disconnect(user_id, social_network)
         MeetupGroup.query.filter_by(user_id=user_id).delete(synchronize_session=False)
         MeetupGroup.session.commit()
+        user_credentials = super(cls, cls).disconnect(user_id, social_network)
         return user_credentials
