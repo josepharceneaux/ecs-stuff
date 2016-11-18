@@ -25,7 +25,7 @@ CMD\
 
     /etc/init.d/nginx restart && \
 
-    export NEW_RELIC_ENVIRONMENT=$GT_ENVIRONMENT && export NEW_RELIC_CONFIG_FILE=newrelic.ini &&
+    export NEW_RELIC_ENVIRONMENT=$GT_ENVIRONMENT && export NEW_RELIC_CONFIG_FILE=newrelic.ini && \
 
     python run_importer.py && \
 
