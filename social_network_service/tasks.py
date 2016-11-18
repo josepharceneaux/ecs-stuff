@@ -156,7 +156,6 @@ def import_meetup_rsvps(start_datetime=None):
         logger = app.config[TalentConfigKeys.LOGGER]
         start_datetime = start_datetime or (datetime.datetime.utcnow().strftime("%s") + "000")
         try:
-            logger.info("RSVP streaming started for Meetup")
             url = MEETUP_RSVPS_STREAM_API_URL % start_datetime
             meetup = SocialNetwork.get_by_name('Meetup')
             if not meetup:
@@ -164,7 +163,8 @@ def import_meetup_rsvps(start_datetime=None):
 
             while True:
                 try:
-                    response = requests.get(url, stream=True)
+                    response = requests.get(url, stream=True, timeout=10)
+                    logger.info("RSVP streaming started for Meetup")
                     for raw_rsvp in response.iter_lines():
                         if raw_rsvp:
                             try:
@@ -182,6 +182,7 @@ def import_meetup_rsvps(start_datetime=None):
     
         except Exception as e:
             logger.exception(e.message)
+            rollback()
 
 
 @celery.task(name="fetch_meetup_event")
@@ -300,6 +301,7 @@ def process_meetup_rsvp(rsvp, group, meetup):
                 logger.info('RSVP already present in database. rsvp:%s' % rsvp)
         except Exception:
             logger.exception('Failed to save rsvp: %s' % rsvp)
+            rollback()
 
 
 @celery.task(name="fetch_eventbrite_event")
@@ -341,7 +343,6 @@ def fetch_eventbrite_event(user_id, event_url, action_type):
 
         except Exception:
             logger.exception('Failed to save event. URL: %s' % event_url)
-            rollback()
 
 
 @celery.task
