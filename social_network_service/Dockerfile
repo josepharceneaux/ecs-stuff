@@ -27,7 +27,5 @@ CMD\
 
     export NEW_RELIC_ENVIRONMENT=$GT_ENVIRONMENT && export NEW_RELIC_CONFIG_FILE=newrelic.ini && \
 
-    python run_importer.py && \
-
     if [[ "${GT_ENVIRONMENT}" -eq "jenkins" ]]; then uwsgi --lazy --ini ./talent-uwsgi.ini; else newrelic-admin \
-    run-program uwsgi --lazy --ini ./talent-uwsgi.ini; fi
+    run-program uwsgi --lazy --ini ./talent-uwsgi.ini && python run_importer.py; fi
