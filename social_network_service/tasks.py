@@ -70,6 +70,7 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
                              mode, user_id, e.message)
 
 
+@celery.task(name="import_meetup_events")
 def import_meetup_events(start_datetime=None):
     """
     This task starts at service startup and then it keeps fetching events using Meetup stream API.
