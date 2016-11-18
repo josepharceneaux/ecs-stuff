@@ -37,13 +37,14 @@ def get_activities(page):
     :param int page: Page used in pagination for GET requests.
     :return: JSON formatted pagination response or message notifying creation status.
     """
+    api_id = uuid4()
+    logger.info("Call to activity service with id: {}".format(api_id))
     start_datetime, end_datetime = None, None
     valid_user_id = request.user.id
     is_aggregate_request = request.args.get('aggregate') == '1'
-    aggregate_limit = request.args.get('aggregate_limit')
+    aggregate_limit = request.args.get('aggregate_limit', '5')
     start_param = request.args.get('start_datetime')
     end_param = request.args.get('end_datetime')
-    api_id = uuid4()
     tam = TalentActivityManager(api_id)
 
     if start_param:
@@ -53,6 +54,13 @@ def get_activities(page):
         end_datetime = datetime.strptime(end_param, DATE_FORMAT)
 
     if is_aggregate_request:
+        logger.info('Aggregate call made with id: {}'.format(api_id))
+        try:
+            aggregate_limit = int(aggregate_limit)
+
+        except ValueError:
+            return jsonify({'error': {'message': 'aggregate_limit must be an integer'}}), STATUS_CODES.bad
+
         return jsonify({
             'activities': tam.get_recent_readable(
                 valid_user_id, start_datetime=start_datetime, end_datetime=end_datetime,
@@ -61,6 +69,7 @@ def get_activities(page):
         })
 
     else:
+        logger.info('Individual call made with id: {}'.format(api_id))
         post_qty = request.args.get('post_qty') if request.args.get('post_qty') else POSTS_PER_PAGE
 
         try:
