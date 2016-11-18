@@ -49,7 +49,7 @@ from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
     do_phones_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
-    get_education_degree_if_exists, does_military_service_exist, do_emails_exist
+    get_education_degree_if_exists, does_military_service_exist, do_emails_exist, remove_duplicates
 )
 
 # Common utilities
@@ -1251,7 +1251,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
     if address_has_default:
         CandidateAddress.set_is_default_to_false(candidate_id)
 
-    for i, address in enumerate(addresses):
+    for i, address in enumerate(remove_duplicates(addresses)):
 
         zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
         city = address['city'].strip() if address.get('city') else None
@@ -1339,6 +1339,14 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
     """
     Function will update CandidateCustomField or create a new one.
     """
+    # Remove identical data
+    custom_field_items = None
+    for i, custom_field in enumerate(custom_fields):
+        if custom_field.items() == custom_field_items:
+            del custom_fields[i]
+        else:
+            custom_field_items = custom_field.items()
+
     candidate_id = candidate.id
 
     for custom_field in custom_fields:
@@ -1407,6 +1415,14 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
     Function will update CandidateEducation, CandidateEducationDegree, and
     CandidateEducationDegreeBullet or create new ones.
     """
+    # Remove identical data
+    education_items = None
+    for i, education in enumerate(educations):
+        if education.items() == education_items:
+            del educations[i]
+        else:
+            education_items = education.items()
+
     # If any of educations is_current, set all of Candidate's educations' is_current to False
     candidate_id, candidate_educations = candidate.id, candidate.educations
     if any([education.get('is_current') for education in educations]):  # TODO: this is to be done when updating only
@@ -1455,11 +1471,16 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
             if education_dict:
                 can_education_obj.update(**education_dict)
 
+            # Remove identical education degree data
+            education_degree_items = None
+            for i, education_degree in enumerate(education_degrees):
+                if education_degree.items() == education_degree_items:
+                    del education_degrees[i]
+                else:
+                    education_degree_items = education_degree.items()
+
             # CandidateEducationDegree
             for education_degree in education_degrees:
-
-                # TODO: validate all date inputs. For example, start date must be before end date
-
                 # Start year must not be later than end year
                 start_year, end_year = education_degree.get('start_year'), education_degree.get('end_year')
                 if (start_year and end_year) and (start_year > end_year):
@@ -1484,7 +1505,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                 education_degree_dict = purge_dict(education_degree_dict)
 
                 # Prevent empty records from being inserted into db
-                education_degree_bullets = education_degree.get('bullets') or []
+                education_degree_bullets = remove_duplicates(education_degree.get('bullets') or [])
                 if not education_degree_dict and not education_degree_bullets:
                     continue
 
@@ -1584,7 +1605,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
 
                     # Add CandidateEducationDegreeBullets
                     education_degree_bullets = education_degree.get('bullets') or []
-                    for education_degree_bullet in education_degree_bullets:
+                    for education_degree_bullet in remove_duplicates(education_degree_bullets):
                         education_degree_bullet_dict = dict(
                             concentration_type=education_degree_bullet['major'].strip()
                             if education_degree_bullet.get('major') else None,
@@ -1603,6 +1624,14 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                         db.session.add(CandidateEducationDegreeBullet(**education_degree_bullet_dict))
 
         else:  # Add
+            # Remove identical education degree data
+            education_degree_items = None
+            for i, education_degree in enumerate(education_degrees):
+                if education_degree.items() == education_degree_items:
+                    del education_degrees[i]
+                else:
+                    education_degree_items = education_degree.items()
+
             # CandidateEducation
             # TODO: resume_id to be removed once all tables have been added & migrated
             education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_datetime,
@@ -1621,7 +1650,6 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
 
             # CandidateEducationDegree
             for education_degree in education_degrees:
-
                 # Start year must not be later than end year
                 start_year, end_year = education_degree.get('start_year'), education_degree.get('end_year')
                 if (start_year and end_year) and (start_year > end_year):
@@ -1671,7 +1699,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
 
                 # CandidateEducationDegreeBullet
                 degree_bullets = education_degree.get('bullets') or []
-                for degree_bullet in degree_bullets:
+                for degree_bullet in remove_duplicates(degree_bullets):
                     education_degree_bullet_dict = dict(
                         concentration_type=degree_bullet['major'].strip()
                         if degree_bullet.get('major') else None,
@@ -1699,6 +1727,14 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
     Function will update CandidateExperience and CandidateExperienceBullet
     or create new ones.
     """
+    # Remove identical data
+    experience_items = None
+    for i, experience in enumerate(work_experiences):
+        if experience.items() == experience_items:
+            del work_experiences[i]
+        else:
+            experience_items = experience.items()
+
     # If any of work_experiences' is_current is True, set all of candidate's experiences' is_current to False
     candidate_id, candidate_experiences = candidate.id, candidate.experiences
     current_year = datetime.datetime.utcnow().year
@@ -1782,7 +1818,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
 
             # CandidateExperienceBullet
             experience_bullets = work_experience.get('bullets') or []
-            for experience_bullet in experience_bullets:
+            for experience_bullet in remove_duplicates(experience_bullets):
 
                 description = (experience_bullet.get('description') or '').strip()
                 experience_bullet_dict = dict(list_order=experience_bullet.get('list_order'), description=description)
@@ -1843,7 +1879,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
 
             # CandidateExperienceBullet
             experience_bullets = work_experience.get('bullets') or []
-            for experience_bullet in experience_bullets:
+            for experience_bullet in remove_duplicates(experience_bullets):
 
                 description = (experience_bullet.get('description') or '').strip()
                 experience_bullet_dict = dict(list_order=experience_bullet.get('list_order'), description=description)
@@ -1943,7 +1979,7 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
             emails.remove(email)
         seen.add(email_address)
 
-    for index, email in enumerate(emails):
+    for index, email in enumerate(remove_duplicates(emails)):
 
         # If none of the provided emails have "is_default" set to true and none of candidate's existing emails
         #   is set to default, then the first provided email will be a default email
@@ -2043,7 +2079,7 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
             phones.remove(phone)
         seen.add(phone_value)
 
-    for i, phone in enumerate(phones):
+    for i, phone in enumerate(remove_duplicates(phones)):
 
         # If there's no is_default, the first phone should be default
         is_default = i == 0 if not phones_has_default else phone.get('is_default')
@@ -2153,7 +2189,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, is_u
     Function will update CandidateMilitaryService or create new one(s).
     """
     candidate_id, candidate_military_services = candidate.id, candidate.military_services
-    for military_service in military_services:
+    for military_service in remove_duplicates(military_services):
 
         # Convert ISO 8061 date object to datetime object
         from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
@@ -2220,7 +2256,7 @@ def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, 
     Function will update CandidatePreferredLocation or create a new one.
     """
     candidate_id, candidate_preferred_locations = candidate.id, candidate.preferred_locations
-    for preferred_location in preferred_locations:
+    for preferred_location in remove_duplicates(preferred_locations):
 
         country_code = preferred_location['country_code'].strip().upper() \
             if preferred_location.get('country_code') else None
@@ -2277,7 +2313,7 @@ def _add_or_update_skills(candidate, skills, added_time, user_id, is_updating):
     Function will update CandidateSkill or create new one(s).
     """
     candidate_id = candidate.id
-    for skill in skills:
+    for skill in remove_duplicates(skills):
 
         # Convert ISO 8601 date format to datetime object
         last_used_date = skill.get('last_used_date')
@@ -2335,7 +2371,7 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
     Function will update CandidateSocialNetwork or create new one(s).
     """
     candidate_id, candidate_sns = candidate.id, candidate.social_networks
-    for social_network in social_networks:
+    for social_network in remove_duplicates(social_networks):
 
         social_network_dict = dict(
             social_network_id=social_network_id_from_name((social_network.get('name') or '').strip()),
