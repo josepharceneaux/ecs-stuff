@@ -229,6 +229,8 @@ class Product(db.Model):
     WEB = 2
     WIDGET = 3
     OPENWEB = 4
+    MEETUP = 5
+    EVENTBRITE = 6
 
     def __repr__(self):
         return "<Product (name=' %r')>" % self.name

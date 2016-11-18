@@ -364,10 +364,8 @@ class RSVPBase(object):
         except Exception:
             # Shouldn't raise an exception, just log it and move to
             # process next RSVP
-            logger.exception('post_process_rsvps: user_id: %s, RSVP data: %s, '
-                             'social network: %s(id:%s)'
-                             % (self.user.id, rsvp, self.social_network.name,
-                                self.social_network.id))
+            logger.exception('post_process_rsvps: user_id: %s, RSVP data: %s, social network: %s(id:%s)'
+                             % (self.user.id, rsvp, self.social_network.name, self.social_network.id))
 
     @abstractmethod
     def get_attendee(self, rsvp):
@@ -520,6 +518,7 @@ class RSVPBase(object):
         data = {'first_name': attendee.first_name,
                 'last_name': attendee.last_name,
                 'source_id': attendee.candidate_source_id,
+                'source_product_id': attendee.source_product_id,
                 'talent_pool_ids': dict(add=talent_pool_ids)
                 }
         social_network_data = {

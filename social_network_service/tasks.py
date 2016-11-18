@@ -183,7 +183,7 @@ def import_meetup_rsvps(start_datetime=None):
                                 logger.exception('Error occurred while parsing rsvp data, Date: %s' % raw_rsvp)
                 except Exception as e:
                     logger.warning('Some bad data caused main loop to break. Cause: %s' % e)
-
+    
         except Exception as e:
             logger.exception(e.message)
 
@@ -300,7 +300,7 @@ def process_meetup_rsvp(rsvp, group, meetup):
             attendee = meetup_rsvp_object.post_process_rsvp(rsvp)
             if attendee and attendee.rsvp_id:
                 logger.info('RSVP imported successfully. rsvp:%s' % rsvp)
-            else:
+            elif attendee:
                 logger.info('RSVP already present in database. rsvp:%s' % rsvp)
         except Exception:
             logger.exception('Failed to save rsvp: %s' % rsvp)

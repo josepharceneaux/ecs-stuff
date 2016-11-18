@@ -131,7 +131,8 @@ def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=Fals
             return patch_resp.json()['candidates'][0]['id']
         else:
             return patch_resp.json()
-    assert resp.status_code == requests.codes.created
+    if not resp.status_code == requests.codes.created:
+        raise InternalServerError('Candidate creation failed. Error:%s' % data_resp)
     if return_candidate_ids_only:
         return resp.json()['candidates'][0]['id']
     return resp.json()
