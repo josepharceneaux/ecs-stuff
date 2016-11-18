@@ -107,7 +107,6 @@ def import_meetup_events(start_datetime=None):
                 rollback()
 
 
-@celery.task(name="import_meetup_rsvps")
 def import_meetup_rsvps(start_datetime=None):
     """
     This task starts at service startup and then it keeps fetching events using Meetup stream API.
@@ -167,11 +166,9 @@ def import_meetup_rsvps(start_datetime=None):
                 try:
                     response = requests.get(url, stream=True)
                     for raw_rsvp in response.iter_lines():
-                    # for raw_rsvp in [1]:
                         if raw_rsvp:
                             try:
                                 rsvp = json.loads(raw_rsvp)
-                                # rsvp = {u'group': {u'group_city': u'Mountain View', u'group_lat': 37.38, u'group_urlname': u'Python-Learning-Meetup', u'group_name': u'Python Learning Meetup', u'group_lon': -122.08, u'group_topics': [{u'topic_name': u'Linux', u'urlkey': u'linux'}, {u'topic_name': u'Open Source', u'urlkey': u'opensource'}, {u'topic_name': u'Python', u'urlkey': u'python'}, {u'topic_name': u'Functional Programming in Python', u'urlkey': u'functional-programming-in-python'}, {u'topic_name': u'Python Web Development', u'urlkey': u'python-web-development'}, {u'topic_name': u'Open Source Python', u'urlkey': u'open-source-python'}, {u'topic_name': u'Software Development', u'urlkey': u'softwaredev'}, {u'topic_name': u'Web Development', u'urlkey': u'web-development'}, {u'topic_name': u'Computer programming', u'urlkey': u'computer-programming'}], u'group_state': u'CA', u'group_id': 18837203, u'group_country': u'us'}, u'rsvp_id': 1639760447, u'venue': {u'lat': 31.537783, u'venue_id': 17028862, u'lon': 74.347748, u'venue_name': u'Lahore, Pakistan '}, u'visibility': u'public', u'event': {u'event_name': u'Testing event importer', u'event_id': u'235620735', u'event_url': u'https://www.meetup.com/Python-Learning-Meetup/events/235620735/', u'time': 1480561200000}, u'member': {u'member_name': u'getTalent, Inc.', u'member_id': 190979089}, u'guests': 0, u'mtime': 1479414331441, u'response': u'yes'}
                                 group_id = rsvp['group']['group_id']
                                 group = MeetupGroup.get_by_group_id(group_id)
                                 if group:
