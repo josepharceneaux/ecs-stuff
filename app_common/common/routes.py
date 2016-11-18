@@ -665,6 +665,7 @@ class SocialNetworkApi(object):
     DISCONNECT = '/' + VERSION + '/social-networks/<int:social_network_id>/disconnect'
     GRAPHQL = '/graphql'
     WEBHOOK = '/webhook/<int:user_id>'
+    MEETUP_IMPORTER = '/meetup_importer'
 
 
 class SocialNetworkApiUrl(object):
@@ -703,6 +704,11 @@ class SocialNetworkApiUrl(object):
         WEBHOOK = 'https://emails.ngrok.io/webhook/%s'
     else:
         WEBHOOK = HOST_NAME % '/webhook/%s'
+
+    if env == TalentEnvs.DEV:
+        MEETUP_IMPORTER = 'https://emails.ngrok.io/meetup_importer'
+    else:
+        MEETUP_IMPORTER = HOST_NAME % '/meetup_importer'
 
 
 class SmsCampaignApi(object):

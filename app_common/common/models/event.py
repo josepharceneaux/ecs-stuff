@@ -162,7 +162,7 @@ class Event(db.Model):
 class MeetupGroup(db.Model):
     __tablename__ = 'meetup_group'
     id = db.Column(db.Integer, primary_key=True)
-    group_id = db.Column(db.BIGINT)
+    group_id = db.Column(db.BIGINT, unique=True)
     user_id = db.Column('userId', db.BIGINT, db.ForeignKey('user.Id'), nullable=False)
     name = db.Column(db.String(500))
     url_name = db.Column(db.String(500))
