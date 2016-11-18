@@ -157,34 +157,32 @@ def import_meetup_rsvps(start_datetime=None):
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
         start_datetime = start_datetime or (datetime.datetime.utcnow().strftime("%s") + "000")
-        try:
-            url = MEETUP_RSVPS_STREAM_API_URL % start_datetime
-            meetup = SocialNetwork.get_by_name('Meetup')
-            if not meetup:
-                raise InternalServerError('Unable to find Meetup social network in gt database')
+        url = MEETUP_RSVPS_STREAM_API_URL % start_datetime
+        meetup = SocialNetwork.get_by_name('Meetup')
+        if not meetup:
+            raise InternalServerError('Unable to find Meetup social network in gt database')
 
-            while True:
-                try:
-                    response = requests.get(url, stream=True, timeout=10)
-                    logger.info("RSVP streaming started for Meetup")
-                    for raw_rsvp in response.iter_lines():
-                        if raw_rsvp:
-                            try:
-                                rsvp = json.loads(raw_rsvp)
-                                group_id = rsvp['group']['group_id']
-                                group = MeetupGroup.get_by_group_id(group_id)
-                                if group:
-                                    logger.info('Going to save Meetup rsvp for user(id:%s).\nrsvp:%s'
-                                                % (group.user_id, rsvp))
-                                    process_meetup_rsvp.apply_async((rsvp, group, meetup))
-                            except Exception:
-                                logger.exception('Error occurred while parsing rsvp data, Date: %s' % raw_rsvp)
-                except Exception as e:
-                    logger.warning('Some bad data caused main loop to break. Cause: %s' % e)
-    
-        except Exception as e:
-            logger.exception(e.message)
-            rollback()
+        while True:
+            try:
+                response = requests.get(url, stream=True, timeout=10)
+                logger.info("RSVP streaming started for Meetup")
+                for raw_rsvp in response.iter_lines():
+                    if raw_rsvp:
+                        try:
+                            rsvp = json.loads(raw_rsvp)
+                            group_id = rsvp['group']['group_id']
+                            group = MeetupGroup.get_by_group_id(group_id)
+                            if group:
+                                logger.info('Going to save Meetup rsvp for user(id:%s).\nrsvp:%s'
+                                            % (group.user_id, rsvp))
+                                process_meetup_rsvp.apply_async((rsvp, group, meetup))
+                        except Exception:
+                            logger.exception('Error occurred while parsing rsvp data, Date: %s' % raw_rsvp)
+                            rollback()
+            except Exception as e:
+                logger.warning('Out of main loop, Will start again in 10 seconds. Cause: %s' % e)
+                rollback()
+                time.sleep(10)
 
 
 @celery.task(name="fetch_meetup_event")
