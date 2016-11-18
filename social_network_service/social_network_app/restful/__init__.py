@@ -8,4 +8,5 @@ if app.config[TalentConfigKeys.ENV_KEY] not in [TalentEnvs.JENKINS]:
     from social_network_service.social_network_app.restful.v1_importer import schedule_importer_job
     # Schedule RSVP and Event importer general job
     schedule_importer_job()
-    import_meetup_rsvps()
+    # TODO: Probably causing 504 on staging
+    # import_meetup_rsvps()
