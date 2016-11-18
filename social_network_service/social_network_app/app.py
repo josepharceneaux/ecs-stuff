@@ -4,7 +4,7 @@
     Error handlers are added at the end of file.
 """
 # 3rd party imports
-from flask import request, redirect
+from flask import request, redirect, jsonify
 from flask.ext.graphql import GraphQLView
 
 # Application specific imports
@@ -13,7 +13,7 @@ from restful.v1_data import data_blueprint
 from restful.v1_importer import rsvp_blueprint
 from restful.v1_events import events_blueprint
 from restful.v1_subscription import subscription_blueprint
-from social_network_service.tasks import fetch_eventbrite_event
+from social_network_service.tasks import fetch_eventbrite_event, fetch_meetup_event
 from social_network_service.common.talent_api import TalentApi
 from restful.v1_social_networks import social_network_blueprint
 from social_network_service.common.redis_cache import redis_store
@@ -95,3 +95,11 @@ def eventbrite_webhook_endpoint(user_id):
             logger.info('Eventbrite Alert, Event: %s' % data)
             fetch_eventbrite_event.apply_async((user_id, event_url, action_type))
     return 'Thanks a lot!'
+
+
+@app.route(SocialNetworkApi.MEETUP_IMPORTER, methods=['POST'])
+def meetup_importer_endpoint():
+    event = request.json
+    logger.info('Got Meetup event: %s' % event)
+    fetch_meetup_event.delay(event)
+    return jsonify(dict(message='Thanks a lot!'))
