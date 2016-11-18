@@ -9,6 +9,7 @@ from abc import ABCMeta
 
 # Third Party
 import requests
+from requests import codes
 
 # Application Specific
 from social_network_service.common.error_handling import InvalidUsage
@@ -476,19 +477,16 @@ class SocialNetworkBase(object):
             response = requests.get(url, headers=self.headers, params=payload)
             if response.ok:
                 status = True
-            # If hit rate limit reached for eventbrite, too many requests
-            elif response.status_code == 429:
+            # If hit rate limit reached for Eventbrite or Meetup, too many requests
+            elif response.status_code == codes.TOO_MANY_REQUESTS:
                 data = response.json()
-                raise HitLimitReached('Error: %s, %s' %
-                                      (data.get('error_description'), data.get('error')))
+                logger.error("HitLimit reached for user(id:%s). Error:%s" % (self.user.id, data))
+                raise HitLimitReached(data)
             else:
-                logger.debug("Access token has expired for %s(UserId:%s)."
-                             " Social Network is %s."
-                             % (self.user.name, self.user.id,
-                                self.social_network.name))
+                logger.debug("Access token has expired for %s(UserId:%s). Social Network is %s."
+                             % (self.user.name, self.user.id, self.social_network.name))
         except requests.RequestException as error:
-            raise AccessTokenHasExpired('Error: %s, Please '
-                                        'connect with %s again from "Profile" page.'
+            raise AccessTokenHasExpired('Error: %s, Please connect with %s again from "Profile" page.'
                                         % (error.message, self.social_network.name))
         return status
 
