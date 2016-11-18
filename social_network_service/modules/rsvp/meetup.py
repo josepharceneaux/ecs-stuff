@@ -145,34 +145,43 @@ class Meetup(RSVPBase):
             attendee = self.get_attendee(rsvp)
 
         - RSVP data return from Meetup looks like
-            {
-            'group': {
-                        'group_lat': 24.860000610351562, 'created': 1439953915212,
-                        'join_mode': 'open', 'group_lon': 67.01000213623047,
-                        'urlname': 'Meteor-Karachi', 'id': 17900002
-                    }, 'created': 1438040123000, 'rsvp_id': 1562651661,
-            'mtime': 1438040194000,
-            'event': {
-                        'event_url':
-                        'http://www.meetup.com/Meteor-Karachi/events/223588917/',
-                        'time': 1440252000000, 'name': 'Welcome to Karachi - Meteor',
-                        'id': '223588917'
-                    },
-            'member': {
-                        'name': 'kamran', 'member_id': 190405794
-                    },
-            'guests': 1, 'member_photo': {
-                        'thumb_link':
-                        'http://photos3.meetupstatic.com/photos/member/c/b/1/0/
-                                                            thumb_248211984.jpeg',
-                        'photo_id': 248211984, 'highres_link':
-                        'http://photos3.meetupstatic.com/photos/member/c/b/1/0/
-                                                            highres_248211984.jpeg',
-                        'photo_link':
-                        'http://photos3.meetupstatic.com/photos/member/c/b/1/0/
-                                                            member_248211984.jpeg'
-                    }, 'response': 'yes'
-            }
+        {u'group':
+                {u'group_city': u'Denver', u'group_lat': 39.68, u'group_urlname': u'denver-metro-chadd-support',
+                    u'group_name': u'Denver-Metro CHADD (Children and Adults with ADHD) Meetup',
+                    u'group_lon': -104.92,
+                    u'group_topics': [
+                                        {u'topic_name': u'ADHD', u'urlkey': u'adhd'},
+                                        {u'topic_name': u'ADHD Support', u'urlkey': u'adhd-support'},
+                                        {u'topic_name': u'Adults with ADD', u'urlkey': u'adults-with-add'},
+                                        {u'topic_name': u'Families of Children who have ADD/ADHD',
+                                            u'urlkey': u'families-of-children-who-have-add-adhd'},
+                                        {u'topic_name': u'ADHD, ADD', u'urlkey': u'adhd-add'},
+                                        {u'topic_name': u'ADHD Parents with ADHD Children',
+                                            u'urlkey': u'adhd-parents-with-adhd-children'},
+                                        {u'topic_name': u'Resources for ADHD', u'urlkey': u'resources-for-adhd'},
+                                        {u'topic_name': u'Parents of Children with ADHD',
+                                            u'urlkey': u'parents-of-children-with-adhd'},
+                                        {u'topic_name': u'Support Groups for Parents with ADHD Children',
+                                            u'urlkey': u'support-groups-for-parents-with-adhd-children'},
+                                        {u'topic_name': u'Educators Training on AD/HD',
+                                            u'urlkey': u'educators-training-on-ad-hd'},
+                                        {u'topic_name': u'Adults with ADHD', u'urlkey': u'adults-with-adhd'}
+                                    ],
+                    u'group_state': u'CO', u'group_id': 1632579, u'group_country': u'us'
+                },
+        u'rsvp_id': 1639776896,
+        u'venue': {u'lat': 39.674759, u'venue_id': 3407262, u'lon': -104.936317,
+                   u'venue_name': u'Denver Academy-Richardson Hall'},
+        u'visibility': u'public',
+        u'event': {u'event_name': u'Manage the Impact of Technology on
+                   Your Child and Family with Lana Gollyhorn',
+                   u'event_id': u'235574682',
+                   u'event_url': u'https://www.meetup.com/denver-metro-chadd-support/events/235574682/',
+                   u'time': 1479778200000},
+        u'member': {u'member_name': u'Valerie Brown', u'member_id': 195674019}, u'guests': 0,
+        u'mtime': 1479312043215, u'response': u'yes'
+        }
+
         - So we will get the member data and issue a member call to get more
             info about member so we can later save him as a candidate.
 
@@ -193,7 +202,7 @@ class Meetup(RSVPBase):
                     attendee.last_name = ' '
                 attendee.full_name = data['name']
                 attendee.city = data['city']
-                attendee.email = ''
+                attendee.email = ''  # Meetup API does not expose this
                 attendee.country = data['country']
                 attendee.social_profile_url = data['link']
                 # attendee.picture_url = data['photo']['photo_link']

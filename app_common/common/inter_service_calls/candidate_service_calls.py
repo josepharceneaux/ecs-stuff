@@ -113,12 +113,10 @@ def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=Fals
     :type return_candidate_ids_only: bool
     else it will return the created candidate response json object
     Returns: list of created candidate ids
-    :rtype: list
+    :param string request_method: HTTP method to be called on candidate-service
+    :rtype: dict|int|long
     """
-    resp = send_request(request_method,
-                        url=CandidateApiUrl.CANDIDATES, access_token=oauth_token,
-                        data=data
-                        )
+    resp = send_request(request_method, url=CandidateApiUrl.CANDIDATES, access_token=oauth_token, data=data)
     data_resp = resp.json()
     if resp.status_code not in [codes.CREATED, codes.OK]:
         raise InternalServerError('Candidate creation failed. Error:%s' % data_resp)
