@@ -342,6 +342,7 @@ class TalentActivityManager(object):
 
     # Like 'get' but gets the last 200 consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self, user_id, start_datetime=None, end_datetime=None, limit=3):
+        logger.info(limit)
         logger.info("{} getting recent readable for {} - {}".format(
             self.call_id, start_datetime or 'N/A', end_datetime or 'N/A'
         ))

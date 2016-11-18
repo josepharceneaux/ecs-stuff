@@ -213,3 +213,4 @@ def test_health_check():
     # Testing Health Check URL with trailing slash
     response = requests.get(ActivityApiUrl.HEALTH_CHECK + '/')
     assert response.status_code == requests.codes.ok
+
