@@ -4,7 +4,7 @@
     Error handlers are added at the end of file.
 """
 # 3rd party imports
-from flask import request, redirect
+from flask import request, redirect, jsonify
 from flask.ext.graphql import GraphQLView
 
 # Application specific imports
@@ -13,12 +13,10 @@ from restful.v1_data import data_blueprint
 from restful.v1_importer import rsvp_blueprint
 from restful.v1_events import events_blueprint
 from restful.v1_subscription import subscription_blueprint
-from social_network_service.tasks import fetch_eventbrite_event
 from social_network_service.common.talent_api import TalentApi
 from restful.v1_social_networks import social_network_blueprint
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.constants import MEETUP, EVENTBRITE
-from social_network_service.modules.constants import MEETUP_CODE_LENGTH, ACTIONS, EVENTBRITE_USER_AGENT
 from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.modules.social_network.twitter import Twitter
@@ -26,6 +24,9 @@ from social_network_service.social_network_app.graphql.schema import schema
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
 from social_network_service.common.talent_config_manager import (TalentEnvs, TalentConfigKeys)
+from social_network_service.tasks import fetch_eventbrite_event, process_meetup_event, process_meetup_rsvp
+from social_network_service.modules.constants import MEETUP_CODE_LENGTH, ACTIONS, EVENTBRITE_USER_AGENT, EVENT, RSVP
+
 
 # Register Blueprints for different APIs
 app.register_blueprint(data_blueprint)
@@ -86,6 +87,12 @@ def callback(user_id):
 
 @app.route(SocialNetworkApi.WEBHOOK, methods=['POST'])
 def eventbrite_webhook_endpoint(user_id):
+    """
+    This endpoint is for Eventbrite webhook. We have registered `publish` and `unpublish` events for
+    events. So when a subscribed/connected user creates or deletes an event, Eventbrite sends event info
+    on this endpoint with action information.
+    :param int | long user_id: user unique id
+    """
     logger.info('Webhook Endpoint: Received a request with this data: %s' % request.data)
     if EVENTBRITE_USER_AGENT in str(request.user_agent):
         data = request.json
@@ -95,3 +102,21 @@ def eventbrite_webhook_endpoint(user_id):
             logger.info('Eventbrite Alert, Event: %s' % data)
             fetch_eventbrite_event.apply_async((user_id, event_url, action_type))
     return 'Thanks a lot!'
+
+
+@app.route(SocialNetworkApi.MEETUP_IMPORTER, methods=['POST'])
+def meetup_importer_endpoint():
+    """
+    This endpoint will act as webhook for Meetup Events and RSVPs
+    On receiving POST request, we will call specific celery task to process Event or RSVP data.
+    """
+    data = request.json
+    if data.get('type') == EVENT:
+        event = data['event']
+        logger.info('Got Meetup event: %s' % event)
+        process_meetup_event.delay(event)
+    elif data.get('type') == RSVP:
+        rsvp = data['rsvp']
+        logger.info('Got Meetup RSVP: %s' % rsvp)
+        process_meetup_rsvp.delay(rsvp)
+    return jsonify(dict(message='Thanks a lot!'))

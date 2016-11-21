@@ -26,8 +26,11 @@ from social_network_service.common.models.user import UserSocialNetworkCredentia
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
-from social_network_service.modules.constants import ACTIONS, MEETUP_STREAM_API_URL, MEETUP_EVENT_STATUS
+from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS,
+                                                      MEETUP_RSVPS_STREAM_API_URL)
+
 from social_network_service.modules.event.meetup import Meetup
+from social_network_service.modules.rsvp.meetup import Meetup as MeetupRsvp
 from social_network_service.modules.event.eventbrite import Eventbrite as EventbriteEventBase
 from social_network_service.modules.social_network.meetup import Meetup as MeetupSocialNetwork
 from social_network_service.modules.social_network.eventbrite import Eventbrite as EventbriteSocialNetwork
@@ -70,44 +73,8 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
                              mode, user_id, e.message)
 
 
-@celery.task(name="import_meetup_events")
-def import_meetup_events(start_datetime=None):
-    """
-    This task starts at service startup and then it keeps fetching events using Meetup stream API.
-    :param string | int | None start_datetime: epoch time , we will import events after this time, None for now
-    """
-    with app.app_context():
-        logger = app.config[TalentConfigKeys.LOGGER]
-        logger.info('Meetup Event Importer started at UTC: %s' % datetime.datetime.utcnow())
-        meetup = SocialNetwork.get_by_name('Meetup')
-        if not meetup:
-            raise InternalServerError('Unable to find Meetup social network in gt database')
-
-        while True:
-            try:
-                url = MEETUP_STREAM_API_URL
-                response = requests.get(url, stream=True, timeout=30)
-                logger.info('Meetup Stream Response Status: %s' % response.status_code)
-                for raw_event in response.iter_lines():
-                    if raw_event:
-                        try:
-                            event = json.loads(raw_event)
-                            group_id = event['group']['id']
-                            MeetupGroup.session.commit()
-                            group = MeetupGroup.get_by_group_id(group_id)
-                            if group:
-                                logger.info('Going to save event: %s' % event)
-                                fetch_meetup_event.apply_async((event, group, meetup))
-                        except Exception:
-                            logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
-                            rollback()
-            except Exception as e:
-                logger.warning('Out of main loop. Cause: %s' % e)
-                rollback()
-
-
-@celery.task(name="fetch_meetup_event")
-def fetch_meetup_event(event, group, meetup):
+@celery.task(name="process_meetup_event")
+def process_meetup_event(event):
     """
     This celery task is for an individual event to be processed. When `rsvp_events_importer` task finds that some
     event belongs to getTalent user, it passes this event to this task for further processing.
@@ -117,8 +84,6 @@ def fetch_meetup_event(event, group, meetup):
 
     If an event contains venue information, is is save in `venue` table or updated an existing venue.
     :param dict event: event dictionary from meetup
-    :param MeetupGroup group: MeetupGroup Object
-    :param SocialNetwork meetup: SocialNetwork object for meetup
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
@@ -126,8 +91,8 @@ def fetch_meetup_event(event, group, meetup):
         try:
             time.sleep(5)  # wait for event creation api to save event in database otherwise there can be duplicate
             # event created in database (one by api and other by importer)
-            group = db.session.merge(group)
-            meetup = db.session.merge(meetup)
+            group = MeetupGroup.get_by_group_id(event['group']['id'])
+            meetup = SocialNetwork.get_by_name('Meetup')
 
             if event['status'] == MEETUP_EVENT_STATUS['upcoming']:
                 meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
@@ -146,10 +111,80 @@ def fetch_meetup_event(event, group, meetup):
                                                                                      )
                 if event_in_db:
                     Event.delete(event_in_db)
-                    logger.info('Delete Meetup event from gt database, event: %s' % event_in_db.to_json())
+                    logger.info("Meetup event has been deleted from gt database. event:`%s`" % event_in_db.to_json())
+                else:
+                    logger.info("Meetup event not found in database. event:`%s`." % event)
 
         except Exception:
             logger.exception('Failed to save event: %s' % event)
+            rollback()
+
+
+@celery.task(name="process_meetup_rsvp")
+def process_meetup_rsvp(rsvp):
+    """
+    This celery task is for an individual rsvp to be processed. When `meetup_rsvp_importer` task finds that some
+    rsvp belongs to event of getTalent's user, it passes this rsvp to this task for further processing.
+
+    In this task, we create meetup objects for social network and event and the finally save this event by mapping
+    meetup event fields to gt event fields. If event already exists in database, it is updated.
+
+    Response from Meetup API looks like
+    {
+        u'group':
+                {u'group_city': u'Denver', u'group_lat': 39.68, u'group_urlname': u'denver-metro-chadd-support',
+                    u'group_name': u'Denver-Metro CHADD (Children and Adults with ADHD) Meetup',
+                    u'group_lon': -104.92,
+                    u'group_topics': [
+                                        {u'topic_name': u'ADHD', u'urlkey': u'adhd'},
+                                        {u'topic_name': u'ADHD Support', u'urlkey': u'adhd-support'},
+                                        {u'topic_name': u'Adults with ADD', u'urlkey': u'adults-with-add'},
+                                        {u'topic_name': u'Families of Children who have ADD/ADHD',
+                                            u'urlkey': u'families-of-children-who-have-add-adhd'},
+                                        {u'topic_name': u'ADHD, ADD', u'urlkey': u'adhd-add'},
+                                        {u'topic_name': u'ADHD Parents with ADHD Children',
+                                            u'urlkey': u'adhd-parents-with-adhd-children'},
+                                        {u'topic_name': u'Resources for ADHD', u'urlkey': u'resources-for-adhd'},
+                                        {u'topic_name': u'Parents of Children with ADHD',
+                                            u'urlkey': u'parents-of-children-with-adhd'},
+                                        {u'topic_name': u'Support Groups for Parents with ADHD Children',
+                                            u'urlkey': u'support-groups-for-parents-with-adhd-children'},
+                                        {u'topic_name': u'Educators Training on AD/HD',
+                                            u'urlkey': u'educators-training-on-ad-hd'},
+                                        {u'topic_name': u'Adults with ADHD', u'urlkey': u'adults-with-adhd'}
+                                    ],
+                    u'group_state': u'CO', u'group_id': 1632579, u'group_country': u'us'
+                },
+        u'rsvp_id': 1639776896,
+        u'venue': {u'lat': 39.674759, u'venue_id': 3407262, u'lon': -104.936317,
+                   u'venue_name': u'Denver Academy-Richardson Hall'},
+        u'visibility': u'public',
+        u'event': {u'event_name': u'Manage the Impact of Technology on
+                   Your Child and Family with Lana Gollyhorn',
+                   u'event_id': u'235574682',
+                   u'event_url': u'https://www.meetup.com/denver-metro-chadd-support/events/235574682/',
+                   u'time': 1479778200000},
+        u'member': {u'member_name': u'Valerie Brown', u'member_id': 195674019}, u'guests': 0,
+        u'mtime': 1479312043215, u'response': u'yes'
+    }
+
+    :param dict rsvp: rsvp dictionary from meetup
+    """
+    with app.app_context():
+        logger = app.config[TalentConfigKeys.LOGGER]
+        logger.info('Going to process Meetup RSVP: %s' % rsvp)
+        try:
+            group = MeetupGroup.get_by_group_id(rsvp['group']['group_id'])
+            meetup = SocialNetwork.get_by_name('Meetup')
+            meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
+            meetup_rsvp_object = MeetupRsvp(user_credentials=meetup_sn.user_credentials, social_network=meetup)
+            attendee = meetup_rsvp_object.post_process_rsvp(rsvp)
+            if attendee and attendee.rsvp_id:
+                logger.info('RSVP imported successfully. rsvp:%s' % rsvp)
+            elif attendee:
+                logger.info('RSVP already present in database. rsvp:%s' % rsvp)
+        except Exception:
+            logger.exception('Failed to save rsvp: %s' % rsvp)
             rollback()
 
 
@@ -192,7 +227,6 @@ def fetch_eventbrite_event(user_id, event_url, action_type):
 
         except Exception:
             logger.exception('Failed to save event. URL: %s' % event_url)
-            rollback()
 
 
 @celery.task

@@ -31,6 +31,22 @@ from candidate_service.common.utils.validators import is_number, is_valid_email,
 from jsonschema import validate, ValidationError, FormatChecker
 
 
+def remove_duplicates(collection):
+    """
+    Function will remove duplicate dict_data from collection
+    :type collection: list
+    :rtype: list[dict]
+    """
+    seen = set()
+    unique_items = []
+    for dict_data in collection:
+        t = tuple(dict_data.items())
+        if t not in seen:
+            seen.add(t)
+            unique_items.append(dict_data)
+    return unique_items
+
+
 def get_json_if_exist(_request):
     """ Function will ensure data's content-type is JSON, and it isn't empty
     :type _request:  request
@@ -101,7 +117,6 @@ def authenticate_candidate_preference_request(request_object, candidate_id):
                              "candidate: %s" % candidate_id)
 
     return candidate_object
-
 
 
 def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
@@ -215,7 +230,6 @@ def validate_id_list(key, values):
 
 
 def validate_string_list(key, values):
-
     if ',' in values or isinstance(values, list):
         if ',' in values:
             values = re.split(r'(?<!\\),', values)

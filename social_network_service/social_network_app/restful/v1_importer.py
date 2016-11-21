@@ -1,10 +1,8 @@
 # Standard imports
 import json
-import os
 import types
 import datetime
 
-import itertools
 import requests
 
 # 3rd party imports
@@ -12,9 +10,8 @@ from flask import Blueprint
 from flask.ext.restful import Resource
 
 # App specific imports
-from social_network_service.common.error_handling import InvalidUsage, InternalServerError
-from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service.common.models.user import UserSocialNetworkCredential, User
+from social_network_service.common.error_handling import InvalidUsage
+from social_network_service.common.models.user import User
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.routes import SocialNetworkApi, SchedulerApiUrl, SocialNetworkApiUrl
 from social_network_service.common.talent_api import TalentApi
@@ -22,10 +19,9 @@ from social_network_service.common.talent_config_manager import TalentEnvs, Tale
 from social_network_service.common.utils.api_utils import api_route
 from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
-from social_network_service.modules.constants import EVENTBRITE, TASK_ALREADY_SCHEDULED, RSVP, EVENT
+from social_network_service.modules.constants import EVENTBRITE, EVENT
 from social_network_service.common.constants import MEETUP
 from social_network_service.social_network_app import logger, app
-from social_network_service.tasks import rsvp_events_importer, import_meetup_events
 
 rsvp_blueprint = Blueprint('importer', __name__)
 api = TalentApi()
@@ -70,15 +66,20 @@ class RsvpEventImporter(Resource):
         :param social_network: Possible values -> eventbrite, facebook, meetup
         :type social_network: str
         """
-        if not app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
-            raise InvalidUsage('Invalid Usage')
-    
-        if not (social_network.lower() in [MEETUP, EVENTBRITE]):
-            raise InvalidUsage("No social network with name {} found.".format(social_network))
+        if mode == 'event_importer':
+            import_lock_key = 'Meetup_Importer_Lock'
+            if not redis_store.get(import_lock_key):
+                # set lock for 5 minutes
+                redis_store.set(import_lock_key, True, 5 * 60)
+            else:
+                raise InvalidUsage('Importer is locked at the moment. Please try again later.')
+            if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.JENKINS]:
+                raise InvalidUsage('Invalid Usage')
 
-        # if mode == 'event_importer':
-        #     import_meetup_events.apply_async()
-        return dict(message="{} are being imported.".format(mode.upper()))
+            if not (social_network.lower() in [MEETUP, EVENTBRITE]):
+                raise InvalidUsage("No social network with name {} found.".format(social_network))
+
+        return dict(message='Nothing special')
 
 
 def schedule_importer_job():
@@ -99,7 +100,7 @@ def schedule_job(url, task_name):
     :param task_name: task_name of scheduler job
     :type task_name: basestring
     """
-    start_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
+    start_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=30)
 
     access_token = User.generate_jw_token()
     headers = {

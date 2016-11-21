@@ -159,7 +159,7 @@ class RSVPBase(object):
             self.user = User.get_by_id(self.user_credentials.user_id)
             self.user_token = Token.get_by_user_id(self.user_credentials.user_id)
             if not self.user_token.access_token:
-                raise InternalServerError('Unable to create candidate candidateaccess_token is null')
+                raise InternalServerError('access_token not found for user(id:%s)' % self.user_credentials.user_id)
         else:
             raise UserCredentialsNotFound('User Credentials are empty/none')
 
@@ -364,10 +364,8 @@ class RSVPBase(object):
         except Exception:
             # Shouldn't raise an exception, just log it and move to
             # process next RSVP
-            logger.exception('post_process_rsvps: user_id: %s, RSVP data: %s, '
-                             'social network: %s(id:%s)'
-                             % (self.user.id, rsvp, self.social_network.name,
-                                self.social_network.id))
+            logger.exception('post_process_rsvps: user_id: %s, RSVP data: %s, social network: %s(id:%s)'
+                             % (self.user.id, rsvp, self.social_network.name, self.social_network.id))
 
     @abstractmethod
     def get_attendee(self, rsvp):
@@ -426,8 +424,7 @@ class RSVPBase(object):
         if source_product:
             attendee.source_product_id = source_product.id
         else:
-            raise ProductNotFound('No product found for Social Network '
-                                  '%s. User Id: %s'
+            raise ProductNotFound('No product found for Social Network %s. User Id: %s'
                                   % (self.social_network.name, self.user.id))
         return attendee
 
@@ -504,16 +501,15 @@ class RSVPBase(object):
         :return attendee:
         :rtype: Attendee
         """
-        candidate_in_db = \
-            Candidate.get_by_first_last_name_owner_user_id_source_id_product(
-                attendee.first_name,
-                attendee.last_name,
-                attendee.gt_user_id,
-                attendee.candidate_source_id,
-                attendee.source_product_id)
+        request_method = 'post'
+        candidate_in_db = Candidate.filter_by_keywords(first_name=attendee.first_name,
+                                                       last_name=attendee.last_name,
+                                                       user_id=attendee.gt_user_id,
+                                                       source_id=attendee.candidate_source_id,
+                                                       source_product_id=attendee.source_product_id)
 
         # To create candidates, user must have be associated with talent_pool
-        talent_pools = TalentPool.filter_by_keywords(**{'user_id': attendee.gt_user_id})
+        talent_pools = TalentPool.filter_by_keywords(user_id=attendee.gt_user_id)
         talent_pool_ids = map(lambda talent_pool: talent_pool.id, talent_pools)
 
         if not talent_pool_ids:
@@ -523,6 +519,7 @@ class RSVPBase(object):
         data = {'first_name': attendee.first_name,
                 'last_name': attendee.last_name,
                 'source_id': attendee.candidate_source_id,
+                'source_product_id': attendee.source_product_id,
                 'talent_pool_ids': dict(add=talent_pool_ids)
                 }
         social_network_data = {
@@ -532,13 +529,13 @@ class RSVPBase(object):
 
         # Update if already exist
         if candidate_in_db:
-            candidate_id = candidate_in_db.id
-            data = dict(candidates=[data])
+            candidate_id = candidate_in_db[0].id
+            data.update({'id': candidate_id})
+            request_method = 'patch'
 
             # Get candidate's social network if already exist
             candidate_social_network_in_db = \
-                CandidateSocialNetwork.get_by_candidate_id_and_sn_id(
-                    candidate_id, attendee.social_network_id)
+                CandidateSocialNetwork.get_by_candidate_id_and_sn_id(candidate_id, attendee.social_network_id)
             if candidate_social_network_in_db:
                 social_network_data.update({'id': candidate_social_network_in_db.id})
 
@@ -557,7 +554,8 @@ class RSVPBase(object):
 
         attendee.candidate_id = create_or_update_candidate(oauth_token=self.user_token.access_token,
                                                            data=dict(candidates=[data]),
-                                                           return_candidate_ids_only=True)
+                                                           return_candidate_ids_only=True,
+                                                           request_method=request_method)
 
         return attendee
 
@@ -587,19 +585,13 @@ class RSVPBase(object):
         :rtype: Attendee
         """
 
-        rsvp_in_db = \
-            RSVP.get_by_vendor_rsvp_id_candidate_id_vendor_id_event_id(
-                attendee.vendor_rsvp_id,
-                attendee.candidate_id,
-                attendee.social_network_id,
-                attendee.event.id)
-        data = {
-            'candidate_id': attendee.candidate_id,
-            'event_id': attendee.event.id,
-            'social_network_rsvp_id': attendee.vendor_rsvp_id,
-            'social_network_id': attendee.social_network_id,
-            'status': attendee.rsvp_status,
-            'datetime': attendee.added_time
+        rsvp_in_db = RSVP.get_by_vendor_rsvp_id_candidate_id_vendor_id_event_id(attendee.vendor_rsvp_id,
+                                                                                attendee.candidate_id,
+                                                                                attendee.social_network_id,
+                                                                                attendee.event.id)
+        data = {'candidate_id': attendee.candidate_id, 'event_id': attendee.event.id,
+                'social_network_rsvp_id': attendee.vendor_rsvp_id, 'social_network_id': attendee.social_network_id,
+                'status': attendee.rsvp_status, 'datetime': attendee.added_time
         }
         if rsvp_in_db:
             rsvp_in_db.update(**data)

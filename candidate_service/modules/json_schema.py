@@ -6,7 +6,7 @@ from datetime import datetime
 
 MAX_INT = sys.maxint
 CURRENT_YEAR = datetime.now().year
-MAX_SOURCE_PRODUCT_ID = 4
+MAX_SOURCE_PRODUCT_ID = 6
 
 candidates_resource_schema_post = {
     "$schema": "http://json-schema.org/draft-04/schema#",
