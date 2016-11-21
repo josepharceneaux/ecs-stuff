@@ -6,7 +6,6 @@ import requests
 from sqlalchemy.sql import text
 from dateutil.parser import parse
 from datetime import datetime, timedelta, date
-from candidate_pool_service.candidate_pool_app import cache
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.candidate_pool_app import logger, app, celery_app, db
 from candidate_pool_service.common.redis_cache import redis_dict, redis_store
@@ -578,8 +577,6 @@ def top_most_engaged_candidates_of_pipeline(talent_pipeline_id, limit):
         return []
 
 
-# Cache engagement score of Pipeline for 2 hours
-@cache.memoize(timeout=7200)
 def engagement_score_of_pipeline(talent_pipeline_id):
     """
     This endpoint will calculate engagement_score of a talent_pipeline
@@ -663,3 +660,39 @@ def top_most_engaged_pipelines_of_candidate(candidate_id, limit):
         logger.exception("Couldn't compute engagement score for all pipelines of a candidate(%s) "
                          "because (%s)" % (candidate_id, e.message))
         return []
+
+
+@celery_app.task(name="update_pipeline_engagement_score")
+def update_pipeline_engagement_score():
+    with app.app_context():
+        # Updating SmartList Statistics
+        logger.info("TalentPipeline Engagement Score update process has been started "
+                    "at %s" % datetime.utcnow().date().isoformat())
+        talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id).all()
+        talent_pipeline_ids = map(lambda talent_pipeline: talent_pipeline[0], talent_pipelines)
+        talent_pipeline_cache = redis_dict(redis_store, 'pipelines_engagement_score')
+
+        for talent_pipeline_id in talent_pipeline_ids:
+            try:
+                pipeline_cache_key = 'pipelines_engagement_score_%s' % talent_pipeline_id
+                talent_pipeline_cache[pipeline_cache_key] = engagement_score_of_pipeline(talent_pipeline_id)
+                logger.info("Engagement Score for TalentPipeline %s have been updated successfully" % talent_pipeline_id)
+            except Exception as e:
+                db.session.rollback()
+                logger.exception("Update Engagement Score for TalentPipeline %s is not "
+                                 "successful because: %s" % (talent_pipeline_id, e.message))
+
+
+def get_pipeline_engagement_score(talent_pipeline_id):
+    """
+    This method will return talent_pipeline engagement score from Redis Cache
+    :param int talent_pipeline_id: Id of TalentPipeline
+    :return:
+    """
+    talent_pipeline_cache = redis_dict(redis_store, 'pipelines_engagement_score')
+    pipeline_cache_key = 'pipelines_engagement_score_%s' % talent_pipeline_id
+    if pipeline_cache_key in talent_pipeline_cache:
+        logger.error("Engagement Score for TalentPipeline %s is not in cache" % talent_pipeline_id)
+        return None
+
+    return talent_pipeline_cache[pipeline_cache_key]
