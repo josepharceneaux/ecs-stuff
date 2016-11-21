@@ -691,7 +691,7 @@ def get_pipeline_engagement_score(talent_pipeline_id):
     """
     talent_pipeline_cache = redis_dict(redis_store, 'pipelines_engagement_score')
     pipeline_cache_key = 'pipelines_engagement_score_%s' % talent_pipeline_id
-    if pipeline_cache_key in talent_pipeline_cache:
+    if pipeline_cache_key not in talent_pipeline_cache:
         logger.error("Engagement Score for TalentPipeline %s is not in cache" % talent_pipeline_id)
         return None
 
