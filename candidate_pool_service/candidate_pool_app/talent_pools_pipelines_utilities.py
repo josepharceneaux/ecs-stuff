@@ -694,3 +694,5 @@ def get_pipeline_engagement_score(talent_pipeline_id):
     if pipeline_cache_key in talent_pipeline_cache:
         logger.error("Engagement Score for TalentPipeline %s is not in cache" % talent_pipeline_id)
         return None
+
+    return talent_pipeline_cache[pipeline_cache_key]
