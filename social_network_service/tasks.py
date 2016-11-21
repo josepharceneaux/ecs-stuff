@@ -91,7 +91,9 @@ def process_meetup_event(event):
             group = MeetupGroup.get_by_group_id(event['group']['id'])
             meetup = SocialNetwork.get_by_name('Meetup')
 
-            if event['status'] == MEETUP_EVENT_STATUS['upcoming']:
+            if event['status'] in [MEETUP_EVENT_STATUS['upcoming'],
+                                   MEETUP_EVENT_STATUS['suggested'],
+                                   MEETUP_EVENT_STATUS['proposed']]:
                 meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
                 meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials, social_network=meetup)
                 event_url = get_url(meetup_sn, SocialNetworkUrls.EVENT).format(event['id'])
