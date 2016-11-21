@@ -239,6 +239,7 @@ class EmailCampaignBlast(db.Model):
     complaints = db.Column('Complaints', db.Integer, default=0)
     sent_datetime = db.Column('SentTime', db.DateTime)
     updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.utcnow)
+    unsubscribed_candidates = db.Column('UnsubscribedCandidates', db.Integer, default=0)
 
     # Relationships
     blast_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',

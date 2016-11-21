@@ -58,6 +58,26 @@ class TestEmailCampaignBlasts(object):
         assert json_resp['campaign_id'] == sent_campaign.id
         assert json_resp['sends'] == expected_count
 
+    def test_unsubscribed_candidates_in_campaign(self, access_token_first, sent_campaign_with_unsubscribed_candidates):
+        """
+        This function tests count of unsubscribed_candidates in an email campaign
+        :param access_token_first:
+        :param sent_campaign_with_unsubscribed_candidates:
+        :return:
+        """
+        expected_count = 1
+        expected_sent = 1
+        unsubscribed_count = 1
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_with_unsubscribed_candidates, expected_sent)
+        response = requests.get(self.URL % sent_campaign_with_unsubscribed_candidates.id,
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        json_resp = response.json()[self.ENTITY][0]
+        db.session.commit()
+        assert json_resp['id'] == sent_campaign_with_unsubscribed_candidates.blasts[0].id
+        assert json_resp['campaign_id'] == sent_campaign_with_unsubscribed_candidates.id
+        assert json_resp['unsubscribed_candidates'] == unsubscribed_count
+        assert json_resp['sends'] == expected_sent
+
     def test_get_blasts_with_paginated_response(self, access_token_first, sent_campaign):
         """
         Here we test the paginated response of GET call on endpoint /v1/email-campaigns/:id/blasts
