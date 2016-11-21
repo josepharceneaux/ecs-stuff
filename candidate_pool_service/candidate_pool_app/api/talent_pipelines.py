@@ -15,7 +15,7 @@ from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from candidate_pool_service.common.utils.api_utils import ApiResponse, generate_pagination_headers
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
-    get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, engagement_score_of_pipeline,
+    TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, get_pipeline_engagement_score,
     get_stats_generic_function, top_most_engaged_candidates_of_pipeline, top_most_engaged_pipelines_of_candidate,
     get_talent_pipeline_stat_for_given_day)
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
@@ -69,7 +69,7 @@ class TalentPipelineApi(Resource):
                                                                include_candidate_count=True,
                                                                get_candidate_count=get_talent_pipeline_stat_for_given_day)
 
-            talent_pipeline_dict.update({'engagement_score': engagement_score_of_pipeline(talent_pipeline_id)})
+            talent_pipeline_dict.update({'engagement_score': get_pipeline_engagement_score(talent_pipeline_id)})
             return {'talent_pipeline': talent_pipeline_dict}
 
         else:
@@ -132,7 +132,7 @@ class TalentPipelineApi(Resource):
                     for talent_pipeline in talent_pipelines]
 
             for talent_pipeline_data in talent_pipelines_data:
-                talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
+                talent_pipeline_data['engagement_score'] = get_pipeline_engagement_score(talent_pipeline_data['id'])
 
             if sort_by == 'engagement_score':
                 talent_pipelines_data = sorted(
