@@ -74,7 +74,7 @@ def meetup_importer(event, context):
                     if (datetime.utcnow() - start) > timedelta(minutes=int(interval)):
                         logger.info('Breaking outer loop after 5 minutes at: %s' % datetime.utcnow())
                         lambda_client.invoke(
-                            FunctionName=context.function_name(),
+                            FunctionName=context.function_name,
                             InvocationType='Event',
                             LogType='None',
                             Payload='{"key": "start again"}'
