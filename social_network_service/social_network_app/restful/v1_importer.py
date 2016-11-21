@@ -1,11 +1,14 @@
+"""
+This file contains API endpoint for importing Events and RSVPs from social-network websites like Meetup, Eventbrite etc.
+"""
+
 # Standard imports
 import json
 import types
 import datetime
 
-import requests
-
 # 3rd party imports
+import requests
 from flask import Blueprint
 from flask.ext.restful import Resource
 
@@ -53,8 +56,7 @@ class RsvpEventImporter(Resource):
             AccessTokenHasExpired exception in celery task and move on to next user_credential.
 
         **See Also**
-        .. seealso:: process() method of SocialNetworkBase class inside
-                    social_network_service/base.py.
+        .. seealso:: process() method of SocialNetworkBase class inside social_network_service/base.py.
 
     """
     decorators = [require_oauth(allow_null_user=True)]

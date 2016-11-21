@@ -189,7 +189,15 @@ class Meetup(RSVPBase):
             .. seealso:: process_rsvps() method in RSVPBase class inside
             social_network_service/rsvp/base.py for more insight.
         """
-        member_url = self.api_url + '/member/' + str(rsvp['member']['member_id']) + '?access_token=' + self.access_token
+        social_network_event_id = rsvp['event']['event_id']
+        event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id,
+                                                                       self.social_network.id,
+                                                                       social_network_event_id)
+        if not event:
+            raise EventNotFound('Event is not present in db, social_network_event_id is %s. '
+                                'User Id: %s' % (social_network_event_id, self.user.id))
+
+        member_url = self.api_url + '/member/' + str(rsvp['member']['member_id'])
         response = http_request('GET', member_url, headers=self.headers, user_id=self.user.id)
         if response.ok:
             try:
@@ -216,19 +224,11 @@ class Meetup(RSVPBase):
                                            " src='/web/static/images" \
                                            "/activities/meetup_logo.png'/>"
                 # get event from database
-                social_network_event_id = rsvp['event']['event_id']
                 epoch_time = rsvp['mtime']
                 dt = milliseconds_since_epoch_to_dt(epoch_time)
                 attendee.added_time = dt
-                assert social_network_event_id is not None
-                event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id,
-                                                                               self.social_network.id,
-                                                                               social_network_event_id)
-                if event:
-                    attendee.event = event
-                    return attendee
-                else:
-                    raise EventNotFound('Event is not present in db, social_network_event_id is %s. '
-                                        'User Id: %s' % (social_network_event_id, self.user.id))
+                attendee.event = event
+                return attendee
+
             except Exception:
                 raise

@@ -240,7 +240,8 @@ class Eventbrite(SocialNetworkBase):
         cls.delete_webhooks(user_credentials)  # delete old webhooks
         payload = {'endpoint_url': SocialNetworkApiUrl.WEBHOOK % user_credentials.user_id,
                    'actions': ','.join([ACTIONS['published'],
-                                        ACTIONS['unpublished']])}
+                                        ACTIONS['unpublished'],
+                                        ACTIONS['rsvp']])}
         headers = {'Authorization': 'Bearer ' + user_credentials.access_token}
         response = http_request('POST', url, params=payload, headers=headers,
                                 user_id=user_credentials.user.id)
