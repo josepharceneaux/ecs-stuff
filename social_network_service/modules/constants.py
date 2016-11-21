@@ -31,7 +31,9 @@ ACTIONS = {
     'created': 'event.created',
     'published': 'event.published',
     'updated': 'event.updated',
-    'unpublished': 'event.unpublished'
+    'unpublished': 'event.unpublished',
+    'rsvp': 'order.placed',
+    'rsvp_updated': 'order.updated',
 }
 
 MEETUP_EVENT_STATUS = {
