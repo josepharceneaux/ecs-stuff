@@ -26,8 +26,9 @@ from social_network_service.common.models.user import UserSocialNetworkCredentia
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
-from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STREAM_API_URL, MEETUP_EVENT_STATUS,
+from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS,
                                                       MEETUP_RSVPS_STREAM_API_URL)
+
 from social_network_service.modules.event.meetup import Meetup
 from social_network_service.modules.rsvp.meetup import Meetup as MeetupRsvp
 from social_network_service.modules.event.eventbrite import Eventbrite as EventbriteEventBase
@@ -70,43 +71,6 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
         except Exception as e:
             logger.exception('start: running %s importer, user_id: %s failed. %s',
                              mode, user_id, e.message)
-
-
-@celery.task(name="import_meetup_events")
-def import_meetup_events(start_datetime=None):
-    """
-    This task starts at service startup and then it keeps fetching events using Meetup stream API.
-    :param string | int | None start_datetime: epoch time , we will import events after this time, None for now
-    """
-    with app.app_context():
-        logger = app.config[TalentConfigKeys.LOGGER]
-        logger.info('Meetup Event Importer started at UTC: %s' % datetime.datetime.utcnow())
-        meetup = SocialNetwork.get_by_name('Meetup')
-        if not meetup:
-            raise InternalServerError('Unable to find Meetup social network in gt database')
-
-        while True:
-            try:
-                url = MEETUP_EVENT_STREAM_API_URL
-                response = requests.get(url, stream=True, timeout=30)
-                logger.info('Meetup Stream Response Status: %s' % response.status_code)
-                for raw_event in response.iter_lines():
-                    if raw_event:
-                        try:
-                            event = json.loads(raw_event)
-                            group_id = event['group']['id']
-                            MeetupGroup.session.commit()
-                            group = MeetupGroup.get_by_group_id(group_id)
-                            if group:
-                                logger.info('Going to save event: %s' % event)
-                                fetch_meetup_event.delay(event)
-                        except Exception:
-                            logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
-                            rollback()
-            except Exception as e:
-                logger.warning('Out of main loop, Will start again in 10 seconds. Cause: %s' % e)
-                rollback()
-                time.sleep(10)
 
 
 def import_meetup_rsvps(start_datetime=None):
@@ -185,8 +149,8 @@ def import_meetup_rsvps(start_datetime=None):
                 time.sleep(10)
 
 
-@celery.task(name="fetch_meetup_event")
-def fetch_meetup_event(event):
+@celery.task(name="process_meetup_event")
+def process_meetup_event(event):
     """
     This celery task is for an individual event to be processed. When `rsvp_events_importer` task finds that some
     event belongs to getTalent user, it passes this event to this task for further processing.
@@ -233,7 +197,7 @@ def fetch_meetup_event(event):
 
 
 @celery.task(name="process_meetup_rsvp")
-def process_meetup_rsvp(rsvp, group, meetup):
+def process_meetup_rsvp(rsvp):
     """
     This celery task is for an individual rsvp to be processed. When `meetup_rsvp_importer` task finds that some
     rsvp belongs to event of getTalent's user, it passes this rsvp to this task for further processing.
@@ -281,15 +245,13 @@ def process_meetup_rsvp(rsvp, group, meetup):
     }
 
     :param dict rsvp: rsvp dictionary from meetup
-    :param MeetupGroup group: MeetupGroup Object
-    :param SocialNetwork meetup: SocialNetwork object for meetup
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
         logger.info('Going to process Meetup RSVP: %s' % rsvp)
         try:
-            group = db.session.merge(group)
-            meetup = db.session.merge(meetup)
+            group = MeetupGroup.get_by_group_id(rsvp['group']['group_id'])
+            meetup = SocialNetwork.get_by_name('Meetup')
             meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
             meetup_rsvp_object = MeetupRsvp(user_credentials=meetup_sn.user_credentials, social_network=meetup)
             attendee = meetup_rsvp_object.post_process_rsvp(rsvp)

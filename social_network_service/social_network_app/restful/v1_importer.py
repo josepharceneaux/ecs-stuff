@@ -22,7 +22,6 @@ from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.modules.constants import EVENTBRITE, EVENT
 from social_network_service.common.constants import MEETUP
 from social_network_service.social_network_app import logger, app
-from social_network_service.tasks import import_meetup_events
 
 rsvp_blueprint = Blueprint('importer', __name__)
 api = TalentApi()
@@ -80,8 +79,6 @@ class RsvpEventImporter(Resource):
             if not (social_network.lower() in [MEETUP, EVENTBRITE]):
                 raise InvalidUsage("No social network with name {} found.".format(social_network))
 
-            import_meetup_events.apply_async()
-            return dict(message="Meetup event importer will start soon.")
         return dict(message='Nothing special')
 
 
