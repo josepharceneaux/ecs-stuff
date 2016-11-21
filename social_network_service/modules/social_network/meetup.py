@@ -11,6 +11,7 @@ from requests import codes
 
 # Application Specific
 from social_network_service.common.models.event import MeetupGroup
+from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.error_handling import InternalServerError, InvalidUsage, ForbiddenError
@@ -337,10 +338,11 @@ class Meetup(SocialNetworkBase):
         """
         user_credentials_in_db = super(cls, cls).save_user_credentials_in_db(user_credentials)
         try:
-            meetup = cls(user_id=user_credentials_in_db.user_id, social_network_id=user_credentials.social_network_id)
+            meetup = cls(user_id=user_credentials_in_db.user_id,
+                         social_network_id=user_credentials_in_db.social_network_id)
             meetup.import_meetup_groups()
-        except Exception:
-            user_credentials_in_db.delete()
+        except Exception as e:
+            UserSocialNetworkCredential.delete(user_credentials_in_db)
             raise
         return user_credentials_in_db
 
