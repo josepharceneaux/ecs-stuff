@@ -166,13 +166,13 @@ class TalentActivityManager(object):
             "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
             " on event '%(eventTitle)s'",
             "candidate.png"),
-        Activity.MessageIds.EVENT_CREATE: ("%(username)s created an event <b>%(event_title)s",
+        Activity.MessageIds.EVENT_CREATE: ("%(username)s created an event <b>%(event_title)s</b>",
                                            "%(username)s created %(count)s events.</b>",
                                            "event.png"),
-        Activity.MessageIds.EVENT_DELETE: ("%(username)s deleted an event <b>%(event_title)s",
+        Activity.MessageIds.EVENT_DELETE: ("%(username)s deleted an event <b>%(event_title)s</b>",
                                            "%(username)s deleted %(count)s events.</b>",
                                            "event.png"),
-        Activity.MessageIds.EVENT_UPDATE: ("%(username)s updated an event <b>%(event_title)s.",
+        Activity.MessageIds.EVENT_UPDATE: ("%(username)s updated an event <b>%(event_title)s.</b>",
                                            "%(username)s updated %(count)s events.</b>",
                                            "event.png"),
         Activity.MessageIds.CANDIDATE_CREATE_WEB: (
@@ -315,6 +315,7 @@ class TalentActivityManager(object):
         :param int page: Pagination start.
         :return: JSON encoded SQL-Alchemy.pagination response.
         """
+        current_user = User.query.filter_by(id=user_id).first()
         user_domain_id = User.query.filter_by(id=user_id).value('domainId')
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
@@ -333,7 +334,8 @@ class TalentActivityManager(object):
                           'user_id': activity.user_id,
                           'user_name': activity.user.name if activity.user else '',
                           'added_time': str(activity.added_time),
-                          'id': activity.id
+                          'id': activity.id,
+                          'readable_text': self.activity_text(activity, 1, current_user)
                       }
                       for activity in activities.items
                       ]
@@ -421,11 +423,6 @@ class TalentActivityManager(object):
             format_string = "No message for activity type %s" % activity.type
         elif not count or count == 1:  # one single activity
             format_string = format_strings[0]
-            if 'You has' in format_string:
-                format_string = format_string.replace('You has',
-                                                      'You have')  # To fix 'You has joined'
-            elif "You's" in format_string:  # To fix "You's recurring campaign has expired"
-                format_string = format_string.replace("You's", "Your")
         else:  # many activities
             format_string = format_strings[1]
             params['count'] = count
@@ -437,4 +434,13 @@ class TalentActivityManager(object):
             if param == 'campaign_type' and params[param].lower() not in CampaignUtils.WITH_ARTICLE_AN:
                 format_string = format_string.replace("an", "a")
 
-        return format_string % params
+        formatted_string = format_string % params
+
+        if 'You has' in formatted_string:
+            # To fix 'You has joined'
+            formatted_string = formatted_string.replace('You has', 'You have')
+        elif "You's" in formatted_string:
+            # To fix "You's recurring campaign has expired"
+            formatted_string = formatted_string.replace("You's", "Your")
+
+        return formatted_string
