@@ -211,7 +211,8 @@ def refresh_token(access_token):
             'grant_type': u'refresh_token'
         }
         response = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
-        assert response.status_code == requests.codes.OK, 'Unable to refresh user (id: %s) token' % token.user.id
+        assert response.status_code == requests.codes.OK, 'Unable to refresh user (id: %s) token. Error:%s' \
+                                                          % (token.user.id, response.text)
         return response.json()['access_token']
 
     raise InvalidUsage('access_token must be instance of Token model or a string.')
