@@ -850,8 +850,7 @@ class UserSocialNetworkCredential(db.Model):
     @classmethod
     def get_by_webhook_id_and_social_network_id(cls, webhook_id, social_network_id):
         assert webhook_id and social_network_id
-        return cls.query.filter(
-            db.and_(cls.webhook == webhook_id, cls.social_network_id == social_network_id)).one()
+        return cls.query.filter_by(webhook=webhook_id, social_network_id=social_network_id).first()
 
 
 class TalentbotAuth(db.Model):

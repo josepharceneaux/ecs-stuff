@@ -453,6 +453,11 @@ class RSVPBase(object):
         :return attendee:
         :rtype: Attendee
         """
+        # We need to refresh token if token is expired. For that send request to auth service and request a
+        # refresh token.
+        if self.user_token and (self.user_token.expires - timedelta(seconds=REQUEST_TIMEOUT)) < datetime.utcnow():
+            self.user_token.access_token = refresh_token(self.user_token)
+
         headers = {'Authorization': 'Bearer {}'.format(self.user_token.access_token),
                    "Content-Type": "application/json"}
 
@@ -462,10 +467,8 @@ class RSVPBase(object):
                 "notes": attendee.event.title
             }
         }
-        response = http_request('POST', UserServiceApiUrl.DOMAIN_SOURCES,
-                                headers=headers,
+        response = http_request('POST', UserServiceApiUrl.DOMAIN_SOURCES, headers=headers,
                                 data=json.dumps(candidate_source))
-
         # Source already exists
         if response.status_code == requests.codes.bad:
             attendee.candidate_source_id = response.json()['error']['source_id']

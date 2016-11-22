@@ -8,34 +8,31 @@ These methods are called by run_job method asynchronously
 
 """
 # Builtin imports
-import datetime
-import json
 import time
+import datetime
 
 # 3rd party imports
-import requests
-
-# Application imports
+from redo import retry
 from celery.result import AsyncResult
 
-from social_network_service.common.error_handling import InternalServerError
+# Application imports
 from social_network_service.common.models.db import db
+from social_network_service.common.constants import MEETUP, EVENTBRITE
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import MeetupGroup, Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
-from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS,
-                                                      MEETUP_RSVPS_STREAM_API_URL)
-
+from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS)
 from social_network_service.modules.event.meetup import Meetup
 from social_network_service.modules.rsvp.meetup import Meetup as MeetupRsvp
+from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 from social_network_service.modules.event.eventbrite import Eventbrite as EventbriteEventBase
 from social_network_service.modules.social_network.meetup import Meetup as MeetupSocialNetwork
 from social_network_service.modules.social_network.eventbrite import Eventbrite as EventbriteSocialNetwork
 from social_network_service.modules.urls import get_url
-from social_network_service.modules.utilities import get_class
+from social_network_service.modules.utilities import get_class, EventNotFound, NoUserFound
 from social_network_service.social_network_app import celery_app as celery, app
 
 
@@ -94,7 +91,9 @@ def process_meetup_event(event):
             group = MeetupGroup.get_by_group_id(event['group']['id'])
             meetup = SocialNetwork.get_by_name('Meetup')
 
-            if event['status'] == MEETUP_EVENT_STATUS['upcoming']:
+            if event['status'] in [MEETUP_EVENT_STATUS['upcoming'],
+                                   MEETUP_EVENT_STATUS['suggested'],
+                                   MEETUP_EVENT_STATUS['proposed']]:
                 meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
                 meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials, social_network=meetup)
                 event_url = get_url(meetup_sn, SocialNetworkUrls.EVENT).format(event['id'])
@@ -168,17 +167,62 @@ def process_meetup_rsvp(rsvp):
         u'mtime': 1479312043215, u'response': u'yes'
     }
 
-    :param dict rsvp: rsvp dictionary from meetup
+    :param dict rsvp: rsvp dictionary from Meetup
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
         logger.info('Going to process Meetup RSVP: %s' % rsvp)
         try:
             group = MeetupGroup.get_by_group_id(rsvp['group']['group_id'])
-            meetup = SocialNetwork.get_by_name('Meetup')
+            meetup = SocialNetwork.get_by_name(MEETUP)
+            social_network_event_id = rsvp['event']['event_id']
+            # Retry for 20 seconds in case we have RSVP for newly created event.
+            retry(_get_event, args=(group.user_id, meetup.id, social_network_event_id),
+                  sleeptime=5, attempts=4, sleepscale=1, retry_exceptions=(EventNotFound,))
             meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
-            meetup_rsvp_object = MeetupRsvp(user_credentials=meetup_sn.user_credentials, social_network=meetup)
+            meetup_rsvp_object = MeetupRsvp(user_credentials=meetup_sn.user_credentials, social_network=meetup,
+                                            headers=meetup_sn.headers)
             attendee = meetup_rsvp_object.post_process_rsvp(rsvp)
+            if attendee and attendee.rsvp_id:
+                logger.info('RSVP imported successfully. rsvp:%s' % rsvp)
+            elif attendee:
+                logger.info('RSVP already present in database. rsvp:%s' % rsvp)
+        except Exception:
+            logger.exception('Failed to save rsvp: %s' % rsvp)
+            rollback()
+
+
+@celery.task(name="process_eventbrite_rsvp")
+def process_eventbrite_rsvp(rsvp):
+    """
+    This celery task is for an individual RSVP received from Eventbrite to be processed.
+
+    Response from Eventbrite API looks like
+        {
+            u'config': {u'action': u'order.placed', u'user_id': u'149011448333',
+            u'endpoint_url': u'https://emails.ngrok.io/webhook/1', u'webhook_id': u'274022'},
+            u'api_url': u'https://www.eventbriteapi.com/v3/orders/573384540/'
+        }
+
+    :param dict rsvp: rsvp dictionary from Eventbrite
+    """
+    with app.app_context():
+        logger = app.config[TalentConfigKeys.LOGGER]
+        logger.info('Going to process Eventbrite RSVP: %s' % rsvp)
+        try:
+            eventbrite = SocialNetwork.get_by_name(EVENTBRITE)
+            webhook_id = rsvp['config']['webhook_id']
+            user_credentials = UserSocialNetworkCredential.get_by_webhook_id_and_social_network_id(webhook_id,
+                                                                                                   eventbrite.id)
+            if not user_credentials:
+                raise NoUserFound("No User found in database that corresponds to webhook_id:%s" % webhook_id)
+            # we make social network object here to check the validity of access token.
+            # If access token is valid, we proceed to do the processing to save in getTalent db tables otherwise
+            # we raise exception AccessTokenHasExpired.
+            sn_obj = EventbriteSocialNetwork(user_id=user_credentials.user_id, social_network_id=eventbrite.id)
+            eventbrite_rsvp_object = EventbriteRsvp(user_credentials=user_credentials, social_network=eventbrite,
+                                                    headers=sn_obj.headers)
+            attendee = eventbrite_rsvp_object.process_rsvp_via_webhook(rsvp)
             if attendee and attendee.rsvp_id:
                 logger.info('RSVP imported successfully. rsvp:%s' % rsvp)
             elif attendee:
@@ -246,3 +290,19 @@ def rollback():
         db.session.rollback()
     except Exception:
         pass
+
+
+def _get_event(user_id, social_network_id, social_network_event_id):
+    """
+    This searches the event in database for given parameters.
+    :param positive user_id: If of user
+    :param positive social_network_id: Id of Meetup social-network
+    :param string social_network_event_id: Id of event on Meetup website
+    """
+    db.session.commit()
+    event = Event.get_by_user_id_social_network_id_vendor_event_id(user_id,
+                                                                   social_network_id,
+                                                                   social_network_event_id)
+    if not event:  # TODO: If event is going to happen in future, we should import that event here
+        raise EventNotFound('Event is not present in db, social_network_event_id is %s. User Id: %s'
+                            % (social_network_event_id, user_id))

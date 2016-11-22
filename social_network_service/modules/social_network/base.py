@@ -502,6 +502,7 @@ class SocialNetworkBase(object):
                 from social_network_service.meetup import Meetup
                 sn = Meetup(user_id=1)
                 sn.refresh_access_token()
+from datetime import datetime
 
         **See Also**
         .. seealso:: refresh_access_token() method defined in Meetup class

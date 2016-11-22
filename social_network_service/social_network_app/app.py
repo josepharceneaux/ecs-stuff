@@ -24,8 +24,9 @@ from social_network_service.social_network_app.graphql.schema import schema
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
 from social_network_service.common.talent_config_manager import (TalentEnvs, TalentConfigKeys)
-from social_network_service.tasks import fetch_eventbrite_event, process_meetup_event, process_meetup_rsvp
-from social_network_service.modules.constants import MEETUP_CODE_LENGTH, ACTIONS, EVENTBRITE_USER_AGENT, EVENT, RSVP
+from social_network_service.tasks import fetch_eventbrite_event, process_meetup_event, process_meetup_rsvp, \
+    process_eventbrite_rsvp
+from social_network_service.modules.constants import (MEETUP_CODE_LENGTH, ACTIONS, EVENTBRITE_USER_AGENT, EVENT, RSVP)
 
 
 # Register Blueprints for different APIs
@@ -91,6 +92,14 @@ def eventbrite_webhook_endpoint(user_id):
     This endpoint is for Eventbrite webhook. We have registered `publish` and `unpublish` events for
     events. So when a subscribed/connected user creates or deletes an event, Eventbrite sends event info
     on this endpoint with action information.
+
+    Webhook returns data for RSVP as:
+        {
+            u'config': {u'action': u'order.placed', u'user_id': u'149011448333',
+            u'endpoint_url': u'https://emails.ngrok.io/webhook/1', u'webhook_id': u'274022'},
+            u'api_url': u'https://www.eventbriteapi.com/v3/orders/573384540/'
+        }
+
     :param int | long user_id: user unique id
     """
     logger.info('Webhook Endpoint: Received a request with this data: %s' % request.data)
@@ -101,6 +110,12 @@ def eventbrite_webhook_endpoint(user_id):
         if action_type in [ACTIONS['published'], ACTIONS['unpublished']]:
             logger.info('Eventbrite Alert, Event: %s' % data)
             fetch_eventbrite_event.apply_async((user_id, event_url, action_type))
+        if action_type in [ACTIONS['rsvp'], ACTIONS['rsvp_updated']]:
+            if action_type == ACTIONS['rsvp']:
+                logger.info('Eventbrite Alert, RSVP: %s' % data)
+                process_eventbrite_rsvp.delay(data)
+            elif action_type == 'test':
+                logger.debug('Successful webhook connection')
     return 'Thanks a lot!'
 
 
