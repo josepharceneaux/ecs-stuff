@@ -13,8 +13,9 @@ from abc import abstractmethod
 from datetime import datetime, timedelta
 
 # Application Specific
-from social_network_service.common.utils.test_utils import refresh_token
+from social_network_service.common.models.db import db
 from social_network_service.modules.utilities import Attendee
+from social_network_service.common.utils.auth_utils import refresh_token
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.inter_service_calls.candidate_service_calls import create_or_update_candidate
@@ -23,7 +24,7 @@ from social_network_service.common.models.talent_pools_pipelines import TalentPo
 from social_network_service.common.models.user import User, Token, UserSocialNetworkCredential
 from social_network_service.common.models.misc import Product
 from social_network_service.common.models.misc import Activity
-from social_network_service.common.models.candidate import Candidate
+from social_network_service.common.models.candidate import Candidate, EmailLabel
 from social_network_service.common.models.candidate import CandidateSocialNetwork
 from social_network_service.common.routes import UserServiceApiUrl
 from social_network_service.common.utils.handy_functions import http_request
@@ -157,12 +158,9 @@ class RSVPBase(object):
         if isinstance(kwargs.get('user_credentials'), UserSocialNetworkCredential):
             self.user_credentials = kwargs.get('user_credentials')
             self.user = User.get_by_id(self.user_credentials.user_id)
-            self.user_token = Token.get_by_user_id(self.user_credentials.user_id)
-            if not self.user_token.access_token:
-                raise InternalServerError('access_token not found for user(id:%s)' % self.user_credentials.user_id)
+            self._get_valid_access_token()
         else:
             raise UserCredentialsNotFound('User Credentials are empty/none')
-
         self.headers = kwargs.get('headers')
         self.social_network = kwargs.get('social_network')
         self.api_url = kwargs.get('social_network').api_url
@@ -170,6 +168,19 @@ class RSVPBase(object):
         self.start_date_dt = None
         self.rsvps = []
         self.flag_create_activity = True
+
+    def _get_valid_access_token(self):
+        """
+        This refreshes access_token of user if expired and returns it. For that send request to auth service and
+        request a fresh access_token.
+        """
+        db.session.commit()  # Need to add as new tokens are saved in Auth Service,
+        # so session here gets old with respect to those changes
+        user_token = Token.get_by_user_id(self.user_credentials.user_id)
+        if not user_token.access_token:
+            raise InternalServerError('access_token not found for user(id:%s)' % self.user_credentials.user_id)
+        is_expired = user_token.expires - timedelta(seconds=REQUEST_TIMEOUT) < datetime.utcnow()
+        return refresh_token(user_token.access_token) if is_expired else user_token.access_token
 
     @abstractmethod
     def get_rsvps(self, event):
@@ -362,8 +373,7 @@ class RSVPBase(object):
             attendee = self.save_rsvp_in_activity_table(attendee)
             return attendee
         except Exception:
-            # Shouldn't raise an exception, just log it and move to
-            # process next RSVP
+            # Shouldn't raise an exception, just log it and move to process next RSVP
             logger.exception('post_process_rsvps: user_id: %s, RSVP data: %s, social network: %s(id:%s)'
                              % (self.user.id, rsvp, self.social_network.name, self.social_network.id))
 
@@ -453,12 +463,7 @@ class RSVPBase(object):
         :return attendee:
         :rtype: Attendee
         """
-        # We need to refresh token if token is expired. For that send request to auth service and request a
-        # refresh token.
-        if self.user_token and (self.user_token.expires - timedelta(seconds=REQUEST_TIMEOUT)) < datetime.utcnow():
-            self.user_token.access_token = refresh_token(self.user_token)
-
-        headers = {'Authorization': 'Bearer {}'.format(self.user_token.access_token),
+        headers = {'Authorization': 'Bearer {}'.format(self._get_valid_access_token()),
                    "Content-Type": "application/json"}
 
         candidate_source = {
@@ -544,18 +549,13 @@ class RSVPBase(object):
 
         if attendee.email:
             data.update({'emails': [{'address': attendee.email,
-                                     'label': 'Primary',
-                                     'is_default': True}]})
-
+                                     'label': EmailLabel.PRIMARY_DESCRIPTION,
+                                     'is_default': True
+                                     }]
+                         })
         # Update social network data to be sent with candidate
         data.update({'social_networks': [social_network_data]})
-
-        # We need to refresh token if token is expired. For that send request to auth service and request a
-        # refresh token.
-        if self.user_token and (self.user_token.expires - timedelta(seconds=REQUEST_TIMEOUT)) < datetime.utcnow():
-            self.user_token.access_token = refresh_token(self.user_token)
-
-        attendee.candidate_id = create_or_update_candidate(oauth_token=self.user_token.access_token,
+        attendee.candidate_id = create_or_update_candidate(oauth_token=self._get_valid_access_token(),
                                                            data=dict(candidates=[data]),
                                                            return_candidate_ids_only=True,
                                                            request_method=request_method)

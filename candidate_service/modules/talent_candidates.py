@@ -2375,7 +2375,7 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
 
         social_network_dict = dict(
             social_network_id=social_network_id_from_name((social_network.get('name') or '').strip()),
-            social_profile_url=social_network['profile_url'].strip()
+            social_profile_url=(social_network.get('profile_url') or '').strip()
         )
 
         social_network_id = social_network.get('id')
