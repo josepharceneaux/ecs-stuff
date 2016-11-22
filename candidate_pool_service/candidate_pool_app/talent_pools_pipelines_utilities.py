@@ -7,6 +7,7 @@ from sqlalchemy.sql import text
 from dateutil.parser import parse
 from datetime import datetime, timedelta, date
 from candidate_pool_service.common.utils.validators import is_number
+from candidate_pool_service.common.utils.timeout import Timeout, TimeoutException
 from candidate_pool_service.candidate_pool_app import logger, app, celery_app, db
 from candidate_pool_service.common.redis_cache import redis_dict, redis_store
 from candidate_pool_service.common.routes import CandidateApiUrl
@@ -675,12 +676,14 @@ def update_pipeline_engagement_score():
         for talent_pipeline_id in talent_pipeline_ids:
             try:
                 pipeline_cache_key = 'pipelines_engagement_score_%s' % talent_pipeline_id
-                talent_pipeline_cache[pipeline_cache_key] = engagement_score_of_pipeline(talent_pipeline_id)
+
+                with Timeout(seconds=120):
+                    talent_pipeline_cache[pipeline_cache_key] = engagement_score_of_pipeline(talent_pipeline_id)
+
                 logger.info("Engagement Score for TalentPipeline %s have been updated successfully" % talent_pipeline_id)
-            except Exception as e:
-                db.session.rollback()
-                logger.exception("Update Engagement Score for TalentPipeline %s is not "
-                                 "successful because: %s" % (talent_pipeline_id, e.message))
+            except TimeoutException:
+                logger.exception("Timelimit exceeded for updating Engagement Score for "
+                                 "TalentPipeline %s" % talent_pipeline_id)
 
 
 def get_pipeline_engagement_score(talent_pipeline_id):
