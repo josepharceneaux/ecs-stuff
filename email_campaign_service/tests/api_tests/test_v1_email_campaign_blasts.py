@@ -58,19 +58,18 @@ class TestEmailCampaignBlasts(object):
         assert json_resp['campaign_id'] == sent_campaign.id
         assert json_resp['sends'] == expected_count
 
-    def test_unsubscribed_candidates_in_campaign(self, access_token_first, sent_campaign_with_unsubscribed_candidates):
+    def test_with_unsubscribed_candidates_in_campaign(self, access_token_first,
+                                                      sent_campaign_with_unsubscribed_candidates, headers):
         """
-        This function tests count of unsubscribed_candidates in an email campaign
-        :param access_token_first:
-        :param sent_campaign_with_unsubscribed_candidates:
-        :return:
+        This function tests count of unsubscribed_candidates in an email campaign. There will be two candidates,
+        one will be subscribed and other will be unsunscribed. Email campaign should be sent to subscribed candidate.
+        Sent should be 1 and unsubscribed candidates should also be 1.
         """
-        expected_count = 1
+        expected_blast_count = 1
         expected_sent = 1
         unsubscribed_count = 1
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_with_unsubscribed_candidates, expected_sent)
-        response = requests.get(self.URL % sent_campaign_with_unsubscribed_candidates.id,
-                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_with_unsubscribed_candidates, expected_blast_count)
+        response = requests.get(self.URL % sent_campaign_with_unsubscribed_candidates.id, headers=headers)
         json_resp = response.json()[self.ENTITY][0]
         db.session.commit()
         assert json_resp['id'] == sent_campaign_with_unsubscribed_candidates.blasts[0].id
