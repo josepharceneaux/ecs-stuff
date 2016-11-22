@@ -223,6 +223,20 @@ def sent_campaign(request, campaign_with_two_candidates, access_token_first):
 
 
 @pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
+def sent_campaign_with_unsubscribed_candidates(request, campaign_with_two_candidates, access_token_first, headers):
+    """
+    This fixture sends the campaign 1) with client_id and 2) without client id
+    via /v1/email-campaigns/:id/send and returns the email-campaign obj.
+    """
+    data = {'frequency_id': ""}
+    data = json.dumps(data)
+    response = requests.post(CandidateApiUrl.CANDIDATE_PREFERENCE % campaign_with_two_candidates.user.candidates[0].id,
+                             data=data, headers=headers)
+    assert response.status_code == codes.NO_CONTENT
+    return send_campaign_helper(request, campaign_with_two_candidates, access_token_first)
+
+
+@pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
 def sent_campaign_in_other_domain(request, email_campaign_in_other_domain, access_token_other):
     """
     This fixture sends the campaign_in_other_domain 1) with client_id and 2) without client id

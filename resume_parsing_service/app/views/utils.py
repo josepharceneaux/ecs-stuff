@@ -93,12 +93,19 @@ def update_candidate_from_resume(candidate_dict, formatted_token_str, filename_s
     :return: Returns True if candidate is updated, else exception is raised.
     :rtype: bool
     """
+    logger.info("candidate_dict: {}".format(candidate_dict))
     try:
         update_response = requests.patch(CandidateApiUrl.CANDIDATES,
                                          timeout=20,
                                          data=json.dumps({'candidates': [candidate_dict]}),
                                          headers={'Authorization': formatted_token_str,
                                                   'Content-Type': 'application/json'})
+
+        if hasattr(update_response, 'json()'):
+            logger.info("update_response_content: {}".format(update_response.json()))
+        else:
+            logger.info("update_response: {}".format(update_response))
+
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("update_candidate_from_resume. Could not reach CandidateService PATCH")
         raise InternalServerError(
