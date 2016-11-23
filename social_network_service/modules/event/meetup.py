@@ -125,44 +125,34 @@ class Meetup(EventBase):
         # page size is 100 so if we have 500 records we will make
         # 5 requests (using pagination where each response will contain
         # 100 records).
-        events_url = get_url(self, Urls.EVENTS) + '/?sign=true&page=100&fields=timezone'
+        events_url = get_url(self, Urls.EVENTS)
         # we can specify status=upcoming,past,draft,cancelled etc. By default we
         # have status=upcoming, so we are not explicitly specifying in fields.
         params = {
             'member_id': self.member_id,
-            'time': '%.0f, %.0f' %
-                    (self.start_time_since_epoch,
-                     self.end_time_since_epoch)
+            'status': "upcoming,proposed,suggested"
         }
         response = http_request('GET', events_url, params=params,
                                 headers=self.headers,
                                 user_id=self.user.id)
         if response.ok:
             data = response.json()
-            events = []  # contains events on one page
-            events.extend(data['results'])
-            all_events.extend([event for event in events if
-                               self._filter_event(event)])
+            all_events = []
+            all_events.extend(data['results'])
             # next_url determines the pagination, this variable keeps
             # appearing in response if there are more pages and stops
             # showing up when there are no more.
             next_url = data['meta']['next'] or None
             while next_url:
-                events = []  # resetting events for next page
-                # attach the key before sending the request
-                url = next_url + '&sign=true'
+                url = next_url
                 response = http_request('GET', url, headers=self.headers,
                                         user_id=self.user.id)
                 if response.ok:
                     data = response.json()
-                    events.extend(data['results'])
-                    all_events.extend([event for event in events if
-                                       self._filter_event(event)])
+                    all_events.extend(data['results'])
                     next_url = data['meta']['next'] or None
                     if not next_url:
                         break
-                else:
-                    all_events.extend([])
         return all_events
 
     def _filter_event(self, event):
@@ -178,7 +168,7 @@ class Meetup(EventBase):
         if social_network_group_id:
             if social_network_group_id in self.social_network_group_ids:
                 return True
-            url = get_url(self, Urls.GROUPS)+ '/?sign=true'
+            url = get_url(self, Urls.GROUPS) + '/?sign=true'
             response = http_request('GET', url,
                                     params={
                                         'group_id': social_network_group_id
@@ -209,8 +199,18 @@ class Meetup(EventBase):
         :return: event: Event object
         :rtype event: common.models.event.Event
         """
-        venue = None
-        if event.get('venue'):
+        venue_obj = None
+        venue_data = None
+        venue = event.get('venue')
+
+        start_time = milliseconds_since_epoch_to_dt(float(event['time'])) if event.get('time') else None
+        end_time = event.get('duration', None)
+        if start_time and end_time:
+            end_time = \
+                milliseconds_since_epoch_to_dt(
+                    (float(event['time'])) + (float(end_time) * 1000))
+
+        if venue:
             # venue data looks like
             # {
             #       u'city': u'Cupertino', u'name': u'Meetup Address',
@@ -218,35 +218,21 @@ class Meetup(EventBase):
             #       u'address_1': u'Infinite Loop', u'repinned': False,
             #       u'lat': 37.33167, u'id': 24062708
             # }
-            venue = event['venue']
-        start_time = milliseconds_since_epoch_to_dt(float(event['time']))
-        end_time = event.get('duration', None)
-        if end_time:
-            end_time = \
-                milliseconds_since_epoch_to_dt(
-                    (float(event['time'])) + (float(end_time) * 1000))
-
-        if venue:
-            venue_data = dict(
-                social_network_id=self.social_network.id,
-                social_network_venue_id=venue['id'],
-                user_id=self.user.id,
-                address_line_1=venue.get('address_1', ''),
-                address_line_2='',
-                city=venue.get('city', '').title().strip(),
-                state=venue.get('state', '').title().strip(),
-                zip_code=venue.get('zip'),
-                country=venue.get('country', '').title().strip(),
-                longitude=float(venue.get('lon', 0)),
-                latitude=float(venue.get('lat', 0))
-            )
-            venue = Venue.get_by_user_id_and_social_network_venue_id(
-                self.user.id, venue['id'])
-            if venue:
-                venue.update(**venue_data)
-            else:
-                venue = Venue(**venue_data)
-                Venue.save(venue)
+            venue_obj = Venue.get_by_user_id_and_social_network_venue_id(self.user.id, venue['id'])
+            if not venue_obj:
+                venue_data = dict(
+                    social_network_id=self.social_network.id,
+                    social_network_venue_id=venue['id'],
+                    user_id=self.user.id,
+                    address_line_1=venue.get('address_1', ''),
+                    address_line_2='',
+                    city=venue.get('city', '').title().strip(),
+                    state=venue.get('state', '').title().strip(),
+                    zip_code=venue.get('zip'),
+                    country=venue.get('country', '').title().strip(),
+                    longitude=float(venue.get('lon', 0)),
+                    latitude=float(venue.get('lat', 0))
+                )
 
         event_data = dict(
             social_network_event_id=event['id'],
@@ -254,7 +240,7 @@ class Meetup(EventBase):
             description=event.get('description', ''),
             social_network_id=self.social_network.id,
             user_id=self.user.id,
-            venue_id=venue.id if venue else None,
+            venue_id=venue_obj.id if venue_obj else None,
             # group id and urlName are required fields to edit an event
             # so should raise exception if Null
             social_network_group_id=event['group']['id'],
@@ -272,14 +258,7 @@ class Meetup(EventBase):
                           event.get('yes_rsvp_count', 0) +
                           event.get('waitlist_count', 0)
         )
-        event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id, self.social_network.id,
-                                                                       event['id'])
-        if event:
-            event.update(**event_data)
-        else:
-            event = Event(**event_data)
-            Event.save(event)
-        return event
+        return event_data, venue_data
 
     def add_location(self):
         """
@@ -412,19 +391,6 @@ class Meetup(EventBase):
             log_error({'user_id': self.user.id,
                        'error': error_message})
             raise EventNotCreated('ApiError: Unable to update event on Meetup')
-
-    def unpublish_event(self, social_network_event_id, method='DELETE'):
-        """
-        This function is used while running unit test. It sets the api_relative_url
-        and calls base class method to delete the Event from Meetup which was
-        created in the unit test.
-        :param social_network_event_id:id of newly created event
-        :type social_network_event_id: int
-        :return: True if event is deleted from vendor, False otherwise.
-        :rtype Boolean
-        """
-        self.url_to_delete_event = get_url(self, Urls.EVENT).format(social_network_event_id)
-        super(Meetup, self).unpublish_event(social_network_event_id, method=method)
 
     @staticmethod
     def validate_required_fields(data):

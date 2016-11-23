@@ -8,10 +8,12 @@ These methods are called by run_job method asynchronously
 
 """
 # Builtin imports
+import json
 import time
 import datetime
 
 # 3rd party imports
+import requests
 from redo import retry
 from celery.result import AsyncResult
 
@@ -24,12 +26,13 @@ from social_network_service.common.models.user import UserSocialNetworkCredentia
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
-from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS)
+from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS, EVENT, MEETUP_EVENT_STREAM_API_URL)
 from social_network_service.modules.event.meetup import Meetup
 from social_network_service.modules.rsvp.meetup import Meetup as MeetupRsvp
 from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 from social_network_service.modules.event.eventbrite import Eventbrite as EventbriteEventBase
 from social_network_service.modules.social_network.meetup import Meetup as MeetupSocialNetwork
+from social_network_service.modules.social_network.base import SocialNetworkBase
 from social_network_service.modules.social_network.eventbrite import Eventbrite as EventbriteSocialNetwork
 from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import get_class, EventNotFound, NoUserFound
@@ -97,11 +100,7 @@ def process_meetup_event(event):
                 meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
                 meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials, social_network=meetup)
                 event_url = get_url(meetup_sn, SocialNetworkUrls.EVENT).format(event['id'])
-                response = http_request('get', event_url, headers=meetup_sn.headers)
-                if response.ok:
-                    event = response.json()
-                    event = meetup_event_base.event_sn_to_gt_mapping(event)
-                    logger.info('Event imported successfully : %s' % event.to_json())
+                meetup_event_base.get_event(event_url)
             elif event['status'] in [MEETUP_EVENT_STATUS['canceled'], MEETUP_EVENT_STATUS['deleted']]:
                 event_id = event['id']
                 event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(group.user.id,
@@ -232,8 +231,8 @@ def process_eventbrite_rsvp(rsvp):
             rollback()
 
 
-@celery.task(name="fetch_eventbrite_event")
-def fetch_eventbrite_event(user_id, event_url, action_type):
+@celery.task(name="import_eventbrite_event")
+def import_eventbrite_event(user_id, event_url, action_type):
     """
     This celery task retrieves user event from eventbrite and then saves or
     """
@@ -248,11 +247,7 @@ def fetch_eventbrite_event(user_id, event_url, action_type):
                 eventbrite_event_base = EventbriteEventBase(headers=eventbrite_sn.headers,
                                                             user_credentials=eventbrite_sn.user_credentials,
                                                             social_network=eventbrite_sn.user_credentials.social_network)
-                response = http_request('get', event_url, headers=eventbrite_sn.headers)
-                if response.ok:
-                    event = response.json()
-                    event = eventbrite_event_base.event_sn_to_gt_mapping(event)
-                    logger.info('Event imported/updated successfully : %s' % event.to_json())
+                eventbrite_event_base.get_event(event_url)
             elif action_type == ACTIONS['unpublished']:
                 event_id = event_url.split('/')[-2]
                 event_id = int(event_id)
@@ -306,3 +301,50 @@ def _get_event(user_id, social_network_id, social_network_event_id):
     if not event:  # TODO: If event is going to happen in future, we should import that event here
         raise EventNotFound('Event is not present in db, social_network_event_id is %s. User Id: %s'
                             % (social_network_event_id, user_id))
+
+
+@celery.task(name="import_events")
+def import_events(user_credentials):
+    """
+    This celery task imports all active/live events of a specific user and social network and it will be invoked when
+    user will subscribe to Meetup or Eventbrite.
+    e.g. if a user subscribes to Meetup, it will import all his upcoming, proposed and suggested events.
+     In case of eventbrite, it will import all live events.
+    :param type(t) user_credentials: UserSocialNetworkCredentials object
+    """
+    user_credentials = db.session.merge(user_credentials)
+    social_network_base = SocialNetworkBase(user_id=user_credentials.user_id,
+                                            social_network_id=user_credentials.social_network_id)
+    social_network_base.process(EVENT, user_credentials=user_credentials)
+
+
+@celery.task(name="import_meetup_events")
+def import_meetup_events():
+    """
+    This task starts at service startup and then it keeps fetching events using Meetup stream API.
+    """
+    with app.app_context():
+        logger = app.config[TalentConfigKeys.LOGGER]
+        logger.info('Meetup Event Importer started at UTC: %s' % datetime.datetime.utcnow())
+
+        while True:
+            try:
+                url = MEETUP_EVENT_STREAM_API_URL
+                response = requests.get(url, stream=True, timeout=30)
+                logger.info('Meetup Stream Response Status: %s' % response.status_code)
+                for raw_event in response.iter_lines():
+                    if raw_event:
+                        try:
+                            event = json.loads(raw_event)
+                            group_id = event['group']['id']
+                            MeetupGroup.session.commit()
+                            group = MeetupGroup.get_by_group_id(group_id)
+                            if group:
+                                logger.info('Going to save event: %s' % event)
+                                process_meetup_event.delay(event)
+                        except Exception:
+                            logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
+                            rollback()
+            except Exception as e:
+                logger.warning('Out of main loop. Cause: %s' % e)
+                rollback()

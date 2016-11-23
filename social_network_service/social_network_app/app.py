@@ -24,8 +24,8 @@ from social_network_service.social_network_app.graphql.schema import schema
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
 from social_network_service.common.talent_config_manager import (TalentEnvs, TalentConfigKeys)
-from social_network_service.tasks import fetch_eventbrite_event, process_meetup_event, process_meetup_rsvp, \
-    process_eventbrite_rsvp
+from social_network_service.tasks import (import_eventbrite_event, process_meetup_event,
+                                          process_meetup_rsvp, process_eventbrite_rsvp)
 from social_network_service.modules.constants import (MEETUP_CODE_LENGTH, ACTIONS, EVENTBRITE_USER_AGENT, EVENT, RSVP)
 
 
@@ -109,7 +109,7 @@ def eventbrite_webhook_endpoint(user_id):
         event_url = data['api_url']
         if action_type in [ACTIONS['published'], ACTIONS['unpublished']]:
             logger.info('Eventbrite Alert, Event: %s' % data)
-            fetch_eventbrite_event.apply_async((user_id, event_url, action_type))
+            import_eventbrite_event.apply_async((user_id, event_url, action_type))
         if action_type in [ACTIONS['rsvp'], ACTIONS['rsvp_updated']]:
             if action_type == ACTIONS['rsvp']:
                 logger.info('Eventbrite Alert, RSVP: %s' % data)

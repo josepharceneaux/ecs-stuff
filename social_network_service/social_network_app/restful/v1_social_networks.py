@@ -47,6 +47,7 @@ from flask.ext.restful import Resource
 from social_network_service.common.constants import MEETUP
 from social_network_service.common.models.event import MeetupGroup
 from social_network_service.modules import custom_codes
+from social_network_service.tasks import import_events
 from social_network_service.modules.custom_codes import VENUE_EXISTS_IN_GT_DATABASE
 from social_network_service.modules.social_network.base import SocialNetworkBase
 from social_network_service.social_network_app import logger
@@ -245,21 +246,22 @@ class SocialNetworksResource(Resource):
         # Get list of networks user is subscribed to from UserSocialNetworkCredential table
         subscribed_networks = None
         subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
+        subscribed_networks_ids = []
         if subscribed_data:
             # Get list of social networks user is subscribed to
-            subscribed_networks = SocialNetwork.get_by_ids(
-                [data.social_network_id for data in subscribed_data]
-            )
+
+            for data in subscribed_data:
+                status, sn_name = is_token_valid(data.social_network_id, data.user_id)
+                if status:
+                    subscribed_networks_ids.append(data.social_network_id)
+            subscribed_networks = SocialNetwork.get_by_ids(subscribed_networks_ids)
             # Convert it to JSON
-            subscribed_networks[0].to_json()
             subscribed_networks = map(lambda sn: sn.to_json(), subscribed_networks)
             # Add 'is_subscribed' key in each object and set it to True because
             # these are the social networks user is subscribed to
             subscribed_networks = self.set_is_subscribed(subscribed_networks, value=True)
         # Get list of social networks user is not subscribed to
-        unsubscribed_networks = SocialNetwork.get_all_except_ids(
-            [data.social_network_id for data in subscribed_data]
-        )
+        unsubscribed_networks = SocialNetwork.get_all_except_ids(subscribed_networks_ids)
         if unsubscribed_networks:
             unsubscribed_networks = map(lambda sn: sn.to_json(), unsubscribed_networks)
             # Add 'is_subscribed' key in each object and set it to False
@@ -1149,7 +1151,8 @@ class ProcessAccessTokenResource(Resource):
         if social_network:
             # Get social network specific Social Network class
             social_network_class = get_class(social_network.name, 'social_network')
-            social_network_class.connect(user_id, social_network, code)
+            credentials = social_network_class.connect(user_id, social_network, code)
+            import_events.delay(credentials)
             return dict(message='User credentials added successfully'), 201
         else:
             raise ResourceNotFound('Social Network not found')
