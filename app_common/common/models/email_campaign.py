@@ -237,6 +237,7 @@ class EmailCampaignBlast(db.Model):
     opens = db.Column('Opens', db.Integer, default=0)
     bounces = db.Column('Bounces', db.Integer, default=0)
     complaints = db.Column('Complaints', db.Integer, default=0)
+    unsubscribed_candidates = db.Column('UnsubscribedCandidates', db.Integer, default=0)
     sent_datetime = db.Column('SentTime', db.DateTime)
     updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.utcnow)
 

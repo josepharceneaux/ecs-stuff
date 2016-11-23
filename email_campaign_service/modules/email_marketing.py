@@ -186,8 +186,9 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
     validate_smartlist_ids(smartlist_ids, current_user)
 
     if campaign.email_client_id:  # gt plugin code starts here.
-        candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids,
-                                                                               new_candidates_only=new_candidates_only)
+        candidate_ids_and_emails, unsubscribed_candidate_ids = get_email_campaign_candidate_ids_and_emails(campaign,
+                                                                                                        smartlist_ids,
+                                                                                                        new_candidates_only=new_candidates_only)
 
         # Check if the smartlist has more than 0 candidates
         if not candidate_ids_and_emails:
@@ -196,6 +197,7 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
         else:
             email_campaign_blast_id, blast_params, blast_datetime = \
                 notify_and_get_blast_params(campaign, new_candidates_only, candidate_ids_and_emails)
+            _update_blast_unsubscribed_candidates(email_campaign_blast_id, len(unsubscribed_candidate_ids))
             list_of_new_email_html_or_text = []
             # Do not send mail if email_client_id is provided
             # Loop through each candidate and get new_html and new_text
@@ -340,12 +342,15 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
         all_candidate_ids.extend(candidate_list)
     all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
     campaign = EmailCampaign.get_by_id(campaign_id)
-    subscribed_candidate_ids = get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
+    subscribed_candidate_ids, unsubscribed_candidate_ids = get_subscribed_and_unsubscribed_candidate_ids(campaign,
+                                                                                                         all_candidate_ids,
+                                                                                                         new_candidates_only)
     candidate_ids_and_emails = get_priority_emails(campaign.user, subscribed_candidate_ids)
     if candidate_ids_and_emails:
         email_campaign_blast_id, blast_params, blast_datetime = notify_and_get_blast_params(campaign,
                                                                                             new_candidates_only,
                                                                                             candidate_ids_and_emails)
+        _update_blast_unsubscribed_candidates(email_campaign_blast_id, len(unsubscribed_candidate_ids))
         with app.app_context():
             logger.info('Emails for email campaign (id:%d) are being sent using Celery. Blast ID is %d' %
                         (campaign.id, email_campaign_blast_id))
@@ -399,8 +404,8 @@ def get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids, new_can
     if not all_candidate_ids:
         raise InternalServerError('No candidate(s) found for smartlist_ids %s.' % smartlist_ids,
                                   error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
-    subscribed_candidate_ids = get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
-    return get_priority_emails(campaign.user, subscribed_candidate_ids)
+    subscribed_candidate_ids, unsubscribed_candidate_ids = get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
+    return get_priority_emails(campaign.user, subscribed_candidate_ids), unsubscribed_candidate_ids
 
 
 def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candidate_address, blast_params=None,
@@ -804,6 +809,21 @@ def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only):
                 new_sends, campaign.name, campaign.id, campaign.user.email, new_candidates_only)
 
 
+def _update_blast_unsubscribed_candidates(blast_id, unsubscribed_candidate_count):
+    """
+    This updates the email campaign blast object with number of unsubscribed candidates.
+    :param blast_id: Id of blast object.
+    :param unsubscribed_candidate_count: Number of unsubscribed candidates.
+    :type blast_id: int | long
+    :type unsubscribed_candidate_count: int
+    """
+    raise_if_not_positive_int_or_long(blast_id)
+    raise_if_not_instance_of(unsubscribed_candidate_count, int)
+
+    blast_obj = EmailCampaignBlast.get_by_id(blast_id)
+    blast_obj.update(unsubscribed_candidates=unsubscribed_candidate_count)
+
+
 def handle_email_bounce(message_id, bounce, emails):
     """
     This function handles email bounces. When an email is bounced, email address is marked as bounced so
@@ -895,18 +915,18 @@ def get_candidates_from_smartlist_for_email_client_id(campaign, list_ids):
     return all_candidate_ids
 
 
-def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only=False):
+def get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only=False):
     """
     Takes campaign and all candidate ids as arguments and process them to return
-    the ids of subscribed candidates.
+    the ids of subscribed and unsubscribed candidates.
     :param campaign: email campaign
     :param all_candidate_ids: ids of all candidates to whome we are going to send campaign
     :param new_candidates_only: if campaign is to be sent only to new candidates
     :type campaign: EmailCampaign
     :type all_candidate_ids: list
     :type new_candidates_only: bool
-    :return ids of subscribed candidates
-    :rtype list
+    :return ids of subscribed and unsubscribed candidates
+    :rtype tuple
     """
     if not isinstance(campaign, EmailCampaign):
         raise InternalServerError(error_message='Valid EmailCampaign object must be provided.')
@@ -914,6 +934,7 @@ def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_onl
         raise InternalServerError(error_message='all_candidates_ids must be provided')
     if not isinstance(new_candidates_only, bool):
         raise InternalServerError(error_message='new_candidates_only must be bool')
+    unsubscribed_candidate_ids = []
     if campaign.is_subscription:
         # A subscription campaign is a campaign which needs candidates
         # to be subscribed to it in order to receive notifications regarding the campaign.
@@ -921,13 +942,14 @@ def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_onl
         # only get candidates subscribed to the campaign's frequency.
         subscribed_candidate_ids = CandidateSubscriptionPreference.get_subscribed_candidate_ids(campaign,
                                                                                                 all_candidate_ids)
+        unsubscribed_candidate_ids = list(set(all_candidate_ids) - set(subscribed_candidate_ids))
         if not subscribed_candidate_ids:
             logger.error("No candidates in subscription campaign %s", campaign)
 
     else:
         # Otherwise, just filter out unsubscribed candidates:
         # their subscription preference's frequencyId is NULL, which means 'Never'
-        unsubscribed_candidate_ids = []
+
         for candidate_id in all_candidate_ids:
             # Call candidate API to get candidate's subscription preference.
             subscription_preference = get_candidate_subscription_preference(candidate_id, campaign.user.id)
@@ -938,7 +960,6 @@ def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_onl
 
         # Remove un-subscribed candidates
         subscribed_candidate_ids = list(set(all_candidate_ids) - set(unsubscribed_candidate_ids))
-
     # If only getting candidates that haven't been emailed before...
     if new_candidates_only:
         emailed_candidate_ids = EmailCampaignSend.get_already_emailed_candidates(campaign)
@@ -947,7 +968,10 @@ def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_onl
         new_candidate_ids = list(set(subscribed_candidate_ids) - set(emailed_candidate_ids))
         # assign it to subscribed_candidate_ids (doing it explicit just to make it clear)
         subscribed_candidate_ids = new_candidate_ids
-    return subscribed_candidate_ids
+    # Logging info of unsubscribed candidates.
+    logger.info("Email campaign id is: %s. Number of unsubscribed candidates: %s. Unsubscribed candidate's ids are:"
+                " %s" % (campaign.id, len(unsubscribed_candidate_ids), unsubscribed_candidate_ids))
+    return subscribed_candidate_ids, unsubscribed_candidate_ids
 
 
 def get_smartlist_candidates_via_celery(user_id, campaign_id, smartlist_ids, new_candidates_only=False):

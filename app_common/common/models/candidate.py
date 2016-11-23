@@ -51,7 +51,7 @@ class Candidate(db.Model):
     custom_fields = relationship('CandidateCustomField', cascade='all, delete-orphan', passive_deletes=True)
     documents = relationship('CandidateDocument', cascade='all, delete-orphan', passive_deletes=True)
     educations = relationship('CandidateEducation', cascade='all, delete-orphan', passive_deletes=True)
-    emails = relationship('CandidateEmail', cascade='all, delete-orphan', passive_deletes=True)
+    emails = relationship('CandidateEmail', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
     experiences = relationship('CandidateExperience', cascade='all, delete-orphan', passive_deletes=True)
     languages = relationship('CandidateLanguage', cascade='all, delete-orphan', passive_deletes=True)
     license_certifications = relationship('CandidateLicenseCertification', cascade='all, delete-orphan',
