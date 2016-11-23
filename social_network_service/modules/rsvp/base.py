@@ -13,6 +13,8 @@ from abc import abstractmethod
 from datetime import datetime, timedelta
 
 # Application Specific
+from redo import retry
+
 from social_network_service.common.models.db import db
 from social_network_service.modules.utilities import Attendee
 from social_network_service.common.utils.auth_utils import refresh_token
@@ -24,7 +26,7 @@ from social_network_service.common.models.talent_pools_pipelines import TalentPo
 from social_network_service.common.models.user import User, Token, UserSocialNetworkCredential
 from social_network_service.common.models.misc import Product
 from social_network_service.common.models.misc import Activity
-from social_network_service.common.models.candidate import Candidate, EmailLabel
+from social_network_service.common.models.candidate import Candidate, EmailLabel, CandidateEmail
 from social_network_service.common.models.candidate import CandidateSocialNetwork
 from social_network_service.common.routes import UserServiceApiUrl
 from social_network_service.common.utils.handy_functions import http_request
@@ -174,13 +176,21 @@ class RSVPBase(object):
         This refreshes access_token of user if expired and returns it. For that send request to auth service and
         request a fresh access_token.
         """
-        db.session.commit()  # Need to add as new tokens are saved in Auth Service,
-        # so session here gets old with respect to those changes
+        user_token = retry(self._get_user_token, sleeptime=5, attempts=6, sleepscale=1,
+                           retry_exceptions=(InternalServerError,))
+        is_expired = user_token.expires - timedelta(seconds=REQUEST_TIMEOUT) < datetime.utcnow()
+        return refresh_token(user_token.access_token) if is_expired else user_token.access_token
+
+    def _get_user_token(self):
+        """
+        This gets the token object of user from database table Token
+        """
+        db.session.commit()  # Need to add as new tokens are saved in Auth Service, so session here gets old with
+        # respect to those changes
         user_token = Token.get_by_user_id(self.user_credentials.user_id)
         if not user_token.access_token:
             raise InternalServerError('access_token not found for user(id:%s)' % self.user_credentials.user_id)
-        is_expired = user_token.expires - timedelta(seconds=REQUEST_TIMEOUT) < datetime.utcnow()
-        return refresh_token(user_token.access_token) if is_expired else user_token.access_token
+        return user_token
 
     @abstractmethod
     def get_rsvps(self, event):
@@ -509,12 +519,24 @@ class RSVPBase(object):
         :return attendee:
         :rtype: Attendee
         """
+        candidate_in_db = None
         request_method = 'post'
-        candidate_in_db = Candidate.filter_by_keywords(first_name=attendee.first_name,
-                                                       last_name=attendee.last_name,
-                                                       user_id=attendee.gt_user_id,
-                                                       source_id=attendee.candidate_source_id,
-                                                       source_product_id=attendee.source_product_id)
+        domain_id = User.get_domain_id(attendee.gt_user_id)
+        candidate_by_email = CandidateEmail.get_email_in_users_domain(domain_id, attendee.email)
+        if candidate_by_email:
+            candidate_in_db = candidate_by_email.candidate
+        if not candidate_in_db:
+            # TODO: Need to handle multiple sources per candidate
+            candidate_in_db = Candidate.filter_by_keywords(first_name=attendee.first_name,
+                                                           last_name=attendee.last_name,
+                                                           source_id=attendee.candidate_source_id,
+                                                           source_product_id=attendee.source_product_id)
+
+            if candidate_in_db:
+                candidate_in_db = candidate_in_db[0]
+                # Check if candidate's domain is same as user's domain
+                if not candidate_in_db.user.domain_id == domain_id:
+                    candidate_in_db = None
 
         # To create candidates, user must have be associated with talent_pool
         talent_pools = TalentPool.filter_by_keywords(user_id=attendee.gt_user_id)
@@ -537,10 +559,9 @@ class RSVPBase(object):
 
         # Update if already exist
         if candidate_in_db:
-            candidate_id = candidate_in_db[0].id
+            candidate_id = candidate_in_db.id
             data.update({'id': candidate_id})
             request_method = 'patch'
-
             # Get candidate's social network if already exist
             candidate_social_network_in_db = \
                 CandidateSocialNetwork.get_by_candidate_id_and_sn_id(candidate_id, attendee.social_network_id)
