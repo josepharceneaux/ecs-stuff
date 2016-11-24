@@ -159,24 +159,24 @@ class TestEventById(object):
         """
         unauthorize_test('delete', url=SocialNetworkApiUrl.EVENT % event_in_db['id'])
 
-    def test_delete_with_valid_token(self, token_first, event_in_db_second):
+    def test_delete_with_valid_token_123(self, token_first, event_in_db):
         """
         - Try to delete event data using id, if deleted you expect 200 response
         - Then again try to delete event using same event id and expect 403 response
         """
-        event_id = event_in_db_second['id']
+        event_id = event_in_db['id']
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
         logger.info(response.text)
         assert response.status_code == codes.OK, str(response.text)
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
 
         # check if event delete activity
-        user_id = event_in_db_second['user_id']
+        user_id = event_in_db['user_id']
         db.db.session.commit()
         activity = Activity.get_by_user_id_type_source_id(user_id=user_id, source_id=event_id,
                                                           type_=Activity.MessageIds.EVENT_DELETE)
         data = json.loads(activity.params)
-        assert data['event_title'] == event_in_db_second['title']
+        assert data['event_title'] == event_in_db['title']
 
         logger.info(response.text)
         assert response.status_code == codes.FORBIDDEN, 'Unable to delete event as it is not present there (403)'

@@ -343,7 +343,7 @@ class Meetup(EventBase):
         :rtype: int
         """
         venue_id = self.add_location()
-        url = get_url(self, Urls.EVENTS)
+        url = get_url(self, Urls.EVENT).format('')
         self.payload.update({'venue_id': venue_id, 'publish_status': 'published'})
         logger.debug('Creating event for %s(user id:%s) using url:%s of API of %s.'
                      % (self.user.name, self.user.id, url, self.social_network.name))
