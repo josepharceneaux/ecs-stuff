@@ -246,22 +246,21 @@ class SocialNetworksResource(Resource):
         # Get list of networks user is subscribed to from UserSocialNetworkCredential table
         subscribed_networks = None
         subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
-        subscribed_networks_ids = []
         if subscribed_data:
             # Get list of social networks user is subscribed to
-
-            for data in subscribed_data:
-                status, sn_name = is_token_valid(data.social_network_id, data.user_id)
-                if status:
-                    subscribed_networks_ids.append(data.social_network_id)
-            subscribed_networks = SocialNetwork.get_by_ids(subscribed_networks_ids)
+            subscribed_networks = SocialNetwork.get_by_ids(
+                [data.social_network_id for data in subscribed_data]
+            )
             # Convert it to JSON
+            subscribed_networks[0].to_json()
             subscribed_networks = map(lambda sn: sn.to_json(), subscribed_networks)
             # Add 'is_subscribed' key in each object and set it to True because
             # these are the social networks user is subscribed to
             subscribed_networks = self.set_is_subscribed(subscribed_networks, value=True)
         # Get list of social networks user is not subscribed to
-        unsubscribed_networks = SocialNetwork.get_all_except_ids(subscribed_networks_ids)
+        unsubscribed_networks = SocialNetwork.get_all_except_ids(
+            [data.social_network_id for data in subscribed_data]
+        )
         if unsubscribed_networks:
             unsubscribed_networks = map(lambda sn: sn.to_json(), unsubscribed_networks)
             # Add 'is_subscribed' key in each object and set it to False
