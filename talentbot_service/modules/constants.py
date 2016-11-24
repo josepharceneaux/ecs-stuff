@@ -25,7 +25,8 @@ HINT = '''>>>I am `%s`. @osman is teaching me new things, right now I can answer
 8- What are the talent pools in my domain?
 9- What campaigns in my domain?
 10- Show me more about `[Talent pool name|Campaign name]`?
-11- What are my group `[Campaigns|Pipelines]`?''' % BOT_NAME
+11- What are my group `[Campaigns|Pipelines]`?
+12- Add candidate whose resume url is `http://www.something.com/some-resume.pdf''' % BOT_NAME
 OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_NUMBER = "+12015617985"
 FACEBOOK_MESSAGE_LIMIT = 319
@@ -61,7 +62,7 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates are there w
              "what are all my campaigns", "what are my all campaigns", 'what are our campaigns',
              'what are the campaigns', 'how is', 'what are my pipelines', 'what are all pipelines',
              'what are my all pipelines', 'what are all my pipelines', 'what are our pipelines',
-             'what are campaigns in']
+             'what are campaigns in', 'add candidate']
 POSITIVE_MESSAGES = ['hmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 99
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"
@@ -77,7 +78,9 @@ QUESTION_HANDLER_NUMBERS = {'question_handler_1': 1, 'question_handler_4': 4}
 EMAIL_CAMPAIGN = 'Email Campaign'
 PUSH_CAMPAIGN = 'Push Campaign'
 SMS_CAMPAIGN = 'SMS Campaign'
+SOMETHING_WENT_WRONG = "Something went please contact the developer"
 ZERO = 0
+BOT_RESUME_BUCKET_NAME = '%s-resume-bucket' % BOT_NAME
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

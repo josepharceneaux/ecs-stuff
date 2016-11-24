@@ -14,13 +14,19 @@ response
 """
 # Builtin imports
 import re
+import urllib2
 from datetime import datetime
+from os.path import splitext
+from urlparse import urlparse
 
+import requests
 from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
+from flask import json
+
 from talentbot_service.common.constants import OWNED, DOMAIN_SPECIFIC
-from talentbot_service.common.error_handling import NotFoundError
+from talentbot_service.common.error_handling import NotFoundError, InvalidUsage, InternalServerError
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPipeline
@@ -28,9 +34,17 @@ from talentbot_service.common.models.talent_pools_pipelines import TalentPool
 from talentbot_service.common.models.email_campaign import EmailCampaign
 from talentbot_service.common.models.sms_campaign import SmsCampaign
 from talentbot_service.common.models.push_campaign import PushCampaign
+from talentbot_service.common.routes import ResumeApiUrl
+from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
-    QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN
+    QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN, BOT_RESUME_BUCKET_NAME,\
+    SOMETHING_WENT_WRONG
+from talentbot_service import logger, app
+from resume_parsing_service.app.views.parse_lib import IMAGE_FORMATS, DOC_FORMATS
+# 3rd party imports
+from botocore.exceptions import ClientError
+import wget
 
 
 class QuestionHandler(object):
@@ -606,6 +620,75 @@ class QuestionHandler(object):
         for index, pipeline in enumerate(pipelines):
             response.append("%d- `%s`" % (index + 1, pipeline.name))
         return '\n'.join(response) if len(response) > 1 else "No pipeline found"
+
+    @classmethod
+    @contract
+    def add_candidate_handler(cls, message_tokens, user_id):
+        """
+        Adds candidate from a resume url mentioned in message by user
+        :param list message_tokens: Tokens of User message
+        :param positive user_id:
+        :rtype: string
+        """
+        try:
+            resume_url = re.search("(?P<url>https?://[^\s]+)", ' '.join(message_tokens)).group("url")
+        except AttributeError:  # If url doesn't start with http:// or https://
+            return "URL must start with `http://` or `https://`"
+        try:
+            bucket_creation_response = create_bucket()
+        except InternalServerError as error:
+            logger.error(error.message)
+            return SOMETHING_WENT_WRONG
+        if not bucket_creation_response:
+            return SOMETHING_WENT_WRONG
+        try:
+            filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id)
+            user = User.get_by_id(user_id)
+            token = user.generate_jw_token(user_id=user_id)
+            header = {'Authorization': token, 'Content-Type': 'application/json'}
+            response = requests.post(
+                ResumeApiUrl.PARSE,
+                headers=header,
+                data=json.dumps({
+                    'filepicker_key': filepicker_key,
+                    'talent_pools': [],
+                    'create_candidate': True
+                })
+            )
+            if response.status_code == 200:
+                candidate = json.loads(response.content)
+                return "You candidate `%s` `%s` has been added" % (candidate["first_name"], candidate["last_name"])
+            return SOMETHING_WENT_WRONG
+        except InvalidUsage:
+            return "Invalid file type"
+        except urllib2.HTTPError:
+            return "Invalid url"
+
+    @staticmethod
+    @contract
+    def download_resume_and_save_in_bucket(resume_url, user_id):
+        """
+        Opens url checks if it is valid and then download resume from the url and saves it in S3 gtbot-resume-bucket
+        :param positive user_id: User Id
+        :param string resume_url: Resume URL
+        :return: Returns saved resume bucket key
+        :rtype: string
+        """
+        meta = urllib2.urlopen(resume_url)
+        resume_size = meta.headers['Content-Length']
+        if resume_size/(1024*1024) >= 10:
+            return "Resume file size should be less than 10 MB"
+        parsed_data = urlparse(resume_url)
+        _, extension = splitext(parsed_data.path)
+        if extension in IMAGE_FORMATS or extension in DOC_FORMATS:
+            current_datetime = datetime.utcnow()
+            filename = '%d-%s%s.%s' % (user_id, current_datetime.date(), current_datetime.time(), extension)
+            wget.download(resume_url, out=filename)
+            with open(filename, 'r') as freader:
+                boto3_put(freader.read(), app.config['S3_FILEPICKER_BUCKET_NAME'], filename, 'UploadedResumes')
+                return '{}/{}'.format('UploadedResumes', filename)
+        else:
+            raise InvalidUsage
 
     @staticmethod
     def is_valid_year(year):
