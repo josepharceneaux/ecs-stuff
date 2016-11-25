@@ -14,7 +14,8 @@ def test_get_fields():
     # Simple scenario
     fields = Venue.get_fields()
     expected_fields = ['id', 'social_network_id', 'social_network_venue_id', 'user_id', 'address_line_1',
-                       'address_line_2', 'city', 'state', 'zip_code', 'country', 'longitude', 'latitude']
+                       'address_line_2', 'city', 'state', 'zip_code', 'country', 'longitude', 'latitude',
+                       'added_datetime', 'update_datetime']
     assert fields == expected_fields
 
     # Get specific fields
