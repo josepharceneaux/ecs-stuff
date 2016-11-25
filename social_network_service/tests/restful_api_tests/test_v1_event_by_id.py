@@ -159,7 +159,7 @@ class TestEventById(object):
         """
         unauthorize_test('delete', url=SocialNetworkApiUrl.EVENT % event_in_db['id'])
 
-    def test_delete_with_valid_token_123(self, token_first, event_in_db):
+    def test_delete_with_valid_token(self, token_first, event_in_db):
         """
         - Try to delete event data using id, if deleted you expect 200 response
         - Then again try to delete event using same event id and expect 403 response

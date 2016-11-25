@@ -160,9 +160,9 @@ class Eventbrite(EventBase):
                                             params=params_copy,
                                             headers=self.headers,
                                             user_id=self.user.id)
-                except:
+                except Exception as e:
                     logger.exception('get_events: user_id: %s' % self.user.id)
-                    raise
+
                 if response.ok:
                     data = response.json()
                 all_events.extend(data['events'])

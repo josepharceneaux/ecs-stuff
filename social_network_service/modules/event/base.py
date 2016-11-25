@@ -102,6 +102,7 @@ from abc import abstractmethod
 from flask import request
 
 # Application Specific
+from social_network_service.common.constants import HttpMethods
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
@@ -259,13 +260,12 @@ class EventBase(object):
         retrieved event in db.
         :param event_url: event resource rui
         :return: event model object
+        :rtype type(t)
         """
         response = http_request('get', event_url, headers=self.headers)
         if response.ok:
             event = response.json()
             return self.import_event(event)
-        else:
-            logger.warning('Unable to import Event. Event URL: %s\nError:%s' % (event_url, response.text))
 
     def save_or_update_event(self, event_data):
         """
@@ -279,10 +279,11 @@ class EventBase(object):
                                                                        event_data['social_network_event_id'])
         if event:
             event.update(**event_data)
+            logger.info('Event updated successfully : %s' % event.to_json())
         else:
             event = Event(**event_data)
             Event.save(event)
-        logger.info('Event imported/updated successfully : %s' % event.to_json())
+            logger.info('Event imported successfully : %s' % event.to_json())
         return event
 
     def save_or_update_venue(self, venue_data):
@@ -296,9 +297,11 @@ class EventBase(object):
                                                                        venue_data['social_network_venue_id'])
         if venue_in_db:
             venue_in_db.update(**venue_data)
+            logger.info('Venue imported/updated successfully : %s' % venue_in_db.to_json())
         else:
             venue_in_db = Venue(**venue_data)
             Venue.save(venue_in_db)
+            logger.info('Venue imported/updated successfully : %s' % venue_in_db.to_json())
         return venue_in_db
 
     @abstractmethod
@@ -375,7 +378,8 @@ class EventBase(object):
                     logger.exception('''Error occurred while importing event.
                                         UserId: %s,
                                         SocialNetworkId: %s
-                                     ''' % (self.user.id, self.social_network.id))
+                                        Event: %s
+                                     ''' % (self.user.id, self.social_network.id, event))
 
         if events:
             self.post_process_events(events)
@@ -448,12 +452,12 @@ class EventBase(object):
                     not_deleted.append(event_id)
         return deleted, not_deleted
 
-    def unpublish_event(self, event_id, method='DELETE'):
+    def unpublish_event(self, event_id, method=HttpMethods.DELETE):
         """
         This function is used while running unit tests. It deletes the Event from
         database that were created during the lifetime of a unit test.
-        :param event_id: id of newly created event
-        :type event_id: int or long
+        :param int | long event_id: id of newly created event
+        :param string method: http standard method , default is DELETE
         :return: True if event is deleted from vendor, False otherwise.
         :rtype: bool
         """
