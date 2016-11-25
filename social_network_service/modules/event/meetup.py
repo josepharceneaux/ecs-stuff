@@ -225,7 +225,7 @@ class Meetup(EventBase):
                     social_network_venue_id=venue['id'],
                     user_id=self.user.id,
                     address_line_1=venue.get('address_1', ''),
-                    address_line_2='',
+                    address_line_2=venue.get('name', ''),
                     city=venue.get('city', '').title().strip(),
                     state=venue.get('state', '').title().strip(),
                     zip_code=venue.get('zip'),
