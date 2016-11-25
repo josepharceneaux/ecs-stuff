@@ -202,13 +202,13 @@ class Meetup(EventBase):
         venue_obj = None
         venue_data = None
         venue = event.get('venue')
-
-        start_time = milliseconds_since_epoch_to_dt(float(event['time'])) if event.get('time') else None
+        start_time = event.get('time')
+        utc_offset = event.get('utc_offset')
+        if start_time:
+            start_time = milliseconds_since_epoch_to_dt(start_time + (utc_offset or 0))
         end_time = event.get('duration', None)
         if start_time and end_time:
-            end_time = \
-                milliseconds_since_epoch_to_dt(
-                    (float(event['time'])) + (float(end_time) * 1000))
+            end_time = milliseconds_since_epoch_to_dt(event['time'] + end_time + (utc_offset or 0))
 
         if venue:
             # venue data looks like
