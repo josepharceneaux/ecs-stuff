@@ -17,6 +17,7 @@ from talentbot_service.common.models.user import TalentbotAuth
 from talentbot_service.common.models.user import User
 from talentbot_service.common.error_handling import NotFoundError
 # App specific import
+from talentbot_service.modules.constants import AVERAGE_QUESTION_MATCH_RATIO
 from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger
 # 3rd party imports
@@ -29,12 +30,22 @@ class SlackBot(TalentBot):
     """
     This class inherits from Talentbot and handles Slack messages
     """
+
+    def respond_if_long_processing(self, channel_id, user_message, slack_client):
+        """
+        Checks if it is a long processing question replies with an appropriate message
+        :param string channel_id: Slack Channel Id
+        :param string user_message: User Message
+        :param SlackClient slack_client: Slack Client object
+        """
+        match_ratio = self.match_question(user_message, self.list_of_questions[72])
+        if match_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
+            logger.info("Responding before processing")
+            self.reply(channel_id, "I am parsing resume, I will notify you when it is completed", slack_client)
+
     def __init__(self, questions, bot_name, error_messages):
         super(SlackBot, self).__init__(questions, bot_name, error_messages)
-        self.recent_channel_id = None
         self.timestamp = None
-        self.recent_user_id = None
-        self.is_active = None
 
     def authenticate_user(self, slack_user_id, message, channel_id):
         """
@@ -144,8 +155,7 @@ class SlackBot(TalentBot):
         is_authenticated, message, slack_client, user_id = self.authenticate_user(slack_user_id, message, channel_id)
         if is_authenticated:
             self.timestamp = timestamp
-            self.recent_channel_id = channel_id
-            self.recent_user_id = slack_user_id
+            self.respond_if_long_processing(channel_id, message, slack_client)
             try:
                 response_generated = self.parse_message(message, user_id)
                 if response_generated:

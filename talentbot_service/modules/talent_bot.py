@@ -301,3 +301,10 @@ class TalentBot(object):
         """
         response_message = response_message.replace('*', '').replace('`', '"').replace('>>>', '')
         return response_message
+
+    @abstractmethod
+    def respond_if_long_processing(self, *args):
+        """
+        Checks if handler is going to take long time for processing it replies with an appropriate message to user
+        """
+        pass

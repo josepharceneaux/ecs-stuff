@@ -13,6 +13,7 @@ response
  - question_8_handler()
 """
 # Builtin imports
+import os
 import re
 import urllib2
 from datetime import datetime
@@ -35,15 +36,13 @@ from talentbot_service.common.models.email_campaign import EmailCampaign
 from talentbot_service.common.models.sms_campaign import SmsCampaign
 from talentbot_service.common.models.push_campaign import PushCampaign
 from talentbot_service.common.routes import ResumeApiUrl
-from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket
+from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, delete_from_filepicker_s3
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
-    QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN, BOT_RESUME_BUCKET_NAME,\
+    QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
     SOMETHING_WENT_WRONG
 from talentbot_service import logger, app
 from resume_parsing_service.app.views.parse_lib import IMAGE_FORMATS, DOC_FORMATS
-# 3rd party imports
-from botocore.exceptions import ClientError
 import wget
 
 
@@ -627,7 +626,7 @@ class QuestionHandler(object):
         """
         Adds candidate from a resume url mentioned in message by user
         :param list message_tokens: Tokens of User message
-        :param positive user_id:
+        :param positive user_id: User Id
         :rtype: string
         """
         try:
@@ -655,9 +654,17 @@ class QuestionHandler(object):
                     'create_candidate': True
                 })
             )
+            delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
             if response.status_code == 200:
                 candidate = json.loads(response.content)
-                return "You candidate `%s` `%s` has been added" % (candidate["first_name"], candidate["last_name"])
+                try:
+                    first_name = candidate["candidate"]["first_name"]
+                    talent_pool_name = TalentPool.get_by_id(candidate["candidate"]["talent_pool_ids"]).name
+                    last_name = candidate["candidate"]["last_name"]
+                except KeyError:
+                    return SOMETHING_WENT_WRONG
+                return "Your candidate `%s %s` has been added to `%s` talent pool" % (first_name, last_name,
+                                                                                     talent_pool_name)
             return SOMETHING_WENT_WRONG
         except InvalidUsage:
             return "Invalid file type"
@@ -671,12 +678,12 @@ class QuestionHandler(object):
         Opens url checks if it is valid and then download resume from the url and saves it in S3 gtbot-resume-bucket
         :param positive user_id: User Id
         :param string resume_url: Resume URL
-        :return: Returns saved resume bucket key
+        :return: Returns saved resume's key
         :rtype: string
         """
         meta = urllib2.urlopen(resume_url)
         resume_size = meta.headers['Content-Length']
-        if resume_size/(1024*1024) >= 10:
+        if int(resume_size)/(1024*1024) >= 10:
             return "Resume file size should be less than 10 MB"
         parsed_data = urlparse(resume_url)
         _, extension = splitext(parsed_data.path)
@@ -684,8 +691,9 @@ class QuestionHandler(object):
             current_datetime = datetime.utcnow()
             filename = '%d-%s%s.%s' % (user_id, current_datetime.date(), current_datetime.time(), extension)
             wget.download(resume_url, out=filename)
-            with open(filename, 'r') as freader:
-                boto3_put(freader.read(), app.config['S3_FILEPICKER_BUCKET_NAME'], filename, 'UploadedResumes')
+            with open(filename, 'r') as file_reader:
+                boto3_put(file_reader.read(), app.config['S3_FILEPICKER_BUCKET_NAME'], filename, 'UploadedResumes')
+                os.remove(filename)  # Removing file from directory
                 return '{}/{}'.format('UploadedResumes', filename)
         else:
             raise InvalidUsage

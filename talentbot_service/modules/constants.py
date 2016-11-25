@@ -65,6 +65,7 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates are there w
              'what are campaigns in', 'add candidate']
 POSITIVE_MESSAGES = ['hmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 99
+AVERAGE_QUESTION_MATCH_RATIO = 95
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"
 AUTHENTICATION_FAILURE_MSG = 'Sorry you are not registered to use this service\n' \
                             'Go to the http://www.gettalent.com to register yourself'
@@ -78,9 +79,8 @@ QUESTION_HANDLER_NUMBERS = {'question_handler_1': 1, 'question_handler_4': 4}
 EMAIL_CAMPAIGN = 'Email Campaign'
 PUSH_CAMPAIGN = 'Push Campaign'
 SMS_CAMPAIGN = 'SMS Campaign'
-SOMETHING_WENT_WRONG = "Something went please contact the developer"
+SOMETHING_WENT_WRONG = "Something went wrong while adding candidate please contact the developer"
 ZERO = 0
-BOT_RESUME_BUCKET_NAME = '%s-resume-bucket' % BOT_NAME
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

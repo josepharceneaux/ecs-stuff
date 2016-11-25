@@ -11,7 +11,8 @@ import random
 #  Common utils
 from talentbot_service.common.models.user import TalentbotAuth, UserPhone
 # App specific imports
-from talentbot_service.modules.constants import TEXT_MESSAGE_MAX_LENGTH, AUTHENTICATION_FAILURE_MSG
+from talentbot_service.modules.constants import TEXT_MESSAGE_MAX_LENGTH, AUTHENTICATION_FAILURE_MSG, \
+    AVERAGE_QUESTION_MATCH_RATIO
 from twilio.rest import TwilioRestClient
 from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger
@@ -21,6 +22,18 @@ class SmsBot(TalentBot):
     """
     This class inherits from TalentBot class and handles received SMS from user
     """
+
+    def respond_if_long_processing(self, user_message, recipient):
+        """
+        Checks if handler is going to take long time for processing it replies with an appropriate message to user
+        :param str user_message: User Message
+        :param str recipient: User's mobile number
+        """
+        match_ratio = self.match_question(user_message, self.list_of_questions[72])
+        if match_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
+            logger.info("Responding before processing")
+            self.reply("I am parsing resume, I will notify you when it is completed", recipient)
+
     def __init__(self, questions, bot_name, error_messages, twilio_account_sid, twilio_auth_token,
                  standard_sms_length, twilio_number):
         TalentBot.__init__(self, questions, bot_name, error_messages)
@@ -33,9 +46,9 @@ class SmsBot(TalentBot):
         Authenticates user
         :rtype: tuple(bool, int)
         """
-        user_phone_id = UserPhone.get_by_phone_value(mobile_number)[0].id
+        user_phone_id = UserPhone.get_by_phone_value(mobile_number)
         if user_phone_id:
-            talentbot_auth = TalentbotAuth.get_user_id(user_phone_id=user_phone_id)
+            talentbot_auth = TalentbotAuth.get_user_id(user_phone_id=user_phone_id[0].id)
             if talentbot_auth:
                 return True, talentbot_auth[0]
         return False, None
@@ -75,6 +88,7 @@ class SmsBot(TalentBot):
         """
         is_authenticated, user_id = self.authenticate_user(recipient)
         if is_authenticated:
+            self.respond_if_long_processing(message, recipient)
             try:
                 response_generated = self.parse_message(message, user_id)
                 if response_generated:
