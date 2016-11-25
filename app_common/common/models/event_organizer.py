@@ -1,4 +1,5 @@
 from db import db
+from datetime import datetime
 import event
 
 
@@ -11,6 +12,8 @@ class EventOrganizer(db.Model):
     about = db.Column(db.String(1000))
     social_network_id = db.Column(db.Integer, db.ForeignKey('social_network.Id'), nullable=False)
     social_network_organizer_id = db.Column(db.String(20), nullable=True)
+    added_datetime = db.Column('added_datetime', db.DateTime, default=datetime.utcnow)
+    updated_datetime = db.Column('updated_datetime', db.TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
     event = db.relationship('Event', backref='event_organizer', lazy='dynamic')

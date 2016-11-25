@@ -1,7 +1,9 @@
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 from ..error_handling import InvalidUsage, ForbiddenError
 from db import db
+
 from rsvp import RSVP
 
 
@@ -26,6 +28,8 @@ class Event(db.Model):
     timezone = db.Column(db.String(100))
     max_attendees = db.Column('maxAttendees', db.Integer)
     tickets_id = db.Column('ticketsId', db.Integer, nullable=True)
+    added_datetime = db.Column('addedDateTime', db.DateTime, default=datetime.utcnow)
+    updated_datetime = db.Column('updatedDateTime', db.TIMESTAMP, default=datetime.utcnow)
 
     # Relationship
     rsvps = relationship('RSVP', lazy='dynamic', cascade='all, delete-orphan', passive_deletes=True, backref='event')
@@ -173,6 +177,8 @@ class MeetupGroup(db.Model):
     city = db.Column(db.String(30))
     timezone = db.Column(db.String(100))
     created_datetime = db.Column(db.DateTime)
+    added_datetime = db.Column('added_datetime', db.DateTime, default=datetime.utcnow)
+    updated_datetime = db.Column('updated_datetime', db.TIMESTAMP, default=datetime.utcnow)
 
     @classmethod
     def get_by_group_id(cls, group_id):
