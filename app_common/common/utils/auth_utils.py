@@ -58,7 +58,10 @@ def require_oauth(allow_null_user=False, allow_candidate=False):
                     raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
             else:
                 valid_user_id = response.json().get('user_id')
-                request.user = User.query.get(valid_user_id)
+                user = User.query.get(valid_user_id)
+                if not user:
+                    raise InternalServerError('user not found')
+                request.user = user
                 request.oauth_token = oauth_token
                 request.candidate = None
                 return func(*args, **kwargs)
