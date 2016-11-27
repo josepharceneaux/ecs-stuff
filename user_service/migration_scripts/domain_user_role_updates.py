@@ -23,7 +23,7 @@ def get_permissions():
     """ Function will get and return Permission constants """
     permission_names = [key for key in Permission.PermissionNames.__dict__.keys() if not key.startswith('__')]
     print "ROLE_NAMES: {}".format(permission_names)
-    return permission_names
+    return list(set(permission_names))
 
 
 def add_permissions():

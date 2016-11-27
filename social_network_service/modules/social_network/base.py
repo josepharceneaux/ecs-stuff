@@ -17,6 +17,7 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.validators import raise_if_not_positive_int_or_long
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
+from social_network_service.modules.constants import EVENT, RSVP
 from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import get_class
 from social_network_service.modules.utilities import log_error
@@ -293,19 +294,18 @@ class SocialNetworkBase(object):
                                        headers=self.headers,
                                        **kwargs)
 
-            if mode == 'event':
+            if mode == EVENT:
                 # gets events using respective API of Social Network
                 logger.debug('Getting event(s) of %s(UserId: %s) from '
                              '%s website.' % (self.user.name, self.user.id,
                                               self.social_network.name))
                 self.events = sn_event_obj.get_events()
-                logger.debug('Got %s event(s) of %s(UserId: %s) on %s within '
-                             'provided time range.'
+                logger.info('Got %s live event(s) of %s(UserId: %s) on %s within provided time range.'
                              % (len(self.events), self.user.name, self.user.id,
                                 self.social_network.name))
                 # process events to save in database
                 sn_event_obj.process_events(self.events)
-            elif mode == 'rsvp':
+            elif mode == RSVP:
                 sn_event_obj.process_events_rsvps(user_credentials, **kwargs)
         except Exception:
             logger.exception('process: running %s importer, user_id: %s, '
@@ -607,7 +607,7 @@ from datetime import datetime
                                      social_network_id=social_network.id,
                                      access_token=access_token,
                                      refresh_token=refresh_token)
-        cls.save_user_credentials_in_db(user_credentials_dict)
+        return cls.save_user_credentials_in_db(user_credentials_dict)
 
     @classmethod
     def disconnect(cls, user_id, social_network):

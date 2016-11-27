@@ -250,7 +250,7 @@ def meetup_vendor_api(event_id=None):
                 }
             }
         },
-        Urls.MEETUP[Urls.EVENTS].format(''): {
+        Urls.MEETUP[Urls.EVENTS].format('').replace('events', 'event'): {
             HttpMethods.POST: {
                 codes.OK: {
                     'status_code': codes.CREATED,
