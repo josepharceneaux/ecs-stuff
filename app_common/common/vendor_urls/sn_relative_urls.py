@@ -29,7 +29,7 @@ class SocialNetworkUrls(object):
               REFRESH_TOKEN: '{}/access',
               GROUPS: '{}/groups',
               VENUES: '{}/venues',
-              EVENTS: '{}/event',  # This is singular on Meetup website,
+              EVENTS: '{}/events',
               EVENT: '{}/event/{}',
               }
 

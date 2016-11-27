@@ -12,7 +12,6 @@ from social_network_service.common.routes import MockServiceApiUrl
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from social_network_service.modules.constants import MOCK_VENDORS
-from social_network_service.modules.event.base import EventBase
 from social_network_service.social_network_app import app, logger
 
 

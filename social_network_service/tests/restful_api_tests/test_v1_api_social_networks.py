@@ -13,7 +13,7 @@ from social_network_service.common.tests.api_conftest import token_first, user_f
 from social_network_service.social_network_app import logger
 
 
-def test_subscribed_social_network(token_first, user_first, is_subscribed_test_data):
+def test_subscribed_social_network(token_first, user_first, test_eventbrite_credentials, test_meetup_credentials):
     """
     Input: We created two test social networks with name SN1 and SN2 and added credentials for SN1
     in UserSocialNetworkCredential Table in is_subscribed_test_data fixture.
@@ -30,15 +30,10 @@ def test_subscribed_social_network(token_first, user_first, is_subscribed_test_d
     assert response.status_code == 200
     social_networks = json.loads(response.text)['social_networks']
     assert all(['is_subscribed' in sn for sn in social_networks])
-    add_social_networks = filter(lambda sn: sn['name'] in ['SN1', 'SN2'], social_networks)
-    assert len(add_social_networks) >= 2, 'There should be two items after filter that we added now'
-    subscribed_social_network = filter(lambda sn: sn['name'] in ['SN1'], add_social_networks)
-    assert len(subscribed_social_network) == 1, 'Only one added social network is subscribed'
-    assert subscribed_social_network[0]['is_subscribed'] == True, 'SN1 must be subscribed'
-
-    not_subscribed_social_network = filter(lambda sn: sn['name'] in ['SN2'], add_social_networks)
-    assert len(not_subscribed_social_network) == 1, 'Only one added social network is subscribed'
-    assert not_subscribed_social_network[0]['is_subscribed'] == False, 'SN2 must be not subscribed'
+    subscribed_social_networks = filter(lambda sn: sn['is_subscribed'], social_networks)
+    assert len(subscribed_social_networks) == 2
+    subscribed_social_network = filter(lambda sn: sn['name'] in ['Eventbrite', 'Meetup'], subscribed_social_networks)
+    assert len(subscribed_social_network) == 2, 'Subscribed social networks must be Meetup and Eventbrite'
 
 
 def test_social_network_no_auth():

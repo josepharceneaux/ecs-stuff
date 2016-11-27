@@ -102,12 +102,14 @@ from abc import abstractmethod
 from flask import request
 
 # Application Specific
+from social_network_service.common.constants import HttpMethods
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
+from social_network_service.modules.urls import get_url
 from social_network_service.social_network_app import logger
 from social_network_service.common.models.venue import Venue
 from social_network_service.modules.utilities import log_error
@@ -116,6 +118,7 @@ from social_network_service.custom_exceptions import NoUserFound, VenueNotFound
 from social_network_service.custom_exceptions import EventNotSaveInDb
 from social_network_service.custom_exceptions import EventNotUnpublished
 from social_network_service.custom_exceptions import UserCredentialsNotFound
+from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 
 
@@ -251,6 +254,56 @@ class EventBase(object):
         """
         pass
 
+    def get_event(self, event_url):
+        """
+        This method takes event resource uri, sends a GET call to respective social network API and then saves
+        retrieved event in db.
+        :param event_url: event resource rui
+        :return: event model object
+        :rtype type(t)
+        """
+        response = http_request('get', event_url, headers=self.headers)
+        if response.ok:
+            event = response.json()
+            return self.import_event(event)
+
+    def save_or_update_event(self, event_data):
+        """
+        This method takes event dictionary data and save that event in database or update the existing one
+        if there is already event there with this data.
+        :param event_data: event dict
+        :return: Event model object
+        """
+        event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id,
+                                                                       self.social_network.id,
+                                                                       event_data['social_network_event_id'])
+        if event:
+            event.update(**event_data)
+            logger.info('Event updated successfully : %s' % event.to_json())
+        else:
+            event = Event(**event_data)
+            Event.save(event)
+            logger.info('Event imported successfully : %s' % event.to_json())
+        return event
+
+    def save_or_update_venue(self, venue_data):
+        """
+        This method takes venue dictionary data and save that venue in database or update the existing one
+        if there is already venue there with this data.
+        :param venue_data: venue dict
+        :return: Venue model object
+        """
+        venue_in_db = Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
+                                                                       venue_data['social_network_venue_id'])
+        if venue_in_db:
+            venue_in_db.update(**venue_data)
+            logger.info('Venue imported/updated successfully : %s' % venue_in_db.to_json())
+        else:
+            venue_in_db = Venue(**venue_data)
+            Venue.save(venue_in_db)
+            logger.info('Venue imported/updated successfully : %s' % venue_in_db.to_json())
+        return venue_in_db
+
     @abstractmethod
     def event_sn_to_gt_mapping(self, event):
         """
@@ -319,33 +372,15 @@ class EventBase(object):
                          'to save in database.'
                          % (self.user.name, self.user.id))
             for event in events:
-                event = self.event_sn_to_gt_mapping(event)
-                if event:
-                    event_in_db = \
-                        Event.get_by_user_and_social_network_event_id(
-                            event.user_id,
-                            event.social_network_event_id)
-                    try:
-                        if event_in_db:
-                            data = dict(title=event.title,
-                                        description=event.description,
-                                        start_datetime=event.start_datetime,
-                                        end_datetime=event.end_datetime,
-                                        url=event.url,
-                                        timezone=event.timezone,
-                                        max_attendees=event.max_attendees)
-                            event_in_db.update(**data)
-                        else:
-                            Event.save(event)
-                    except:
-                        logger.exception('process_events: Cannot process event. '
-                                         'social_network_event_id: %s, user_id: %s, '
-                                         'social network: %s(id: %s)'
-                                         % (event.social_network_event_id, self.user.id,
-                                            self.social_network.name, self.social_network.id))
-            logger.debug('%s Event(s) of %s(UserId: %s) has/have been '
-                         'saved/updated in database.'
-                         % (len(events), self.user.name, self.user.id))
+                try:
+                    self.import_event(event)
+                except Exception as e:
+                    logger.exception('''Error occurred while importing event.
+                                        UserId: %s,
+                                        SocialNetworkId: %s
+                                        Event: %s
+                                     ''' % (self.user.id, self.social_network.id, event))
+
         if events:
             self.post_process_events(events)
 
@@ -417,17 +452,17 @@ class EventBase(object):
                     not_deleted.append(event_id)
         return deleted, not_deleted
 
-    def unpublish_event(self, event_id, method='POST'):
+    def unpublish_event(self, event_id, method=HttpMethods.DELETE):
         """
         This function is used while running unit tests. It deletes the Event from
         database that were created during the lifetime of a unit test.
-        :param event_id: id of newly created event
-        :type event_id: int or long
+        :param int | long event_id: id of newly created event
+        :param string method: http standard method , default is DELETE
         :return: True if event is deleted from vendor, False otherwise.
         :rtype: bool
         """
         # create url to publish event
-        url = self.url_to_delete_event
+        url = get_url(self, Urls.EVENT).format(event_id)
         # params are None. Access token is present in self.headers
         response = http_request(method, url, headers=self.headers, user_id=self.user.id)
         if response.ok:
@@ -449,6 +484,19 @@ class EventBase(object):
         :return:
         """
         pass
+
+    def import_event(self, event):
+        """
+        This method takes json event data from social network. It then mapps that data to getTalent event
+        and saves in db.
+        :param event: json data for event
+        :return: Event model object
+        """
+        event_data, venue_data = self.event_sn_to_gt_mapping(event)
+        if venue_data:
+            venue_in_db = self.save_or_update_venue(venue_data)
+            event_data['venue_id'] = venue_in_db.id
+        return self.save_or_update_event(event_data)
 
     def get_events_from_db(self, start_date=None):
         """
