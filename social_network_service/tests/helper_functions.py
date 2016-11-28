@@ -161,3 +161,12 @@ def match_data(graphql_obj, restful_obj, fields):
         graphql_obj[field] = '' if graphql_obj[field] is None else graphql_obj[field]
         assert graphql_obj[field] == restful_obj[field], 'field: %s, GraphqlObj: %s\nRestfulObj: %s' \
                                                          % (field, graphql_obj, restful_obj)
+
+
+def match_event_fields(event):
+    assert event['added_datetime']
+    assert event['updated_datetime']
+    assert event['social_network_event_id']
+    assert event['social_network_id']
+    assert event['id']
+

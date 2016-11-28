@@ -8,9 +8,11 @@ Author:
 """
 # Standard Library
 from copy import deepcopy
+import json
 
 # Third Party
 import pytest
+import requests
 from requests import codes
 
 # Common conftests
@@ -40,7 +42,9 @@ from social_network_service.common.utils.handy_functions import send_request
 # Application Specific
 from social_network_service.modules.social_network.eventbrite import Eventbrite
 from social_network_service.social_network_app import app
-from social_network_service.common.constants import FACEBOOK
+from social_network_service.common.constants import FACEBOOK, MEETUP
+from social_network_service.social_network_app import logger
+from social_network_service.tests.helper_functions import get_headers
 
 
 @pytest.fixture(scope='session')
@@ -248,6 +252,26 @@ def venue_in_db_second(request):
     e.g. In case of Eventbrite, it will return fixture named as "eventbrite_venue_second"
     """
     return request.getfuncargvalue("{}_venue_second".format(request.param.lower()))
+
+
+@pytest.fixture(scope="function")
+def post_venue_for_field_match(token_first):
+    social_network = SocialNetwork.get_by_name(MEETUP.title())
+    venue = {
+            "social_network_id": social_network.id,
+            "zip_code": "54600",
+            "address_line_2": "H# 163, Block A",
+            "address_line_1": "New Muslim Town",
+            "latitude": 0,
+            "longitude": 0,
+            "state": "CA",
+            "city": "Lahore",
+            "country": "Pakistan"
+        }
+    response = requests.post(SocialNetworkApiUrl.VENUES, data=json.dumps(venue), headers=get_headers(token_first))
+    logger.info(response.text)
+    return response.status_code
+
 
 
 @pytest.fixture()

@@ -20,7 +20,7 @@ from social_network_service.social_network_app import logger
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service.tests.helper_functions import auth_header, send_post_request
+from social_network_service.tests.helper_functions import auth_header, send_post_request, match_event_fields
 from social_network_service.common.campaign_services.tests_helpers import assert_invalid_datetime_format
 from social_network_service.custom_exceptions import (VenueNotFound, EventInputMissing, EventOrganizerNotFound,
                                                       SocialNetworkNotImplemented, SocialNetworkError)
@@ -58,6 +58,9 @@ class TestResourceEvents(object):
         assert response.status_code == codes.OK, 'Status should be Ok (200)'
         events = response.json()['events']
         assert len(events) >= 1, 'There should be some events for test user'
+        if len(events) >= 1:
+            match_event_fields(events[0])
+
 
     def test_events_get_in_domain_of_user(self, token_same_domain, event_in_db, event_in_db_second):
         """
@@ -69,6 +72,8 @@ class TestResourceEvents(object):
         assert response.status_code == codes.OK, 'Status should be Ok (200)'
         events = response.json()['events']
         assert len(events) >= 2, 'There should be 2 events for user of same domain'
+        if len(events) >= 2:
+            match_event_fields(events[0])
 
     def test_events_post_with_invalid_token(self):
         """

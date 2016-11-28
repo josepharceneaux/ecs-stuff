@@ -35,6 +35,12 @@ class TestVenues(object):
         results = response.json()
         assert 'venues' in results
 
+    # def test_match_venue_fileds(self, token_first, post_venue_for_field_match):
+    #     response = requests.get(SocialNetworkApiUrl.VENUES, headers=auth_header(token_first))
+    #     logger.info(response.text)
+    #     assert response.status_code == codes.OK, 'Status should be Ok (200)'
+    #     results = response.json()
+
     def test_post_with_invalid_token(self):
         """
         Send POST request to create venue endpoint with invalid token in header and response should be 401 unauthorized
