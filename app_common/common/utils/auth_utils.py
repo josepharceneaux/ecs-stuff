@@ -60,7 +60,7 @@ def require_oauth(allow_null_user=False, allow_candidate=False):
                 valid_user_id = response.json().get('user_id')
                 user = User.query.get(valid_user_id)
                 if not user:
-                    raise InternalServerError('user not found')
+                    raise InternalServerError('user(id:%s) not found' % valid_user_id)
                 request.user = user
                 request.oauth_token = oauth_token
                 request.candidate = None
