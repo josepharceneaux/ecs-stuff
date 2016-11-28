@@ -79,8 +79,11 @@ QUESTION_HANDLER_NUMBERS = {'question_handler_1': 1, 'question_handler_4': 4}
 EMAIL_CAMPAIGN = 'Email Campaign'
 PUSH_CAMPAIGN = 'Push Campaign'
 SMS_CAMPAIGN = 'SMS Campaign'
-SOMETHING_WENT_WRONG = "Something went wrong while adding candidate please contact the developer"
+SOMETHING_WENT_WRONG = "Something went wrong while adding candidate please contact the developer `osman@gettalent.com`"
+I_AM_PARSING_A_RESUME = "I am parsing a resume, I will notify you as soon as I am done"
 ZERO = 0
+ADD_CANDIDATE_FROM_URL = 72
+NUMBER_OF_BYTES_IN_10_MB = 1024*1024*10
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

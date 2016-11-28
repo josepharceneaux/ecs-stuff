@@ -15,17 +15,14 @@ response
 # Builtin imports
 import os
 import re
+import urllib
 import urllib2
 from datetime import datetime
 from os.path import splitext
 from urlparse import urlparse
-
-import requests
 from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
-from flask import json
-
 from talentbot_service.common.constants import OWNED, DOMAIN_SPECIFIC
 from talentbot_service.common.error_handling import NotFoundError, InvalidUsage, InternalServerError
 from talentbot_service.common.models.user import User
@@ -40,10 +37,12 @@ from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, d
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
-    SOMETHING_WENT_WRONG
+    SOMETHING_WENT_WRONG, NUMBER_OF_BYTES_IN_10_MB
 from talentbot_service import logger, app
 from resume_parsing_service.app.views.parse_lib import IMAGE_FORMATS, DOC_FORMATS
-import wget
+# 3rd party imports
+from flask import json
+import requests
 
 
 class QuestionHandler(object):
@@ -630,16 +629,19 @@ class QuestionHandler(object):
         :rtype: string
         """
         try:
-            resume_url = re.search("(?P<url>https?://[^\s]+)", ' '.join(message_tokens)).group("url")
+            resume_url = re.search("(?P<url>((https?)|(ftps?))://[^\s]+)", ' '.join(message_tokens)).group("url")
         except AttributeError:  # If url doesn't start with http:// or https://
             return "URL must start with `http://` or `https://`"
         try:
-            bucket_creation_response = create_bucket()
+            '''
+            create_bucket() method checks if resume bucket exists on S3 if it does create_bucket() returns bucket
+            object if it does not exist create_bucket() creates the bucket with a predefined name (stored in cfg file).
+            If some error occurs while creating bucket create_bucket() raises InternalServerError
+            '''
+            create_bucket()
         except InternalServerError as error:
             logger.error(error.message)
-            return SOMETHING_WENT_WRONG
-        if not bucket_creation_response:
-            return SOMETHING_WENT_WRONG
+            return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
         try:
             filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id)
             user = User.get_by_id(user_id)
@@ -654,22 +656,29 @@ class QuestionHandler(object):
                     'create_candidate': True
                 })
             )
-            delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
-            if response.status_code == 200:
-                candidate = json.loads(response.content)
+            try:
+                delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
+            except Exception as error:
+                logger.warning("Error occurred while deleting S3 bucket: %s" % error.message)
+            if response.status_code == requests.codes.OK:
+                candidate = response.json()
                 try:
                     first_name = candidate["candidate"]["first_name"]
                     talent_pool_name = TalentPool.get_by_id(candidate["candidate"]["talent_pool_ids"]).name
                     last_name = candidate["candidate"]["last_name"]
-                except KeyError:
-                    return SOMETHING_WENT_WRONG
+                except KeyError as error:
+                    logger.error("Error occurred while getting candidate from RPS: %s" % error.message)
+                    return SOMETHING_WENT_WRONG  # Replying user with a response message for KeyError error
                 return "Your candidate `%s %s` has been added to `%s` talent pool" % (first_name, last_name,
-                                                                                     talent_pool_name)
-            return SOMETHING_WENT_WRONG
-        except InvalidUsage:
-            return "Invalid file type"
+                                                                                      talent_pool_name)
+            return SOMETHING_WENT_WRONG  # Replying with a response message if response code from RPS is other than OK
+
+        except InvalidUsage as error:
+            return error.message
         except urllib2.HTTPError:
             return "Invalid url"
+        except urllib.ContentTooShortError:
+            return "File size too small"
 
     @staticmethod
     @contract
@@ -682,21 +691,21 @@ class QuestionHandler(object):
         :rtype: string
         """
         meta = urllib2.urlopen(resume_url)
-        resume_size = meta.headers['Content-Length']
-        if int(resume_size)/(1024*1024) >= 10:
-            return "Resume file size should be less than 10 MB"
+        resume_size_in_bytes = meta.headers['Content-Length']
+        if int(resume_size_in_bytes) >= NUMBER_OF_BYTES_IN_10_MB:
+            raise InvalidUsage("Resume file size should be less than 10 MB")
         parsed_data = urlparse(resume_url)
         _, extension = splitext(parsed_data.path)
         if extension in IMAGE_FORMATS or extension in DOC_FORMATS:
             current_datetime = datetime.utcnow()
-            filename = '%d-%s%s.%s' % (user_id, current_datetime.date(), current_datetime.time(), extension)
-            wget.download(resume_url, out=filename)
+            filename = '%d-%s%s%s' % (user_id, current_datetime.date(), current_datetime.time(), extension)
+            urllib.urlretrieve(resume_url, filename)
             with open(filename, 'r') as file_reader:
                 boto3_put(file_reader.read(), app.config['S3_FILEPICKER_BUCKET_NAME'], filename, 'UploadedResumes')
                 os.remove(filename)  # Removing file from directory
                 return '{}/{}'.format('UploadedResumes', filename)
         else:
-            raise InvalidUsage
+            raise InvalidUsage("Unsupported Resume Type")
 
     @staticmethod
     def is_valid_year(year):

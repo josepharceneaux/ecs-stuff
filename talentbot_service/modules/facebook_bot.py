@@ -10,7 +10,7 @@ with Facebook.
 import random
 # Common utils
 from talentbot_service.modules.constants import FACEBOOK_MESSAGE_LIMIT, FACEBOOK_MESSAGE_SPLIT_COUNT, \
-    AVERAGE_QUESTION_MATCH_RATIO
+    I_AM_PARSING_A_RESUME
 from talentbot_service.common.models.user import TalentbotAuth
 # Service specific
 from talentbot_service import app
@@ -25,18 +25,6 @@ class FacebookBot(TalentBot):
     """
     This class handles bot communication with user on Facebook
     """
-
-    def respond_if_long_processing(self, fb_user_id, user_message):
-        """
-        Checks if handler is going to take long time for processing it replies with an appropriate message to user
-        :param str fb_user_id: facebook user id who has sent us message
-        :param str user_message: User message
-        """
-        match_ratio = self.match_question(user_message, self.list_of_questions[72])
-        if match_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
-            logger.info("Responding before processing")
-            self.reply(fb_user_id, "I am parsing resume, I will notify you when it is completed")
-
     def __init__(self, questions, bot_name, error_messages):
         TalentBot.__init__(self, questions, bot_name, error_messages)
         self.timestamp = None
@@ -61,7 +49,8 @@ class FacebookBot(TalentBot):
         """
         is_authenticated, user_id = self.authenticate_user(fb_user_id)
         if is_authenticated:
-            self.respond_if_long_processing(fb_user_id, message)
+            if self.is_response_time_more_than_usual(message):
+                self.reply(fb_user_id, I_AM_PARSING_A_RESUME)
             try:
                 self.sender_action(fb_user_id, "mark_seen")
                 self.sender_action(fb_user_id, "typing_on")

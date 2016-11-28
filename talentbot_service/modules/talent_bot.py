@@ -11,12 +11,12 @@ import random
 import re
 from abc import abstractmethod
 # App specific imports
-from constants import BEST_QUESTION_MATCH_RATIO, GREETINGS, POSITIVE_MESSAGES, HINT, MIN_WORDS_IN_QUESTION
+from constants import BEST_QUESTION_MATCH_RATIO, GREETINGS, POSITIVE_MESSAGES, HINT, MIN_WORDS_IN_QUESTION, \
+    AVERAGE_QUESTION_MATCH_RATIO, ADD_CANDIDATE_FROM_URL
 from talentbot_service.modules.question_handler import QuestionHandler
 from talentbot_service import logger
 # 3rd party imports
 from fuzzywuzzy import fuzz
-import stopwords
 from contracts import contract
 # TODO: There is a class TwilioSMS in sms-campaign-service, move sms related code there in future
 
@@ -302,9 +302,15 @@ class TalentBot(object):
         response_message = response_message.replace('*', '').replace('`', '"').replace('>>>', '')
         return response_message
 
-    @abstractmethod
-    def respond_if_long_processing(self, *args):
+    @contract
+    def is_response_time_more_than_usual(self, user_message):
         """
-        Checks if handler is going to take long time for processing it replies with an appropriate message to user
+        Checks if handler is going to take long time for processing
+        :param string user_message: User message
+        :rtype: bool
         """
-        pass
+        match_ratio = self.match_question(user_message, self.list_of_questions[ADD_CANDIDATE_FROM_URL])
+        if match_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
+            logger.info("Responding before processing")
+            return True
+        return False

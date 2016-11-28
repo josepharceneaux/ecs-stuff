@@ -11,7 +11,7 @@ import random
 from talentbot_service.common.models.user import TalentbotAuth
 # App specific imports
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
-from talentbot_service.modules.constants import AUTHENTICATION_FAILURE_MSG, AVERAGE_QUESTION_MATCH_RATIO
+from talentbot_service.modules.constants import AUTHENTICATION_FAILURE_MSG, I_AM_PARSING_A_RESUME
 from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger, app
 from talentbot_service.common.utils.amazon_ses import send_email
@@ -25,18 +25,6 @@ class EmailBot(TalentBot):
                  bot_image, error_messages):
         super(EmailBot, self).__init__(questions, bot_name, error_messages)
         self.bot_image = bot_image
-
-    def respond_if_long_processing(self, recipient, subject, user_message):
-        """
-        Checks if it is a long processing question replies with an appropriate message
-        :param str recipient: Email sender
-        :param str subject: Subject of email
-        :param str user_message: User message
-        """
-        match_ratio = self.match_question(user_message, self.list_of_questions[72])
-        if match_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
-            logger.info("Responding before processing")
-            self.reply(recipient, subject, "I am parsing resume, I will notify you when it is completed")
 
     def authenticate_user(self, email_id, subject, email_body):
         """
@@ -80,7 +68,8 @@ class EmailBot(TalentBot):
         """
         is_authenticated, message, user_id = self.authenticate_user(recipient, subject, message)
         if is_authenticated:
-            self.respond_if_long_processing(recipient, subject, message)
+            if self.is_response_time_more_than_usual(message):
+                self.reply(recipient, subject, I_AM_PARSING_A_RESUME)
             try:
                 response_generated = self.parse_message(message, user_id)
                 if not response_generated:
