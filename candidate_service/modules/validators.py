@@ -497,7 +497,7 @@ def does_candidate_cf_exist(candidate, custom_field_id, value):
     :rtype:  bool
     """
     for custom_field in candidate.custom_fields:
-        if custom_field.id == custom_field_id and (custom_field.value or '').lower() == value.lower():
+        if custom_field.custom_field_id == custom_field_id and (custom_field.value or '').lower() == value.lower():
             return True
     return False
 
