@@ -1,0 +1,87 @@
+
+from sqlalchemy import text
+
+from social_network_service.common.models.db import db
+from social_network_service.common.models.event import Event, MeetupGroup
+from social_network_service.common.models.rsvp import RSVP
+from social_network_service.common.models.event_organizer import EventOrganizer
+from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.models.venue import Venue
+
+
+# Check for missing column before trying to add it
+table_name = Event.__tablename__
+first_column = 'addedDateTime'
+second_column = 'updatedDateTime'
+result = db.session.execute(text("show columns from {}".format(table_name)))
+columns = list(result)
+present = [col for col in columns if first_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} add column {} DATETIME DEFAULT NULL".format(table_name, first_column)))
+present = [col for col in columns if second_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} add column {} TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP".format(table_name, second_column)))
+
+
+table_name = MeetupGroup.__tablename__
+first_column = 'added_datetime'
+second_column = 'updated_datetime'
+result = db.session.execute(text("show columns from {}".format(table_name)))
+columns = list(result)
+present = [col for col in columns if first_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} add column {} DATETIME DEFAULT NULL".format(table_name, first_column)))
+present = [col for col in columns if second_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} add column {} TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP".format(table_name, second_column)))
+
+table_name = RSVP.__tablename__
+first_column = 'addedDateTime'
+second_column = 'updatedDateTime'
+result = db.session.execute(text("show columns from {}".format(table_name)))
+columns = list(result)
+present = [col for col in columns if first_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} add column {} DATETIME DEFAULT NULL".format(table_name, first_column)))
+present = [col for col in columns if second_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} add column {} TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP".format(table_name, second_column)))
+
+table_name = EventOrganizer.__tablename__
+first_column = 'added_datetime'
+second_column = 'updated_datetime'
+result = db.session.execute(text("show columns from {}".format(table_name)))
+columns = list(result)
+present = [col for col in columns if first_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} add column {} DATETIME DEFAULT NULL".format(table_name, first_column)))
+present = [col for col in columns if second_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} add column {} TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP".format(table_name, second_column)))
+
+table_name = Venue.__tablename__
+first_column = 'AddedDateTime'
+second_column = 'UpdatedDateTime'
+result = db.session.execute(text("show columns from {}".format(table_name)))
+columns = list(result)
+present = [col for col in columns if first_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} add column {} DATETIME DEFAULT NULL".format(table_name, first_column)))
+present = [col for col in columns if second_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} add column {} TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP".format(table_name, second_column)))
+
+table_name = UserSocialNetworkCredential.__tablename__
+first_column = 'AddedDateTime'
+second_column = 'UpdatedDateTime'
+result = db.session.execute(text("show columns from {}".format(table_name)))
+columns = list(result)
+present = [col for col in columns if first_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} add column {} DATETIME DEFAULT NULL".format(table_name, first_column)))
+present = [col for col in columns if second_column in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table {} modify column {} TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP".format(table_name, second_column)))
+
+
+db.session.commit()
