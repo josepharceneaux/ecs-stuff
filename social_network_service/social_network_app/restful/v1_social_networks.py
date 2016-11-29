@@ -47,6 +47,7 @@ from flask.ext.restful import Resource
 from social_network_service.common.constants import MEETUP
 from social_network_service.common.models.event import MeetupGroup
 from social_network_service.modules import custom_codes
+from social_network_service.tasks import import_events
 from social_network_service.modules.custom_codes import VENUE_EXISTS_IN_GT_DATABASE
 from social_network_service.modules.social_network.base import SocialNetworkBase
 from social_network_service.social_network_app import logger
@@ -1149,7 +1150,8 @@ class ProcessAccessTokenResource(Resource):
         if social_network:
             # Get social network specific Social Network class
             social_network_class = get_class(social_network.name, 'social_network')
-            social_network_class.connect(user_id, social_network, code)
+            credentials = social_network_class.connect(user_id, social_network, code)
+            import_events.delay(credentials)
             return dict(message='User credentials added successfully'), 201
         else:
             raise ResourceNotFound('Social Network not found')

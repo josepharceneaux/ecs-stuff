@@ -5,7 +5,6 @@ It also contains methods to get RSVPs of events.
 """
 
 # Standard Library
-import json
 from datetime import datetime
 from datetime import timedelta
 
@@ -117,7 +116,7 @@ class Eventbrite(EventBase):
             kwargs.get('date_range_end') \
             or datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    def get_events(self):
+    def get_events(self, status='live', order_by='start_asc'):
         """
         We send GET requests to Eventbrite API and get already created events
         by this user on eventbrite.com.
@@ -127,11 +126,11 @@ class Eventbrite(EventBase):
         :rtype all_events: list
         """
         # create url to fetch events from eventbrite.com
-        events_url = get_url(self, Urls.EVENT).format('search/')
-        params = {'user.id': self.member_id,
-                  'date_created.range_start': self.start_date_in_utc,
-                  'date_created.range_end': self.end_date_in_utc
-                  }
+        search = str(self.member_id) + '/owned_events'
+        events_url = get_url(self, Urls.USER).format(search)
+        params = {
+            'status': status
+        }
         # initialize event list to empty
         all_events = []
         try:
@@ -148,11 +147,9 @@ class Eventbrite(EventBase):
         if response.ok:
             # if response is ok, get json data
             data = response.json()
-            page_size = data['pagination']['page_size']
-            total_records = data['pagination']['object_count']
             all_events.extend(data['events'])
             current_page = 1
-            total_pages = total_records / page_size
+            total_pages = data['pagination']['page_count']
             for page in range(1, total_pages):
                 params_copy = params.copy()
                 current_page += 1
@@ -163,13 +160,12 @@ class Eventbrite(EventBase):
                                             params=params_copy,
                                             headers=self.headers,
                                             user_id=self.user.id)
-                except:
+                except Exception as e:
                     logger.exception('get_events: user_id: %s' % self.user.id)
-                    raise
+
                 if response.ok:
                     data = response.json()
                 all_events.extend(data['events'])
-            return all_events
         return all_events
 
     def event_sn_to_gt_mapping(self, event):
@@ -182,111 +178,44 @@ class Eventbrite(EventBase):
         :type event: dictionary
         :exception Exception: It raises exception if there is an error getting
             data from API.
-        :return: event: Event object
-        :rtype event: common.models.event.Event
+        :return: event_data, venue_data: event dict object,  venue dict data
+        :rtype tuple: event and venue dict data
         """
-        organizer = None
-        organizer_email = None
-        venue = None
-        organizer_id = None
-        venue_id = None
+        venue_obj = None
+        venue_data = None
         assert event is not None
         # Get information about event's venue
-        if event['venue_id']:
-            try:
-                # Get venues from Eventbrite API for this event.
-                response = http_request('GET',
-                                        get_url(self, Urls.VENUE).format(event['venue_id']),
-                                        headers=self.headers,
-                                        user_id=self.user.id)
-            except:
-                logger.exception('event_sn_to_gt_mapping: user_id: %s,'
-                                 'social_network_event_id: %s' % (self.user.id, event['id']))
-                raise
-            if response.ok:
-                # get json data for venue
-                venue = response.json()
-                # Now let's try to get the information about the event's
-                # organizer
-                if event['organizer_id']:
-                    try:
-                        # Get organizer of the event from Eventbrite API.
-                        response = http_request(
-                            'GET',
-                            get_url(self, Urls.ORGANIZER).format(event['organizer_id']),
-                            headers=self.headers,
-                            user_id=self.user.id)
-                    except:
-                        logger.exception('event_sn_to_gt_mapping: user_id: %s, '
-                                         'social_network_event_id: %s'
-                                 % (self.user.id, event['id']))
-                        raise
-                    if response.ok:
-                        # Get json data  for organizer
-                        organizer = json.loads(response.text)
-                    if organizer:
-                        try:
-                            response = http_request(
-                                'GET',
-                                get_url(self, Urls.USER).format(self.member_id),
-                                headers=self.headers,
-                                user_id=self.user.id)
-                        except:
-                            logger.exception('event_sn_to_gt_mapping: user_id: %s, '
-                                             'social_network_event_id: %s'
-                                             % (self.user.id, event['id']))
-                            raise
-                        if response.ok:
-                            organizer_info = json.loads(response.text)
-                            organizer_email = \
-                                organizer_info['emails'][0]['email']
+        venue_id = event.get('venue_id')
+        if venue_id:
+            venue_obj = Venue.get_by_user_id_and_social_network_venue_id(self.user.id, venue_id)
+            if not venue_obj:
+                try:
+                    # Get venues from Eventbrite API for this event.
+                    response = http_request('GET',
+                                            get_url(self, Urls.VENUE).format(event['venue_id']),
+                                            headers=self.headers,
+                                            user_id=self.user.id)
+                except:
+                    logger.exception('event_sn_to_gt_mapping: user_id: %s,'
+                                     'social_network_event_id: %s' % (self.user.id, event['id']))
+                    raise
+                if response.ok:
+                    # get json data for venue
+                    venue = response.json()
+                    venue_data = dict(
+                        social_network_id=self.social_network.id,
+                        social_network_venue_id=event['venue_id'],
+                        user_id=self.user.id,
+                        address_line_1=venue['address']['address_1'],
+                        address_line_2=venue['address']['address_2'],
+                        city=venue['address']['city'],
+                        state=venue['address']['region'],
+                        zip_code=venue['address']['postal_code'],
+                        country=venue['address']['country'],
+                        longitude=float(venue['address']['longitude']) if venue and venue.has_key('address') else 0,
+                        latitude=float(venue['address']['latitude']) if venue and venue.has_key('address') else 0
+                    )
 
-        if organizer:
-            organizer_data = dict(
-                user_id=self.user.id,
-                name=organizer['name'] if organizer.has_key('name') else '',
-                email=organizer_email if organizer_email else '',
-                about=organizer['description']
-                if organizer.has_key('description') else ''
-            )
-
-            organizer_data['about'] = organizer_data['about'].get('html', '') if type(organizer_data['about']) == dict \
-                else ''
-            organizer_in_db = EventOrganizer.get_by_user_id_and_name(
-                self.user.id,
-                organizer['name'] if organizer.has_key('name') else ''
-                                                              )
-            if organizer_in_db:
-                organizer_in_db.update(**organizer_data)
-                organizer_id = organizer_in_db.id
-            else:
-                organizer_instance = EventOrganizer(**organizer_data)
-                EventOrganizer.save(organizer_instance)
-                organizer_id = organizer_instance.id
-        if venue:
-            venue_data = dict(
-                social_network_id=self.social_network.id,
-                social_network_venue_id=event['venue_id'],
-                user_id=self.user.id,
-                address_line_1=venue['address']['address_1'],
-                address_line_2=venue['address']['address_2'],
-                city=venue['address']['city'],
-                state=venue['address']['region'],
-                zip_code=venue['address']['postal_code'],
-                country=venue['address']['country'],
-                longitude=float(venue['address']['longitude']) if venue and venue.has_key('address') else 0,
-                latitude=float(venue['address']['latitude']) if venue and venue.has_key('address') else 0
-            )
-            venue_in_db = \
-                Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
-                                                                 venue['id'])
-            if venue_in_db:
-                venue_in_db.update(**venue_data)
-                venue_id = venue_in_db.id
-            else:
-                venue = Venue(**venue_data)
-                Venue.save(venue)
-                venue_id = venue.id
         # return Event object
         event_data = dict(
             social_network_event_id=event['id'],
@@ -297,8 +226,7 @@ class Eventbrite(EventBase):
             social_network_group_id=0,
             url=event.get('url'),
             group_url_name='',
-            organizer_id=organizer_id,
-            venue_id=venue_id,
+            venue_id=venue_obj.id if venue_obj else None,
             start_datetime=event['start']['local'],
             end_datetime=event['end']['local'],
             registration_instruction='',
@@ -307,14 +235,7 @@ class Eventbrite(EventBase):
             timezone=event['start']['timezone'],
             max_attendees=event['capacity']
         )
-        event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id, self.social_network.id,
-                                                                       event['id'])
-        if event:
-            event.update(**event_data)
-        else:
-            event = Event(**event_data)
-            Event.save(event)
-        return event
+        return event_data, venue_data
 
     def create_event(self):
         """
@@ -637,22 +558,6 @@ class Eventbrite(EventBase):
             })
             raise EventNotPublished('ApiError: Unable to publish event '
                                     'on Eventbrite')
-
-    def unpublish_event(self, social_network_event_id, method='POST'):
-        """
-        This function is used while running unit tests. It sets the api_relative_url
-        and calls base class method to delete the Event from Eventbrite website
-        which was created in the unit testing.
-        :param social_network_event_id:id of newly created event.
-        :type social_network_event_id: int
-        """
-        # we will only set specific url here
-        self.url_to_delete_event = get_url(self, Urls.UNPUBLISH_EVENT).format(social_network_event_id)
-        # common unpublish functionality is in EventBase class'
-        # unpublish_event() method.
-        # Removes event from Eventbrite and from local database
-        super(Eventbrite, self).unpublish_event(social_network_event_id,
-                                                method=method)
 
     @staticmethod
     def validate_required_fields(data):

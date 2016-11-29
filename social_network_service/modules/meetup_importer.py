@@ -24,7 +24,7 @@ webhook_url = os.environ['webhook_url']
 environment = os.environ.get('environment', 'staging')
 
 # Connect to the database
-connection = pymysql.connect(host=host, user=user, password=password, db=db, cursorclass=pymysql.cursors.DictCursor)
+
 
 lambda_client = boto3.client('lambda')
 
@@ -38,48 +38,52 @@ def meetup_importer(event, context):
     start = datetime.utcnow()
     logger.info('Meetup importer started at UTC: %s' % datetime.utcnow())
     logger.info('Meetup importer URL: %s' % stream_url)
+    connection = pymysql.connect(host=host, user=user, password=password, db=db,
+                                 cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     while True:
         try:
             response = requests.get(stream_url, stream=True, timeout=30)
             logger.info('Meetup Stream Response Status: %s' % response.status_code)
-            with connection.cursor() as cursor:
-                for raw_data in response.iter_lines():
-                    if raw_data:
-                        try:
-                            data = json.loads(raw_data)
-                            if importer_type == 'event':
-                                group_id = data['group']['id']
-                            else:
-                                group_id = data['group']['group_id']
+            for raw_data in response.iter_lines():
+                if raw_data:
+                    try:
+                        data = json.loads(raw_data)
+                        if importer_type == 'event':
+                            group_id = data['group']['id']
+                        else:
+                            group_id = data['group']['group_id']
 
-                            sql = "SELECT `id` from `meetup_group` where `group_id` = %s"
-                            cursor.execute(sql, (group_id,))
-                            result = cursor.fetchone()
-                            if result:
-                                logger.info('Going to save %s: %s' % (importer_type, data))
-                                data = {
-                                    'type': importer_type,
-                                    importer_type: data
-                                }
-                                response = requests.post(webhook_url, data=json.dumps(data),
-                                                         headers={'Content-Type': 'application/json'})
-                                logger.info(response.text)
-                        except ValueError:
-                            pass
-                        except Exception as e:
-                            logger.exception('Error occurred while parsing event data, Error: %s' % e)
-                            connection.rollback()
-                            break
+                        sql = "SELECT `id` from `meetup_group` where `group_id` = %s"
+                        cursor = connection.cursor()
+                        cursor.execute(sql, (group_id,))
+                        result = cursor.fetchone()
+                        cursor.close()
+                        if result:
+                            logger.info('Going to save %s: %s' % (importer_type, data))
+                            data = {
+                                'type': importer_type,
+                                importer_type: data
+                            }
+                            response = requests.post(webhook_url, data=json.dumps(data),
+                                                     headers={'Content-Type': 'application/json'})
+                            logger.info(response.text)
+                    except ValueError:
+                        pass
+                    except Exception as e:
+                        logger.exception('Error occurred while parsing event data, Error: %s' % e)
+                        connection.rollback()
+                        break
 
-                    if (datetime.utcnow() - start) > timedelta(minutes=int(interval)):
-                        logger.info('Breaking outer loop after 5 minutes at: %s' % datetime.utcnow())
-                        lambda_client.invoke(
-                            FunctionName=context.function_name,
-                            InvocationType='Event',
-                            LogType='None',
-                            Payload='{"key": "start again"}'
-                        )
-                        return 'Start Again'
+                if (datetime.utcnow() - start) > timedelta(minutes=int(interval)):
+                    logger.info('Breaking outer loop after %s minutes at: %s' % (interval, datetime.utcnow()))
+                    lambda_client.invoke(
+                        FunctionName=context.function_name,
+                        InvocationType='Event',
+                        LogType='None',
+                        Payload='{"key": "start again"}'
+                    )
+                    connection.close()
+                    return 'Start Again'
         except Exception as e:
             logger.error('Out of main loop. Cause: %s' % e)
             time.sleep(10)

@@ -96,6 +96,7 @@ class Eventbrite(SocialNetworkBase):
         user_credentials_in_db = super(Eventbrite,
                                        Eventbrite).save_user_credentials_in_db(user_credentials)
         Eventbrite.create_webhook(user_credentials_in_db)
+        return user_credentials_in_db
 
     @classmethod
     def get_access_and_refresh_token(cls, user_id, social_network,
