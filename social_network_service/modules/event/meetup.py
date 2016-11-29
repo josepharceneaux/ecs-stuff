@@ -11,8 +11,6 @@ from datetime import timedelta
 
 # Application specific
 from social_network_service.common.models.venue import Venue
-from social_network_service.common.models.event import Event
-from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.modules.constants import MEETUP_VENUE
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
 from social_network_service.modules.urls import get_url
@@ -96,9 +94,6 @@ class Meetup(EventBase):
                 time passed after epoch till start_time
             - end_time_since_epoch:
                 time passed after epoch till end_time
-
-        :param args:
-        :param kwargs:
         """
         super(Meetup, self).__init__(*args, **kwargs)
         # calling super constructor sets the api_url and access_token
@@ -132,9 +127,7 @@ class Meetup(EventBase):
             'member_id': self.member_id,
             'status': "upcoming,proposed,suggested"
         }
-        response = http_request('GET', events_url, params=params,
-                                headers=self.headers,
-                                user_id=self.user.id)
+        response = http_request('GET', events_url, params=params, headers=self.headers, user_id=self.user.id)
         if response.ok:
             data = response.json()
             all_events = []
@@ -145,8 +138,7 @@ class Meetup(EventBase):
             next_url = data['meta']['next'] or None
             while next_url:
                 url = next_url
-                response = http_request('GET', url, headers=self.headers,
-                                        user_id=self.user.id)
+                response = http_request('GET', url, headers=self.headers, user_id=self.user.id)
                 if response.ok:
                     data = response.json()
                     all_events.extend(data['results'])
@@ -254,9 +246,8 @@ class Meetup(EventBase):
             cost=0,
             currency='',
             timezone=event.get('timezone'),
-            max_attendees=event.get('maybe_rsvp_count', 0) +
-                          event.get('yes_rsvp_count', 0) +
-                          event.get('waitlist_count', 0)
+            max_attendees=
+            event.get('maybe_rsvp_count', 0) + event.get('yes_rsvp_count', 0) + event.get('waitlist_count', 0)
         )
         return event_data, venue_data
 

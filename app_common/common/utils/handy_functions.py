@@ -228,11 +228,9 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     # details of error as we can.
                     json_response = e.response.json()
                     if 'errors' in json_response:
-                        error_message = \
-                            e.message + ', Details: ' + json.dumps(json_response['errors'])
+                        error_message = e.message + ', Details: ' + json.dumps(json_response['errors'])
                     elif 'error_description' in json_response:
-                        error_message = e.message + ', Details: ' + json.dumps(
-                            json_response['error_description'])
+                        error_message = e.message + ', Details: ' + json.dumps(json_response['error_description'])
                     else:
                         error_message = e.message
                 except AttributeError:
@@ -246,11 +244,10 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                                  Headers: %s''' % (url, method_type, data, headers))
                 raise
         except ConnectionError:
-            # This check is for if any talent service is not running. It logs the URL on
-            # which request was made.
+            # This check is for if any talent service is not running. It logs the URL on which request was made.
             log_exception("http_request: Couldn't make %s call on %s. "
                           "Make sure requested server is running. Headers: %s, Data: %s" % (method_type, url, headers,
-                                                                                              data), app=app)
+                                                                                            data), app=app)
             raise
         except requests.Timeout as e:
             log_exception('http_request: HTTP request timeout, %s. URL: %s, Headers: %s, Data: %s' %

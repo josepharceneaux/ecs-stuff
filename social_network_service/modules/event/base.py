@@ -198,10 +198,6 @@ class EventBase(object):
         """
         This method takes User or UserSocialNetworkCredential object in kwargs
         and raises exception if no one is found.
-
-        :param args:
-        :param kwargs:
-        :return:
         """
         self.events = []
         self.rsvps = []
@@ -209,18 +205,15 @@ class EventBase(object):
         self.headers = kwargs.get('headers')
         if kwargs.get('user_credentials') or kwargs.get('user'):
             self.user_credentials = kwargs.get('user_credentials')
-            self.user = kwargs.get('user') or User.get_by_id(
-                self.user_credentials.user_id)
+            self.user = kwargs.get('user') or User.get_by_id(self.user_credentials.user_id)
             self.social_network = kwargs.get('social_network')
             if isinstance(self.user, User):
                 self.api_url = self.social_network.api_url
-                self.member_id, self.access_token, self.refresh_token, \
-                self.webhook = self._get_user_credentials()
+                self.member_id, self.access_token, self.refresh_token, self.webhook = self._get_user_credentials()
                 self.url_to_delete_event = None
                 self.venue_id = None
             else:
-                error_message = "No User found in database with id " \
-                                "%(user_id)s" % self.user_credentials.user_id
+                error_message = "No User found in database with id %(user_id)s" % self.user_credentials.user_id
                 raise NoUserFound('API Error: %s' % error_message)
         else:
             raise UserCredentialsNotFound('User Credentials are empty/none')
@@ -232,10 +225,8 @@ class EventBase(object):
         :return: member_id, access_token, refresh_token, webhook
         :rtype: tuple
         """
-        user_credentials = \
-            UserSocialNetworkCredential.get_by_user_and_social_network_id(
-            self.user.id, self.social_network.id
-        )
+        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(self.user.id,
+                                                                                         self.social_network.id)
         assert user_credentials is not None
         member_id = user_credentials.member_id
         access_token = user_credentials.access_token
@@ -248,9 +239,6 @@ class EventBase(object):
         """
         Each child class implements its own social network specific event
         creation code.
-        :param args:
-        :param kwargs:
-        :return:
         """
         pass
 
@@ -272,7 +260,7 @@ class EventBase(object):
         This method takes event dictionary data and save that event in database or update the existing one
         if there is already event there with this data.
         :param event_data: event dict
-        :return: Event model object
+        :rtype: Event
         """
         event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id,
                                                                        self.social_network.id,
@@ -291,17 +279,17 @@ class EventBase(object):
         This method takes venue dictionary data and save that venue in database or update the existing one
         if there is already venue there with this data.
         :param venue_data: venue dict
-        :return: Venue model object
+        :rtype: Venue
         """
         venue_in_db = Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
                                                                        venue_data['social_network_venue_id'])
         if venue_in_db:
             venue_in_db.update(**venue_data)
-            logger.info('Venue imported/updated successfully : %s' % venue_in_db.to_json())
+            logger.info('Venue updated successfully:%s' % venue_in_db.to_json())
         else:
             venue_in_db = Venue(**venue_data)
             Venue.save(venue_in_db)
-            logger.info('Venue imported/updated successfully : %s' % venue_in_db.to_json())
+            logger.info('Venue imported successfully:%s' % venue_in_db.to_json())
         return venue_in_db
 
     @abstractmethod
@@ -356,8 +344,7 @@ class EventBase(object):
 
     def process_events(self, events):
         """
-        :param events: contains events of a particular user for a specific
-            social network.
+        :param events: contains events of a particular user for a specific social network.
         :type events: list
         This is the function to process events once we have the events of
         some social network. It first maps the social network fields to
@@ -368,13 +355,12 @@ class EventBase(object):
         if events:
             self.pre_process_events(events)
         if events:
-            logger.debug('Events of %s(UserId: %s) are being processed '
-                         'to save in database.'
+            logger.debug('Events of %s(UserId: %s) are being processed to save in database.'
                          % (self.user.name, self.user.id))
             for event in events:
                 try:
-                    self.import_event(event)
-                except Exception as e:
+                    self.events.append(self.import_event(event))
+                except Exception:
                     logger.exception('''Error occurred while importing event.
                                         UserId: %s,
                                         SocialNetworkId: %s
@@ -382,20 +368,15 @@ class EventBase(object):
                                      ''' % (self.user.id, self.social_network.id, event))
 
         if events:
-            self.post_process_events(events)
+            self.post_process_events()
 
-    def post_process_events(self, events):
+    def post_process_events(self):
         """
-        :param events: contains events of a particular user for a specific
-            social network.
-        :type events: list
-        Once the event is stored in database after importing from social
-        network, this function can be used to do some post processing.
-        For now, we don't do any post processing but possibly in future.
-        :param events:
-        :return:
+        Once the event is stored in database after importing from social network, this function can be used to do
+        some post processing. Now when all events of a user are imported, we import RSVPs for each event.
         """
-        pass
+        # Import RSVPs of events
+        self.process_events_rsvps()
 
     def delete_event(self, event_id):
         """
@@ -417,10 +398,8 @@ class EventBase(object):
                              'database.' % event_name)
                 return True
             except Exception:  # some error while removing event
-                logger.exception('delete_event: user_id: %s, event_id: %s, '
-                                 ' social network: %s(id: %s)'
-                                 % (self.user.id, event.id, self.social_network.name,
-                                    self.social_network.id))
+                logger.exception('delete_event: user_id: %s, event_id: %s, social network: %s(id: %s)'
+                                 % (self.user.id, event.id, self.social_network.name, self.social_network.id))
         return False  # event not found in database
 
     def delete_events(self, event_ids):
@@ -429,13 +408,11 @@ class EventBase(object):
             both from social network and database.
         :type event_ids: list
         """
-
         deleted = []
         not_deleted = []
         if event_ids:
             for event_id in event_ids:
-                event_obj = Event.get_by_user_and_event_id(user_id=request.user.id,
-                                                           event_id=event_id)
+                event_obj = Event.get_by_user_and_event_id(user_id=request.user.id, event_id=event_id)
                 title = event_obj.title
                 if self.delete_event(event_id):
                     deleted.append(event_id)
@@ -454,8 +431,8 @@ class EventBase(object):
 
     def unpublish_event(self, event_id, method=HttpMethods.DELETE):
         """
-        This function is used while running unit tests. It deletes the Event from
-        database that were created during the lifetime of a unit test.
+        This function is used while running unit tests. It deletes the Event from database that were created
+        during the lifetime of a unit test.
         :param int | long event_id: id of newly created event
         :param string method: http standard method , default is DELETE
         :return: True if event is deleted from vendor, False otherwise.
@@ -469,25 +446,19 @@ class EventBase(object):
             logger.info('|  Event has been unpublished (deleted)  |')
         else:
             error_message = "Event was not unpublished (deleted)."
-            log_error({'user_id': self.user.id,
-                       'error': error_message})
-            raise EventNotUnpublished('ApiError: '
-                                      'Unable to remove event from %s'
-                                      % self.social_network.name)
+            log_error({'user_id': self.user.id, 'error': error_message})
+            raise EventNotUnpublished('ApiError: Unable to remove event from %s' % self.social_network.name)
 
     def get_events(self, *args, **kwargs):
         """
         This is used to get events from social_network. Child classes will
         implement this.
-        :param args:
-        :param kwargs:
-        :return:
         """
         pass
 
     def import_event(self, event):
         """
-        This method takes json event data from social network. It then mapps that data to getTalent event
+        This method takes json event data from social network. It then maps that data to getTalent event
         and saves in db.
         :param event: json data for event
         :return: Event model object
@@ -507,43 +478,32 @@ class EventBase(object):
         :return: list of events
         """
         if start_date:
-            return Event.get_by_user_id_vendor_id_start_date(
-                self.user.id, self.social_network.id, start_date)
+            events = Event.get_by_user_id_vendor_id_start_date(self.user.id, self.social_network.id, start_date)
         else:
-            return Event.filter_by_keywords(**{'user_id': self.user.id,
-                                      'social_network_id': self.social_network.id})
-
-    def process_events_rsvps(self, user_credentials, **kwargs):
-        """
-        We get events against a particular user_credential.
-        Then we get the rsvps of all events present in database and process
-        them to save in database.
-        :param user_credentials: are the credentials of user for
-                                    a specific social network in db.
-        :type user_credentials: common.models.user.UserSocialNetworkCredential
-        """
-        # get_required class under rsvp/ to process rsvps
-        sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
-        # create object of selected rsvp class
-        sn_rsvp_obj = sn_rsvp_class(user_credentials=user_credentials,
-                                    headers=self.headers,
-                                    social_network=self.social_network,
-                                    **kwargs
-                                    )
-
-        # gets events of given Social Network from database
-        self.events = self.get_events_from_db(sn_rsvp_obj.start_date_dt)
-        if self.events:
-            logger.debug('There are %s events of %s(UserId: %s) in database '
-                         'within provided time range.'
-                         % (len(self.events), self.user.name, self.user.id))
+            events = Event.filter_by_keywords(user_id=self.user.id, social_network_id=self.social_network.id)
+        if events:
+            logger.debug('There are %s events of %s(UserId: %s) in database within provided time range.'
+                         % (len(events), self.user.name, self.user.id))
         else:
-            logger.debug('No events found of %s(UserId: %s) in database '
-                         'within provided time range.'
+            logger.debug('No events found of %s(UserId: %s) in database within provided time range.'
                          % (self.user.name, self.user.id))
+        return events
 
-        # get RSVPs of all events present in self.events using API of
-        # respective social network
+    def process_events_rsvps(self):
+        """
+        We get events against a particular user_credential. Then we get the RSVPs of all events present
+        in database and process them to save in database.
+        """
+        # get_required class under rsvp/ to process RSVPs
+        sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
+        # create object of selected RSVP class
+        sn_rsvp_obj = sn_rsvp_class(user_credentials=self.user_credentials, headers=self.headers,
+                                    social_network=self.social_network)
+        # TODO: we might need this later
+        # gets events of given Social Network from database
+        # self.events = self.get_events_from_db(sn_rsvp_obj.start_date_dt)
+
+        # get RSVPs of all events present in self.events using API of respective social network
         self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)
         # process RSVPs and save in database
         sn_rsvp_obj.process_rsvps(self.rsvps)
@@ -561,11 +521,7 @@ class EventBase(object):
         data = self.data
         sn_event_id = data['social_network_event_id']
         social_network_id = data['social_network_id']
-        event = Event.get_by_user_id_social_network_id_vendor_event_id(
-            self.user.id,
-            social_network_id,
-            sn_event_id
-        )
+        event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id, social_network_id, sn_event_id)
         try:
             # if event exists in database, then update existing one.
             if event:
