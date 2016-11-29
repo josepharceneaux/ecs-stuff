@@ -177,8 +177,8 @@ class MeetupGroup(db.Model):
     city = db.Column(db.String(30))
     timezone = db.Column(db.String(100))
     created_datetime = db.Column(db.DateTime)
-    added_datetime = db.Column('added_datetime', db.DateTime, default=datetime.utcnow)
-    updated_datetime = db.Column('updated_datetime', db.TIMESTAMP, default=datetime.utcnow)
+    added_datetime = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     @classmethod
     def get_by_group_id(cls, group_id):

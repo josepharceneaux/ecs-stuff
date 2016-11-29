@@ -254,26 +254,6 @@ def venue_in_db_second(request):
     return request.getfuncargvalue("{}_venue_second".format(request.param.lower()))
 
 
-@pytest.fixture(scope="function")
-def post_venue_for_field_match(token_first):
-    social_network = SocialNetwork.get_by_name(MEETUP.title())
-    venue = {
-            "social_network_id": social_network.id,
-            "zip_code": "54600",
-            "address_line_2": "H# 163, Block A",
-            "address_line_1": "New Muslim Town",
-            "latitude": 0,
-            "longitude": 0,
-            "state": "CA",
-            "city": "Lahore",
-            "country": "Pakistan"
-        }
-    response = requests.post(SocialNetworkApiUrl.VENUES, data=json.dumps(venue), headers=get_headers(token_first))
-    logger.info(response.text)
-    return response.status_code
-
-
-
 @pytest.fixture()
 def get_test_event_eventbrite(user_first, eventbrite, eventbrite_venue, token_first):
     """

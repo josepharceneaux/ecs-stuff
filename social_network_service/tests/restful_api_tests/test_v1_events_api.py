@@ -59,8 +59,8 @@ class TestResourceEvents(object):
         events = response.json()['events']
         assert len(events) >= 1, 'There should be some events for test user'
         if len(events) >= 1:
-            match_event_fields(events[0])
-
+            for event in events:
+                match_event_fields(event)
 
     def test_events_get_in_domain_of_user(self, token_same_domain, event_in_db, event_in_db_second):
         """
@@ -73,7 +73,8 @@ class TestResourceEvents(object):
         events = response.json()['events']
         assert len(events) >= 2, 'There should be 2 events for user of same domain'
         if len(events) >= 2:
-            match_event_fields(events[0])
+            for event in events:
+                match_event_fields(event)
 
     def test_events_post_with_invalid_token(self):
         """
