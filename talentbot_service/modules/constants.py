@@ -26,7 +26,7 @@ HINT = '''>>>I am `%s`. @osman is teaching me new things, right now I can answer
 9- What campaigns in my domain?
 10- Show me more about `[Talent pool name|Campaign name]`?
 11- What are my group `[Campaigns|Pipelines]`?
-12- Add candidate whose resume url is `http://www.something.com/some-resume.pdf''' % BOT_NAME
+12- Add candidate whose resume URL is `http://www.something.com/some-resume.pdf''' % BOT_NAME
 OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_NUMBER = "+12015617985"
 FACEBOOK_MESSAGE_LIMIT = 319
@@ -84,6 +84,9 @@ I_AM_PARSING_A_RESUME = "I am parsing a resume, I will notify you as soon as I a
 ZERO = 0
 ADD_CANDIDATE_FROM_URL = 72
 NUMBER_OF_BYTES_IN_10_MB = 1024*1024*10
+INVALID_RESUME_URL_MSG = "Invalid URL"
+NO_RESUME_URL_FOUND_MSG = "No URL found, URL must start with `http://` or `https://`"
+TOO_LARGE_RESUME_MSG = "Resume file size should be less than 10 MB"
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

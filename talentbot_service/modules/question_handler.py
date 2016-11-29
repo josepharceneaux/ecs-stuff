@@ -37,7 +37,8 @@ from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, d
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
-    SOMETHING_WENT_WRONG, NUMBER_OF_BYTES_IN_10_MB
+    SOMETHING_WENT_WRONG, NUMBER_OF_BYTES_IN_10_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, \
+    TOO_LARGE_RESUME_MSG
 from talentbot_service import logger, app
 from resume_parsing_service.app.views.parse_lib import IMAGE_FORMATS, DOC_FORMATS
 # 3rd party imports
@@ -631,7 +632,7 @@ class QuestionHandler(object):
         try:
             resume_url = re.search("(?P<url>((https?)|(ftps?))://[^\s]+)", ' '.join(message_tokens)).group("url")
         except AttributeError:  # If url doesn't start with http:// or https://
-            return "URL must start with `http://` or `https://`"
+            return NO_RESUME_URL_FOUND_MSG
         try:
             '''
             create_bucket() method checks if resume bucket exists on S3 if it does create_bucket() returns bucket
@@ -675,8 +676,8 @@ class QuestionHandler(object):
 
         except InvalidUsage as error:
             return error.message
-        except urllib2.HTTPError:
-            return "Invalid url"
+        except (urllib2.HTTPError, urllib2.URLError):
+            return INVALID_RESUME_URL_MSG
         except urllib.ContentTooShortError:
             return "File size too small"
 
@@ -693,7 +694,7 @@ class QuestionHandler(object):
         meta = urllib2.urlopen(resume_url)
         resume_size_in_bytes = meta.headers['Content-Length']
         if int(resume_size_in_bytes) >= NUMBER_OF_BYTES_IN_10_MB:
-            raise InvalidUsage("Resume file size should be less than 10 MB")
+            raise InvalidUsage(TOO_LARGE_RESUME_MSG)
         parsed_data = urlparse(resume_url)
         _, extension = splitext(parsed_data.path)
         if extension in IMAGE_FORMATS or extension in DOC_FORMATS:

@@ -22,6 +22,15 @@ from talentbot_service.common.models.email_campaign import EmailCampaignBlast, E
 from talentbot_service.common.models.sms_campaign import SmsCampaignBlast, SmsCampaign
 from talentbot_service.common.models.push_campaign import PushCampaignBlast, PushCampaign
 from talentbot_service.common.models.candidate import Candidate, CandidateSkill, CandidateAddress
+from talentbot_service.modules.constants import INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, TOO_LARGE_RESUME_MSG,\
+    QUESTIONS, ADD_CANDIDATE_FROM_URL
+from talentbot_service.modules.question_handler import QuestionHandler
+from talentbot_service import app
+VALID_RESUME_URL = 'https://www.pdf-archive.com/2016/11/29/vishay-suresh-nihalani/' \
+                         'vishay-suresh-nihalani.pdf'
+RESUME_URL_WITH_TOO_LARGE_CONTENT = 'http://scholar.princeton.edu/sites/default/files/oversize_pdf_test_0.pdf'
+ADD_CANDIDATE_FROM_RESUME_QUESTION = QUESTIONS[ADD_CANDIDATE_FROM_URL]
+INVALID_RESUME_URL = 'https://something.com/test.pdf'
 
 
 def test_candidate_added(user_first, talent_pool, candidate_first):
@@ -451,3 +460,23 @@ def test_campaigns_by_name_and_domain_id(domain_first, email_campaign_first, sms
     # Asserting Push Campaigns
     push_campaigns = PushCampaign.get_by_domain_id_and_name(domain_second.id, push_campaign_first.name)
     assert not push_campaigns or push_campaigns[0].id != push_campaign_first.id
+
+
+def test_add_candidate_from_resume_url(user_first, domain_first, talent_pool):
+    with app.app_context():
+        # Asserting with valid URL
+        message_tokens = ('%s %s' % (ADD_CANDIDATE_FROM_RESUME_QUESTION, VALID_RESUME_URL)).split(' ')
+        response_string = QuestionHandler.add_candidate_handler(message_tokens,  user_first.id)
+        assert 'Vishay Nihalani' in response_string and talent_pool.name in response_string
+        # Asserting with invalid URL
+        message_tokens = ('%s %s' % (ADD_CANDIDATE_FROM_RESUME_QUESTION, INVALID_RESUME_URL)).split(' ')
+        response_string = QuestionHandler.add_candidate_handler(message_tokens, user_first.id)
+        assert INVALID_RESUME_URL_MSG == response_string
+        # Assert without specifying a URL
+        message_tokens = ('%s %s' % (ADD_CANDIDATE_FROM_RESUME_QUESTION, '')).split(' ')
+        response_string = QuestionHandler.add_candidate_handler(message_tokens, user_first.id)
+        assert NO_RESUME_URL_FOUND_MSG == response_string
+        # Asserting with file with content of more than 10 MB
+        message_tokens = ('%s %s' % (ADD_CANDIDATE_FROM_RESUME_QUESTION, RESUME_URL_WITH_TOO_LARGE_CONTENT)).split(' ')
+        response_string = QuestionHandler.add_candidate_handler(message_tokens, user_first.id)
+        assert TOO_LARGE_RESUME_MSG == response_string
