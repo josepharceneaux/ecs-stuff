@@ -31,3 +31,24 @@ def get_candidate_if_validated(user, candidate_id, user_role='TALENT_ADMIN'):
         # TODO: custom_error.CANDIDATE_FORBIDDEN
 
     return candidate
+
+
+def replace_tabs_with_spaces(obj):
+    """
+    Function will recursively replace all \t (tabs) with spaces
+    """
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            if value:
+                if isinstance(value, list):
+                    for i in xrange(len(value)):
+                        value[i] = replace_tabs_with_spaces(value[i])
+                elif isinstance(value, dict):
+                    for k, v in value.items():
+                        if v and isinstance(v, basestring):
+                            value[k] = v.replace("\t", " ")
+                else:
+                    obj[key] = value.replace("\t", " ") if isinstance(value, basestring) else value
+    else:
+        pass
+    return obj
