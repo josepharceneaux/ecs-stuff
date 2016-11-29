@@ -7,6 +7,8 @@ import json
 import random
 import re
 import string
+import time
+from functools import wraps
 
 # Third Party
 import requests
@@ -25,9 +27,7 @@ from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
 from ..custom_contracts import define_custom_contracts
 
-
 define_custom_contracts()
-
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
@@ -218,7 +218,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             elif e.response.status_code == UnauthorizedError.http_status_code():
                 # 401 is the error code for Not Authorized user(Expired Token)
                 log_exception("http request failed: Method:%s, URL:%s, user_id:%s, Response:%s"
-                              % (method_type, url, user_id,e.response.json()))
+                              % (method_type, url, user_id, e.response.json()))
                 raise UnauthorizedError(str(e.response.json()))
             # checks if error occurred on "Server" or is it a bad request
             elif e.response.status_code < InternalServerError.http_status_code():
@@ -250,7 +250,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             # which request was made.
             log_exception("http_request: Couldn't make %s call on %s. "
                           "Make sure requested server is running. Headers: %s, Data: %s" % (method_type, url, headers,
-                                                                                              data), app=app)
+                                                                                            data), app=app)
             raise
         except requests.Timeout as e:
             log_exception('http_request: HTTP request timeout, %s. URL: %s, Headers: %s, Data: %s' %
@@ -267,7 +267,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         return response
     else:
         log_error('http_request: Unknown Method type %s. URL: %s, Headers: %s, Data: %s' % (method_type, url, headers,
-                                                                                           data), app=app)
+                                                                                            data), app=app)
         raise InternalServerError('Unknown method type(%s) provided. URL: %s, Headers: %s, Data: %s' %
                                   (method_type, url,
                                    headers, data))
@@ -514,3 +514,25 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
         headers['Content-Type'] = 'application/json'
         data = json.dumps(data)
     return request_method(url, data=data, params=params, headers=headers, verify=verify)
+
+
+def time_me(logger, api):
+    """
+    This function contains a decorator that will time and log the function it's decorating
+    :param logger: this must be a logger object from the application
+    :param api: name of the API. This should be clear enough to make debugging simpler
+    """
+    def time_wrapper(func):
+        @wraps(func)
+        def timed(*args, **kwargs):
+            start = time.time()
+            result = func(*args, **kwargs)
+            end = time.time()
+
+            logger.info("API: %s; func %r took: %2.2f seconds" % (api, func.__name__, end - start))
+            return result
+
+        return timed
+
+    return time_wrapper
+
