@@ -1371,8 +1371,10 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                 # CandidateCustomField must be recognized
                 can_custom_field_obj = CandidateCustomField.get_by_id(candidate_custom_field_id)
                 if not can_custom_field_obj:
-                    error_message = 'Candidate custom field you are requesting to update does not exist'
-                    raise InvalidUsage(error_message, custom_error.CUSTOM_FIELD_NOT_FOUND)
+                    raise InvalidUsage(
+                        error_message='Candidate custom field you are requesting to update does not exist',
+                        error_code=custom_error.CUSTOM_FIELD_NOT_FOUND
+                    )
 
                 # CandidateCustomField must belong to Candidate
                 if can_custom_field_obj.candidate_id != candidate_id:
