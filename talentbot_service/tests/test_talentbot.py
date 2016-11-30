@@ -26,9 +26,8 @@ from talentbot_service.modules.constants import INVALID_RESUME_URL_MSG, NO_RESUM
     QUESTIONS, ADD_CANDIDATE_FROM_URL
 from talentbot_service.modules.question_handler import QuestionHandler
 from talentbot_service import app
-VALID_RESUME_URL = 'https://www.pdf-archive.com/2016/11/29/vishay-suresh-nihalani/' \
-                         'vishay-suresh-nihalani.pdf'
-RESUME_URL_WITH_TOO_LARGE_CONTENT = 'http://scholar.princeton.edu/sites/default/files/oversize_pdf_test_0.pdf'
+VALID_RESUME_URL = 'https://s3-us-west-2.amazonaws.com/test-resumes-for-bot/Vishay_Suresh_Nihalani.pdf'
+RESUME_URL_WITH_TOO_LARGE_CONTENT = 'https://s3-us-west-2.amazonaws.com/test-resumes-for-bot/large.pdf'
 ADD_CANDIDATE_FROM_RESUME_QUESTION = QUESTIONS[ADD_CANDIDATE_FROM_URL]
 INVALID_RESUME_URL = 'https://something.com/test.pdf'
 

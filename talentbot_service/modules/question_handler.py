@@ -37,7 +37,7 @@ from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, d
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
-    SOMETHING_WENT_WRONG, NUMBER_OF_BYTES_IN_10_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, \
+    SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, \
     TOO_LARGE_RESUME_MSG
 from talentbot_service import logger, app
 from resume_parsing_service.app.views.parse_lib import IMAGE_FORMATS, DOC_FORMATS
@@ -693,7 +693,7 @@ class QuestionHandler(object):
         """
         meta = urllib2.urlopen(resume_url)
         resume_size_in_bytes = meta.headers['Content-Length']
-        if int(resume_size_in_bytes) >= NUMBER_OF_BYTES_IN_10_MB:
+        if int(resume_size_in_bytes) >= TEN_MB:
             raise InvalidUsage(TOO_LARGE_RESUME_MSG)
         parsed_data = urlparse(resume_url)
         _, extension = splitext(parsed_data.path)
