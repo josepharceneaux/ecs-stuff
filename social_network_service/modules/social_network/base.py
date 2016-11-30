@@ -314,37 +314,32 @@ class SocialNetworkBase(object):
                                 social_network_id))
 
     @classmethod
-    def get_access_and_refresh_token(cls, user_id, social_network,
-                                     code_to_get_access_token=None,
-                                     method_type=None,
-                                     payload=None,
-                                     params=None,
-                                     api_relative_url=None):
+    def get_access_and_refresh_token(cls, user_id, social_network, code_to_get_access_token=None, method_type=None,
+                                     payload=None, params=None, api_relative_url=None):
         """
-        This function is used by Social Network API to save 'access_token'
-        and 'refresh_token' for specific social network against a user (current
-        user) by sending an POST call to respective social network API.
+        This function is used by Social Network API to save 'access_token' and 'refresh_token' for specific
+        social network against a user (current user) by sending an POST call to respective social network API.
         :param user_id: current user id
         :param social_network: social_network in getTalent database
-        :param payload: dictionary containing required data
-                sample data
-                payload_data = {'client_id': social_network.client_key,
-                                'client_secret': social_network.secret_key,
-                                'grant_type': 'authorization_code', # vendor
-                                 specific
-                                'redirect_uri': social_network.redirect_uri,
-                                'code': code_to_get_access_token
-                                }
-
+        :param code_to_get_access_token: Code which is exchanged for an access token.
+        :param method_type: In case of Eventbrite, need to make a 'POST' call to get access token.
+        :param payload: is set inside this method and is passed in super constructor. This is sent in body
+                        of HTTP request.
+        :param params: dictionary of data to send in the url params.
+        :param api_relative_url: This variable is set in this function and is passed in super constructor to make
+                                HTTP request.
         :type user_id: int
         :type social_network: common.models.social_network.SocialNetwork
+        :type code_to_get_access_token: str
+        :type method_type: str
         :type payload: dict
+        :type payload: dict
+        :type api_relative_url: str
         :return: returns access token and refresh token
         :rtype: tuple (str, str)
         """
         url = social_network.auth_url + api_relative_url
-        get_token_response = http_request(method_type, url, data=payload,
-                                          user_id=user_id, params=params)
+        get_token_response = http_request(method_type, url, data=payload, user_id=user_id, params=params)
         try:
             if get_token_response.ok:
                 # access token is used to make API calls, this is what we need
@@ -364,17 +359,13 @@ class SocialNetworkBase(object):
                         raise
                 return access_token, refresh_token
             else:
-                log_error({'user_id': user_id,
-                           'error': get_token_response.json().get('error')})
-                raise SNServerException('Unable to to get access token for '
-                                                'current user')
+                log_error({'user_id': user_id, 'error': get_token_response.json().get('error')})
+                raise SNServerException('Unable to to get access token for current user')
 
         except:
-            logger.exception('get_access_and_refresh_token: user_id: %s, '
-                             'social network: %s(id: %s)'
+            logger.exception('get_access_and_refresh_token: user_id: %s, social network: %s(id: %s)'
                              % (user_id, social_network.name, social_network.id))
-            raise SNServerException('Unable to create user credentials for current'
-                                            ' user')
+            raise SNServerException('Unable to create user credentials for current user')
 
     def get_member_id(self):
         """
@@ -601,11 +592,9 @@ from datetime import datetime
 
     @classmethod
     def connect(cls, user_id, social_network, code):
-        access_token, refresh_token = cls.get_access_and_refresh_token(
-            user_id, social_network, code_to_get_access_token=code)
-        user_credentials_dict = dict(user_id=user_id,
-                                     social_network_id=social_network.id,
-                                     access_token=access_token,
+        access_token, refresh_token = cls.get_access_and_refresh_token(user_id, social_network,
+                                                                       code_to_get_access_token=code)
+        user_credentials_dict = dict(user_id=user_id, social_network_id=social_network.id, access_token=access_token,
                                      refresh_token=refresh_token)
         return cls.save_user_credentials_in_db(user_credentials_dict)
 

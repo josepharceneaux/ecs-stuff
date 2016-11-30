@@ -99,12 +99,8 @@ class Eventbrite(SocialNetworkBase):
         return user_credentials_in_db
 
     @classmethod
-    def get_access_and_refresh_token(cls, user_id, social_network,
-                                     code_to_get_access_token=None,
-                                     method_type='POST',
-                                     payload=None,
-                                     params=None,
-                                     api_relative_url=None):
+    def get_access_and_refresh_token(cls, user_id, social_network, code_to_get_access_token=None, method_type='POST',
+                                     payload=None, params=None, api_relative_url=None):
         """
         - This function is used by Social Network API to get
             'access_token' for Eventbrite social network against a user (current
@@ -147,9 +143,9 @@ class Eventbrite(SocialNetworkBase):
                         'redirect_uri': social_network.redirect_uri,
                         'code': code_to_get_access_token}
         # calls super class method with api_relative_url and payload data
-        return super(Eventbrite, cls).get_access_and_refresh_token(
-            user_id, social_network, method_type=method_type, payload=payload_data,
-            api_relative_url=api_relative_url)
+        return super(Eventbrite, cls).get_access_and_refresh_token(user_id, social_network, method_type=method_type,
+                                                                   payload=payload_data,
+                                                                   api_relative_url=api_relative_url)
 
     def add_venue_to_sn(self, venue_data):
         """
