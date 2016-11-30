@@ -25,7 +25,7 @@ from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPON
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
-from candidate_service.common.utils.validators import is_number, is_valid_email, format_phone_number
+from candidate_service.common.utils.validators import is_number, format_phone_number
 
 # Json schema validation
 from jsonschema import validate, ValidationError, FormatChecker
@@ -497,7 +497,7 @@ def does_candidate_cf_exist(candidate, custom_field_id, value):
     :rtype:  bool
     """
     for custom_field in candidate.custom_fields:
-        if custom_field.id == custom_field_id and (custom_field.value or '').lower() == value.lower():
+        if custom_field.custom_field_id == custom_field_id and (custom_field.value or '').lower() == value.lower():
             return True
     return False
 
