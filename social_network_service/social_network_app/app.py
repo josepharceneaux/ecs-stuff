@@ -115,7 +115,7 @@ def eventbrite_webhook_endpoint(user_id):
                 logger.info('Eventbrite Alert, RSVP: %s' % data)
                 process_eventbrite_rsvp.delay(data)
             elif action_type == 'test':
-                logger.debug('Successful webhook connection')
+                logger.info('Successful webhook connection')
     return 'Thanks a lot!'
 
 

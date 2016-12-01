@@ -1,8 +1,10 @@
 """
-This module contains RSVPBase class which contains common methods for
-all social networks that have RSVP related functionality. It provides methods
-like get_rsvps(), get_attendee(), process_rsvps(),save_attendee_as_candidate()
-etc.
+This module contains RSVPBase class which contains common methods for all social networks that have RSVP
+related functionality. It provides methods like
+    - get_rsvps()
+    - get_attendee()
+    - process_rsvps()
+    - save_attendee_as_candidate() etc.
 """
 
 # Standard Library
@@ -12,9 +14,11 @@ from abc import ABCMeta
 from abc import abstractmethod
 from datetime import datetime, timedelta
 
-# Application Specific
+# Third Party
 from redo import retry
+from requests import codes
 
+# Application Specific
 from social_network_service.common.models.db import db
 from social_network_service.modules.utilities import Attendee
 from social_network_service.common.utils.auth_utils import refresh_token
@@ -156,20 +160,20 @@ class RSVPBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, *args, **kwargs):
-        if isinstance(kwargs.get('user_credentials'), UserSocialNetworkCredential):
-            self.user_credentials = kwargs.get('user_credentials')
-            self.user = User.get_by_id(self.user_credentials.user_id)
-            self._get_valid_access_token()
-        else:
-            raise UserCredentialsNotFound('User Credentials are empty/none')
-        self.headers = kwargs.get('headers')
-        self.social_network = kwargs.get('social_network')
-        self.api_url = kwargs.get('social_network').api_url
+    def __init__(self, user_credentials, headers, social_network, *args, **kwargs):
+        if not isinstance(user_credentials, UserSocialNetworkCredential):
+            raise UserCredentialsNotFound('User Credentials are empty/none for requesting user')
+        self.user_credentials = user_credentials
+        self.user = User.get_by_id(self.user_credentials.user_id)
+        self._get_valid_access_token()
+        self.headers = headers
+        self.social_network = social_network
+        self.api_url = self.social_network.api_url
         self.access_token = self.user_credentials.access_token
         self.start_date_dt = None
         self.rsvps = []
         self.flag_create_activity = True
+        self.rsvp_via_importer = True
 
     def _get_valid_access_token(self):
         """
@@ -257,10 +261,8 @@ class RSVPBase(object):
             inside social_network_service/event/base.py
         """
         if events:
-            logger.debug('Getting RSVPs for events '
-                         'of %s(UserId: %s) from %s website.'
-                         % (self.user.name, self.user.id,
-                            self.social_network.name))
+            logger.info('Getting RSVPs for events of %s(UserId: %s) from %s website.'
+                        % (self.user.name, self.user.id, self.social_network.name))
             for event in events:
                 # events is a list of dicts where each dict is likely a
                 # response return from the database.
@@ -268,25 +270,21 @@ class RSVPBase(object):
                 # from respective social network.
                 try:
                     rsvps = self.get_rsvps(event)
-                    # rsvps is a list of dicts, where each dict is likely a
-                    # response returned from the social network side.
+                    # rsvps is a list of dicts, where each dict is likely a response returned from the
+                    # social network side.
                     if rsvps:
-                        # appends rsvps of all events in self.rsvps
+                        # appends RSVPs of all events in self.rsvps
                         self.rsvps += rsvps
                 except Exception as error:
-                    # Shouldn't raise an exception, just log it and move to
-                    # get RSVPs of next event
-                    logger.exception('get_all_rsvps: user_id: %s, event_id: %s, '
-                                     'social network: %s(id:%s)'
-                                     % (self.user.id, event.id, self.social_network.name,
-                                        self.social_network.id))
+                    # Shouldn't raise an exception, just log it and move to get RSVPs of next event
+                    logger.exception('get_all_rsvps: user_id: %s, event_id: %s, social network: %s(id:%s)'
+                                     % (self.user.id, event.id, self.social_network.name, self.social_network.id))
                     if hasattr(error, 'response'):
-                        if error.response.status_code == 401:
+                        if error.response.status_code == codes.UNAUTHORIZED:
                             # Access token is Invalid, Stop the execution.
                             break
-            logger.debug('There are %d RSVPs to process for events of '
-                         '%s(UserId: %s).' % (len(self.rsvps), self.user.name,
-                                              self.user.id))
+            logger.info('There are %d RSVPs to process for events of %s(UserId: %s).'
+                        % (len(self.rsvps), self.user.name, self.user.id))
         return self.rsvps
 
     def process_rsvps(self, rsvps):
@@ -314,21 +312,25 @@ class RSVPBase(object):
         .. seealso:: process_events_rsvps() method in EventBase class
             social_network_service/event/base.py
         """
+        processed_rsvps = []
+        total_rsvps_count = len(rsvps)
         for rsvp in rsvps:
-            # Here we pick one RSVP from rsvps and start doing
-            # processing on it. If we get an error while processing
-            # an RSVP, we simply log the error and move to process
-            # next RSVP.
-            self.post_process_rsvp(rsvp)
-        if rsvps:
-            logger.debug('%d RSVPs for events of %s(UserId: %s) have been '
-                         'processed and saved successfully in database.'
-                         % (len(rsvps), self.user.name, self.user.id))
+            # Here we pick one RSVP from rsvps and start doing processing on it. If we get an error while processing
+            # an RSVP, we simply log the error and move to process next RSVP.
+            processed_rsvps.append(self.post_process_rsvp(rsvp))
+        saved_rsvps_count = len(filter(None, processed_rsvps))
+        failed_rsvps_count = total_rsvps_count - saved_rsvps_count
+        if total_rsvps_count:
+            logger.info('''
+                        process_rsvps: RSVPs for events of %s(UserId:%s) have been processed.
+                        Successfully saved:%d, Failed:%d. Social network:%s
+                        '''
+                        % (self.user.name, self.user.id, saved_rsvps_count, failed_rsvps_count,
+                           self.social_network.name))
 
     def post_process_rsvp(self, rsvp):
         """
-        :param rsvp: is likely the response from social network API.
-        :type rsvp: dict
+        :param dict rsvp: is likely the response from social network API.
 
         ** Working **
              - Here we do the following steps
@@ -390,9 +392,7 @@ class RSVPBase(object):
     @abstractmethod
     def get_attendee(self, rsvp):
         """
-        :param rsvp: rsvp is likely the response we get from specific social
-            network API.
-        :type rsvp: dict
+        :param dict rsvp: is likely the response from social network API.
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.
@@ -475,10 +475,11 @@ class RSVPBase(object):
         """
         headers = {'Authorization': 'Bearer {}'.format(self._get_valid_access_token()),
                    "Content-Type": "application/json"}
-
+        attendee.event.description = attendee.event.description[:1000].encode('utf-8') if attendee.event.description \
+            else 'Not given'
         candidate_source = {
             "source": {
-                "description": attendee.event.description[:495] if attendee.event.description else 'Not given',
+                "description": attendee.event.description,
                 "notes": attendee.event.title
             }
         }

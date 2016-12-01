@@ -51,7 +51,8 @@ class DomainSourceResource(Resource):
 
         # Normalize description & notes
         source = body_dict['source']
-        description, notes = source['description'].strip().lower(), (source.get('notes') or '').strip().lower()
+        description, notes = source['description'].encode('utf-8').strip().lower(), \
+                             (source.get('notes') or '').strip().lower()
 
         # In case description is just a whitespace
         if not description:

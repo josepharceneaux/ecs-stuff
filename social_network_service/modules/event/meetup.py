@@ -11,10 +11,7 @@ from datetime import timedelta
 
 # Application specific
 from social_network_service.common.models.venue import Venue
-from social_network_service.common.models.event import Event
-from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.modules.constants import MEETUP_VENUE
-from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
 from social_network_service.modules.urls import get_url
 from social_network_service.social_network_app import logger
 from social_network_service.modules.utilities import log_error
@@ -26,6 +23,7 @@ from social_network_service.custom_exceptions import VenueNotFound
 from social_network_service.custom_exceptions import EventNotCreated
 from social_network_service.custom_exceptions import EventInputMissing
 from social_network_service.custom_exceptions import EventLocationNotCreated
+from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
 
 
 class Meetup(EventBase):
@@ -78,8 +76,6 @@ class Meetup(EventBase):
                 SocialNetwork object representing Meetup SN
             - api_url:
                 URL to access Meetup API
-            - url_to_delete_event:
-                URL to unpublist event from social network (Meetup)
             - member_id:
                 user member id on Meetup
             - venue_id:
@@ -96,9 +92,6 @@ class Meetup(EventBase):
                 time passed after epoch till start_time
             - end_time_since_epoch:
                 time passed after epoch till end_time
-
-        :param args:
-        :param kwargs:
         """
         super(Meetup, self).__init__(*args, **kwargs)
         # calling super constructor sets the api_url and access_token
@@ -130,11 +123,10 @@ class Meetup(EventBase):
         # have status=upcoming, so we are not explicitly specifying in fields.
         params = {
             'member_id': self.member_id,
-            'status': "upcoming,proposed,suggested"
+            'status': "upcoming,proposed,suggested",
+            'fields': 'timezone'
         }
-        response = http_request('GET', events_url, params=params,
-                                headers=self.headers,
-                                user_id=self.user.id)
+        response = http_request('GET', events_url, params=params, headers=self.headers, user_id=self.user.id)
         if response.ok:
             data = response.json()
             all_events = []
@@ -145,8 +137,7 @@ class Meetup(EventBase):
             next_url = data['meta']['next'] or None
             while next_url:
                 url = next_url
-                response = http_request('GET', url, headers=self.headers,
-                                        user_id=self.user.id)
+                response = http_request('GET', url, headers=self.headers, user_id=self.user.id)
                 if response.ok:
                     data = response.json()
                     all_events.extend(data['results'])
@@ -192,7 +183,42 @@ class Meetup(EventBase):
         getTalent database fields. Finally we return Event's object to
         save/update record in getTalent database.
         We also issue some calls to get updated venue and organizer information.
-        :param event: data from Meetup's API.
+        event object from Meetup API looks like
+
+        {
+            u'status': u'upcoming',
+            u'utc_offset': -25200000,
+            u'event_url': u'https://www.meetup.com/sfpython/events/234926670/',
+            u'group': {
+                        u'who': u'Python Programmers',
+                        u'name': u'San Francisco Python Meetup Group',
+                        u'group_lat': 37.77000045776367,
+                        u'created': 1213377311000,
+                        u'join_mode': u'open',
+                        u'group_lon': -122.44000244140625,
+                        u'urlname': u'sfpython',
+                        u'id': 1187265
+                    },
+            u'description': u'<p>SF Python is bringing it\'s Project Night to TBA. Please come out and hack
+                                with this great community we have built.</p> <p>We are really grateful that our
+                                facility host TBA is sponsoring food and beverages (alcoholic and non-alcoholic)
+                                for this event.</p> <p>Please email the leadership team if you are interested in:</p>
+                            ',
+              u'created': 1457407879000,
+              u'updated': 1457407879000,
+              u'visibility': u'public',
+              "timezone": "US/Pacific",  // This field only appears when requested in `fields` parameters
+              u'rsvp_limit': 75,  // This field only appears when we set RSVP settings while creating an event
+              u'yes_rsvp_count': 2,
+              u'waitlist_count': 0,
+              u'maybe_rsvp_count': 0,
+              u'time': 1505955600000,
+              u'duration': 11700000,
+              u'headcount': 0,
+              u'id': u'gqjhrlywmbbc',
+              u'name': u'Project Night at TBA'}
+
+        :param event: data from Meetup's API
         :type event: dictionary
         :exception Exception: It raises exception if there is an error getting
             data from API.
@@ -254,9 +280,7 @@ class Meetup(EventBase):
             cost=0,
             currency='',
             timezone=event.get('timezone'),
-            max_attendees=event.get('maybe_rsvp_count', 0) +
-                          event.get('yes_rsvp_count', 0) +
-                          event.get('waitlist_count', 0)
+            max_attendees=event.get('rsvp_limit')
         )
         return event_data, venue_data
 
@@ -295,8 +319,8 @@ class Meetup(EventBase):
         if venue_in_db.social_network_venue_id:
             return venue_in_db.social_network_venue_id
         url = get_url(self, Urls.VENUES, custom_url=MEETUP_VENUE.format(self.group_url_name))
-        logger.debug('Creating venue for %s(user id:%s) using url:%s of API of %s.'
-                     % (self.user.name, self.user.id, url, self.social_network.name))
+        logger.info('Creating venue for %s(user id:%s) using url:%s of API of %s.'
+                    % (self.user.name, self.user.id, url, self.social_network.name))
         payload = {
             'address_1': venue_in_db.address_line_1,
             'address_2': venue_in_db.address_line_2,
@@ -345,8 +369,8 @@ class Meetup(EventBase):
         venue_id = self.add_location()
         url = get_url(self, Urls.EVENT).format('')
         self.payload.update({'venue_id': venue_id, 'publish_status': 'published'})
-        logger.debug('Creating event for %s(user id:%s) using url:%s of API of %s.'
-                     % (self.user.name, self.user.id, url, self.social_network.name))
+        logger.info('Creating event for %s(user id:%s) using url:%s of API of %s.'
+                    % (self.user.name, self.user.id, url, self.social_network.name))
         response = http_request('POST', url, params=self.payload, headers=self.headers, user_id=self.user.id)
         if response.ok:
             event = response.json()

@@ -60,10 +60,8 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
             # access token is refreshed and we use fresh token8
             sn = social_network_class(user_id)
 
-            logger.debug('%s Importer has started for %s(UserId: %s).'
-                         ' Social Network is %s.'
-                         % (mode.title(), sn.user.name, sn.user.id,
-                            social_network.name))
+            logger.info('%s Importer has started for %s(UserId: %s). Social Network is %s.'
+                        % (mode.title(), sn.user.name, sn.user.id, social_network.name))
             # Call social network process method to start importing rsvps/event
             sn.process(mode, user_credentials=user_credentials, **datetime_range)
             # Update last_updated of each user_credentials.

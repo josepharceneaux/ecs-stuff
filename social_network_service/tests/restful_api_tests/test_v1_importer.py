@@ -62,10 +62,10 @@ class Test_Event_Importer(object):
             payload = {'event_id': social_network_event_id, 'rsvp': 'no'}
             response = http_request('POST', url, params=payload, headers=sn.headers)
             assert response.ok is True, "Response: {}".format(response.text)
-            logger.debug('RSVP has been posted successfully')
+            logger.info('RSVP has been posted successfully')
             social_network_rsvp_id = response.json()['rsvp_id']
             sn.headers = {'Authorization': 'Bearer invalid_token'}
-            logger.debug('Access Token has been malformed.')
+            logger.info('Access Token has been malformed.')
             # Call process method of social network class to start importing RSVPs
             sn.process('rsvp', user_credentials=user_credentials)
             # get the imported RSVP by social_network_rsvp_id and social_network_id
@@ -102,7 +102,7 @@ class Test_Event_Importer(object):
             payload = {'event_id': social_network_event_id, 'rsvp': 'no'}
             response = http_request('POST', url, params=payload, headers=sn.headers)
             assert response.ok is True
-            logger.debug('RSVP has been posted successfully')
+            logger.info('RSVP has been posted successfully')
             social_network_rsvp_id = response.json()['rsvp_id']
             sn.process('rsvp', user_credentials=user_credentials)
             # get the imported RSVP by social_network_rsvp_id and social_network_id

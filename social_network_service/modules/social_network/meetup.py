@@ -1,6 +1,6 @@
 """
 This modules contains Meetup class. It inherits from SocialNetworkBase
-class. Meetup contains methods like refresh_access_token(), get_member_id() etc.
+class. Meetup contains methods like refresh_access_token(), get_groups() etc.
 """
 
 # Standard Library
@@ -32,13 +32,12 @@ class Meetup(SocialNetworkBase):
 
     - This overrides following SocialNetworkBase class methods
 
-        1- get_member_id()
-        2- validate_token()
-        3- get_access_and_refresh_token()
+        - validate_token()
+        - get_access_and_refresh_token()
 
     - It also defines
-        1- refresh_access_token() to refresh the access token
-        2- get_groups() to get the groups from Meetup API for which the
+        - refresh_access_token() to refresh the access token
+        - get_groups() to get the groups from Meetup API for which the
             getTalent user is an organizer.
 
     :Example:
@@ -62,36 +61,6 @@ class Meetup(SocialNetworkBase):
     """
     def __init__(self, *args, **kwargs):
         super(Meetup, self).__init__(*args, **kwargs)
-
-    def get_member_id(self):
-        """
-        - If getTalent user has an account on Meetup website, then we have a
-            "member id" which is used to make API subsequent calls to fetch
-            events or RSVPs and relevant data for getTalent user from Meetup
-            website.
-
-        - Here we set the value of "self.api_relative_url". We then call super
-            class method get_member_id() to get the "member id".
-            get_member_id() in SocialNetworkBase makes url like
-                url = self.social_network.api_url + self.api_relative_url
-            (This will evaluate in case of Meetup as
-                url = 'https://api.meetup.com/2' + '/member/self')
-            After this, it makes a POST call on this url and check if status
-            of response is 2xx.
-
-        - This method is called in __int__() of SocialNetworkBase class to
-            get and save member_id in getTalent db table
-            user_social_network_credential for a particular record.
-
-        **See Also**
-        .. seealso:: get_member_id() method defined in SocialNetworkBase
-            class inside social_network_service/base.py.
-
-        .. seealso:: __init__() method of SocialNetworkBase class.
-        """
-        # TODO: Need to add this for mocking while fixing importer tests
-        self.api_relative_url = '/member/self'
-        super(Meetup, self).get_member_id()
 
     def get_groups(self):
         """
@@ -216,8 +185,7 @@ class Meetup(SocialNetworkBase):
                     refresh_token=refresh_token,
                     member_id=self.user_credentials.member_id)
                 status = SocialNetworkBase.save_user_credentials_in_db(user_credentials_dict)
-                logger.debug("Access token has been refreshed for %s(UserId:%s)."
-                             % (self.user.name, self.user.id))
+                logger.info("Access token has been refreshed for %s(UserId:%s)." % (self.user.name, self.user.id))
             except Exception:
                 logger.exception('refresh_access_token: user_id: %s' % self.user.id)
         else:
