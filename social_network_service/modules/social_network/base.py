@@ -374,16 +374,6 @@ class SocialNetworkBase(object):
             that social network. This "member id" is used to make API subsequent calls to fetch events or RSVPs and
             relevant data for getTalent user from social network website.
 
-        ** Working **
-            - In this method, we have value of "self.api_relative_url" set by child classes according to API of
-                respective social network. "self.api_relative_url" is appended in "self.api_url" like
-                    url = self.api_url + self.api_relative_url
-                This will evaluate in case of Meetup as
-                    url = 'https://api.meetup.com/2' + '/member/self'
-                We then make a HTTP POST call on required url. If we get response status 2xx, we retrieve the
-                "member id" from response of HTTP POST call and update the record in
-                user_social_network_credentials db table.
-
         :Example:
 
             from social_network_service.meetup import Meetup
@@ -397,8 +387,8 @@ class SocialNetworkBase(object):
         **See Also**
         .. seealso:: connect() method defined in SocialNetworkBase class inside social_network_service/base.py.
         """
-        logger.info('Getting "member id" of %s(user id: %s) using API of %s.' % (self.user.name, self.user.id,
-                                                                                 self.social_network.name))
+        logger.info('Getting "member id" of %s(user id:%s) using API of %s.' % (self.user.name, self.user.id,
+                                                                                self.social_network.name))
         url = get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
         # Now we have the URL, access token, and header is set too,
         response = http_request('POST', url, headers=self.headers, user_id=self.user.id, app=app)
@@ -603,8 +593,8 @@ class SocialNetworkBase(object):
             else:
                 error_message = 'Some other user is already using this account. user_id:%s, social_network:%s , ' \
                                 'member_id:%s.' % (self.user.id, self.social_network.name.title(), member_id)
-            logger.error(error_message)
-            raise InvalidUsage(error_message)
+                logger.error(error_message)
+                raise InvalidUsage(error_message)
 
     @classmethod
     def disconnect(cls, user_id, social_network):
