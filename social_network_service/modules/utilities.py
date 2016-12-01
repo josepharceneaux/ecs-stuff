@@ -573,7 +573,7 @@ def is_token_valid(social_network_id, user_id):
             # create social network object which will validate
             # and refresh access token (if possible)
             sn = social_network_class(user_id=user_id,
-                                      social_network=social_network
+                                      social_network_id=social_network.id
                                       )
             return sn.access_token_status, social_network.name
         return False, social_network.name
