@@ -73,7 +73,7 @@ class Eventbrite(SocialNetworkBase):
 
     @classmethod
     def save_user_credentials_in_db(cls, user_credentials):
-        """response.json()['id']
+        """
         :param user_credentials: User's social network credentials for which
                 we need to create webhook. Webhook is created to be updated
                 about any RSVP on an event of Eventbrite.
