@@ -205,9 +205,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         error_message = None
         try:
             response = method(url, params=params, headers=headers, data=data, verify=False)
-            # If we made a bad request (a 4XX client error or 5XX server
-            # error response),
-            # we can raise it with Response.raise_for_status():"""
+            # If we made a bad request (a 4XX client error or 5XX server error response),
+            # we can raise it with Response.raise_for_status():
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == ResourceNotFound.http_status_code():
@@ -223,16 +222,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             # checks if error occurred on "Server" or is it a bad request
             elif e.response.status_code < InternalServerError.http_status_code():
                 try:
-                    # In case of Meetup, we have error details in e.response.json()['errors'].
-                    # So, tyring to log as much
-                    # details of error as we can.
-                    json_response = e.response.json()
-                    if 'errors' in json_response:
-                        error_message = e.message + ', Details: ' + json.dumps(json_response['errors'])
-                    elif 'error_description' in json_response:
-                        error_message = e.message + ', Details: ' + json.dumps(json_response['error_description'])
-                    else:
-                        error_message = e.message
+                    error_message = e.response.json()
                 except AttributeError:
                     error_message = e.message
             else:
