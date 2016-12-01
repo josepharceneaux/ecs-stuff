@@ -176,6 +176,8 @@ class TalentBot(object):
                                      'handler': self.handler.question_10_handler},
                               # Add candidate from url
                               '72': {'question': self.list_of_questions[72], 'threshold': 95,
+                                     'handler': self.handler.add_candidate_handler},
+                              '73': {'question': self.list_of_questions[73], 'threshold': 95,
                                      'handler': self.handler.add_candidate_handler}
                               }
         self.bot_name = bot_name
