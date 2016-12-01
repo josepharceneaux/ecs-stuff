@@ -11,7 +11,8 @@ import random
 #  Common utils
 from talentbot_service.common.models.user import TalentbotAuth, UserPhone
 # App specific imports
-from talentbot_service.modules.constants import TEXT_MESSAGE_MAX_LENGTH, AUTHENTICATION_FAILURE_MSG
+from talentbot_service.modules.constants import TEXT_MESSAGE_MAX_LENGTH, AUTHENTICATION_FAILURE_MSG,\
+    I_AM_PARSING_A_RESUME
 from twilio.rest import TwilioRestClient
 from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger
@@ -33,9 +34,9 @@ class SmsBot(TalentBot):
         Authenticates user
         :rtype: tuple(bool, int)
         """
-        user_phone_id = UserPhone.get_by_phone_value(mobile_number)[0].id
+        user_phone_id = UserPhone.get_by_phone_value(mobile_number)
         if user_phone_id:
-            talentbot_auth = TalentbotAuth.get_user_id(user_phone_id=user_phone_id)
+            talentbot_auth = TalentbotAuth.get_user_id(user_phone_id=user_phone_id[0].id)
             if talentbot_auth:
                 return True, talentbot_auth[0]
         return False, None
@@ -75,6 +76,8 @@ class SmsBot(TalentBot):
         """
         is_authenticated, user_id = self.authenticate_user(recipient)
         if is_authenticated:
+            if self.is_response_time_more_than_usual(message):
+                self.reply(I_AM_PARSING_A_RESUME, recipient)
             try:
                 response_generated = self.parse_message(message, user_id)
                 if response_generated:
