@@ -12,7 +12,7 @@ import requests
 from requests import codes
 
 # Application Specific
-from social_network_service.common.error_handling import InvalidUsage
+from social_network_service.common.error_handling import InvalidUsage, InternalServerError
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.validators import raise_if_not_positive_int_or_long
@@ -189,6 +189,7 @@ class SocialNetworkBase(object):
         self.events = []
         self.api_relative_url = None
         self.user, self.social_network = self.get_user_and_social_network(user_id, social_network_id)
+        self.api_url = self.social_network.api_url
         self.user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(self.user.id,
                                                                                               self.social_network.id)
         if validate_credentials:
@@ -200,20 +201,18 @@ class SocialNetworkBase(object):
                 "access_token": self.user_credentials.access_token,
                 "gt_user_id": self.user_credentials.user_id,
                 "social_network_id": self.social_network.id,
-                "api_url": self.social_network.api_url,
                 "auth_url": self.social_network.auth_url
             }
             # checks if any field is missing for given user credentials
-            items = [value for key, value in data.iteritems() if key not in ["api_url", "auth_url"]]
+            items = [value for key, value in data.iteritems() if key not in ["auth_url"]]
             if all(items):
-                self.api_url = data['api_url']
                 self.auth_url = data['auth_url']
                 self.gt_user_id = data['gt_user_id']
                 self.social_network_id = data['social_network_id']
                 self.access_token = data['access_token']
             else:
                 # gets fields which are missing
-                items = [key for key, value in data.iteritems() if key is not "api_url" and not value]
+                items = [key for key, value in data.iteritems() if not value]
                 data_to_log = {'user_id': self.user.id, 'missing_items': items}
                 # Log those fields in error which are not present in Database
                 error_message = "User id: %(user_id)s\n Missing Item(s) in user's " \
@@ -338,6 +337,8 @@ class SocialNetworkBase(object):
         :return: returns access token and refresh token
         :rtype: tuple (str, str)
         """
+        logger.info('Getting "access_token and refresh_token" of user_id:%s using API of %s.'
+                    % (user_id, social_network.name))
         url = social_network.auth_url + api_relative_url
         get_token_response = http_request(method_type, url, data=payload, user_id=user_id, params=params)
         try:
@@ -369,22 +370,18 @@ class SocialNetworkBase(object):
 
     def get_member_id(self):
         """
-        - If getTalent user has an account on some social network, like
-            Meetup.com, it will have a "member id" for that social network.
-            This "member id" is used to make API subsequent calls to fetch
-            events or RSVPs and relevant data for getTalent user from social
-            network website.
+        - If getTalent user has an account on some social network, like Meetup.com, it will have a "member id" for
+            that social network. This "member id" is used to make API subsequent calls to fetch events or RSVPs and
+            relevant data for getTalent user from social network website.
 
         ** Working **
-            - In this method, we have value of "self.api_relative_url" set by
-                child classes according to API of respective social network.
-                "self.api_relative_url" is appended in "self.api_url" like
+            - In this method, we have value of "self.api_relative_url" set by child classes according to API of
+                respective social network. "self.api_relative_url" is appended in "self.api_url" like
                     url = self.api_url + self.api_relative_url
                 This will evaluate in case of Meetup as
                     url = 'https://api.meetup.com/2' + '/member/self'
-                We then make a HTTP POST call on required url. If we
-                get response status 2xx, we retrieve the "member id" from
-                response of HTTP POST call and update the record in
+                We then make a HTTP POST call on required url. If we get response status 2xx, we retrieve the
+                "member id" from response of HTTP POST call and update the record in
                 user_social_network_credentials db table.
 
         :Example:
@@ -393,41 +390,22 @@ class SocialNetworkBase(object):
             sn = Meetup(user_id=1)
             sn.get_member_id()
 
-        - We call this method from __init__() of SocialNetworkBase class so
-            that we don't need to get 'member id' of getTalent user while
-            making object of some social network class at different places.
-            (e.g.
-            1- creating object of Meetup() in start() method of manager.
-            2- while processing event inside process_event() defined in
-                social_network_service/utilities.py
-            )
+        - We call this method from connect() of SocialNetworkBase class so that we don't need to get 'member id'
+            of getTalent user while making object of some social network class at different places.
+            (e.g. creating object of Meetup() in when importing events)
 
         **See Also**
-        .. seealso:: __init__() method defined in SocialNetworkBase class
-            inside social_network_service/base.py.
+        .. seealso:: connect() method defined in SocialNetworkBase class inside social_network_service/base.py.
         """
-        logger.debug('Getting "member id" of %s(user id: %s) using API of %s.'
-                     % (self.user.name, self.user.id, self.social_network.name))
-        try:
-            user_credentials = self.user_credentials
-            url = get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
-            # Now we have the URL, access token, and header is set too,
-            get_member_id_response = http_request('POST', url,
-                                                  headers=self.headers,
-                                                  user_id=self.user.id,
-                                                  app=app)
-            if get_member_id_response.ok:
-                member_id = get_member_id_response.json().get('id')
-                data = dict(user_id=user_credentials.user_id,
-                            social_network_id=user_credentials.social_network_id,
-                            member_id=member_id)
-                SocialNetworkBase.save_user_credentials_in_db(data)
-            else:
-                # Error has been logged inside http_request()
-                pass
-        except:
-            logger.exception('get_member_id: user_id: %s, social network: %s(id: %s)'
-                             % (self.user.id, self.social_network.name, self.social_network.id))
+        logger.info('Getting "member id" of %s(user id: %s) using API of %s.' % (self.user.name, self.user.id,
+                                                                                 self.social_network.name))
+        url = get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
+        # Now we have the URL, access token, and header is set too,
+        response = http_request('POST', url, headers=self.headers, user_id=self.user.id, app=app)
+        if response.ok:
+            return response.json().get('id')
+        else:
+            logger.error('get_member_id: Error:%s.' % response.text)
 
     def validate_token(self, payload=None):
         """
@@ -493,7 +471,6 @@ class SocialNetworkBase(object):
                 from social_network_service.meetup import Meetup
                 sn = Meetup(user_id=1)
                 sn.refresh_access_token()
-from datetime import datetime
 
         **See Also**
         .. seealso:: refresh_access_token() method defined in Meetup class
@@ -590,13 +567,44 @@ from datetime import datetime
         Venue.save(venue)
         return venue
 
-    @classmethod
-    def connect(cls, user_id, social_network, code):
-        access_token, refresh_token = cls.get_access_and_refresh_token(user_id, social_network,
-                                                                       code_to_get_access_token=code)
-        user_credentials_dict = dict(user_id=user_id, social_network_id=social_network.id, access_token=access_token,
-                                     refresh_token=refresh_token)
-        return cls.save_user_credentials_in_db(user_credentials_dict)
+    def connect(self, code):
+        """
+        This connects user with social-network's account. e.g. on Meetup or Eventbrite etc.
+        This gets access token and refresh tokens for user. It also gets member_id of getTalent user on requested
+        social-network website.
+        :param string code: code to exchange for access token and refresh token.
+        """
+        access_token, refresh_token = self.get_access_and_refresh_token(self.user.id, self.social_network,
+                                                                        code_to_get_access_token=code)
+        self.headers = {'Authorization': 'Bearer ' + access_token}
+        # GET member_id of getTalent user
+        member_id = self.get_member_id()
+        # Check all user_social_network_credentials in database against this member_id
+        records_in_db = UserSocialNetworkCredential.filter_by_keywords(social_network_id=self.social_network.id,
+                                                                       member_id=member_id)
+        user_credentials_dict = dict(user_id=self.user.id, social_network_id=self.social_network.id,
+                                     access_token=access_token, refresh_token=refresh_token, member_id=member_id)
+
+        if not records_in_db:  # No record found in database
+            return self.save_user_credentials_in_db(user_credentials_dict)
+
+        if len(records_in_db) > 1:
+            error_message = '%s account for member_id:%s is associated with multiple users.'  \
+                            % (self.social_network.name.title(), member_id)
+            logger.error(error_message)
+            raise InternalServerError(error_message)
+
+        if len(records_in_db) == 1:
+            record_in_db = records_in_db[0]
+            if record_in_db.user.id == self.user.id:
+                logger.info('User(id:%s) is already connected with account on %s.'
+                            % (self.user.id, self.social_network.name.title()))
+                return self.save_user_credentials_in_db(user_credentials_dict)
+            else:
+                error_message = 'Some other user is already using this account. user_id:%s, social_network:%s , ' \
+                                'member_id:%s.' % (self.user.id, self.social_network.name.title(), member_id)
+            logger.error(error_message)
+            raise InvalidUsage(error_message)
 
     @classmethod
     def disconnect(cls, user_id, social_network):

@@ -69,11 +69,11 @@ class Eventbrite(SocialNetworkBase):
         .. seealso:: __init__() method of SocialNetworkBase class.
         """
         self.api_relative_url = "/users/me/"
-        super(Eventbrite, self).get_member_id()
+        return super(Eventbrite, self).get_member_id()
 
     @classmethod
     def save_user_credentials_in_db(cls, user_credentials):
-        """
+        """response.json()['id']
         :param user_credentials: User's social network credentials for which
                 we need to create webhook. Webhook is created to be updated
                 about any RSVP on an event of Eventbrite.
@@ -143,7 +143,8 @@ class Eventbrite(SocialNetworkBase):
                         'redirect_uri': social_network.redirect_uri,
                         'code': code_to_get_access_token}
         # calls super class method with api_relative_url and payload data
-        return super(Eventbrite, cls).get_access_and_refresh_token(user_id, social_network, method_type=method_type,
+        return super(Eventbrite, cls).get_access_and_refresh_token(user_id, social_network,
+                                                                   method_type=method_type,
                                                                    payload=payload_data,
                                                                    api_relative_url=api_relative_url)
 

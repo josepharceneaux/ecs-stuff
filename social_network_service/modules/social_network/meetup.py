@@ -91,7 +91,7 @@ class Meetup(SocialNetworkBase):
         """
         # TODO: Need to add this for mocking while fixing importer tests
         self.api_relative_url = '/member/self'
-        super(Meetup, self).get_member_id()
+        return super(Meetup, self).get_member_id()
 
     def get_groups(self):
         """
