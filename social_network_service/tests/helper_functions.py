@@ -171,9 +171,9 @@ def match_event_fields(event):
     :param event: event response object
     """
     assert event['added_datetime']
-    CampaignsTestsHelpers.assert_valid_datetime_range(str(event['added_datetime']))
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(event['added_datetime']), minutes=5)
     assert event['updated_datetime']
-    CampaignsTestsHelpers.assert_valid_datetime_range(str(event['updated_datetime']))
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(event['updated_datetime']), minutes=5)
     assert event['social_network_event_id']
     assert event['social_network_id']
     assert event['id']
@@ -185,9 +185,9 @@ def match_venue_fields(venue):
     :param venue: venue response object
     """
     assert venue['added_datetime']
-    CampaignsTestsHelpers.assert_valid_datetime_range(str(venue['added_datetime']))
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(venue['added_datetime']), minutes=5)
     assert venue['updated_datetime']
-    CampaignsTestsHelpers.assert_valid_datetime_range(str(venue['updated_datetime']))
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(venue['updated_datetime']), minutes=5)
     assert venue['id']
     assert venue['social_network_venue_id']
     assert venue['social_network_id']
@@ -199,7 +199,7 @@ def match_event_organizer_fields(event_organizer):
     :param event_organizer: event organizer response object
     """
     assert event_organizer['added_datetime']
-    CampaignsTestsHelpers.assert_valid_datetime_range(str(event_organizer['added_datetime']))
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(event_organizer['added_datetime']), minutes=5)
     assert event_organizer['updated_datetime']
-    CampaignsTestsHelpers.assert_valid_datetime_range(str(event_organizer['updated_datetime']))
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(event_organizer['updated_datetime']), minutes=5)
     assert event_organizer['id']
