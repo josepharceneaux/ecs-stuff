@@ -9,7 +9,8 @@ with Facebook.
 # Builtin imports
 import random
 # Common utils
-from talentbot_service.modules.constants import FACEBOOK_MESSAGE_LIMIT, FACEBOOK_MESSAGE_SPLIT_COUNT
+from talentbot_service.modules.constants import FACEBOOK_MESSAGE_LIMIT, FACEBOOK_MESSAGE_SPLIT_COUNT, \
+    I_AM_PARSING_A_RESUME
 from talentbot_service.common.models.user import TalentbotAuth
 # Service specific
 from talentbot_service import app
@@ -48,6 +49,8 @@ class FacebookBot(TalentBot):
         """
         is_authenticated, user_id = self.authenticate_user(fb_user_id)
         if is_authenticated:
+            if self.is_response_time_more_than_usual(message):
+                self.reply(fb_user_id, I_AM_PARSING_A_RESUME)
             try:
                 self.sender_action(fb_user_id, "mark_seen")
                 self.sender_action(fb_user_id, "typing_on")

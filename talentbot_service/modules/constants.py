@@ -25,7 +25,8 @@ HINT = '''>>>I am `%s`. @osman is teaching me new things, right now I can answer
 8- What are the talent pools in my domain?
 9- What campaigns in my domain?
 10- Show me more about `[Talent pool name|Campaign name]`?
-11- What are my group `[Campaigns|Pipelines]`?''' % BOT_NAME
+11- What are my group `[Campaigns|Pipelines]`?
+12- Add candidate whose resume URL is `http://www.something.com/some-resume.pdf''' % BOT_NAME
 OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_NUMBER = "+12015617985"
 FACEBOOK_MESSAGE_LIMIT = 319
@@ -61,9 +62,10 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates are there w
              "what are all my campaigns", "what are my all campaigns", 'what are our campaigns',
              'what are the campaigns', 'how is', 'what are my pipelines', 'what are all pipelines',
              'what are my all pipelines', 'what are all my pipelines', 'what are our pipelines',
-             'what are campaigns in']
+             'what are campaigns in', 'add candidate', 'add a candidate']
 POSITIVE_MESSAGES = ['hmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 99
+AVERAGE_QUESTION_MATCH_RATIO = 95
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"
 AUTHENTICATION_FAILURE_MSG = 'Sorry you are not registered to use this service\n' \
                             'Go to the http://www.gettalent.com to register yourself'
@@ -77,7 +79,14 @@ QUESTION_HANDLER_NUMBERS = {'question_handler_1': 1, 'question_handler_4': 4}
 EMAIL_CAMPAIGN = 'Email Campaign'
 PUSH_CAMPAIGN = 'Push Campaign'
 SMS_CAMPAIGN = 'SMS Campaign'
+SOMETHING_WENT_WRONG = "Something went wrong while adding candidate please contact the developer `osman@gettalent.com`"
+I_AM_PARSING_A_RESUME = "I am parsing a resume, I will notify you as soon as I am done"
 ZERO = 0
+ADD_CANDIDATE_FROM_URL = 72
+TEN_MB = 1024 * 1024 * 10
+INVALID_RESUME_URL_MSG = "Invalid URL"
+NO_RESUME_URL_FOUND_MSG = "No URL found, URL must start with `http://` or `https://`"
+TOO_LARGE_RESUME_MSG = "Resume file size should be less than 10 MB"
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

@@ -11,7 +11,7 @@ import random
 from talentbot_service.common.models.user import TalentbotAuth
 # App specific imports
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
-from talentbot_service.modules.constants import AUTHENTICATION_FAILURE_MSG
+from talentbot_service.modules.constants import AUTHENTICATION_FAILURE_MSG, I_AM_PARSING_A_RESUME
 from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger, app
 from talentbot_service.common.utils.amazon_ses import send_email
@@ -68,6 +68,8 @@ class EmailBot(TalentBot):
         """
         is_authenticated, message, user_id = self.authenticate_user(recipient, subject, message)
         if is_authenticated:
+            if self.is_response_time_more_than_usual(message):
+                self.reply(recipient, subject, I_AM_PARSING_A_RESUME)
             try:
                 response_generated = self.parse_message(message, user_id)
                 if not response_generated:
