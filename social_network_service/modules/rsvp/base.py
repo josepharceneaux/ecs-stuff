@@ -480,7 +480,7 @@ class RSVPBase(object):
             else 'Not given'
         candidate_source = {
             "source": {
-                "description": str(attendee.event.description),
+                "description": attendee.event.description,
                 "notes": attendee.event.title
             }
         }

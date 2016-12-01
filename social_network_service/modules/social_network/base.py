@@ -292,8 +292,8 @@ class SocialNetworkBase(object):
                                        headers=self.headers, **kwargs)
             if mode == EVENT:
                 # gets events using respective API of Social Network
-                logger.debug('Getting event(s) of %s(UserId: %s) from %s website.' % (self.user.name, self.user.id,
-                                                                                      self.social_network.name))
+                logger.info('Getting event(s) of %s(UserId:%s) from %s website.' % (self.user.name, self.user.id,
+                                                                                    self.social_network.name))
                 self.events = sn_event_obj.get_events()
                 logger.info('Got %s live event(s) of %s(UserId: %s) on %s within provided time range.'
                              % (len(self.events), self.user.name, self.user.id, self.social_network.name))
@@ -410,7 +410,7 @@ class SocialNetworkBase(object):
         .. seealso:: __init__() method defined in SocialNetworkBase class
             inside social_network_service/base.py.
         """
-        logger.debug('Getting "member id" of %s(user id: %s) using API of %s.'
+        logger.debug('Getting "member id" of %s(user id:%s) using API of %s.'
                      % (self.user.name, self.user.id, self.social_network.name))
         try:
             user_credentials = self.user_credentials

@@ -17,7 +17,7 @@ class SocialNetworkUrls(object):
     VENUE = 'venue'
     EVENTS = 'events'
     EVENT = 'event'
-    RSVPs = 'rsvps'
+    RSVPS = 'rsvps'
     ORDER = 'order'
     ORGANIZERS = 'organizers'
     ORGANIZER = 'organizer'
@@ -33,7 +33,7 @@ class SocialNetworkUrls(object):
               VENUES: '{}/venues',
               EVENTS: '{}/events',
               EVENT: '{}/event/{}',
-              RSVPs: '{}/rsvps',
+              RSVPS: '{}/rsvps',
               }
 
     EVENTBRITE = {
@@ -42,7 +42,7 @@ class SocialNetworkUrls(object):
         VENUE: '{}/venues/{}',
         EVENTS: '{}/events/',
         EVENT: '{}/events/{}',
-        RSVPs: '{}/events/{}/attendees',
+        RSVPS: '{}/events/{}/attendees',
         ORGANIZERS: '{}/organizers/',
         ORGANIZER: '{}/organizers/{}',
         TICKETS: '{}/events/{}/ticket_classes/',

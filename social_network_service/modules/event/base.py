@@ -210,7 +210,6 @@ class EventBase(object):
             if isinstance(self.user, User):
                 self.api_url = self.social_network.api_url
                 self.member_id, self.access_token, self.refresh_token, self.webhook = self._get_user_credentials()
-                self.url_to_delete_event = None
                 self.venue_id = None
             else:
                 error_message = "No User found in database with id %(user_id)s" % self.user_credentials.user_id
@@ -470,9 +469,9 @@ class EventBase(object):
     def get_events_from_db(self, start_date=None):
         """
         This gets the events from database which starts after the specified start_date
-        or incase date is None, return all events
+        or in case date is None, return all events
         :param start_date:
-        :type start_date: datetime
+        :type start_date: datetime|None
         :return: list of events
         """
         if start_date:
@@ -480,11 +479,11 @@ class EventBase(object):
         else:
             events = Event.filter_by_keywords(user_id=self.user.id, social_network_id=self.social_network.id)
         if events:
-            logger.debug('There are %s events of %s(UserId: %s) in database within provided time range.'
-                         % (len(events), self.user.name, self.user.id))
+            logger.info('There are %s events of %s(user_id:%s) in database with start_datetime ahead of:%s.'
+                        % (len(events), self.user.name, self.user.id, start_date))
         else:
-            logger.debug('No events found of %s(UserId: %s) in database within provided time range.'
-                         % (self.user.name, self.user.id))
+            logger.info('No events found of %s(user_id:%s) in database with start_datetime ahead of:%s.'
+                        % (self.user.name, self.user.id, start_date))
         return events
 
     def process_events_rsvps(self):

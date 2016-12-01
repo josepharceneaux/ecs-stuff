@@ -76,8 +76,6 @@ class Meetup(EventBase):
                 SocialNetwork object representing Meetup SN
             - api_url:
                 URL to access Meetup API
-            - url_to_delete_event:
-                URL to unpublish event from social network (Meetup)
             - member_id:
                 user member id on Meetup
             - venue_id:
@@ -205,43 +203,7 @@ class Meetup(EventBase):
                                 with this great community we have built.</p> <p>We are really grateful that our
                                 facility host TBA is sponsoring food and beverages (alcoholic and non-alcoholic)
                                 for this event.</p> <p>Please email the leadership team if you are interested in:</p>
-                                <p>\u2022 leading a tutorial</p> <p>\u2022 being a mentor</p> <p>Classes: TBA</p>
-                                <p><b>Who should attend?</b></p> <p>\u2022 New to Python and want to work with other
-                                Pythonistas</p> <p>\u2022 Experienced devs who want to hack on your work, personal or
-                                open-source projects</p> <p>\u2022 Experienced devs who want to mentor others
-                                (please sign-up
-                                <a href="https://docs.google.com/a/moduleq.com/forms/d/1QwjacanenkZ4VrsrHp
-                                e8zDrobDr_sPvrSxlAUGjSAA8/viewform">here</a>)</p> <p><b>The plan:</b></p>
-                                <p>6:00p Begin check-in</p> <p>6:50p Introductions: tell us about your project
-                                and/or the kind of help you seek</p> <p>7:00p Make yourself comfortable and start
-                                hacking, or attend one of the tutorials</p> <p>9:30p Wrap up</p>
-                                <p><b>Example of projects to hack on:</b></p> <p>\u2022 Personal
-                                side projects - your web application or personal learning project</p>
-                                <p>\u2022 Open source projects - work on open issues or recruit developers
-                                for your project</p> <p>\u2022 Work projects - work on anything you like and
-                                bounce ideas around</p> <p>To help us get more organized, please submit your
-                                project ideas here: <a href="http://goo.gl/7TpRP5"><a href="http://goo.gl/7TpRP5"
-                                class="linkified">http://goo.gl/7TpRP5</a></a></p> <p>To see what others are
-                                working on or to sign up for tutorials, click here: <a href="http://goo.gl/cTQ65t">
-                                <a href="http://goo.gl/cTQ65t" class="linkified">http://goo.gl/cTQ65t</a></a> -</p>
-                                <p>Feel free to reach out to one of us in the leadership team with questions and
-                                suggestions. Looking forward to meeting you!</p> <p><b>*CHECK-IN PROCESS*</b></p>
-                                <p>Please take note of the important check-in details at TBA.</p> <p>1. Doors open at
-                                6:00pm to allow enough time for the check-in process. Before 6:00pm, please wait
-                                outside without blocking the building entrance. Wait list will be admitted beginning
-                                at 6:45pm. Doors close at 7:30pm.</p> <p>2. Please update the name on your account to
-                                reflect your FIRST NAME and LAST NAME. TBA security will be checking IDs downstairs.
-                                If your name on Meetup.com is not the name on your ID, then please enter your full
-                                name <a href="https://docs.google.com/forms/d/1d_oPoxjcAQzOJqozHIzVuFNnOYi7CD
-                                rzouywq4U9SUo/edit">here</a>.</p> <p>3. Since alcohol will be served at the event,
-                                we ask that any underage attendees RSVP directly to the meet up host.</p>
-                                <p>4. Waiting list folks will be allowed into the event AFTER we admit
-                                all confirmed attendees.</p> <p>5. If you are bringing your bike, you should be able
-                                to find bike parking along the streets.</p> <p>Hope to see you there!</p>
-                                <p>**SF Python is run by volunteers aiming to foster the Python Community in the bay
-                                area. Please consider <a href="https://secure.meetup.com/sfpython/contribute/">making
-                                a donation</a> to SF Python and saying a big thank you to TBA for providing food,
-                                drinks, and the venue for this Wed\'s meetup.</p>',
+                            ',
               u'created': 1457407879000,
               u'updated': 1457407879000,
               u'visibility': u'public',

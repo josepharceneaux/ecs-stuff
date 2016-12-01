@@ -100,7 +100,7 @@ class Meetup(RSVPBase):
         rsvps = []
         social_network_id = event.social_network_id
         assert social_network_id is not None
-        rsvps_url = get_url(self, Urls.RSVPs)
+        rsvps_url = get_url(self, Urls.RSVPS)
         params = {'event_id': event.social_network_event_id}
         response = http_request('GET', rsvps_url, params=params, headers=self.headers, user_id=self.user.id)
         if response.ok:
@@ -235,16 +235,7 @@ class Meetup(RSVPBase):
             u'country': u'gb',
             u'topics': [
                         {u'name': u'Musicians', u'urlkey': u'musicians', u'id': 173},
-                        {u'name': u'Acting', u'urlkey': u'acting', u'id': 226},
-                        {u'name': u'Digital Art', u'urlkey': u'digitalart', u'id': 594},
-                        {u'name': u'Video Games', u'urlkey': u'videogame', u'id': 4471},
-                        {u'name': u'Live Music', u'urlkey': u'livemusic', u'id': 8652},
-                        {u'name': u'Games', u'urlkey': u'games', u'id': 15992},
-                        {u'name': u'Dance Lessons', u'urlkey': u'dance-lessons', u'id': 19146},
-                        {u'name': u'Startup Businesses', u'urlkey': u'startup-businesses', u'id': 21681},
-                        {u'name': u'Theater', u'urlkey': u'live-theatre', u'id': 23274},
-                        {u'name': u'Professional Women', u'urlkey': u'professional-women', u'id': 26273},
-                        {u'name': u'Creativity', u'urlkey': u'creative', u'id': 36229}
+                        {u'name': u'Acting', u'urlkey': u'acting', u'id': 226}
                     ],
             u'lon': -0.33,
             u'joined': 1456995423000,

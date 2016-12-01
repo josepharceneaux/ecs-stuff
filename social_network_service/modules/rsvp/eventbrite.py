@@ -77,7 +77,7 @@ class Eventbrite(RSVPBase):
         :return: List of RSVPs
         :rtype: list
         """
-        rsvps_url = get_url(self, Urls.RSVPs).format(event.social_network_event_id)
+        rsvps_url = get_url(self, Urls.RSVPS).format(event.social_network_event_id)
         response = http_request('GET', url=rsvps_url, headers=self.headers, user_id=self.user.id)
         all_rsvps = []
         data = response.json()
@@ -369,7 +369,7 @@ class Eventbrite(RSVPBase):
                 " style='width:60px;height:30px' " \
                 "src='/web/static/images/activities/eventbrite_logo.png'/>"
             # GET attendees of event
-            rsvps_url = get_url(self, Urls.RSVPs).format(event.social_network_event_id)
+            rsvps_url = get_url(self, Urls.RSVPS).format(event.social_network_event_id)
             response_attendees = http_request('GET', rsvps_url, headers=self.headers)
             event_attendees = response_attendees.json()['attendees']
             for event_attendee in event_attendees:
