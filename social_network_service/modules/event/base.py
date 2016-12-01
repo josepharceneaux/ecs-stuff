@@ -344,13 +344,11 @@ class EventBase(object):
 
     def process_events(self, events):
         """
-        :param events: contains events of a particular user for a specific social network.
-        :type events: list
-        This is the function to process events once we have the events of
-        some social network. It first maps the social network fields to
-        gt-db fields. Then it checks if the event is present is db or not.
-        If event is already in db, it updates the event fields otherwise
-        it stores the event in db.
+        :param list events: contains events of a particular user for a specific social network.
+        This is the function to process events once we have the events of some social network. It first maps the
+        social network fields to gt-db fields. Then it checks if the event is present is db or not.
+        If event is already in db, it updates the event fields otherwise it stores the event in db.
+        Finally we import RSVPs of all the events in method post_process_events().
         """
         if events:
             self.pre_process_events(events)
@@ -491,8 +489,7 @@ class EventBase(object):
 
     def process_events_rsvps(self):
         """
-        We get events against a particular user_credential. Then we get the RSVPs of all events present
-        in database and process them to save in database.
+        We import the RSVPs of all events present in self.events in this method.
         """
         # get_required class under rsvp/ to process RSVPs
         sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
