@@ -1150,7 +1150,8 @@ class ProcessAccessTokenResource(Resource):
             # Get social network specific Social Network class
             social_network_class = get_class(social_network.name, 'social_network')
             credentials = social_network_class(user_id, social_network.id, validate_credentials=False).connect(code)
-            logger.info('User has been connected successfully. We are going to import events now.')
+            logger.info('User(id:%s) has been connected successfully with %s. We are going to import events now.'
+                        % (user_id, social_network.name))
             import_events.delay(credentials)
             return dict(message='User credentials added successfully'), 201
         else:

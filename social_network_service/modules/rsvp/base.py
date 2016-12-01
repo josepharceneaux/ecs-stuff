@@ -24,7 +24,6 @@ from social_network_service.modules.utilities import Attendee
 from social_network_service.common.utils.auth_utils import refresh_token
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
-from social_network_service.common.inter_service_calls.candidate_service_calls import create_or_update_candidate
 from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.talent_pools_pipelines import TalentPool
 from social_network_service.common.models.user import User, Token, UserSocialNetworkCredential
@@ -32,10 +31,10 @@ from social_network_service.common.models.misc import Product
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate, EmailLabel, CandidateEmail
 from social_network_service.common.models.candidate import CandidateSocialNetwork
-from social_network_service.common.routes import UserServiceApiUrl
+from social_network_service.common.routes import UserServiceApiUrl, CandidateApiUrl
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
-from social_network_service.social_network_app import logger
+from social_network_service.social_network_app import logger, app
 from social_network_service.common.constants import REQUEST_TIMEOUT
 
 
@@ -577,11 +576,18 @@ class RSVPBase(object):
                          })
         # Update social network data to be sent with candidate
         data.update({'social_networks': [social_network_data]})
-        attendee.candidate_id = create_or_update_candidate(oauth_token=self._get_valid_access_token(),
-                                                           data=dict(candidates=[data]),
-                                                           return_candidate_ids_only=True,
-                                                           request_method=request_method)
 
+        headers = {'Authorization': 'Bearer {}'.format(self._get_valid_access_token()),
+                   "Content-Type": "application/json"}
+
+        resp = http_request(request_method, url=CandidateApiUrl.CANDIDATES, headers=headers,
+                            data=json.dumps(dict(candidates=[data])), app=app)
+        data_resp = resp.json()
+        if resp.status_code not in [codes.CREATED, codes.OK]:
+            error_message = 'save_attendee_as_candidate: candidate creation failed. Error:%s' % data_resp
+            logger.error(error_message)
+            raise InternalServerError(error_message)
+        attendee.candidate_id = data_resp['candidates'][0]['id']
         return attendee
 
     def save_rsvp(self, attendee):
