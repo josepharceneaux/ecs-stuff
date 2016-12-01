@@ -32,7 +32,9 @@ from talentbot_service.common.models.talent_pools_pipelines import TalentPool
 from talentbot_service.common.models.email_campaign import EmailCampaign
 from talentbot_service.common.models.sms_campaign import SmsCampaign
 from talentbot_service.common.models.push_campaign import PushCampaign
-from talentbot_service.common.routes import ResumeApiUrl
+from talentbot_service.common.routes import ResumeApiUrl, CandidateApiUrl
+from talentbot_service.common.utils.handy_functions import send_request
+from talentbot_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
 from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, delete_from_filepicker_s3
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
@@ -40,7 +42,6 @@ from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NU
     SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, \
     TOO_LARGE_RESUME_MSG
 from talentbot_service import logger, app
-from resume_parsing_service.app.views.parse_lib import IMAGE_FORMATS, DOC_FORMATS
 # 3rd party imports
 from flask import json
 import requests
@@ -633,6 +634,19 @@ class QuestionHandler(object):
             resume_url = re.search("(?P<url>((https?)|(ftps?))://[^\s]+)", ' '.join(message_tokens)).group("url")
         except AttributeError:  # If url doesn't start with http:// or https://
             return NO_RESUME_URL_FOUND_MSG
+        meta = urllib2.urlopen(resume_url)
+        resume_size_in_bytes = meta.headers.get('Content-Length')
+        parsed_data = urlparse(resume_url)
+        _, extension = splitext(parsed_data.path)
+        if resume_size_in_bytes is None or not extension:
+            user = User.get_by_id(user_id)
+            token = user.generate_jw_token(user_id=user_id)
+            response = send_request('get', CandidateApiUrl.OPENWEB, token, params={'url': resume_url})
+            if response.ok:
+                openweb_candidate = json.loads(response.content)
+                candidate = cls.parse_openweb_candidate(openweb_candidate.get("candidate"))
+        if int(resume_size_in_bytes) >= TEN_MB:
+            raise InvalidUsage(TOO_LARGE_RESUME_MSG)
         try:
             '''
             create_bucket() method checks if resume bucket exists on S3 if it does create_bucket() returns bucket
@@ -644,7 +658,7 @@ class QuestionHandler(object):
             logger.error(error.message)
             return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
         try:
-            filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id)
+            filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id, extension)
             user = User.get_by_id(user_id)
             token = user.generate_jw_token(user_id=user_id)
             header = {'Authorization': token, 'Content-Type': 'application/json'}
@@ -681,22 +695,29 @@ class QuestionHandler(object):
         except urllib.ContentTooShortError:
             return "File size too small"
 
-    @staticmethod
+    @classmethod
+    def parse_openweb_candidate(cls, openweb_candidate):
+        """
+        Parses candidate received from 'candidate/openweb' and add candidate into user's domain
+        :param dict|None openweb_candidate: Candidate received from openweb against URL
+        :rtype: Candidate|None
+        """
+        if openweb_candidate["full_name"]:
+            full_name = openweb_candidate["full_name"].split()
+            first_name = full_name.pop(0)
+            last_name = full_name.pop(0)
+
+    @classmethod
     @contract
-    def download_resume_and_save_in_bucket(resume_url, user_id):
+    def download_resume_and_save_in_bucket(cls, resume_url, user_id, extension):
         """
         Opens url checks if it is valid and then download resume from the url and saves it in S3 gtbot-resume-bucket
+        :param string extension: Resume extension
         :param positive user_id: User Id
         :param string resume_url: Resume URL
         :return: Returns saved resume's key
         :rtype: string
         """
-        meta = urllib2.urlopen(resume_url)
-        resume_size_in_bytes = meta.headers['Content-Length']
-        if int(resume_size_in_bytes) >= TEN_MB:
-            raise InvalidUsage(TOO_LARGE_RESUME_MSG)
-        parsed_data = urlparse(resume_url)
-        _, extension = splitext(parsed_data.path)
         if extension in IMAGE_FORMATS or extension in DOC_FORMATS:
             current_datetime = datetime.utcnow()
             filename = '%d-%s%s%s' % (user_id, current_datetime.date(), current_datetime.time(), extension)
