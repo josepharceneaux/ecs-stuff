@@ -80,8 +80,6 @@ class Eventbrite(EventBase):
                 SocialNetwork object representing Eventbrite SN
             - api_url:
                 URL to access eventbrite API
-            - url_to_delete_event:
-                URL to unpublist event from social network (eventbrite)
             - member_id:
                 user member id on eventbrite
             - venue_id:

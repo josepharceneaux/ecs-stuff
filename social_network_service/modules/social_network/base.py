@@ -227,9 +227,8 @@ class SocialNetworkBase(object):
             if not self.access_token_status:
                 # Access token has expired. Couldn't refresh it for given
                 # social network.
-                logger.debug('__init__: Access token has expired. '
-                             'Please connect with %s again from "Profile" page. user_id: %s'
-                             % (self.social_network.name, self.user.id))
+                logger.info('__init__: Access token has expired. Please connect with %s again from "Profile" page. '
+                            'user_id: %s' % (self.social_network.name, self.user.id))
                 raise AccessTokenHasExpired('Access token has expired for %s' % self.social_network.name)
             self.start_date_dt = None
             self.webhook_id = None
@@ -279,33 +278,28 @@ class SocialNetworkBase(object):
         .. seealso:: start() function defined in social network manager
             inside social_network_service/manager.py.
         """
-        social_network_id = self.social_network.id
         user_id = self.user.id
+        social_network_id = self.social_network.id
         social_network_name = self.social_network.name
         try:
             sn_name = self.social_network.name.strip()
-            # get_required class under social_network_service/event/ to
-            # process events
+            # get_required class under social_network_service/event/ to process events
             event_class = get_class(sn_name, 'event')
             # create object of selected event class
-            sn_event_obj = event_class(user_credentials=user_credentials,
-                                       social_network=self.social_network,
-                                       headers=self.headers,
-                                       **kwargs)
-
+            sn_event_obj = event_class(user_credentials=user_credentials, social_network=self.social_network,
+                                       headers=self.headers, **kwargs)
             if mode == EVENT:
                 # gets events using respective API of Social Network
-                logger.debug('Getting event(s) of %s(UserId: %s) from '
-                             '%s website.' % (self.user.name, self.user.id,
-                                              self.social_network.name))
+                logger.info('Getting event(s) of %s(UserId:%s) from %s website.' % (self.user.name, self.user.id,
+                                                                                    self.social_network.name))
                 self.events = sn_event_obj.get_events()
                 logger.info('Got %s live event(s) of %s(UserId: %s) on %s within provided time range.'
-                             % (len(self.events), self.user.name, self.user.id,
-                                self.social_network.name))
+                             % (len(self.events), self.user.name, self.user.id, self.social_network.name))
                 # process events to save in database
                 sn_event_obj.process_events(self.events)
             elif mode == RSVP:
-                sn_event_obj.process_events_rsvps(user_credentials, **kwargs)
+                sn_event_obj.process_events_rsvps(user_credentials, headers=self.headers,
+                                                  social_network=self.social_network)
         except Exception:
             logger.exception('process: running %s importer, user_id: %s, '
                              'social network: %s(id: %s)'
@@ -442,8 +436,8 @@ class SocialNetworkBase(object):
                 logger.error("HitLimit reached for user(id:%s). Error:%s" % (self.user.id, data))
                 raise HitLimitReached(data)
             else:
-                logger.debug("Access token has expired for %s(UserId:%s). Social Network is %s."
-                             % (self.user.name, self.user.id, self.social_network.name))
+                logger.info("Access token has expired for %s(UserId:%s). Social Network is %s."
+                            % (self.user.name, self.user.id, self.social_network.name))
         except requests.RequestException as error:
             raise AccessTokenHasExpired('Error: %s, Please connect with %s again from "Profile" page.'
                                         % (error.message, self.social_network.name))

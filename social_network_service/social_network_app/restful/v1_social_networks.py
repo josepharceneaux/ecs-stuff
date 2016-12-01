@@ -179,8 +179,7 @@ class SocialNetworksResource(Resource):
                         total_deleted += 1
                 except Exception as e:
                     total_not_deleted += 1
-                    logger.debug('Unable to delete social network with ID: '
-                                 '%s\nError: %s' % (sn_id, e.message))
+                    logger.info('Unable to delete social network with ID: %s\nError: %s' % (sn_id, e.message))
 
         if total_not_deleted:
             return dict(message='Unable to delete %s social networks' % total_not_deleted,
