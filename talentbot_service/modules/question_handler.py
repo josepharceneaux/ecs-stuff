@@ -38,9 +38,8 @@ from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, d
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
     SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, \
-    TOO_LARGE_RESUME_MSG
+    TOO_LARGE_RESUME_MSG, DOC_FORMATS, IMAGE_FORMATS
 from talentbot_service import logger, app
-from resume_parsing_service.app.views.parse_lib import IMAGE_FORMATS, DOC_FORMATS
 # 3rd party imports
 from flask import json
 import requests
