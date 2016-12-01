@@ -108,7 +108,7 @@ def convert_csv_to_table(csv_file):
 @celery_app.task()
 def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool_ids,
                             oauth_token, user_id, is_scheduled=False, source_id=None,
-                            formatted_candidate_tags=None):
+                            formatted_candidate_tags=None, frequency_id=None):
     """
     This function will create new candidates from information of candidates given in a csv file
     :param source_id: Id of candidates source
@@ -120,6 +120,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
     :param is_scheduled: Is this method called asynchronously ?
     :param user_id: User id of logged-in user
     :type formatted_candidate_tags: list[dict[str]]
+    :param frequency_id: ID that describes candidate's subscription preference
+    :type frequency_id: int
     :return: A dictionary containing number of candidates successfully imported
     :rtype: dict
     """
@@ -326,7 +328,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 if response_candidate_ids:
                     add_extra_fields_to_candidate(response_candidate_ids[0], oauth_token,
                                                   tags=candidate_tags,
-                                                  notes=candidate_notes)
+                                                  notes=candidate_notes,
+                                                  frequency_id=frequency_id)
 
                 logger.info("Successfully imported %s candidates with ids: (%s)",
                             len(response_candidate_ids), response_candidate_ids)
@@ -431,15 +434,14 @@ def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token):
         return False, {"error": "Couldn't create/update candidate from candidate dict %s" % candidate_dict}
 
 
-def add_extra_fields_to_candidate(candidate_id, oauth_token, tags=None, notes=None):
+def add_extra_fields_to_candidate(candidate_id, oauth_token, tags=None, notes=None, frequency_id=None):
     """
     This endpoint will add such fields to candidate object that cannot be added through Candidate API
     :param candidate_id: Id of candidate
     :param oauth_token: OAuth token
-    :param secret_key_id: Secret key ID if V2 (JWT) auth
     :param tags: Candidate Tags
     :param notes: Candidate Notes
-    :return:
+    :param frequency_id: frequency ID that will be linked to candidate
     """
     headers = {'Authorization': oauth_token, 'content-type': 'application/json'}
     if tags:
@@ -453,6 +455,26 @@ def add_extra_fields_to_candidate(candidate_id, oauth_token, tags=None, notes=No
                                  data=json.dumps({'notes': notes}))
         if response.status_code != 201:
             logger.error("Couldn't add Notes to candidate with id: %s. Response:", str(candidate_id), response)
+
+    # Will attempt to add frequency ID to candidate's subscription preference. If candidate already has a subs-pref
+    # it will attempt to update candidate's subs-pref.
+    if frequency_id:
+        response = requests.post(url=CandidateApiUrl.CANDIDATE_PREFERENCE % str(candidate_id),
+                                 headers=headers,
+                                 data=json.dumps({'frequency_id': frequency_id}))
+        if response.status_code != 204:
+            if hasattr(response, 'json') and response.json().get('error').get('code') == 3143:
+                # update candidate's subscription frequency ID
+                update_resp = requests.put(url=CandidateApiUrl.CANDIDATE_PREFERENCE % str(candidate_id),
+                                           headers=headers,
+                                           data=json.dumps({'frequency_id': frequency_id}))
+                if update_resp.status_code != 204:
+                    logger.error("Couldn't update candidate's subscription preference. "
+                                 "Candidate ID: {}; Response: {}".format(candidate_id, response))
+            else:
+                logger.error("Couldn't add candidate's subscription preference. "
+                             "Candidate ID: {}; Response: {}".format(candidate_id, response))
+
 
 
 def update_candidate_from_parsed_spreadsheet(candidate_dict, oauth_token):
