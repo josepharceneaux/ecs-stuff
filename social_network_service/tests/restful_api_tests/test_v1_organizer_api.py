@@ -130,7 +130,7 @@ class TestOrganizers(object):
         assert response.status_code == codes.CREATED, 'Status should be Ok, Resource created (201)'
         assert 'Location' in response.headers
         response = response.json()
-        assert response['id'] > 0
+        assert response['id']
         EventOrganizer.session.commit()
         response = requests.get(SocialNetworkApiUrl.EVENT_ORGANIZERS, headers=auth_header(token_first))
         assert response.status_code == codes.OK

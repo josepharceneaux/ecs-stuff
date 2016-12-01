@@ -40,12 +40,14 @@ class TestVenues(object):
         Creates venue for social network events, send GET request to venues and test if expected
         fields exist in response from api.
         """
-        response = requests.get(SocialNetworkApiUrl.VENUES, headers=auth_header(token_first))
+        response = requests.get(SocialNetworkApiUrl.VENUE % venue_in_db_second['id'],
+                                headers=auth_header(token_first))
         logger.info(response.text)
         assert response.status_code == codes.OK, 'Status should be Ok (200)'
         results = response.json()
-        assert 'venues' in results
-        match_venue_fields(results['venues'][0])
+        assert 'venue' in results
+        assert len(results) == 1
+        match_venue_fields(results['venue'])
 
     def test_post_with_invalid_token(self):
         """

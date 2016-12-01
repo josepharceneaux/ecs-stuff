@@ -1,7 +1,8 @@
 # std import
 from db import db
 from datetime import datetime
-# A specific import
+
+# App specific import
 import event
 
 
