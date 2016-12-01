@@ -7,12 +7,12 @@ from flask import Blueprint, jsonify
 from flask import request
 
 from . import logger
-from .parsing_utilities import convert_spreadsheet_to_table, import_from_spreadsheet, schedule_spreadsheet_import
-from spreadsheet_import_service.common.error_handling import InvalidUsage
+from .parsing_utilities import convert_spreadsheet_to_table, import_from_spreadsheet
 from spreadsheet_import_service.common.routes import SpreadsheetImportApi
 from spreadsheet_import_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from spreadsheet_import_service.common.utils.talent_s3 import *
 from spreadsheet_import_service.common.models.user import Permission
+from spreadsheet_import_service.common.models.misc import Frequency
 
 mod = Blueprint('spreadsheet_import_api', __name__)
 
@@ -71,6 +71,10 @@ def import_from_table():
     talent_pool_ids = posted_data.get('talent_pool_ids', [])
     tags = posted_data.get('tags') or []
 
+    frequency_id = posted_data.get('frequency_id')
+    if frequency_id and Frequency.get_by_id(frequency_id):
+        frequency_id = int(frequency_id)
+
     candidate_tags = [{'name': tag_name} for tag_name in tags]
 
     if not header_row or not file_picker_key:
@@ -106,11 +110,25 @@ def import_from_table():
         raise InvalidUsage('Multiple Candidate Sources are not allowed')
 
     if len(candidates_table) > 25:
-        import_from_spreadsheet.delay(candidates_table, file_picker_key, header_row, talent_pool_ids,
-                                      request.oauth_token, request.user.id, True, source_id,
-                                      formatted_candidate_tags=candidate_tags)
+        import_from_spreadsheet.delay(table=candidates_table,
+                                      spreadsheet_filename=file_picker_key,
+                                      header_row=header_row,
+                                      talent_pool_ids=talent_pool_ids,
+                                      oauth_token=request.oauth_token,
+                                      user_id=request.user.id,
+                                      is_scheduled=True,
+                                      source_id=source_id,
+                                      formatted_candidate_tags=candidate_tags,
+                                      frequency_id=frequency_id)
         return jsonify(dict(count=len(candidates_table), status='pending')), 201
     else:
-        return import_from_spreadsheet(candidates_table, file_picker_key, header_row, talent_pool_ids,
-                                       request.oauth_token, request.user.id, False, source_id,
-                                       formatted_candidate_tags=candidate_tags)
+        return import_from_spreadsheet(table=candidates_table,
+                                       spreadsheet_filename=file_picker_key,
+                                       header_row=header_row,
+                                       talent_pool_ids=talent_pool_ids,
+                                       oauth_token=request.oauth_token,
+                                       user_id=request.user.id,
+                                       is_scheduled=False,
+                                       source_id=source_id,
+                                       formatted_candidate_tags=candidate_tags,
+                                       frequency_id=frequency_id)

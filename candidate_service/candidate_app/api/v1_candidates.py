@@ -1554,16 +1554,11 @@ class CandidatePreferenceResource(Resource):
         Function will create candidate's preference(s)
         input: {'frequency_id': 1}
         """
-
-        # Get candidate ID
         candidate_id = kwargs.get('id')
         authenticate_candidate_preference_request(request, kwargs.get('id'))
 
-        body_dict = get_json_if_exist(_request=request)
-        try:
-            validate(instance=body_dict, schema=resource_schema_preferences)
-        except Exception as e:
-            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+        # Validate and retrieve json data
+        body_dict = get_json_data_if_validated(request, resource_schema_preferences)
 
         # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
@@ -1572,8 +1567,8 @@ class CandidatePreferenceResource(Resource):
         if frequency_id and not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
-        # Candidate cannot have more than one subsctiption preference
-        if CandidateSubscriptionPreference.get_by_candidate_id(candidate_id=candidate_id):
+        # Candidate cannot have more than one subscription preference
+        if CandidateSubscriptionPreference.get_by_candidate_id(candidate_id):
             raise InvalidUsage('Candidate {} already has a subscription preference'.format(candidate_id),
                                custom_error.PREFERENCE_EXISTS)
 
@@ -1594,11 +1589,8 @@ class CandidatePreferenceResource(Resource):
         candidate_id = kwargs.get('id')
         authenticate_candidate_preference_request(request, kwargs.get('id'))
 
-        body_dict = get_json_if_exist(_request=request)
-        try:
-            validate(instance=body_dict, schema=resource_schema_preferences)
-        except Exception as e:
-            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+        # Validate and retrieve json data
+        body_dict = get_json_data_if_validated(request, resource_schema_preferences)
 
         # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
