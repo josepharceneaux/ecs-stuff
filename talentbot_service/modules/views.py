@@ -54,7 +54,8 @@ def listen_slack():
         slack_user_id = request.json.get('event').get('user')
         message = request.json.get('event').get('text')
         if message and channel_id and slack_user_id:
-            logger.info("Message slack:%s, Current_timestamp: %s" % (message, current_timestamp))
+            logger.info("Message slack:%s, Current_timestamp: %s, Slack User ID: %s"
+                        % (message, current_timestamp, slack_user_id))
             run_slack_communication_handler.delay(channel_id, message, slack_user_id, current_timestamp)
             return 'HTTP_200_OK'
     challenge = request.json.get('challenge')

@@ -548,7 +548,7 @@ class QuestionHandler(object):
                 PushCampaign.get_by_user_id(user_id)
             sms_campaigns = SmsCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
                 SmsCampaign.get_by_user_id(user_id)
-        if email_campaigns.all():  # Appending email campaigns in a representable response list
+        if email_campaigns:  # Appending email campaigns in a representable response list
             response.append("*Email Campaigns*")
             for index, email_campaign in enumerate(email_campaigns):
                 response.append("%d: `%s`" % (index + 1, email_campaign.name))
@@ -556,7 +556,7 @@ class QuestionHandler(object):
             response.append("*Push Campaigns*")
             for index, push_campaign in enumerate(push_campaigns):
                 response.append("%d: `%s`" % (index + 1, push_campaign.name))
-        if sms_campaigns.all():  # Appending sms campaigns in a representable response list
+        if sms_campaigns:  # Appending sms campaigns in a representable response list
             response.append("*SMS Campaigns*")
             for index, sms_campaign in enumerate(sms_campaigns):
                 response.append("%d: `%s`" % (index + 1, sms_campaign.name))

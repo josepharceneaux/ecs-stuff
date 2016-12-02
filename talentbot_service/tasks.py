@@ -15,10 +15,10 @@ facebook_bot = FacebookBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
 def run_slack_communication_handler(channel_id, message, slack_user_id, current_timestamp):
         """
         This method runs class SlackBot's handle_communication() method as a celery task
-        :param str channel_id: Slack channel Id
-        :param str message: User's message
-        :param str slack_user_id: User's Slack Id
-        :param str current_timestamp: Current timestamp
+        :param string channel_id: Slack channel Id
+        :param string message: User's message
+        :param string slack_user_id: User's Slack Id
+        :param string current_timestamp: Current timestamp
         """
         slack_bot.handle_communication(channel_id, message, slack_user_id, current_timestamp)
 
@@ -27,8 +27,8 @@ def run_slack_communication_handler(channel_id, message, slack_user_id, current_
 def run_facebook_communication_handler(fb_user_id, message):
         """
         This method runs class FacebookBot's handle_communication() method as a celery task
-        :param str fb_user_id: User's Facebook Id
-        :param message: User's message
+        :param string fb_user_id: User's Facebook Id
+        :param string message: User's message
         :rtype: None
         """
         facebook_bot.handle_communication(fb_user_id, message)
