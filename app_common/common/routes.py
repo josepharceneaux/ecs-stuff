@@ -470,6 +470,8 @@ class CandidateApiUrl(object):
     PIPELINES = HOST_NAME % ('/' + VERSION + '/candidates/%s/pipelines')
     STATUSES = HOST_NAME % ('/' + VERSION + '/candidate_statuses')
 
+    OPENWEB = HOST_NAME % ('/' + VERSION + '/candidates/openweb')
+
 
 class WidgetApi(object):
     """

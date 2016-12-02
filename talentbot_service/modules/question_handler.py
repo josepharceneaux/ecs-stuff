@@ -634,7 +634,10 @@ class QuestionHandler(object):
             resume_url = re.search("(?P<url>((https?)|(ftps?))://[^\s]+)", ' '.join(message_tokens)).group("url")
         except AttributeError:  # If url doesn't start with http:// or https://
             return NO_RESUME_URL_FOUND_MSG
-        meta = urllib2.urlopen(resume_url)
+        try:
+            meta = urllib2.urlopen(resume_url)
+        except (urllib2.HTTPError, urllib2.URLError):
+            return INVALID_RESUME_URL_MSG
         resume_size_in_bytes = meta.headers.get('Content-Length')
         parsed_data = urlparse(resume_url)
         _, extension = splitext(parsed_data.path)
@@ -645,7 +648,7 @@ class QuestionHandler(object):
             if response.ok:
                 openweb_candidate = json.loads(response.content)
                 candidate = cls.parse_openweb_candidate(openweb_candidate.get("candidate"))
-        if int(resume_size_in_bytes) >= TEN_MB:
+        elif int(resume_size_in_bytes) >= TEN_MB:
             raise InvalidUsage(TOO_LARGE_RESUME_MSG)
         try:
             '''
@@ -690,8 +693,6 @@ class QuestionHandler(object):
 
         except InvalidUsage as error:
             return error.message
-        except (urllib2.HTTPError, urllib2.URLError):
-            return INVALID_RESUME_URL_MSG
         except urllib.ContentTooShortError:
             return "File size too small"
 
@@ -702,10 +703,19 @@ class QuestionHandler(object):
         :param dict|None openweb_candidate: Candidate received from openweb against URL
         :rtype: Candidate|None
         """
-        if openweb_candidate["full_name"]:
-            full_name = openweb_candidate["full_name"].split()
-            first_name = full_name.pop(0)
-            last_name = full_name.pop(0)
+        first_name, last_name = None, None
+        # Extracting first and last names
+        full_name = openweb_candidate["full_name"]
+        if full_name:
+            full_name_list = openweb_candidate["full_name"].split()
+            first_name = full_name_list.pop(ZERO)
+            if full_name_list:  # If list still contains a name
+                last_name = full_name_list.pop()
+
+        # Extracting email addresses
+        email_addresses = openweb_candidate["emails"]
+        # Extracting addresses
+        addresses = openweb_candidate["addresses"]
 
     @classmethod
     @contract
