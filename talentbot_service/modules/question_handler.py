@@ -631,6 +631,7 @@ class QuestionHandler(object):
         """
         try:
             resume_url = re.search("(?P<url>((https?)|(ftps?))://[^\s]+)", ' '.join(message_tokens)).group("url")
+            resume_url = resume_url.strip('>')
         except AttributeError:  # If url doesn't start with http:// or https://
             return NO_RESUME_URL_FOUND_MSG
         try:
@@ -645,8 +646,7 @@ class QuestionHandler(object):
             return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
         try:
             filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id)
-            user = User.get_by_id(user_id)
-            token = user.generate_jw_token(user_id=user_id)
+            token = User.generate_jw_token(user_id=user_id)
             header = {'Authorization': token, 'Content-Type': 'application/json'}
             response = requests.post(
                 ResumeApiUrl.PARSE,
