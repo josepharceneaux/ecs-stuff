@@ -300,7 +300,8 @@ class Domain(db.Model):
 
     # Relationships
     users = relationship('User', backref='domain')
-    candidate_sources = relationship('CandidateSource', backref='domain')
+    candidate_sources = relationship('CandidateSource', backref='domain', cascade='all,delete-orphan',
+                                     passive_deletes=True)
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
     custom_fields = relationship('CustomField', backref='domain')
     email_template_folders = relationship('EmailTemplateFolder', backref='domain')
