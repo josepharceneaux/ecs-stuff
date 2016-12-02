@@ -179,8 +179,7 @@ class SocialNetworksResource(Resource):
                         total_deleted += 1
                 except Exception as e:
                     total_not_deleted += 1
-                    logger.debug('Unable to delete social network with ID: '
-                                 '%s\nError: %s' % (sn_id, e.message))
+                    logger.info('Unable to delete social network with ID: %s\nError: %s' % (sn_id, e.message))
 
         if total_not_deleted:
             return dict(message='Unable to delete %s social networks' % total_not_deleted,
@@ -1150,7 +1149,9 @@ class ProcessAccessTokenResource(Resource):
         if social_network:
             # Get social network specific Social Network class
             social_network_class = get_class(social_network.name, 'social_network')
-            credentials = social_network_class.connect(user_id, social_network, code)
+            credentials = social_network_class(user_id, social_network.id, validate_credentials=False).connect(code)
+            logger.info('User(id:%s) has been connected successfully with %s. We are going to import events now.'
+                        % (user_id, social_network.name))
             import_events.delay(credentials)
             return dict(message='User credentials added successfully'), 201
         else:

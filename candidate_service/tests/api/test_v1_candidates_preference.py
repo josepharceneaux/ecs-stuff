@@ -24,11 +24,11 @@ class TestCreateSubscriptionPreference(object):
         Test: Access endpoint without auth token
         Expect: 401
         """
-        resp = send_request('post', CandidateApiUrl.CANDIDATE_PREFERENCE % 5, None)
+        resp = send_request('post', CandidateApiUrl.CANDIDATE_PREFERENCE % '5', None)
         print response_info(resp)
         assert resp.status_code == 401 and resp.json()['error']['code'] == 11
 
-    def test_add_candidate_subscription_preference(self, access_token_first, user_first, talent_pool):
+    def test_add_candidate_subscription_preference(self, access_token_first, talent_pool):
         """
         Test: Add subscription preference for the candidate
         Expect: 204

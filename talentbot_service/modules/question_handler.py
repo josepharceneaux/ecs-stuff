@@ -13,14 +13,18 @@ response
  - question_8_handler()
 """
 # Builtin imports
+import os
 import re
+import urllib
+import urllib2
 from datetime import datetime
-
+from os.path import splitext
+from urlparse import urlparse
 from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
 from talentbot_service.common.constants import OWNED, DOMAIN_SPECIFIC
-from talentbot_service.common.error_handling import NotFoundError
+from talentbot_service.common.error_handling import NotFoundError, InvalidUsage, InternalServerError
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPipeline
@@ -28,9 +32,17 @@ from talentbot_service.common.models.talent_pools_pipelines import TalentPool
 from talentbot_service.common.models.email_campaign import EmailCampaign
 from talentbot_service.common.models.sms_campaign import SmsCampaign
 from talentbot_service.common.models.push_campaign import PushCampaign
+from talentbot_service.common.routes import ResumeApiUrl
+from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, delete_from_filepicker_s3
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
-    QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN
+    QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
+    SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, \
+    TOO_LARGE_RESUME_MSG, DOC_FORMATS, IMAGE_FORMATS
+from talentbot_service import logger, app
+# 3rd party imports
+from flask import json
+import requests
 
 
 class QuestionHandler(object):
@@ -536,7 +548,7 @@ class QuestionHandler(object):
                 PushCampaign.get_by_user_id(user_id)
             sms_campaigns = SmsCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
                 SmsCampaign.get_by_user_id(user_id)
-        if email_campaigns:  # Appending email campaigns in a representable response list
+        if email_campaigns.all():  # Appending email campaigns in a representable response list
             response.append("*Email Campaigns*")
             for index, email_campaign in enumerate(email_campaigns):
                 response.append("%d: `%s`" % (index + 1, email_campaign.name))
@@ -544,7 +556,7 @@ class QuestionHandler(object):
             response.append("*Push Campaigns*")
             for index, push_campaign in enumerate(push_campaigns):
                 response.append("%d: `%s`" % (index + 1, push_campaign.name))
-        if sms_campaigns:  # Appending sms campaigns in a representable response list
+        if sms_campaigns.all():  # Appending sms campaigns in a representable response list
             response.append("*SMS Campaigns*")
             for index, sms_campaign in enumerate(sms_campaigns):
                 response.append("%d: `%s`" % (index + 1, sms_campaign.name))
@@ -606,6 +618,94 @@ class QuestionHandler(object):
         for index, pipeline in enumerate(pipelines):
             response.append("%d- `%s`" % (index + 1, pipeline.name))
         return '\n'.join(response) if len(response) > 1 else "No pipeline found"
+
+    @classmethod
+    @contract
+    def add_candidate_handler(cls, message_tokens, user_id):
+        """
+        Adds candidate from a resume url mentioned in message by user
+        :param list message_tokens: Tokens of User message
+        :param positive user_id: User Id
+        :rtype: string
+        """
+        try:
+            resume_url = re.search("(?P<url>((https?)|(ftps?))://[^\s]+)", ' '.join(message_tokens)).group("url")
+        except AttributeError:  # If url doesn't start with http:// or https://
+            return NO_RESUME_URL_FOUND_MSG
+        try:
+            '''
+            create_bucket() method checks if resume bucket exists on S3 if it does create_bucket() returns bucket
+            object if it does not exist create_bucket() creates the bucket with a predefined name (stored in cfg file).
+            If some error occurs while creating bucket create_bucket() raises InternalServerError
+            '''
+            create_bucket()
+        except InternalServerError as error:
+            logger.error(error.message)
+            return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
+        try:
+            filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id)
+            user = User.get_by_id(user_id)
+            token = user.generate_jw_token(user_id=user_id)
+            header = {'Authorization': token, 'Content-Type': 'application/json'}
+            response = requests.post(
+                ResumeApiUrl.PARSE,
+                headers=header,
+                data=json.dumps({
+                    'filepicker_key': filepicker_key,
+                    'talent_pools': [],
+                    'create_candidate': True
+                })
+            )
+            try:
+                delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
+            except Exception as error:
+                logger.warning("Error occurred while deleting S3 bucket: %s" % error.message)
+            if response.status_code == requests.codes.OK:
+                candidate = response.json()
+                try:
+                    first_name = candidate["candidate"]["first_name"]
+                    talent_pool_name = TalentPool.get_by_id(candidate["candidate"]["talent_pool_ids"]).name
+                    last_name = candidate["candidate"]["last_name"]
+                except KeyError as error:
+                    logger.error("Error occurred while getting candidate from RPS: %s" % error.message)
+                    return SOMETHING_WENT_WRONG  # Replying user with a response message for KeyError error
+                return "Your candidate `%s %s` has been added to `%s` talent pool" % (first_name, last_name,
+                                                                                      talent_pool_name)
+            return SOMETHING_WENT_WRONG  # Replying with a response message if response code from RPS is other than OK
+
+        except InvalidUsage as error:
+            return error.message
+        except (urllib2.HTTPError, urllib2.URLError):
+            return INVALID_RESUME_URL_MSG
+        except urllib.ContentTooShortError:
+            return "File size too small"
+
+    @staticmethod
+    @contract
+    def download_resume_and_save_in_bucket(resume_url, user_id):
+        """
+        Opens url checks if it is valid and then download resume from the url and saves it in S3 gtbot-resume-bucket
+        :param positive user_id: User Id
+        :param string resume_url: Resume URL
+        :return: Returns saved resume's key
+        :rtype: string
+        """
+        meta = urllib2.urlopen(resume_url)
+        resume_size_in_bytes = meta.headers['Content-Length']
+        if int(resume_size_in_bytes) >= TEN_MB:
+            raise InvalidUsage(TOO_LARGE_RESUME_MSG)
+        parsed_data = urlparse(resume_url)
+        _, extension = splitext(parsed_data.path)
+        if extension in IMAGE_FORMATS or extension in DOC_FORMATS:
+            current_datetime = datetime.utcnow()
+            filename = '%d-%s%s%s' % (user_id, current_datetime.date(), current_datetime.time(), extension)
+            urllib.urlretrieve(resume_url, filename)
+            with open(filename, 'r') as file_reader:
+                boto3_put(file_reader.read(), app.config['S3_FILEPICKER_BUCKET_NAME'], filename, 'UploadedResumes')
+                os.remove(filename)  # Removing file from directory
+                return '{}/{}'.format('UploadedResumes', filename)
+        else:
+            raise InvalidUsage("Unsupported Resume Type")
 
     @staticmethod
     def is_valid_year(year):

@@ -88,6 +88,7 @@ from candidate_service.common.utils.handy_functions import normalize_value
 
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
+from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
 
 
 class CandidatesResource(Resource):
@@ -135,6 +136,9 @@ class CandidatesResource(Resource):
 
         for position, candidate_dict_ in enumerate(candidates, start=1):
             try:
+                # Some candidate data may have tabs that we must omit before creating candidate's profile
+                candidate_dict_ = replace_tabs_with_spaces(candidate_dict_)
+
                 email_addresses = []
 
                 candidate_ids_from_candidate_email_obj = []
@@ -387,6 +391,9 @@ class CandidatesResource(Resource):
         all_cf_ids, all_aoi_ids = [], []
         hidden_candidate_ids = []  # Aggregate candidate IDs that will be hidden
         for _candidate_dict in candidates:
+
+            # Some candidate data may have tabs that we must omit before creating candidate's profile
+            _candidate_dict = replace_tabs_with_spaces(_candidate_dict)
 
             # Candidate ID must be provided in json dict or in the url
             candidate_id = candidate_id_from_url or _candidate_dict.get('id')
@@ -1547,16 +1554,11 @@ class CandidatePreferenceResource(Resource):
         Function will create candidate's preference(s)
         input: {'frequency_id': 1}
         """
-
-        # Get candidate ID
         candidate_id = kwargs.get('id')
         authenticate_candidate_preference_request(request, kwargs.get('id'))
 
-        body_dict = get_json_if_exist(_request=request)
-        try:
-            validate(instance=body_dict, schema=resource_schema_preferences)
-        except Exception as e:
-            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+        # Validate and retrieve json data
+        body_dict = get_json_data_if_validated(request, resource_schema_preferences)
 
         # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
@@ -1565,8 +1567,8 @@ class CandidatePreferenceResource(Resource):
         if frequency_id and not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
-        # Candidate cannot have more than one subsctiption preference
-        if CandidateSubscriptionPreference.get_by_candidate_id(candidate_id=candidate_id):
+        # Candidate cannot have more than one subscription preference
+        if CandidateSubscriptionPreference.get_by_candidate_id(candidate_id):
             raise InvalidUsage('Candidate {} already has a subscription preference'.format(candidate_id),
                                custom_error.PREFERENCE_EXISTS)
 
@@ -1587,11 +1589,8 @@ class CandidatePreferenceResource(Resource):
         candidate_id = kwargs.get('id')
         authenticate_candidate_preference_request(request, kwargs.get('id'))
 
-        body_dict = get_json_if_exist(_request=request)
-        try:
-            validate(instance=body_dict, schema=resource_schema_preferences)
-        except Exception as e:
-            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+        # Validate and retrieve json data
+        body_dict = get_json_data_if_validated(request, resource_schema_preferences)
 
         # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')

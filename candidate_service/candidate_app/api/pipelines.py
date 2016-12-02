@@ -27,11 +27,14 @@ from candidate_service.common.models.talent_pools_pipelines import TalentPipelin
 from candidate_service.modules.candidate_engagement import top_most_engaged_pipelines_of_candidate
 from candidate_service.common.inter_service_calls.candidate_service_calls import search_candidates_from_params
 
+from candidate_service.common.utils.handy_functions import time_me
+
 
 class CandidatePipelineResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
+    @time_me(logger=logger, api='candidate_pipeline_inclusion')
     def get(self, **kwargs):
         """
         Function will return user's 5 most recently added Pipelines. One of the pipelines will
@@ -49,7 +52,7 @@ class CandidatePipelineResource(Resource):
 
         # Maximum number of Talent Pipeline objects used for searching.
         # This is to prevent client from waiting too long for a response
-        max_requests = 10
+        max_requests = 30
 
         is_hidden = request.args.get('is_hidden', 0)
         if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
