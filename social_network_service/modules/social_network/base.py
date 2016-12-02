@@ -12,7 +12,7 @@ import requests
 from requests import codes
 
 # Application Specific
-from social_network_service.common.error_handling import InvalidUsage, InternalServerError
+from social_network_service.common.models.db import db
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.validators import raise_if_not_positive_int_or_long
@@ -26,6 +26,7 @@ from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.social_network_app import logger, app
 from social_network_service.custom_exceptions import *
+from social_network_service.common.error_handling import InvalidUsage, InternalServerError
 
 
 class SocialNetworkBase(object):
@@ -301,10 +302,8 @@ class SocialNetworkBase(object):
                 sn_event_obj.process_events_rsvps(user_credentials, headers=self.headers,
                                                   social_network=self.social_network)
         except Exception:
-            logger.exception('process: running %s importer, user_id: %s, '
-                             'social network: %s(id: %s)'
-                             % (mode, user_id, social_network_name,
-                                social_network_id))
+            logger.exception('process: running %s importer, user_id: %s, social network: %s(id: %s)'
+                             % (mode, user_id, social_network_name, social_network_id))
 
     @classmethod
     def get_access_and_refresh_token(cls, user_id, social_network, code_to_get_access_token=None, method_type=None,
@@ -563,6 +562,8 @@ class SocialNetworkBase(object):
         self.headers = {'Authorization': 'Bearer ' + access_token}
         # GET member_id of getTalent user
         member_id = self.get_member_id()
+        if not member_id:
+            raise InternalServerError('Could not get member id from social-network:%s' % self.social_network.name)
         # Check all user_social_network_credentials in database against this member_id
         records_in_db = UserSocialNetworkCredential.filter_by_keywords(social_network_id=self.social_network.id,
                                                                        member_id=member_id)

@@ -103,6 +103,7 @@ from flask import request
 
 # Application Specific
 from social_network_service.common.constants import HttpMethods
+from social_network_service.common.models.db import db
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
@@ -459,6 +460,8 @@ class EventBase(object):
         :param event: json data for event
         :return: Event model object
         """
+        self.user = db.session.merge(self.user)
+        self.social_network = db.session.merge(self.social_network)
         event_data, venue_data = self.event_sn_to_gt_mapping(event)
         if venue_data:
             venue_in_db = self.save_or_update_venue(venue_data)

@@ -176,10 +176,11 @@ def process_meetup_rsvp(rsvp):
             social_network_event_id = rsvp['event']['event_id']
             # Retry for 20 seconds in case we have RSVP for newly created event.
             retry(_get_event, args=(group.user_id, meetup.id, social_network_event_id),
-                  sleeptime=5, attempts=4, sleepscale=1, retry_exceptions=(EventNotFound,))
+                  sleeptime=5, attempts=6, sleepscale=1, retry_exceptions=(EventNotFound,))
             meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
             meetup_rsvp_object = MeetupRsvp(user_credentials=meetup_sn.user_credentials, social_network=meetup,
                                             headers=meetup_sn.headers)
+            meetup_rsvp_object.rsvp_via_importer = False
             attendee = meetup_rsvp_object.post_process_rsvp(rsvp)
             if attendee and attendee.rsvp_id:
                 logger.info('RSVP imported successfully. rsvp:%s' % rsvp)
