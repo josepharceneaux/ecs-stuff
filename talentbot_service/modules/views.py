@@ -2,8 +2,6 @@
 This module contains talentbot service's endpoints to receive webhook calls from
 Facebook, Email, SMS and Slack
 """
-# Builtin imports
-from multiprocessing import Process
 # Common utils
 from talentbot_service.common.error_handling import InvalidUsage
 from talentbot_service.common.models.user import TalentbotAuth
@@ -12,24 +10,20 @@ from talentbot_service.common.utils.api_utils import ApiResponse
 from talentbot_service.common.utils.handy_functions import send_request
 # Service specific
 from talentbot_service.modules.email_bot import EmailBot
-from talentbot_service.modules.facebook_bot import FacebookBot
-from talentbot_service.modules.slack_bot import SlackBot
 from talentbot_service.modules.sms_bot import SmsBot
-from talentbot_service.modules.process_scheduler import ProcessScheduler
 from constants import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH, QUESTIONS, BOT_NAME, BOT_IMAGE,\
     TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID, SLACK_AUTH_URI
 from talentbot_service import app, logger
+from talentbot_service.tasks import run_slack_communication_handler, run_facebook_communication_handler
 # 3rd party imports
 from flask import request
 from urllib import quote
 from slackclient import SlackClient
 
-slack_bot = SlackBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
 sms_bot = SmsBot(bot_name=BOT_NAME, error_messages=ERROR_MESSAGE,
                  standard_sms_length=STANDARD_MSG_LENGTH, twilio_account_sid=TWILIO_ACCOUNT_SID,
                  twilio_auth_token=TWILIO_AUTH_TOKEN, twilio_number=TWILIO_NUMBER, questions=QUESTIONS)
 email_bot = EmailBot(QUESTIONS, BOT_NAME, BOT_IMAGE, ERROR_MESSAGE)
-facebook_bot = FacebookBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
 
 
 @app.route(TalentBotApi.HOME)
@@ -60,11 +54,8 @@ def listen_slack():
         slack_user_id = request.json.get('event').get('user')
         message = request.json.get('event').get('text')
         if message and channel_id and slack_user_id:
-            logger.info("Message slack:%s, Current_timestamp: %s, Previous timestamp: %s"
-                        % (message, current_timestamp, slack_bot.timestamp))
-            parent_process = Process(target=ProcessScheduler.schedule_slack_process,
-                                     args=(slack_bot, channel_id, message, slack_user_id, current_timestamp))
-            parent_process.start()
+            logger.info("Message slack:%s, Current_timestamp: %s" % (message, current_timestamp))
+            run_slack_communication_handler.delay(channel_id, message, slack_user_id, current_timestamp)
             return 'HTTP_200_OK'
     challenge = request.json.get('challenge')
     if challenge:
@@ -122,9 +113,7 @@ def handle_incoming_messages():
     msg = data['entry'][0]['messaging'][0].get('message')
     if msg and sender:
         message = data['entry'][0]['messaging'][0]['message']['text']
-        parent_process = Process(target=ProcessScheduler.schedule_fb_process,
-                                 args=(sender, message, facebook_bot))
-        parent_process.start()
+        run_facebook_communication_handler.delay(sender, message)
     return 'HTTP_200_OK'
 
 
