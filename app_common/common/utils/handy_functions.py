@@ -223,7 +223,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             elif e.response.status_code < InternalServerError.http_status_code():
                 try:
                     error_message = e.response.json()
-                except AttributeError:
+                except Exception:
                     error_message = e.message
             else:
                 # raise any Server error

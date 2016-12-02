@@ -15,18 +15,16 @@ from abc import abstractmethod
 from datetime import datetime, timedelta
 
 # Third Party
-from redo import retry
 from requests import codes
 
 # Application Specific
 from social_network_service.common.models.db import db
 from social_network_service.modules.utilities import Attendee
-from social_network_service.common.utils.auth_utils import refresh_token
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.talent_pools_pipelines import TalentPool
-from social_network_service.common.models.user import User, Token, UserSocialNetworkCredential
+from social_network_service.common.models.user import User, UserSocialNetworkCredential
 from social_network_service.common.models.misc import Product
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate, EmailLabel, CandidateEmail
@@ -35,7 +33,6 @@ from social_network_service.common.routes import UserServiceApiUrl, CandidateApi
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
 from social_network_service.social_network_app import logger, app
-from social_network_service.common.constants import REQUEST_TIMEOUT
 
 
 class RSVPBase(object):
@@ -164,7 +161,11 @@ class RSVPBase(object):
             raise UserCredentialsNotFound('User Credentials are empty/none for requesting user')
         self.user_credentials = user_credentials
         self.user = User.get_by_id(self.user_credentials.user_id)
-        self._get_valid_access_token()
+        access_token = User.generate_jw_token(user_id=self.user_credentials.user_id)
+        self.gt_headers = {
+            'Content-Type': 'application/json',
+            'Authorization': access_token
+        }
         self.headers = headers
         self.social_network = social_network
         self.api_url = self.social_network.api_url
@@ -173,27 +174,6 @@ class RSVPBase(object):
         self.rsvps = []
         self.flag_create_activity = True
         self.rsvp_via_importer = True
-
-    def _get_valid_access_token(self):
-        """
-        This refreshes access_token of user if expired and returns it. For that send request to auth service and
-        request a fresh access_token.
-        """
-        user_token = retry(self._get_user_token, sleeptime=5, attempts=6, sleepscale=1,
-                           retry_exceptions=(InternalServerError,))
-        is_expired = user_token.expires - timedelta(seconds=REQUEST_TIMEOUT) < datetime.utcnow()
-        return refresh_token(user_token.access_token) if is_expired else user_token.access_token
-
-    def _get_user_token(self):
-        """
-        This gets the token object of user from database table Token
-        """
-        db.session.commit()  # Need to add as new tokens are saved in Auth Service, so session here gets old with
-        # respect to those changes
-        user_token = Token.get_by_user_id(self.user_credentials.user_id)
-        if not user_token.access_token:
-            raise InternalServerError('access_token not found for user(id:%s)' % self.user_credentials.user_id)
-        return user_token
 
     @abstractmethod
     def get_rsvps(self, event):
@@ -308,8 +288,7 @@ class RSVPBase(object):
             - sn_rsvp_obj.process_rsvps(self.rsvps)
 
         **See Also**
-        .. seealso:: process_events_rsvps() method in EventBase class
-            social_network_service/event/base.py
+        .. seealso:: process_events_rsvps() method in EventBase class social_network_service/event/base.py
         """
         processed_rsvps = []
         total_rsvps_count = len(rsvps)
@@ -363,9 +342,11 @@ class RSVPBase(object):
             - rsvp_obj.post_process_rsvps(rsvps[0])
 
         **See Also**
-        .. seealso:: process_events_rsvps() method in EventBase class
-            social_network_service/event/base.py
+        .. seealso:: process_events_rsvps() method in EventBase class social_network_service/event/base.py
         """
+        self.user = db.session.merge(self.user)
+        self.social_network = db.session.merge(self.social_network)
+
         try:
             attendee = self.get_attendee(rsvp)
             if not attendee:
@@ -472,8 +453,6 @@ class RSVPBase(object):
         :return attendee:
         :rtype: Attendee
         """
-        headers = {'Authorization': 'Bearer {}'.format(self._get_valid_access_token()),
-                   "Content-Type": "application/json"}
         attendee.event.description = attendee.event.description[:1000].encode('utf-8') if attendee.event.description \
             else 'Not given'
         candidate_source = {
@@ -482,7 +461,7 @@ class RSVPBase(object):
                 "notes": attendee.event.title
             }
         }
-        response = http_request('POST', UserServiceApiUrl.DOMAIN_SOURCES, headers=headers,
+        response = http_request('POST', UserServiceApiUrl.DOMAIN_SOURCES, headers=self.gt_headers,
                                 data=json.dumps(candidate_source))
         # Source already exists
         if response.status_code == requests.codes.bad:
@@ -577,10 +556,7 @@ class RSVPBase(object):
         # Update social network data to be sent with candidate
         data.update({'social_networks': [social_network_data]})
 
-        headers = {'Authorization': 'Bearer {}'.format(self._get_valid_access_token()),
-                   "Content-Type": "application/json"}
-
-        resp = http_request(request_method, url=CandidateApiUrl.CANDIDATES, headers=headers,
+        resp = http_request(request_method, url=CandidateApiUrl.CANDIDATES, headers=self.gt_headers,
                             data=json.dumps(dict(candidates=[data])), app=app)
         data_resp = resp.json()
         if resp.status_code not in [codes.CREATED, codes.OK]:
