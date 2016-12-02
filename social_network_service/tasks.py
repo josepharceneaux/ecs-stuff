@@ -60,10 +60,8 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
             # access token is refreshed and we use fresh token8
             sn = social_network_class(user_id)
 
-            logger.debug('%s Importer has started for %s(UserId: %s).'
-                         ' Social Network is %s.'
-                         % (mode.title(), sn.user.name, sn.user.id,
-                            social_network.name))
+            logger.info('%s Importer has started for %s(UserId: %s). Social Network is %s.'
+                        % (mode.title(), sn.user.name, sn.user.id, social_network.name))
             # Call social network process method to start importing rsvps/event
             sn.process(mode, user_credentials=user_credentials, **datetime_range)
             # Update last_updated of each user_credentials.
@@ -178,10 +176,11 @@ def process_meetup_rsvp(rsvp):
             social_network_event_id = rsvp['event']['event_id']
             # Retry for 20 seconds in case we have RSVP for newly created event.
             retry(_get_event, args=(group.user_id, meetup.id, social_network_event_id),
-                  sleeptime=5, attempts=4, sleepscale=1, retry_exceptions=(EventNotFound,))
+                  sleeptime=5, attempts=6, sleepscale=1, retry_exceptions=(EventNotFound,))
             meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
             meetup_rsvp_object = MeetupRsvp(user_credentials=meetup_sn.user_credentials, social_network=meetup,
                                             headers=meetup_sn.headers)
+            meetup_rsvp_object.rsvp_via_importer = False
             attendee = meetup_rsvp_object.post_process_rsvp(rsvp)
             if attendee and attendee.rsvp_id:
                 logger.info('RSVP imported successfully. rsvp:%s' % rsvp)
