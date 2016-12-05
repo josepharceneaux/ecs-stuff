@@ -644,8 +644,7 @@ class QuestionHandler(object):
         parsed_data = urlparse(resume_url)
         _, extension = splitext(parsed_data.path)
         if not extension:  # If it is social profile link it wont have an extension
-            user = User.get_by_id(user_id)
-            token = user.generate_jw_token(user_id=user_id)
+            token = User.generate_jw_token(user_id=user_id)
             response = send_request('get', CandidateApiUrl.OPENWEB, token, params={'url': resume_url})
             if response.ok:
                 openweb_candidate = json.loads(response.content)
@@ -663,7 +662,7 @@ class QuestionHandler(object):
             else:
                 return "Sorry, I couldn't find information on %s" % resume_url
         elif int(resume_size_in_bytes) >= TEN_MB:
-            raise InvalidUsage(TOO_LARGE_RESUME_MSG)
+            return TOO_LARGE_RESUME_MSG
         try:
             '''
             create_bucket() method checks if resume bucket exists on S3 if it does create_bucket() returns bucket
@@ -676,7 +675,7 @@ class QuestionHandler(object):
             return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
         try:
             # saving resume in S3 bucket
-            filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id)
+            filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id, extension)
             token = User.generate_jw_token(user_id=user_id)
             header = {'Authorization': token, 'Content-Type': 'application/json'}
             response = requests.post(
