@@ -1,5 +1,12 @@
 """
 This module contains celery tasks for talentbot service
+*-----------------------------Only Facebook and Slack Celery Tasks---------------------------------*
+We are creating celery tasks for Facebook and Slack only because callbacks from Twilio and AWS-SES can wait for enough
+time.
+But callbacks from Facebook waits fo 5 secs and from Slack waits for 3 secs after that they initiate another callback,
+So we return a "200 OK" response to Slack and Facebook right away and run their corresponding handlers asynchronously
+as Celery tasks
+====================================================================================================
 """
 # Service Specific
 from talentbot_service import celery_app as celery
