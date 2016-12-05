@@ -17,6 +17,8 @@ from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.utils.graphql_utils import validate_graphql_response, get_query
 from social_network_service.social_network_app import logger
 from social_network_service.common.utils.handy_functions import send_request
+from social_network_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+
 
 
 def auth_header(token):
@@ -161,3 +163,43 @@ def match_data(graphql_obj, restful_obj, fields):
         graphql_obj[field] = '' if graphql_obj[field] is None else graphql_obj[field]
         assert graphql_obj[field] == restful_obj[field], 'field: %s, GraphqlObj: %s\nRestfulObj: %s' \
                                                          % (field, graphql_obj, restful_obj)
+
+
+def match_event_fields(event):
+    """
+    This helper method checks if expected fields of event exist or not
+    :param event: event response object
+    """
+    assert event['added_datetime']
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(event['added_datetime']), minutes=5)
+    assert event['updated_datetime']
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(event['updated_datetime']), minutes=5)
+    assert event['social_network_event_id']
+    assert event['social_network_id']
+    assert event['id']
+
+
+def match_venue_fields(venue):
+    """
+    This helper method checks if expected fields of venue exist or not
+    :param venue: venue response object
+    """
+    assert venue['added_datetime']
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(venue['added_datetime']), minutes=5)
+    assert venue['updated_datetime']
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(venue['updated_datetime']), minutes=5)
+    assert venue['id']
+    assert venue['social_network_venue_id']
+    assert venue['social_network_id']
+
+
+def match_event_organizer_fields(event_organizer):
+    """
+    This helper method checks if expected fields of event organizer exist or not
+    :param event_organizer: event organizer response object
+    """
+    assert event_organizer['added_datetime']
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(event_organizer['added_datetime']), minutes=5)
+    assert event_organizer['updated_datetime']
+    CampaignsTestsHelpers.assert_valid_datetime_range(str(event_organizer['updated_datetime']), minutes=5)
+    assert event_organizer['id']

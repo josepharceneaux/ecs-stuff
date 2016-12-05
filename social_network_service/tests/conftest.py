@@ -8,9 +8,11 @@ Author:
 """
 # Standard Library
 from copy import deepcopy
+import json
 
 # Third Party
 import pytest
+import requests
 from requests import codes
 
 # Common conftests
@@ -40,7 +42,9 @@ from social_network_service.common.utils.handy_functions import send_request
 # Application Specific
 from social_network_service.modules.social_network.eventbrite import Eventbrite
 from social_network_service.social_network_app import app
-from social_network_service.common.constants import FACEBOOK
+from social_network_service.common.constants import FACEBOOK, MEETUP
+from social_network_service.social_network_app import logger
+from social_network_service.tests.helper_functions import get_headers
 
 
 @pytest.fixture(scope='session')

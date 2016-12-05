@@ -118,7 +118,7 @@ class NoUserFound(SocialNetworkApiNotFoundException):
     error_code = 4067
 
 
-class MissingFieldsInUserCredentials(SocialNetworkApiInvalidException):
+class MissingFieldsInUserCredentials(SNServerException):
     error_code = 4068
 
 

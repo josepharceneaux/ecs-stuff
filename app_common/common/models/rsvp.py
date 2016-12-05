@@ -1,5 +1,5 @@
 from db import db
-
+from datetime import datetime as date_time
 
 class RSVP(db.Model):
     __tablename__ = 'rsvp'
@@ -11,6 +11,8 @@ class RSVP(db.Model):
     status = db.Column('status', db.String(20))
     datetime = db.Column('datetime', db.DateTime)
     payment_status = db.Column('paymentStatus', db.String(20))
+    added_datetime = db.Column('addedDateTime', db.DateTime, default=date_time.utcnow)
+    updated_datetime = db.Column('updatedDateTime', db.TIMESTAMP, default=date_time.utcnow)
 
     def __repr__(self):
         return '<RSVP %s>' % self.social_network_rsvp_id
