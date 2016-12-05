@@ -12,7 +12,7 @@ from social_network_service.common.utils.test_utils import missing_keys_test, fa
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.models.event_organizer import EventOrganizer
-from social_network_service.tests.helper_functions import auth_header, get_headers
+from social_network_service.tests.helper_functions import auth_header, get_headers, match_event_organizer_fields
 
 
 class TestOrganizers(object):
@@ -112,6 +112,32 @@ class TestOrganizers(object):
         }
         required_fields = ['name', 'about']
         missing_keys_test(SocialNetworkApiUrl.EVENT_ORGANIZERS, event_organizer, required_fields, token_first)
+
+    def test_match_event_organizer_fields(self, user_first, token_first):
+        """
+        Send POST request with valid event organizer data and response should be 201 (id in response content)
+        Then get data from api and test if expected fields exist and have some data.
+        """
+        event_organizer = {
+            "user_id": user_first['id'],
+            "name": "organizer_%s" % fake.uuid4(),
+            "email": "testemail@gmail.com",
+            "about": "He is a testing engineer"
+        }
+        response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(event_organizer),
+                                 headers=get_headers(token_first))
+        logger.info(response.text)
+        assert response.status_code == codes.CREATED, 'Status should be Ok, Resource created (201)'
+        assert 'Location' in response.headers
+        response = response.json()
+        assert response['id']
+        EventOrganizer.session.commit()
+        response = requests.get(SocialNetworkApiUrl.EVENT_ORGANIZERS, headers=auth_header(token_first))
+        assert response.status_code == codes.OK
+        results = response.json()
+        assert 'event_organizers' in results
+        assert len(results['event_organizers']) == 1
+        match_event_organizer_fields(results['event_organizers'][0])
 
     def test_delete_with_invalid_token(self):
         """

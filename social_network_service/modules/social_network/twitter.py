@@ -41,7 +41,7 @@ class Twitter(SocialNetworkBase):
     method callback().
     """
     def __init__(self, *args, **kwargs):
-        super(Twitter, self).__init__(**kwargs)
+        super(Twitter, self).__init__(exclude_fields=("api_url",), **kwargs)
         self.consumer_key = self.social_network.client_key
         if not self.consumer_key:
             raise InternalServerError('Twitter client_key not set correctly')

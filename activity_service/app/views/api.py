@@ -416,6 +416,10 @@ class TalentActivityManager(object):
             username = "You"
 
         params = json.loads(activity.params) if activity.params else dict()
+        # See GET-1946. JSON loads is returning unicode objects for some entries stored in DB.
+        if isinstance(params, unicode):
+            params = json.loads(params)
+
         params['username'] = username
 
         format_strings = self.MESSAGES.get(activity.type)

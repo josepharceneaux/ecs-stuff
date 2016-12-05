@@ -179,12 +179,12 @@ class SocialNetworkBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self,  user_id, social_network_id=None, validate_credentials=True, **kwargs):
+    def __init__(self,  user_id, social_network_id=None, validate_credentials=True, exclude_fields=()):
         """
         - This sets the user's credentials as base class property so that it can be used in other classes.
         - We also check the validity of access token and try to refresh it in case it has expired.
-        :param int | long user_id: Id of User
-        :param SocialNetwork | None social_network: Social Network object
+        :param int|long user_id: Id of User
+        :param int|long|None social_network_id: Social Network Id
         :param bool validate_credentials: If True, this will validate the credentials of user for given social network.
         """
         self.events = []
@@ -205,7 +205,8 @@ class SocialNetworkBase(object):
                 "auth_url": self.social_network.auth_url
             }
             # checks if any field is missing for given user credentials
-            items = [value for key, value in data.iteritems() if key not in ["auth_url"]]
+            items = [value for key, value in data.iteritems() if key not in exclude_fields]
+
             if all(items):
                 self.auth_url = data['auth_url']
                 self.gt_user_id = data['gt_user_id']
@@ -213,7 +214,8 @@ class SocialNetworkBase(object):
                 self.access_token = data['access_token']
             else:
                 # gets fields which are missing
-                items = [key for key, value in data.iteritems() if not value]
+                items = [key for key, value in data.iteritems() if key not in exclude_fields and not value]
+
                 data_to_log = {'user_id': self.user.id, 'missing_items': items}
                 # Log those fields in error which are not present in Database
                 error_message = "User id: %(user_id)s\n Missing Item(s) in user's " \
