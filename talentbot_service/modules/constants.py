@@ -79,7 +79,7 @@ QUESTION_HANDLER_NUMBERS = {'question_handler_1': 1, 'question_handler_4': 4}
 EMAIL_CAMPAIGN = 'Email Campaign'
 PUSH_CAMPAIGN = 'Push Campaign'
 SMS_CAMPAIGN = 'SMS Campaign'
-SOMETHING_WENT_WRONG = "Something went wrong while adding candidate please contact the developer `osman@gettalent.com`"
+SOMETHING_WENT_WRONG = "Sorry! Something went wrong while adding candidate"
 I_AM_PARSING_A_RESUME = "I am parsing a resume, I will notify you as soon as I am done"
 ZERO = 0
 ADD_CANDIDATE_FROM_URL = 72
@@ -90,6 +90,7 @@ TOO_LARGE_RESUME_MSG = "Resume file size should be less than 10 MB"
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
 DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
+CANDIDATE_ERROR_CODES = [3000, 3013]
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
