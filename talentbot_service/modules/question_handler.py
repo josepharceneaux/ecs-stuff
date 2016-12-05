@@ -41,7 +41,7 @@ from talentbot_service.common.models.db import db
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
     SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, \
-    TOO_LARGE_RESUME_MSG, DOC_FORMATS, IMAGE_FORMATS, CANDIDATE_ERROR_CODES
+    TOO_LARGE_RESUME_MSG, CANDIDATE_ERROR_CODES
 from talentbot_service import logger, app
 # 3rd party imports
 from flask import json

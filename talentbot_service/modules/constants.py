@@ -87,9 +87,6 @@ TEN_MB = 1024 * 1024 * 10
 INVALID_RESUME_URL_MSG = "Invalid URL"
 NO_RESUME_URL_FOUND_MSG = "No URL found, URL must start with `http://` or `https://`"
 TOO_LARGE_RESUME_MSG = "Resume file size should be less than 10 MB"
-IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
-                 '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
-DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 CANDIDATE_ERROR_CODES = [3000, 3013]
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
