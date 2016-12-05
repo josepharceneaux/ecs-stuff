@@ -2,33 +2,21 @@
 File contains APIs for candidate subfields such as: Tags, Areas of Interest, etc.
 """
 # Standard libraries
-import requests, json, logging
-
-# Flask specific
+import json
+import requests
 from flask import request
 from flask_restful import Resource
 
-# Validators
-from candidate_service.modules.validators import get_json_data_if_validated, get_candidate_if_validated
-
-# Modules
+from candidate_service.common.error_handling import (InvalidUsage)
+from candidate_service.common.models.user import Permission
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
+from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.modules.json_schema import tag_schema
 from candidate_service.modules.tags import (
     create_tags, get_tags, update_candidate_tag, update_candidate_tags, delete_tag, delete_tags
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents
-
-# Models
-from candidate_service.common.models.user import Permission
-
-# JSON Schemas
-from candidate_service.modules.json_schema import tag_schema
-
-# Decorators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
-
-# Error handling
-from candidate_service.common.error_handling import (ForbiddenError, InvalidUsage)
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.modules.validators import get_json_data_if_validated, get_candidate_if_validated
 
 
 class CandidateTagResource(Resource):

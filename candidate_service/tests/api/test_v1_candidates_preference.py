@@ -2,20 +2,13 @@
 Test cases for CandidatePreferenceResource
 """
 # Candidate Service app instance
-from candidate_service.candidate_app import app
 
 # Conftest
-from candidate_service.common.tests.conftest import *
-
-# Helper functions
-from candidate_service.common.utils.test_utils import send_request, response_info
-from candidate_service.common.routes import CandidateApiUrl
-
-# Candidate sample data
 from candidate_sample_data import generate_single_candidate_data
-
-# Custom error
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.tests.conftest import *
+from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.common.utils.test_utils import send_request, response_info
 
 
 class TestCreateSubscriptionPreference(object):

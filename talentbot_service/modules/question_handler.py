@@ -37,11 +37,11 @@ from talentbot_service.common.utils.handy_functions import send_request
 from talentbot_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
 from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, delete_from_filepicker_s3
 from talentbot_service.common.models.db import db
+from talentbot_service.common.utils.custom_error_codes import CandidateCustomErrors
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
-    SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, \
-    TOO_LARGE_RESUME_MSG, CANDIDATE_ERROR_CODES
+    SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, TOO_LARGE_RESUME_MSG
 from talentbot_service import logger, app
 # 3rd party imports
 from flask import json
@@ -651,10 +651,10 @@ class QuestionHandler(object):
                 try:
                     candidate, talent_pool = cls.add_openweb_candidate(token, openweb_candidate)
                     if candidate and talent_pool:
-                        return "Your candidate `%s` has been added to `%s` talent pool" % (candidate.name,
-                                                                                           talent_pool.name)
+                        return "Your candidate `%s %s` has been added to `%s` talent pool" % \
+                               (candidate.get("first_name"), candidate.get("last_name"), talent_pool.name)
                     return SOMETHING_WENT_WRONG
-                except InternalServerError as error:
+                except InvalidUsage as error:
                     return error.message
                 except Exception as error:
                     logger.error("Error occurred while parsing openweb candidate: %s" % error.message)
@@ -709,7 +709,7 @@ class QuestionHandler(object):
         except urllib.ContentTooShortError:
             return "File size too small"
         except Exception as error:
-            logger.error("Error occurred downloading resume and saivng in bucket: %s" % error.message)
+            logger.error("Error occurred downloading resume and saving in bucket: %s" % error.message)
             return SOMETHING_WENT_WRONG
 
     @classmethod
@@ -731,11 +731,17 @@ class QuestionHandler(object):
         }
         response = send_request('post', CandidateApiUrl.CANDIDATES, token, candidates)
         if response.ok:
-            db.session.commit()  # Updating session as recent db changes were not accessible earlier
             candidate_id = json.loads(response.content)["candidates"][0]["id"]
-            return Candidate.get_by_id(candidate_id), TalentPool.get_by_id(candidate["talent_pool_ids"].get("add"))
+            # Getting candidate from candidate service endpoint
+            resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token)
+            if resp.ok:
+                recently_added_candidate = json.loads(resp.content)["candidate"]
+                return recently_added_candidate, TalentPool.get_by_id(candidate["talent_pool_ids"].get("add"))
+            raise InternalServerError("Error occurred while getting candidate which was recently added")
         error_code = json.loads(response.content)["error"]["code"]
-        if error_code in CANDIDATE_ERROR_CODES:
+        # When a candidate already exists in db /openweb returns ids of address and skills etc
+        # Which causes INVALID_INPUT so, we are treating INVALID_INPUT as candidate already exists
+        if error_code in [CandidateCustomErrors.INVALID_INPUT, CandidateCustomErrors.CANDIDATE_ALREADY_EXISTS]:
             raise InvalidUsage("Candidate already exists")
         logger.error("Error occurred while adding candidate through Candidate Service endpoint: %s" % response.content)
         raise InternalServerError("Sorry! Couldn't add candidate")

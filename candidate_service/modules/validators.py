@@ -6,29 +6,24 @@ import json
 import re
 from datetime import datetime
 
-# Flask Specific
-from flask import request
 from dateutil.parser import parse
+from flask import request
+from jsonschema import validate, ValidationError, FormatChecker
 
-# Models
-from candidate_service.common.models.db import db
+from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
+                                                     SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from candidate_service.common.models.candidate import (
     Candidate, CandidateEmail, CandidateEducation, CandidateExperience, CandidatePhone,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateMilitaryService
 )
-from candidate_service.common.models.email_campaign import EmailClient
-from candidate_service.common.models.user import User
-from candidate_service.common.models.misc import AreaOfInterest, CustomField
-
+from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign
-from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
-                                                     SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
-from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
-from ..custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.common.models.email_campaign import EmailClient
+from candidate_service.common.models.misc import AreaOfInterest, CustomField
+from candidate_service.common.models.user import User
+from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number, format_phone_number
-
-# Json schema validation
-from jsonschema import validate, ValidationError, FormatChecker
 
 
 def remove_duplicates(collection):

@@ -2,22 +2,15 @@
 Test cases for CandidateWorkExperienceResource
 """
 # Candidate Service app instance
-from candidate_service.candidate_app import app
 
 # Conftest
-from candidate_service.common.tests.conftest import *
-
-# Helper functions
-from helpers import get_country_code_from_name, order_work_experiences
+from candidate_sample_data import (GenerateCandidateData, generate_single_candidate_data)
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.tests.conftest import *
+from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.tests.api.helpers import get_country_code_from_name
-
-# Sample data
-from candidate_sample_data import (GenerateCandidateData, generate_single_candidate_data)
-
-# Custom errors
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from helpers import order_work_experiences
 
 
 class TestDeleteWorkExperience(object):

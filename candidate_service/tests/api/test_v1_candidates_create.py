@@ -2,34 +2,24 @@
 Test cases for CandidateResource/post()
 """
 # Candidate Service app instance
-from candidate_service.candidate_app import app
 
 import time
 
-# Conftest
-from candidate_service.common.tests.conftest import *
-
-# Helper functions
-from helpers import get_country_code_from_name, order_military_services, order_work_experiences
-from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.routes import UserServiceApiUrl
-from candidate_service.common.utils.test_utils import send_request, response_info
-from candidate_service.common.utils.validators import get_phone_number_extension_if_exists
-from candidate_service.common.utils.iso_standards import get_country_name
-
-# Sample data
+from auth_service.custom_error_codes import AuthServiceCustomErrorCodes as auth_errors
 from candidate_sample_data import (
     GenerateCandidateData, generate_single_candidate_data, candidate_military_service,
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
-
-# Models
 from candidate_service.common.models.candidate import CandidateEmail
 from candidate_service.common.models.user import Role
-
-# Custom errors
-from candidate_service.custom_error_codes import CandidateCustomErrors as candidate_errors
-from auth_service.custom_error_codes import AuthServiceCustomErrorCodes as auth_errors
+from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.routes import UserServiceApiUrl
+from candidate_service.common.tests.conftest import *
+from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as candidate_errors
+from candidate_service.common.utils.iso_standards import get_country_name
+from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.utils.validators import get_phone_number_extension_if_exists
+from helpers import get_country_code_from_name, order_military_services, order_work_experiences
 
 CANDIDATES_URL = CandidateApiUrl.CANDIDATES
 CANDIDATE_URL = CandidateApiUrl.CANDIDATE

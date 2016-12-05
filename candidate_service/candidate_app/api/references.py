@@ -1,29 +1,21 @@
 # Standard library
-import requests
 import json
 
-# Flask specific
+import requests
 from flask import request
 from flask_restful import Resource
 
-# Validators
-from candidate_service.modules.validators import get_json_data_if_validated, get_candidate_if_validated
-from candidate_service.json_schema.references import references_schema
-
-# Decorators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
-
-# Error handling
 from candidate_service.common.error_handling import ForbiddenError, NotFoundError
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
-
-# Models
 from candidate_service.common.models.candidate import CandidateReference
 from candidate_service.common.models.user import Permission
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
+from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.json_schema.references import references_schema
 from candidate_service.modules.references import (
     get_references, get_reference_emails, get_reference_phones, get_reference_web_addresses,
     create_or_update_references, delete_reference, delete_all_references
 )
+from candidate_service.modules.validators import get_json_data_if_validated, get_candidate_if_validated
 
 
 class CandidateReferencesResource(Resource):

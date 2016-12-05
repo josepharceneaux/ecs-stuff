@@ -2,12 +2,13 @@
 Helper functions for candidate's notes CRUD operations
 """
 from datetime import datetime
-from candidate_service.common.models.db import db
-from candidate_service.common.models.candidate import Candidate, CandidateTextComment
-from candidate_service.common.utils.handy_functions import normalize_value
+
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.common.models.candidate import Candidate, CandidateTextComment
+from candidate_service.common.models.db import db
+from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
+from candidate_service.common.utils.handy_functions import normalize_value
 
 
 def add_notes(candidate_id, user_id, data):
