@@ -11,6 +11,7 @@ from flask_restful import Resource
 # Models
 from user_service.common.models.db import db
 from user_service.common.models.misc import CustomField
+from user_service.common.models.candidate import CandidateCustomField
 from user_service.common.models.user import Permission
 
 # Decorators
@@ -25,6 +26,7 @@ from user_service.common.error_handling import InvalidUsage, NotFoundError, Forb
 
 # Helpers
 from user_service.modules.domain_custom_fields import get_custom_field_if_validated, create_custom_fields
+from user_service.common.inter_service_calls.candidate_service_calls import update_candidates_on_cloudsearch
 
 
 class DomainCustomFieldsResource(Resource):
@@ -159,35 +161,42 @@ class DomainCustomFieldsResource(Resource):
         db.session.commit()
         return {'custom_fields': [{'id': custom_field_id} for custom_field_id in updated_custom_field_ids]}
 
-    # TODO: this endpoint should not be used since it will cause further complexity - Amir
-    # @require_all_permissions(Permission.PermissionNames.CAN_DELETE_DOMAIN_CUSTOM_FIELDS)
-    # def delete(self, **kwargs):
-    #     """
-    #     Function will delete domain's custom field(s)
-    #     resource url:
-    #         i. DELETE /v1/custom_fields/:id
-    #     :return: {"custom_field": {"id": int}}
-    #     :rtype: dict[dict]
-    #     Usage:
-    #         >>> headers = {"Authorization": "Bearer {access_token}"}
-    #         >>> requests.delete(url="host/v1/custom_fields/4", headers=headers)
-    #         <Response [200]>
-    #     """
-    #     custom_field_id = kwargs.get('id')
-    #
-    #     # Delete specified custom field
-    #     if custom_field_id:
-    #
-    #         # Custom field ID must be recognized
-    #         custom_field = CustomField.get(custom_field_id)
-    #         if not custom_field:
-    #             raise NotFoundError("Custom field ID ({}) not recognized.".format(custom_field_id))
-    #
-    #         # Custom field must belong to user's domain
-    #         if request.user.role.name != 'TALENT_ADMIN' and custom_field.domain_id != request.user.domain_id:
-    #             raise ForbiddenError("Not authorized")
-    #
-    #         db.session.delete(custom_field)
-    #         db.session.commit()
-    #
-    #         return {'custom_field': {'id': custom_field_id}}
+    @require_all_permissions(Permission.PermissionNames.CAN_DELETE_DOMAIN_CUSTOM_FIELDS)
+    def delete(self, **kwargs):
+        """
+        Function will delete domain's custom field(s)
+        resource url:
+            i. DELETE /v1/custom_fields/:id
+        :return: {"custom_field": {"id": int}}
+        :rtype: dict[dict]
+        Usage:
+            >>> headers = {"Authorization": "Bearer {access_token}"}
+            >>> requests.delete(url="host/v1/custom_fields/4", headers=headers)
+            <Response [200]>
+        """
+        custom_field_id = kwargs.get('id')
+
+        # Delete specified custom field
+        if custom_field_id:
+
+            # Custom field ID must be recognized
+            custom_field = CustomField.get(custom_field_id)
+            if not custom_field:
+                raise NotFoundError("Custom field ID ({}) not recognized.".format(custom_field_id))
+
+            # Custom field must belong to user's domain
+            if request.user.role.name != 'TALENT_ADMIN' and custom_field.domain_id != request.user.domain_id:
+                raise ForbiddenError("Not authorized")
+
+            custom_field_candidate_ids = CandidateCustomField.query.with_entities(
+                    CandidateCustomField.candidate_id).filter_by(custom_field_id=custom_field_id).all()
+
+            custom_field_candidate_ids = map(lambda custom_field_object: custom_field_object[0],
+                                             custom_field_candidate_ids)
+
+            update_candidates_on_cloudsearch(request.oauth_token, custom_field_candidate_ids)
+
+            db.session.delete(custom_field)
+            db.session.commit()
+
+            return {'custom_field': {'id': custom_field_id}}

@@ -12,7 +12,7 @@ def test_update_password(access_token_first):
     assert update_password(access_token_first, '', '') == 404
 
     # Logged-in user updating its password but providing wrong value of old_password
-    assert update_password(access_token_first, PASSWORD + 'temp', new_password) == 401
+    assert update_password(access_token_first, PASSWORD + 'temp', new_password) == 400
 
     # Logged-in user updating its password
     assert update_password(access_token_first, PASSWORD, new_password) == 200
