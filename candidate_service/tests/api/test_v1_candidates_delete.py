@@ -9,8 +9,8 @@ from candidate_service.common.models.candidate import CandidateCustomField, Cand
 from candidate_service.common.models.tag import CandidateTag
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
-from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 
 

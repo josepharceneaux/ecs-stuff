@@ -10,7 +10,7 @@ from candidate_service.candidate_app import logger
 from candidate_service.common.error_handling import InvalidUsage, ForbiddenError
 from candidate_service.common.models.user import Permission
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.modules.json_schema import candidates_resource_schema_get
 from candidate_service.modules.talent_candidates import fetch_candidate_info, get_search_params_of_smartlists
 from candidate_service.modules.talent_cloud_search import (

@@ -3,6 +3,7 @@ File contains APIs for candidate subfields such as: Tags, Areas of Interest, etc
 """
 # Standard libraries
 import json
+
 import requests
 from flask import request
 from flask_restful import Resource
@@ -10,7 +11,7 @@ from flask_restful import Resource
 from candidate_service.common.error_handling import (InvalidUsage)
 from candidate_service.common.models.user import Permission
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.modules.json_schema import tag_schema
 from candidate_service.modules.tags import (
     create_tags, get_tags, update_candidate_tag, update_candidate_tags, delete_tag, delete_tags

@@ -6,7 +6,7 @@ from flask_restful import Resource
 from candidate_service.common.error_handling import ForbiddenError
 from candidate_service.common.models.user import Permission
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.json_schema.notes import notes_schema
 from candidate_service.modules.notes import add_notes, get_notes, delete_note, delete_notes
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents

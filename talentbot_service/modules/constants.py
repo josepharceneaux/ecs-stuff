@@ -93,6 +93,9 @@ SUPPORTED_SOCIAL_SITES = {"github": 'github.com', "stackoverflow": 'stackoverflo
 GITHUB = "github"
 STACK_OVERFLOW = 'stackoverflow'
 LINKEDIN = 'linkedin'
+# Custom Candidate Service Error Codes
+INVALID_INPUT = 3000
+CANDIDATE_ALREADY_EXISTS = 3013
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

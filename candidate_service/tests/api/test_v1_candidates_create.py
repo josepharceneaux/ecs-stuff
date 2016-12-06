@@ -11,14 +11,12 @@ from candidate_sample_data import (
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
 from candidate_service.common.models.candidate import CandidateEmail
-from candidate_service.common.models.user import Role
 from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.routes import UserServiceApiUrl
 from candidate_service.common.tests.conftest import *
-from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as candidate_errors
 from candidate_service.common.utils.iso_standards import get_country_name
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.utils.validators import get_phone_number_extension_if_exists
+from candidate_service.custom_error_codes import CandidateCustomErrors as candidate_errors
 from helpers import get_country_code_from_name, order_military_services, order_work_experiences
 
 CANDIDATES_URL = CandidateApiUrl.CANDIDATES

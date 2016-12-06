@@ -9,10 +9,10 @@ import datetime
 import json
 import logging
 import os
-import requests
 from datetime import date
 from time import time
 
+import requests
 from flask import request
 from flask_restful import Resource
 from jsonschema import validate, FormatChecker, ValidationError
@@ -42,12 +42,12 @@ from candidate_service.common.talent_config_manager import TalentConfigKeys
 from candidate_service.common.talent_config_manager import TalentEnvs
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
-from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.utils.handy_functions import normalize_value
 from candidate_service.common.utils.models_utils import to_json
 from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
 from candidate_service.common.utils.validators import is_valid_email, is_country_code_valid, is_number
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
 from candidate_service.modules.candidate_engagement import calculate_candidate_engagement_score
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY

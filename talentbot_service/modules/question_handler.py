@@ -36,12 +36,11 @@ from talentbot_service.common.routes import ResumeApiUrl, CandidateApiUrl
 from talentbot_service.common.utils.handy_functions import send_request
 from talentbot_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
 from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, delete_from_filepicker_s3
-from talentbot_service.common.utils.custom_error_codes import CandidateCustomErrors
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
     SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, TOO_LARGE_RESUME_MSG, \
-    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN
+    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN, INVALID_INPUT, CANDIDATE_ALREADY_EXISTS
 from talentbot_service import logger, app
 # 3rd party imports
 from flask import json
@@ -761,7 +760,7 @@ class QuestionHandler(object):
         error_code = json.loads(response.content)["error"]["code"]
         # When a candidate already exists in db, /openweb returns ids of address and skills etc
         # Which causes INVALID_INPUT so, we are treating INVALID_INPUT as candidate already exists
-        if error_code in [CandidateCustomErrors.INVALID_INPUT, CandidateCustomErrors.CANDIDATE_ALREADY_EXISTS]:
+        if error_code in [INVALID_INPUT, CANDIDATE_ALREADY_EXISTS]:
             raise InvalidUsage("Candidate already exists")
         logger.error("Error occurred while adding candidate through Candidate Service endpoint: %s" % response.content)
         raise InternalServerError("Sorry! Couldn't add candidate")

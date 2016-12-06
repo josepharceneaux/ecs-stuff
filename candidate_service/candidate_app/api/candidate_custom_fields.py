@@ -13,7 +13,7 @@ from candidate_service.common.models.db import db
 from candidate_service.common.models.misc import CustomField
 from candidate_service.common.models.user import Permission
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.json_schema.candidate_custom_fields import ccf_schema
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 from candidate_service.modules.validators import (

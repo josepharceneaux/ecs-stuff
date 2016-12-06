@@ -22,8 +22,8 @@ from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.misc import AreaOfInterest, CustomField
 from candidate_service.common.models.user import User
-from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number, format_phone_number
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 def remove_duplicates(collection):

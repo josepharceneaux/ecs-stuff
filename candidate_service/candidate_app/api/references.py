@@ -9,7 +9,7 @@ from candidate_service.common.error_handling import ForbiddenError, NotFoundErro
 from candidate_service.common.models.candidate import CandidateReference
 from candidate_service.common.models.user import Permission
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.json_schema.references import references_schema
 from candidate_service.modules.references import (
     get_references, get_reference_emails, get_reference_phones, get_reference_web_addresses,

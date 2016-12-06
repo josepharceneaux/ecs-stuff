@@ -35,12 +35,12 @@ from candidate_service.common.models.misc import AreaOfInterest, UrlConversion
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.user import User, Permission
-from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.utils.handy_functions import purge_dict
 from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name, get_country_code_from_name
 from candidate_service.common.utils.talent_s3 import get_s3_url
 from candidate_service.common.utils.validators import sanitize_zip_code, is_number, parse_phone_number
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,

@@ -8,9 +8,9 @@ from candidate_service.common.models.candidate import (
     Candidate, CandidateReference, ReferenceWebAddress, EmailLabel, PhoneLabel
 )
 from candidate_service.common.models.db import db
-from candidate_service.common.utils.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.handy_functions import purge_dict
 from candidate_service.common.utils.validators import format_phone_number
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 def get_references(candidate):
