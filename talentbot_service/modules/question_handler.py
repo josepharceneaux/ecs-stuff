@@ -36,12 +36,12 @@ from talentbot_service.common.routes import ResumeApiUrl, CandidateApiUrl
 from talentbot_service.common.utils.handy_functions import send_request
 from talentbot_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
 from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, delete_from_filepicker_s3
-from talentbot_service.common.models.db import db
 from talentbot_service.common.utils.custom_error_codes import CandidateCustomErrors
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
-    SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, TOO_LARGE_RESUME_MSG
+    SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, TOO_LARGE_RESUME_MSG, \
+    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN
 from talentbot_service import logger, app
 # 3rd party imports
 from flask import json
@@ -637,28 +637,17 @@ class QuestionHandler(object):
         except AttributeError:  # If url doesn't start with http:// or https://
             return NO_RESUME_URL_FOUND_MSG
         try:
-            meta = urllib2.urlopen(resume_url)
+            extension, hostname, resume_size_in_bytes = cls.parse_resume_url(resume_url)
         except (urllib2.HTTPError, urllib2.URLError):
             return INVALID_RESUME_URL_MSG
-        resume_size_in_bytes = meta.headers.get('Content-Length')
-        parsed_data = urlparse(resume_url)
-        _, extension = splitext(parsed_data.path)
-        if not extension:  # If it is social profile link it wont have an extension
-            token = User.generate_jw_token(user_id=user_id)
-            response = send_request('get', CandidateApiUrl.OPENWEB, token, params={'url': resume_url})
-            if response.ok:
-                openweb_candidate = json.loads(response.content)
-                try:
-                    candidate, talent_pool = cls.add_openweb_candidate(token, openweb_candidate)
-                    if candidate and talent_pool:
-                        return "Your candidate `%s %s` has been added to `%s` talent pool" % \
-                               (candidate.get("first_name"), candidate.get("last_name"), talent_pool.name)
-                    return SOMETHING_WENT_WRONG
-                except InvalidUsage as error:
-                    return error.message
-                except Exception as error:
-                    logger.error("Error occurred while parsing openweb candidate: %s" % error.message)
-                    return SOMETHING_WENT_WRONG
+        is_hostname_in_supported_social_sites = hostname in [SUPPORTED_SOCIAL_SITES[GITHUB],
+                                                             SUPPORTED_SOCIAL_SITES[STACK_OVERFLOW]]\
+                                                or SUPPORTED_SOCIAL_SITES[LINKEDIN] in hostname
+        # If it is social profile link it wont have an extension
+        if not extension and is_hostname_in_supported_social_sites:
+            response_message = cls.get_candidate_from_openweb_and_add(user_id, resume_url)
+            if response_message:
+                return response_message
             else:
                 return "Sorry, I couldn't find information on %s" % resume_url
         elif int(resume_size_in_bytes) >= TEN_MB:
@@ -676,34 +665,7 @@ class QuestionHandler(object):
         try:
             # saving resume in S3 bucket
             filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id, extension)
-            token = User.generate_jw_token(user_id=user_id)
-            header = {'Authorization': token, 'Content-Type': 'application/json'}
-            response = requests.post(
-                ResumeApiUrl.PARSE,
-                headers=header,
-                data=json.dumps({
-                    'filepicker_key': filepicker_key,
-                    'talent_pools': [],
-                    'create_candidate': True
-                })
-            )
-            try:
-                delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
-            except Exception as error:
-                logger.warning("Error occurred while deleting S3 bucket: %s" % error.message)
-            if response.status_code == requests.codes.OK:
-                candidate = response.json()
-                try:
-                    first_name = candidate["candidate"]["first_name"]
-                    talent_pool_name = TalentPool.get_by_id(candidate["candidate"]["talent_pool_ids"]).name
-                    last_name = candidate["candidate"]["last_name"]
-                except KeyError as error:
-                    logger.error("Error occurred while getting candidate from RPS: %s" % error.message)
-                    return SOMETHING_WENT_WRONG  # Replying user with a response message for KeyError error
-                return "Your candidate `%s %s` has been added to `%s` talent pool" % (first_name, last_name,
-                                                                                      talent_pool_name)
-            return SOMETHING_WENT_WRONG  # Replying with a response message if response code from RPS is other than OK
-
+            return cls.parse_resume_and_add_candidate(user_id, filepicker_key)
         except InvalidUsage as error:
             return error.message
         except urllib.ContentTooShortError:
@@ -713,22 +675,80 @@ class QuestionHandler(object):
             return SOMETHING_WENT_WRONG
 
     @classmethod
+    @contract
+    def get_candidate_from_openweb_and_add(cls, user_id, resume_url):
+        """
+        This method gets candidate from candidates/openweb endpoint if openweb returns a candidate then calls
+        add_openweb_candidate if not then returns None
+        :param positive user_id: User Id
+        :param string resume_url: Resume URL
+        :rtype: string|None
+        """
+        token = User.generate_jw_token(user_id=user_id)
+        response = send_request('get', CandidateApiUrl.OPENWEB, token, params={'url': resume_url})
+        if response.ok:
+            openweb_candidate = json.loads(response.content)
+            try:
+                candidate, talent_pool = cls.add_openweb_candidate(token, openweb_candidate)
+                if candidate and talent_pool:
+                    return ("Your candidate `%s %s` has been added to `%s` talent pool" %
+                            (candidate.get("first_name"), candidate.get("last_name"), talent_pool.name))\
+                        .replace('None', '').replace(' ` `', '')  # If candidate name does not exists remove the None
+                return SOMETHING_WENT_WRONG
+            except InvalidUsage as error:
+                return error.message
+            except Exception as error:
+                logger.error("Error occurred while parsing openweb candidate: %s" % error.message)
+                return SOMETHING_WENT_WRONG
+
+    @classmethod
+    @contract
+    def parse_resume_and_add_candidate(cls, user_id, filepicker_key):
+        """
+        This method sends S3 filepicker key to RPS, deletes resume when it gets parsed and returns an appropriate
+        response message if candidate has been added or not
+        :param positive user_id: User Id
+        :param string filepicker_key: S3 filepicker key f resume
+        :rtype: string
+        """
+        token = User.generate_jw_token(user_id=user_id)
+        header = {'Authorization': token, 'Content-Type': 'application/json'}
+        response = requests.post(ResumeApiUrl.PARSE, headers=header, data=json.dumps(
+            {'filepicker_key': filepicker_key, 'talent_pools': [], 'create_candidate': True}))
+        try:
+            delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
+        except Exception as error:
+            logger.warning("Error occurred while deleting S3 bucket: %s" % error.message)
+        if response.status_code == requests.codes.OK:
+            candidate = response.json()
+            try:
+                first_name = candidate["candidate"]["first_name"]
+                talent_pool_name = TalentPool.get_by_id(candidate["candidate"]["talent_pool_ids"]).name
+                last_name = candidate["candidate"]["last_name"]
+            except KeyError as error:
+                logger.error("Error occurred while getting candidate from RPS: %s" % error.message)
+                return SOMETHING_WENT_WRONG  # Replying user with a response message for KeyError error
+            return ("Your candidate `%s %s` has been added to `%s` talent pool"
+                    % (first_name, last_name, talent_pool_name)) \
+                .replace('None', '').replace(' ` `', '')  # If candidate name does not exists remove the None
+        return SOMETHING_WENT_WRONG  # Replying with a response message if response code from RPS is other than OK
+
+    @classmethod
     def add_openweb_candidate(cls, token, openweb_candidate):
         """
-        Append candidate received from 'candidate/openweb' in candidates dict and add in db using
-        candidate service's endpoint
-        A list of CandidateObjects:
-        e.g. {'candidates': [CandidateObject, CandidateObject, ...]}
+        This method receives scrapped openweb_candidate then appends it in candidates dict and pass this dict to
+        candidate service's /candidates endpoint
         :param string token: Auth token Bearer type
         :param dict|None openweb_candidate: Candidate received from openweb against URL
-        :rtype: tuple[Candidate|None,Talentpool|None]
+        :rtype: tuple(dict|None, Talentpool|None)
+        """
+        assert isinstance(token, basestring) and isinstance(openweb_candidate, (dict, None))
+        """
+        Candidate service receives A list of CandidateObjects:
+        e.g. {'candidates': [CandidateObject, CandidateObject, ...]}
         """
         candidate = openweb_candidate["candidate"]
-        candidates = {
-            "candidates": [
-                candidate
-            ]
-        }
+        candidates = {"candidates": [candidate]}
         response = send_request('post', CandidateApiUrl.CANDIDATES, token, candidates)
         if response.ok:
             candidate_id = json.loads(response.content)["candidates"][0]["id"]
@@ -739,7 +759,7 @@ class QuestionHandler(object):
                 return recently_added_candidate, TalentPool.get_by_id(candidate["talent_pool_ids"].get("add"))
             raise InternalServerError("Error occurred while getting candidate which was recently added")
         error_code = json.loads(response.content)["error"]["code"]
-        # When a candidate already exists in db /openweb returns ids of address and skills etc
+        # When a candidate already exists in db, /openweb returns ids of address and skills etc
         # Which causes INVALID_INPUT so, we are treating INVALID_INPUT as candidate already exists
         if error_code in [CandidateCustomErrors.INVALID_INPUT, CandidateCustomErrors.CANDIDATE_ALREADY_EXISTS]:
             raise InvalidUsage("Candidate already exists")
@@ -767,6 +787,21 @@ class QuestionHandler(object):
                 return '{}/{}'.format('UploadedResumes', filename)
         else:
             raise InvalidUsage("Unsupported Resume Type")
+
+    @staticmethod
+    @contract
+    def parse_resume_url(resume_url):
+        """
+        This method parses a url and returns resume's extension, hostname and content_length of resume
+        :param string resume_url: Url of resume or a social profile
+        :rtype: tuple(string|None,string|None,string|None)
+        """
+        meta = urllib2.urlopen(resume_url)
+        resume_size_in_bytes = meta.headers.get('Content-Length')
+        parsed_data = urlparse(resume_url)
+        host_name = parsed_data.hostname
+        _, extension = splitext(parsed_data.path)
+        return extension, host_name, resume_size_in_bytes
 
     @staticmethod
     def is_valid_year(year):
