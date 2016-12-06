@@ -38,7 +38,7 @@ class Smartlist(db.Model):
             'user_id': self.user_id,
             'is_hidden': self.is_hidden,
             'search_params': json.loads(self.search_params) if self.search_params else None,
-            'added_time': self.added_time,
+            'added_time': self.added_time
         }
         if include_stats and get_stats_function:
             to_date = datetime.datetime.utcnow() - datetime.timedelta(days=1)
