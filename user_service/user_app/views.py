@@ -47,7 +47,7 @@ def update_password():
 
     # Verify old password hash
     if not check_password_hash(old_password_hashed, old_password):
-        raise UnauthorizedError(error_message="Old password is not correct")
+        raise InvalidUsage("Old password is not correct")
 
     # Change user's password & clear out all user's access tokens
     request.user.password = gettalent_generate_password_hash(new_password)
@@ -76,7 +76,7 @@ def forgot_password():
 
     user = User.query.filter_by(email=email).first()
     if not user or user.is_disabled:
-        raise NotFoundError(error_message="User with username: %s doesn't exist" % email)
+        raise NotFoundError(error_message="User with username: %s does not exist or is disabled" % email)
 
     token = URLSafeTimedSerializer(app.config["SECRET_KEY"]).dumps(email, salt=PASSWORD_RECOVERY_JWT_SALT)
 
