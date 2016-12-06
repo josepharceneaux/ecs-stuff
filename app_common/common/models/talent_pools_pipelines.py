@@ -121,7 +121,8 @@ class TalentPoolCandidate(db.Model):
             if user is None:
                 raise NotFoundError
         # Joining talent_pool table and talent_pool_candidate table on basis of Id.
-        common_query = cls.query.filter(cls.talent_pool_id == TalentPool.id)
+        common_query = cls.query.filter(cls.talent_pool_id == TalentPool.id, Candidate.id ==
+                                        TalentPoolCandidate.candidate_id, Candidate.is_web_hidden == 0)
         if isinstance(user_specific_date, datetime):
             # User's specified time should be smaller or equal to the time when candidate was added or updated
             common_query = common_query.filter(or_((cls.added_time >= user_specific_date),
@@ -135,7 +136,7 @@ class TalentPoolCandidate(db.Model):
             # TODO: Join, count ?
             return common_query.filter(
                 and_(TalentPool.user_id == User.id, TalentPool.name.in_(talent_pool_list)),
-                Candidate.id == TalentPoolCandidate.candidate_id, Candidate.user_id == user.id).distinct().count()
+                Candidate.user_id == user.id).distinct().count()
         if user_name and talent_pool_list is None:
             # Querying how many candidates have user added in his talent pools
             return common_query.filter(TalentPool.user_id == User.id, Candidate.id == TalentPoolCandidate.candidate_id,

@@ -96,10 +96,10 @@ class QuestionHandler(object):
             return None
         candidate_index = cls.find_word_in_message('cand', message_tokens)
         if candidate_index is not None:
-            number_of_candidates = 0
+            number_of_candidates = ZERO
             if users:
                 domain_id = users[0].domain_id
-                candidates = Candidate.get_all_in_user_domain(domain_id)
+                candidates = Candidate.get_all_in_user_domain(domain_id, is_hidden=ZERO)
                 number_of_candidates = len(candidates)
             return "Candidates in domain `%s` : %d" % (domain_name, number_of_candidates)
         return "Users in domain `%s` : %d" % (domain_name, len(users))
