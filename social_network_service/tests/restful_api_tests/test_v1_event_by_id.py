@@ -19,7 +19,7 @@ from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.utils.handy_functions import send_request
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
-from social_network_service.tests.helper_functions import auth_header, unauthorize_test
+from social_network_service.tests.helper_functions import auth_header, unauthorize_test, match_event_fields
 from social_network_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
@@ -57,7 +57,9 @@ class TestEventById(object):
             assert response.status_code == codes.OK, "Response: {}".format(response.text)
             results = response.json()
             assert 'event' in results
+            match_event_fields(results['event'])
             api_event = results['event']
+
             if event.get('venue_id'):
                 del event['venue_id']
             if event.get('organizer_id'):

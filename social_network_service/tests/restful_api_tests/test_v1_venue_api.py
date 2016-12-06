@@ -12,7 +12,7 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.modules.constants import EVENTBRITE
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
-from social_network_service.tests.helper_functions import auth_header, get_headers
+from social_network_service.tests.helper_functions import auth_header, get_headers, match_venue_fields
 
 
 class TestVenues(object):
@@ -34,6 +34,20 @@ class TestVenues(object):
         assert response.status_code == codes.OK, 'Status should be Ok (200)'
         results = response.json()
         assert 'venues' in results
+
+    def test_match_venue_fileds(self, token_first, venue_in_db_second):
+        """
+        Creates venue for social network events, send GET request to venues and test if expected
+        fields exist in response from api.
+        """
+        response = requests.get(SocialNetworkApiUrl.VENUE % venue_in_db_second['id'],
+                                headers=auth_header(token_first))
+        logger.info(response.text)
+        assert response.status_code == codes.OK, 'Status should be Ok (200)'
+        results = response.json()
+        assert 'venue' in results
+        assert len(results) == 1
+        match_venue_fields(results['venue'])
 
     def test_post_with_invalid_token(self):
         """

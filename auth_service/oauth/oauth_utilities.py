@@ -35,7 +35,7 @@ def authenticate_user(username, password, *args, **kwargs):
     """
     It's user getter method i.e it'll retrieve a User object from database given valid username/password.
     If user provides a wrong password, his wrong login attempt counter in redis is incremented by 1.
-    If wrong login attempt counter reachers 5 we disable the user. Wrong login attempt counter for each user
+    If wrong login attempt counter reaches 5 we disable the user. Wrong login attempt counter for each user
     is reset after every hour
     :param str username: username of a user
     :param str password:  password of a user

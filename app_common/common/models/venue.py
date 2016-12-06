@@ -1,4 +1,5 @@
 from db import db
+from datetime import datetime
 
 
 class Venue(db.Model):
@@ -16,6 +17,8 @@ class Venue(db.Model):
     country = db.Column(db.String(100))
     longitude = db.Column(db.Float)
     latitude = db.Column(db.Float)
+    added_datetime = db.Column('AddedDateTime', db.DateTime, default=datetime.utcnow)
+    updated_datetime = db.Column('UpdatedDateTime', db.TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
     events = db.relationship('Event', backref='venue', lazy='dynamic')

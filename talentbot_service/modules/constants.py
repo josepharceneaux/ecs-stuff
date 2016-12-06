@@ -87,6 +87,7 @@ TEN_MB = 1024 * 1024 * 10
 INVALID_RESUME_URL_MSG = "Invalid URL"
 NO_RESUME_URL_FOUND_MSG = "No URL found, URL must start with `http://` or `https://`"
 TOO_LARGE_RESUME_MSG = "Resume file size should be less than 10 MB"
+QUEUE_NAME = 'talentbot_queue'
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

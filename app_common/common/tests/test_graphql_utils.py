@@ -47,7 +47,9 @@ def test_validate_graphql_response():
             "zip_code": "54000",
             "country": "Pakistan",
             "longitude": 74.3133,
-            "latitude": 31.5105
+            "latitude": 31.5105,
+            "added_datetime": '2016-11-25 15:18:43',
+            "updated_datetime": '2016-11-25 15:18:43'
         }
     }
 
