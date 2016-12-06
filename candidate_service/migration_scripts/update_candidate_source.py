@@ -52,18 +52,16 @@ def update_domain_candidates_source_ids(domain_id, source_description, access_to
     """
     headers = {"Authorization": "Bearer %s" % access_token, 'content-type': 'application/json'}
 
-    domain_source_to_delete_id = None
+    domain_candidates = None
     if source_to_delete:
         domain_source = CandidateSource.query.filter_by(description=source_to_delete, domain_id=domain_id).first()
         if domain_source:
-            domain_source_to_delete_id = domain_source.id
+            domain_candidates = Candidate.query.join(User). \
+                filter(User.domain_id == domain_id). \
+                filter(Candidate.source_id == domain_source.id).all()
             db.session.delete(domain_source)
             db.session.commit()
             print "deleted domain source: ID = {}".format(domain_source.id)
-
-    domain_candidates = Candidate.query.join(User). \
-        filter(User.domain_id == domain_id). \
-        filter(Candidate.source_id == domain_source_to_delete_id).all()
 
     if domain_candidates:
         candidate_ids = (candidate.id for candidate in domain_candidates)
