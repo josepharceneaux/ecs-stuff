@@ -189,7 +189,7 @@ class DomainCustomFieldsResource(Resource):
                 raise ForbiddenError("Not authorized")
 
             custom_field_candidate_ids = CandidateCustomField.query.with_entities(
-                    CandidateCustomField.candidate_id).filter_by(custom_field_id).all()
+                    CandidateCustomField.candidate_id).filter_by(custom_field_id=custom_field_id).all()
 
             custom_field_candidate_ids = map(lambda custom_field_object: custom_field_object[0],
                                              custom_field_candidate_ids)

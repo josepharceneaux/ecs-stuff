@@ -240,14 +240,6 @@ class TestDeleteDomainCustomFields(object):
         print response_info(del_resp)
         assert del_resp.status_code == requests.codes.UNAUTHORIZED
 
-    def test_delete_custom_field_without_user_permission(self, access_token_first):
-        """
-        Test: Access endpoint without user's appropriate permission
-        """
-        del_resp = send_request('delete', self.CFS_URL, access_token_first)
-        print response_info(del_resp)
-        assert del_resp.status_code == requests.codes.UNAUTHORIZED
-
     def test_delete_custom_field_by_id(self, user_first, access_token_first, domain_custom_fields):
         """
         Test: Delete domain custom field by ID
