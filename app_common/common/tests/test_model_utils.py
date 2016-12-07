@@ -36,7 +36,7 @@ def test_get_fields():
                                                                        'social_network_group_id', 'group_url_name',
                                                                        'start_datetime', 'end_datetime',
                                                                        'registration_instruction', 'max_attendees',
-                                                                       'tickets_id', 'added_datetime',
+                                                                       'tickets_id', 'is_hidden','added_datetime',
                                                                        'updated_datetime', 'id', 'title', 'description',
                                                                        'url', 'cost', 'currency', 'timezone']]
     assert fields == expected_fields
