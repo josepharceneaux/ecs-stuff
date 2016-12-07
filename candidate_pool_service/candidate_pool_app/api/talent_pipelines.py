@@ -408,7 +408,9 @@ class TalentPipelineSmartListApi(Resource):
         per_page = int(per_page)
 
         total_number_of_smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).count()
-        smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).paginate(page, per_page, False)
+        smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).order_by(
+                Smartlist.added_time.desc()).paginate(page, per_page, False)
+
         smartlists = smartlists.items
 
         headers = generate_pagination_headers(total_number_of_smartlists, per_page, page)

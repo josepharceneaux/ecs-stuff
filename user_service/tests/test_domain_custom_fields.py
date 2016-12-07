@@ -228,66 +228,57 @@ class TestUpdateDomainCustomFields(object):
         assert update_resp.status_code == requests.codes.NOT_FOUND
 
 
-# TODO: uncomment the TestDeleteDomainCustomFields when DELETE /v1/custom_fields is created - Amir
-# class TestDeleteDomainCustomFields(object):
-#     CFS_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELDS
-#     CF_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELD
-#
-#     def test_delete_custom_fields_without_access_token(self):
-#         """
-#         Test:  Access end point without an access token
-#         """
-#         del_resp = send_request('delete', self.CFS_URL, None)
-#         print response_info(del_resp)
-#         assert del_resp.status_code == requests.codes.UNAUTHORIZED
-#
-#     def test_delete_custom_field_without_user_permission(self, access_token_first):
-#         """
-#         Test: Access endpoint without user's appropriate permission
-#         """
-#         del_resp = send_request('delete', self.CFS_URL, access_token_first)
-#         print response_info(del_resp)
-#         assert del_resp.status_code == requests.codes.UNAUTHORIZED
-#
-#     def test_delete_custom_field_by_id(self, user_first, access_token_first, domain_custom_fields):
-#         """
-#         Test: Delete domain custom field by ID
-#         """
-#         user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
-#         db.session.commit()
-#
-#         custom_field_id = domain_custom_fields[0].id
-#
-#         # Delete custom field by id
-#         del_resp = send_request('delete', self.CF_URL % custom_field_id, access_token_first)
-#         print response_info(del_resp)
-#         assert del_resp.status_code == requests.codes.OK
-#         assert del_resp.json()['custom_field']['id'] == custom_field_id
-#
-#     def test_delete_custom_field_of_another_domain(self, user_second, access_token_second, domain_custom_fields):
-#         """
-#         Test: Delete custom fields of another domain
-#         """
-#         user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
-#         db.session.commit()
-#
-#         custom_field_id = domain_custom_fields[0].id
-#
-#         # Delete another domain's custom field
-#         del_resp = send_request('delete', self.CF_URL % custom_field_id, access_token_second)
-#         print response_info(del_resp)
-#         assert del_resp.status_code == requests.codes.FORBIDDEN
-#
-#     def test_delete_non_existing_custom_field(self, user_first, access_token_first):
-#         """
-#         Test: Delete custom field using an ID that is not recognized
-#         """
-#         user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
-#         db.session.commit()
-#
-#         non_existing_cf_id = sys.maxint
-#
-#         del_resp = send_request('delete', self.CF_URL % non_existing_cf_id, access_token_first)
-#         print response_info(del_resp)
-#         assert del_resp.status_code == requests.codes.NOT_FOUND
+class TestDeleteDomainCustomFields(object):
+    CFS_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELDS
+    CF_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELD
+
+    def test_delete_custom_fields_without_access_token(self):
+        """
+        Test:  Access end point without an access token
+        """
+        del_resp = send_request('delete', self.CFS_URL, None)
+        print response_info(del_resp)
+        assert del_resp.status_code == requests.codes.UNAUTHORIZED
+
+    def test_delete_custom_field_by_id(self, user_first, access_token_first, domain_custom_fields):
+        """
+        Test: Delete domain custom field by ID
+        """
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
+        custom_field_id = domain_custom_fields[0].id
+
+        # Delete custom field by id
+        del_resp = send_request('delete', self.CF_URL % custom_field_id, access_token_first)
+        print response_info(del_resp)
+        assert del_resp.status_code == requests.codes.OK
+        assert del_resp.json()['custom_field']['id'] == custom_field_id
+
+    def test_delete_custom_field_of_another_domain(self, user_second, access_token_second, domain_custom_fields):
+        """
+        Test: Delete custom fields of another domain
+        """
+        user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
+        custom_field_id = domain_custom_fields[0].id
+
+        # Delete another domain's custom field
+        del_resp = send_request('delete', self.CF_URL % custom_field_id, access_token_second)
+        print response_info(del_resp)
+        assert del_resp.status_code == requests.codes.FORBIDDEN
+
+    def test_delete_non_existing_custom_field(self, user_first, access_token_first):
+        """
+        Test: Delete custom field using an ID that is not recognized
+        """
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
+        non_existing_cf_id = sys.maxint
+
+        del_resp = send_request('delete', self.CF_URL % non_existing_cf_id, access_token_first)
+        print response_info(del_resp)
+        assert del_resp.status_code == requests.codes.NOT_FOUND
 

@@ -26,7 +26,7 @@ def access_token_v2():
         if authenticated_user:
             return save_token_v2(authenticated_user)
         else:
-            raise UnauthorizedError("Incorrect username/password")
+            raise InvalidUsage("Incorrect username/password")
 
 
 @app.route(AuthApiV2.TOKEN_REFRESH, methods=['POST'])
