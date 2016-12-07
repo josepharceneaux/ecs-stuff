@@ -285,13 +285,10 @@ class EmailCampaignBlast(db.Model):
     def top_performing_email_campaign(cls, datetime_value, user_id):
         """
         This method returns top performing email campaign from a specific datetime
-        :param int|long user_id: User Id
+        :param positive user_id: User Id
         :param string|datetime|None datetime_value: date during campaign started or updated
         :rtype: type(z)
         """
-        assert isinstance(datetime_value, (datetime, basestring)) or datetime_value is None,\
-            "Invalid datetime value"
-        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
         from .user import User    # To avoid circular dependency this has to be here
         domain_id = User.get_domain_id(user_id)
         if isinstance(datetime_value, datetime):

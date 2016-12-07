@@ -174,7 +174,7 @@ class QuestionHandler(object):
             return "Please enter a valid year greater than `1900` and smaller than `current year`."
         if is_valid_year is False:
             user_specific_date = None
-        last_index = self.find_word_in_message('last', message_tokens)
+        last_index = self.find_optional_word(message_tokens, ['last', 'from'])
         if last_index is not None and not is_valid_year:
             if len(message_tokens) > last_index + 1:
                 user_specific_date = self.extract_datetime_from_question(last_index, message_tokens)
@@ -216,7 +216,8 @@ class QuestionHandler(object):
                 campaign_list[0] = "Looks like you don't have any campaigns since that time"
             return '%s%s' % (campaign_list[0], self.create_ordered_list(campaign_list[1::]))
         campaign_blast = campaign_method(user_specific_date, user_id)
-        timespan = self.append_list_with_spaces(message_tokens[last_index::])
+        timespan_starting_index = last_index if last_index is not None else len(message_tokens)
+        timespan = self.append_list_with_spaces(message_tokens[timespan_starting_index::])
         if is_valid_year:
             timespan = user_specific_date
         if campaign_blast:
@@ -246,7 +247,7 @@ class QuestionHandler(object):
         if not isinstance(user_specific_date, datetime) and not is_valid_year \
                 and user_specific_date is None and message_tokens[-1].lower() not in ['campaigns']:
             response_message = 'No valid time duration found\n %s' % response_message
-        return response_message.replace("None", "all the times")
+        return response_message.replace("None", "all the times").replace('from from', 'from')
 
     def question_4_handler(self, message_tokens, user_id):
         """
