@@ -543,13 +543,12 @@ class Eventbrite(EventBase):
         # create url to publish event
         url = get_url(self, Urls.PUBLISH_EVENT).format(str(social_network_event_id))
         # params are None. Access token is present in self.headers
-        response = http_request('POST', url, headers=self.headers,
-                                user_id=self.user.id)
+        response = http_request('POST', url, headers=self.headers, user_id=self.user.id)
         if response.ok:
             logger.info('|  Event has been published  |')
         else:
             error_message = "Event was not Published. There are some " \
-                            "errors: Details: %s  |" % response
+                            "errors: Details: %s  |" % response.text
             log_error({
                 'user_id': self.user.id,
                 'error': error_message,
