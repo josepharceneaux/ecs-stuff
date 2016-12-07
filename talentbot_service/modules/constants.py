@@ -89,10 +89,12 @@ NO_RESUME_URL_FOUND_MSG = "No URL found, URL must start with `http://` or `https
 TOO_LARGE_RESUME_MSG = "Resume file size should be less than 10 MB"
 QUEUE_NAME = 'talentbot_queue'
 SUPPORTED_SOCIAL_SITES = {"github": 'github.com', "stackoverflow": 'stackoverflow.com',
-                          "linkedin": 'linkedin.com'}
+                          "linkedin": 'linkedin.com', 'facebook': 'facebook.com', 'twitter': 'twitter.com'}
 GITHUB = "github"
 STACK_OVERFLOW = 'stackoverflow'
 LINKEDIN = 'linkedin'
+FACEBOOK = 'facebook'
+TWITTER = 'twitter'
 # Custom Candidate Service Error Codes
 INVALID_INPUT = 3000
 CANDIDATE_ALREADY_EXISTS = 3013

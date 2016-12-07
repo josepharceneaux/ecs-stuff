@@ -40,7 +40,7 @@ from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, d
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
     SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, TOO_LARGE_RESUME_MSG, \
-    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN, INVALID_INPUT, CANDIDATE_ALREADY_EXISTS
+    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN, INVALID_INPUT, CANDIDATE_ALREADY_EXISTS, TWITTER, FACEBOOK
 from talentbot_service import logger, app
 # 3rd party imports
 from flask import json
@@ -639,9 +639,12 @@ class QuestionHandler(object):
             extension, hostname, resume_size_in_bytes = cls.parse_resume_url(resume_url)
         except (urllib2.HTTPError, urllib2.URLError):
             return INVALID_RESUME_URL_MSG
-        is_hostname_in_supported_social_sites = hostname in [SUPPORTED_SOCIAL_SITES[GITHUB],
-                                                             SUPPORTED_SOCIAL_SITES[STACK_OVERFLOW]]\
-                                                or SUPPORTED_SOCIAL_SITES[LINKEDIN] in hostname
+        # Supported social sites' array
+        supported_social_sites_array = [SUPPORTED_SOCIAL_SITES[GITHUB], SUPPORTED_SOCIAL_SITES[TWITTER],
+                                        SUPPORTED_SOCIAL_SITES[STACK_OVERFLOW]]
+        is_hostname_in_supported_social_sites = hostname in supported_social_sites_array \
+                                                or SUPPORTED_SOCIAL_SITES[LINKEDIN] in hostname \
+                                                or SUPPORTED_SOCIAL_SITES[FACEBOOK] in hostname
         # If it is social profile link it wont have an extension
         if not extension and is_hostname_in_supported_social_sites:
             response_message = cls.get_candidate_from_openweb_and_add(user_id, resume_url)
