@@ -10,7 +10,7 @@ from werkzeug.security import check_password_hash
 from auth_service.common.models.user import User, Client, Token, db
 from auth_service.common.redis_cache import redis_store
 from auth_service.oauth import logger, app
-from auth_service.common.error_handling import UnauthorizedError
+from auth_service.common.error_handling import UnauthorizedError, InvalidUsage
 from ..custom_error_codes import AuthServiceCustomErrorCodes as custom_errors
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 
@@ -148,7 +148,7 @@ def authenticate_request():
         json_web_token = '.'.join(json_web_token)
 
     except Exception as e:
-        raise UnauthorizedError("`Authorization` Header is missing or poorly formatted. Because: %s" % e.message)
+        raise InvalidUsage("`Authorization` Header is missing or poorly formatted. Because: %s" % e.message)
 
     return secret_key_id, verify_jwt(json_web_token, secret_key_id)
 
