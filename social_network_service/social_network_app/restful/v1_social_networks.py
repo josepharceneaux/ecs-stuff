@@ -40,12 +40,13 @@ This file contains API endpoints related to social network.
 import types
 
 # 3rd party imports
+from requests import codes
 from flask import Blueprint
 from flask.ext.restful import Resource
 
 # application specific imports
-from social_network_service.common.constants import MEETUP
-from social_network_service.common.models.event import MeetupGroup
+
+from social_network_service.common.models.event import Event
 from social_network_service.modules import custom_codes
 from social_network_service.tasks import import_events
 from social_network_service.modules.custom_codes import VENUE_EXISTS_IN_GT_DATABASE
@@ -134,8 +135,6 @@ class SocialNetworksResource(Resource):
     def delete(self):
         """
         Deletes multiple social network whose ids are given in list in request data.
-        :param kwargs:
-        :return:
 
         :Example:
             social_network_ids = {
@@ -184,7 +183,7 @@ class SocialNetworksResource(Resource):
         if total_not_deleted:
             return dict(message='Unable to delete %s social networks' % total_not_deleted,
                         deleted=total_deleted,
-                        not_deleted=total_not_deleted), 207
+                        not_deleted=total_not_deleted), codes.multi_status
         elif total_deleted:
                 return dict(message='%s social networks deleted successfully' % total_deleted)
         raise InvalidUsage('Bad request, include social work ids as list data', error_code=400)
@@ -425,7 +424,7 @@ class RefreshTokenResource(Resource):
     def put(self, social_network_id):
         """
         Update access token for specified user and social network.
-        :return:
+        :param int | long social_network_id: social network id
 
         :Example:
 
@@ -480,7 +479,7 @@ class DisconnectSocialNetworkResource(Resource):
     def post(self, social_network_id):
         """
         Remove access and refresh token for specified user and social network.
-        :return:
+        :param int | long social_network_id: social network id
 
         :Example:
 
@@ -511,7 +510,11 @@ class DisconnectSocialNetworkResource(Resource):
         # Get social network specific Social Network class
         social_network_class = get_class(social_network.name, 'social_network')
         social_network_class.disconnect(user_id, social_network)
-        return dict(messsage='User has been disconnected from social network (name: %s)' % social_network.name)
+        events_count = Event.disable_events(user_id, social_network.id)
+        logger.info('User (id: %s) has been disconnect from %s and his %s events were marked as hidden'
+                    % (user_id, social_network.name, events_count))
+        return dict(messsage='User (id: %s) has been disconnected from social network (name: %s)'
+                             % (user_id, social_network.name))
 
 
 @api.route(SocialNetworkApi.VENUES)
@@ -564,7 +567,6 @@ class VenuesResource(Resource):
     def post(self):
         """
         Creates a venue for this user
-        :return:
 
         :Example:
             venue_data = {
@@ -701,7 +703,6 @@ class VenueByIdResource(Resource):
         """
         This action returns a venue (given by id) created by current user.
         :param venue_id: id of venue to be returned
-        :keyword user_id: id of venue owner (user who created venue)
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
@@ -744,7 +745,6 @@ class VenueByIdResource(Resource):
         """
         Updates a venue for current user
         :param venue_id: id of the requested venue
-        :return:
 
         :Example:
             venue_data = {
@@ -797,7 +797,6 @@ class VenueByIdResource(Resource):
         """
         This endpoint deletes one venue owned by this user.
         :param venue_id: id of venue on getTalent database to be deleted
-        :return:
 
         :Example:
             headers = {
@@ -836,7 +835,6 @@ class EventOrganizersResource(Resource):
     def get(self):
         """
         This action returns a list of event organizers created by current user.
-        :keyword user_id: id of organizer owner (user who created organizer)
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
@@ -868,7 +866,6 @@ class EventOrganizersResource(Resource):
     def post(self):
         """
         Creates an event organizer for this user.
-        :return:
 
         :Example:
             organizer_data = {
@@ -919,8 +916,6 @@ class EventOrganizersResource(Resource):
     def delete(self):
         """
         This endpoint deletes one or more organizer owned by this user.
-        :param kwargs:
-        :return:
 
         :Example:
             organizers_ids = {
@@ -983,7 +978,6 @@ class EventOrganizerByIdResource(Resource):
         """
         This action returns an organizer (given by id) created by current user.
         :param organizer_id: id of organizer to be returned
-        :keyword user_id: id of event organizer owner (user who created organizer)
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
@@ -1019,7 +1013,6 @@ class EventOrganizerByIdResource(Resource):
     def post(self, organizer_id):
         """
         Updates an event organizer for current user.
-        :return:
 
         :Example:
             organizer_data = {
@@ -1064,8 +1057,7 @@ class EventOrganizerByIdResource(Resource):
     def delete(self, venue_id):
         """
         This endpoint deletes one organizer owned by this user.
-        :param kwargs:
-        :return:
+        :param int | long venue_id: venue id
 
         :Example:
             headers = {
@@ -1152,7 +1144,10 @@ class ProcessAccessTokenResource(Resource):
             credentials = social_network_class(user_id, social_network.id, validate_credentials=False).connect(code)
             logger.info('User(id:%s) has been connected successfully with %s. We are going to import events now.'
                         % (user_id, social_network.name))
+            events_count = Event.enable_events(user_id, social_network.id)
+            logger.info('User (id: %s) has been connected to %s and his %s events were enabled again'
+                        % (user_id, social_network.name, events_count))
             import_events.delay(credentials)
-            return dict(message='User credentials added successfully'), 201
+            return dict(message='User credentials added successfully'), codes.created
         else:
             raise ResourceNotFound('Social Network not found')
