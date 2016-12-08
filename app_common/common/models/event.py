@@ -151,7 +151,7 @@ class Event(db.Model):
 
     @classmethod
     def get_events_query(cls, user, search=None, social_network_id=None, sort_by='start_datetime',
-                         sort_type='desc', user_id=None):
+                         sort_type='desc', user_id=None, is_hidden=False):
         """
         This method return query object for events after applying all filters
         :param type(t) user: user object
@@ -160,6 +160,7 @@ class Event(db.Model):
         :param string sort_by: on which field you want to order
         :param string sort_type: acs or desc, sort order
         :param int| long | None user_id: events' owner user id, None for all event in domain
+        :param bool is_hidden: boolean field to select active or disabled/hidden events
         :return: returns a query object
         """
         from user import User  # This has to be here to avoid circular import
@@ -181,9 +182,7 @@ class Event(db.Model):
         if user_id and User.get_domain_id(user_id) != user.domain_id:
                 raise ForbiddenError("Not authorized to access users' events outside of your domain")
 
-        # I am using `Event.is_hidden == False` instead of `Event.is_hidden is False` because that does
-        # not work
-        query = Event.get_by_domain_id(user.domain_id).filter(Event.is_hidden == False)
+        query = Event.get_by_domain_id(user.domain_id).filter(Event.is_hidden == is_hidden)
         if social_network_id:
             query = query.filter(Event.social_network_id == social_network_id)
         if user_id:

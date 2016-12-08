@@ -183,10 +183,10 @@ class SocialNetworksResource(Resource):
         if total_not_deleted:
             return dict(message='Unable to delete %s social networks' % total_not_deleted,
                         deleted=total_deleted,
-                        not_deleted=total_not_deleted), codes.multi_status
+                        not_deleted=total_not_deleted), codes.MULTI_STATUS
         elif total_deleted:
                 return dict(message='%s social networks deleted successfully' % total_deleted)
-        raise InvalidUsage('Bad request, include social work ids as list data', error_code=400)
+        raise InvalidUsage('Bad request, include social work ids as list data', error_code=codes.BAD_REQUEST)
 
     def get(self):
         """
@@ -511,7 +511,7 @@ class DisconnectSocialNetworkResource(Resource):
         social_network_class = get_class(social_network.name, 'social_network')
         social_network_class.disconnect(user_id, social_network)
         events_count = Event.disable_events(user_id, social_network.id)
-        logger.info('User (id: %s) has been disconnect from %s and his %s events were marked as hidden'
+        logger.info('User (id: %s) has been disconnect from %s and his %s events are marked as hidden'
                     % (user_id, social_network.name, events_count))
         return dict(messsage='User (id: %s) has been disconnected from social network (name: %s)'
                              % (user_id, social_network.name))
@@ -1145,9 +1145,9 @@ class ProcessAccessTokenResource(Resource):
             logger.info('User(id:%s) has been connected successfully with %s. We are going to import events now.'
                         % (user_id, social_network.name))
             events_count = Event.enable_events(user_id, social_network.id)
-            logger.info('User (id: %s) has been connected to %s and his %s events were enabled again'
+            logger.info('User (id: %s) has been connected to %s and his %s events have been enabled'
                         % (user_id, social_network.name, events_count))
             import_events.delay(credentials)
-            return dict(message='User credentials added successfully'), codes.created
+            return dict(message='User credentials added successfully'), codes.CREATED
         else:
             raise ResourceNotFound('Social Network not found')
