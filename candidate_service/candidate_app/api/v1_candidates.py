@@ -15,6 +15,30 @@ from time import time
 import requests
 from flask import request
 from flask_restful import Resource
+
+from candidate_service.candidate_app import logger
+
+# Database connection
+from candidate_service.common.models.db import db
+
+# Validators
+from candidate_service.common.talent_config_manager import TalentConfigKeys
+from candidate_service.common.talent_config_manager import TalentEnvs
+from candidate_service.common.utils.models_utils import to_json
+from candidate_service.common.utils.validators import is_valid_email, is_country_code_valid, is_number
+from candidate_service.modules.validators import (
+    does_candidate_belong_to_users_domain, is_custom_field_authorized,
+    is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
+    is_valid_email_client, get_json_if_exist, is_date_valid,
+    get_json_data_if_validated, get_candidate_if_validated,
+    authenticate_candidate_preference_request, is_user_permitted_to_archive_candidate
+)
+
+# JSON Schemas
+from candidate_service.modules.json_schema import (
+    candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
+    resource_schema_photos_post, resource_schema_photos_patch, language_schema,
+)
 from jsonschema import validate, FormatChecker, ValidationError
 from onesignalsdk.one_signal_sdk import OneSignalSdk
 from redo import retry
@@ -75,12 +99,20 @@ from candidate_service.modules.validators import (
     get_json_data_if_validated, get_candidate_if_validated,
     authenticate_candidate_preference_request
 )
+from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
+from onesignalsdk.one_signal_sdk import OneSignalSdk
+from candidate_service.common.utils.handy_functions import normalize_value, time_me
+
+from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
+from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
+from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
 
 
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
+    @time_me(logger=logger, api='candidates')
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates
@@ -95,8 +127,6 @@ class CandidatesResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
-        start_time = time()
-
         # Validate and retrieve json data
         body_dict = get_json_data_if_validated(request, candidates_resource_schema_post)
 
@@ -124,11 +154,8 @@ class CandidatesResource(Resource):
             try:
                 # Some candidate data may have tabs that we must omit before creating candidate's profile
                 candidate_dict_ = replace_tabs_with_spaces(candidate_dict_)
-
                 email_addresses = []
-
                 candidate_ids_from_candidate_email_obj = []
-
                 email_addresses.extend(email.get('address') for email in candidate_dict_.get('emails') or [])
 
                 # Strip, lower, and remove empty email addresses
@@ -153,8 +180,8 @@ class CandidatesResource(Resource):
                     candidate_ids_from_candidate_email_obj.append(candidate_id)
                     candidate = Candidate.get_by_id(candidate_id)
 
-                    # Raise error if candidate is not hidden and its email matches another candidate's email
-                    if not candidate.is_web_hidden and (candidate_email_obj not in CachedData.candidate_emails):
+                    # Raise error if candidate is not archived and its email matches another candidate's email
+                    if not candidate.is_archived and (candidate_email_obj not in CachedData.candidate_emails):
                         # Clear cached data
                         CachedData.candidate_emails = []
 
@@ -162,11 +189,11 @@ class CandidatesResource(Resource):
                                            error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
                                            additional_error_info={'id': candidate_id})
 
-                    # Un-hide candidate from web, if found
-                    if candidate.is_web_hidden:
-                        candidate.is_web_hidden = 0
+                    # Un-archive candidate if candidate is found
+                    if candidate.is_archived:
+                        candidate.is_archived = 0
 
-                        # If candidate's web-hidden is set to false, it will be treated as an update
+                        # If candidate's is_archived had been false, it will be treated as an update
                         is_creating, is_updating = False, True
 
                     elif candidate_id in candidate_ids_from_candidate_email_obj:
@@ -222,7 +249,7 @@ class CandidatesResource(Resource):
                         if not is_date_valid(date=to_date):
                             raise InvalidUsage("Military service's date must be in a date format",
                                                error_code=custom_error.MILITARY_INVALID_DATE)
-                    country_code = military_service['country_code'].upper() if military_service.get('country_code') else None
+                    country_code = (military_service.get('country_code') or '').upper()
                     if country_code:
                         if not is_country_code_valid(country_code):
                             raise InvalidUsage("Country code not recognized: {}".format(country_code))
@@ -288,7 +315,6 @@ class CandidatesResource(Resource):
                 preferred_locations=candidate_dict.get('preferred_locations'),
                 skills=candidate_dict.get('skills'),
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
-                dice_profile_id=candidate_dict.get('dice_profile_id'),
                 added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id'),
                 source_product_id=candidate_dict.get('source_product_id'),
@@ -315,15 +341,13 @@ class CandidatesResource(Resource):
         # Add candidates to cloud search
         upload_candidate_documents.delay(created_candidate_ids)
 
-        logger.info('BENCHMARK - candidate POST: \nuser_id: {user_id}\ndomain_id: {domain_id}\ntime: {t}'.
-                    format(user_id=authed_user.id, domain_id=authed_user.domain_id, t=time() - start_time))
-
         return {
                    'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids],
                    'errors': response_errors
                }, requests.codes.CREATED
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
+    @time_me(logger=logger, api='candidates')
     def patch(self, **kwargs):
         """
         Endpoints:
@@ -356,8 +380,6 @@ class CandidatesResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
-        start_time = time()
-
         # Validate and retrieve json data
         body_dict = get_json_data_if_validated(request, candidates_resource_schema_patch)
 
@@ -371,18 +393,20 @@ class CandidatesResource(Resource):
         if candidate_id_from_url and len(candidates) > 1:
             raise InvalidUsage(
                 "Error: You requested an update for one candidate but provided data for multiple candidates.",
-                custom_error.INVALID_USAGE)
+                custom_error.INVALID_USAGE
+            )
 
-        # Input validations
-        skip = False  # If True, skip all validations & unnecessary db communications for candidates that must be hidden
+        # ***** Input validations *****
+        # If True, skip all validations & unnecessary db communications for candidates that must be archived
+        skip = False
         all_cf_ids, all_aoi_ids = [], []
-        hidden_candidate_ids = []  # Aggregate candidate IDs that will be hidden
+        archived_candidate_ids = []  # Aggregate candidate IDs that will be archived
         for _candidate_dict in candidates:
 
             # Some candidate data may have tabs that we must omit before creating candidate's profile
             _candidate_dict = replace_tabs_with_spaces(_candidate_dict)
 
-            # Candidate ID must be provided in json dict or in the url
+            # Candidate ID must be provided in dict or in the url
             candidate_id = candidate_id_from_url or _candidate_dict.get('id')
             if not candidate_id:
                 raise InvalidUsage("Candidate ID is required", custom_error.INVALID_USAGE)
@@ -391,26 +415,32 @@ class CandidatesResource(Resource):
             if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
                 raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
-            # Check for candidate's existence
+            # Candidate ID must be recognized
             candidate = Candidate.get_by_id(candidate_id)
             if not candidate:
                 raise NotFoundError('Candidate not found: {}'.format(candidate_id), custom_error.CANDIDATE_NOT_FOUND)
 
-            # Hide or un-hide candidate if requested
-            hide_candidate = _candidate_dict.get('hide')
-            if hide_candidate is True:
-                candidate.is_web_hidden = 1
-                hidden_candidate_ids.append(candidate_id)
+            # Archive candidate if requested
+            archive_candidate = _candidate_dict.get('archive')
+            if archive_candidate is True:
+                if not is_user_permitted_to_archive_candidate(authed_user, candidate):
+                    raise ForbiddenError(error_message="Only admins and candidate's owner may archive the candidate",
+                                         error_code=custom_error.CANDIDATE_FORBIDDEN)
+                candidate.is_archived = 1
+                archived_candidate_ids.append(candidate_id)
                 skip = True
             else:  # json-schema will only allow True or False
-                candidate.is_web_hidden = 0
+                if not is_user_permitted_to_archive_candidate(authed_user, candidate):
+                    raise ForbiddenError(error_message="Only admins and candidate's owner may archive the candidate",
+                                         error_code=custom_error.CANDIDATE_FORBIDDEN)
+                candidate.is_archived = 0
 
-            # No need to validate anything since candidate is set to hidden
+            # No need to validate anything since candidate is archived
             if not skip:
-                # Check if candidate is web-hidden
-                if candidate.is_web_hidden:
+                # Check if candidate is archived
+                if candidate.is_archived:
                     raise NotFoundError('Candidate not found: {}'.format(candidate_id),
-                                        custom_error.CANDIDATE_IS_HIDDEN)
+                                        custom_error.CANDIDATE_IS_ARCHIVED)
 
                 # Emails' addresses must be properly formatted
                 for emails in _candidate_dict.get('emails') or []:
@@ -436,37 +466,37 @@ class CandidatesResource(Resource):
                             raise InvalidUsage("Military service's date must be in a date format",
                                                error_code=custom_error.MILITARY_INVALID_DATE)
 
-            # If source_id key is not provided, its value must default to empty string
-            # this is because this API will treat NULL values as "delete the record"
-            source_id = _candidate_dict.get('source_id', '')
+                # If source_id key is not provided, its value must default to empty string
+                # this is because this API will treat NULL values as "delete the record"
+                source_id = _candidate_dict.get('source_id', '')
 
-            # Provided source ID must be recognized & belong to candidate's domain
-            if source_id:
+                # Provided source ID must be recognized & belong to candidate's domain
+                if source_id:
 
-                candidate_source = CandidateSource.get(source_id)
+                    candidate_source = CandidateSource.get(source_id)
 
-                if not candidate_source:
-                    raise NotFoundError("Source ID ({}) not recognized", custom_error.SOURCE_NOT_FOUND)
+                    if not candidate_source:
+                        raise NotFoundError("Source ID ({}) not recognized", custom_error.SOURCE_NOT_FOUND)
 
-                if candidate_source and candidate_source.domain_id != domain_id:
-                    raise ForbiddenError("Provided source ID ({source_id}) not "
-                                         "recognized for candidate's domain (id = {domain_id})"
-                                         .format(source_id=source_id, domain_id=domain_id),
-                                         error_code=custom_error.INVALID_SOURCE_ID)
+                    if candidate_source and candidate_source.domain_id != domain_id:
+                        raise ForbiddenError("Provided source ID ({source_id}) not "
+                                             "recognized for candidate's domain (id = {domain_id})"
+                                             .format(source_id=source_id, domain_id=domain_id),
+                                             error_code=custom_error.INVALID_SOURCE_ID)
 
-            source_product_id = _candidate_dict.get('source_product_id')
-            if source_product_id \
-                    and (not is_number(source_product_id) or not Product.get_by_id(int(source_product_id))):
-                raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
-                        source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
+                source_product_id = _candidate_dict.get('source_product_id')
+                if source_product_id \
+                        and (not is_number(source_product_id) or not Product.get_by_id(int(source_product_id))):
+                    raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
+                            source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
 
-            _candidate_dict['source_product_id'] = int(source_product_id) if source_product_id else None
+                _candidate_dict['source_product_id'] = int(source_product_id) if source_product_id else None
 
         if skip:
             db.session.commit()
-            # Delete candidate from CS when set to hidden
-            delete_candidate_documents(hidden_candidate_ids)
-            return {'hidden_candidate_ids': hidden_candidate_ids}, requests.codes.OK
+            # Delete candidate from cloud search when candidate is archived
+            delete_candidate_documents(archived_candidate_ids)
+            return {'archived_candidates': archived_candidate_ids}, requests.codes.OK
 
         # Custom fields must belong to user's domain
         if all_cf_ids:
@@ -523,7 +553,6 @@ class CandidatesResource(Resource):
                 preferred_locations=candidate_dict.get('preferred_locations'),
                 skills=candidate_dict.get('skills'),
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
-                dice_profile_id=candidate_dict.get('dice_profile_id'),
                 added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id', ''),
                 source_product_id=candidate_dict.get('source_product_id'),
@@ -537,7 +566,6 @@ class CandidatesResource(Resource):
 
         # Update candidates in cloud search
         upload_candidate_documents.delay(updated_candidate_ids)
-        logger.info('BENCHMARK - candidate PATCH: {}'.format(time() - start_time))
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
     @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CANDIDATES)

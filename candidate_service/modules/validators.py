@@ -20,6 +20,7 @@ from candidate_service.common.models.candidate import (
 from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.common.models.email_campaign import EmailClient
+from candidate_service.common.models.user import User, Role
 from candidate_service.common.models.misc import AreaOfInterest, CustomField
 from candidate_service.common.models.user import User
 from candidate_service.common.utils.validators import is_number, format_phone_number
@@ -66,9 +67,9 @@ def get_candidate_if_exists(candidate_id):
     if not candidate:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_NOT_FOUND)
-    if candidate.is_web_hidden:
+    if candidate.is_archived:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
-                            error_code=custom_error.CANDIDATE_IS_HIDDEN)
+                            error_code=custom_error.CANDIDATE_IS_ARCHIVED)
     return candidate
 
 
@@ -76,7 +77,7 @@ def get_candidate_if_validated(user, candidate_id):
     """
     Function will return candidate if:
         1. it exists
-        2. not hidden, and
+        2. not archived, and
         3. belongs to user's domain
     :type user: User
     :type candidate_id: int | long
@@ -86,9 +87,9 @@ def get_candidate_if_validated(user, candidate_id):
     if not candidate:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_NOT_FOUND)
-    if candidate.is_web_hidden:
+    if candidate.is_archived:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
-                            error_code=custom_error.CANDIDATE_IS_HIDDEN)
+                            error_code=custom_error.CANDIDATE_IS_ARCHIVED)
 
     if user and user.role.name != 'TALENT_ADMIN' and candidate.user.domain_id != user.domain_id:
         raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
@@ -708,3 +709,13 @@ def get_json_data_if_validated(request_body, json_schema, format_checker=True):
     except ValidationError as e:
         raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
     return body_dict
+
+
+def is_user_permitted_to_archive_candidate(user, candidate):
+    """
+    Function will return true if user is candidate's owner or an admin, otherwise false
+    :type user: User
+    :type candidate: Candidate
+    :rtype: bool
+    """
+    return True if 'ADMIN' in Role.get(user.role_id).name or user.id == candidate.user_id else False

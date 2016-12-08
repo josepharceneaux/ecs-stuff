@@ -11,7 +11,7 @@ class CandidateCustomErrors(object):
 
     # Error codes for Candidate(s)
     CANDIDATE_NOT_FOUND = 3010
-    CANDIDATE_IS_HIDDEN = 3011
+    CANDIDATE_IS_ARCHIVED = 3011
     CANDIDATE_FORBIDDEN = 3012
     CANDIDATE_ALREADY_EXISTS = 3013
 

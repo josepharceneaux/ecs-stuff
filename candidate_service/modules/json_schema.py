@@ -43,9 +43,6 @@ candidates_resource_schema_post = {
                     "openweb_id": {
                         "type": ["string", "null"]
                     },
-                    "dice_profile_id": {
-                        "type": ["string", "null"]
-                    },
                     "source_id": {
                         "type": ["integer", "null"],
                         "minimum": 1,
@@ -628,9 +625,6 @@ candidates_resource_schema_patch = {
                     "openweb_id": {
                         "type": ["string", "null"]
                     },
-                    "dice_profile_id": {
-                        "type": ["string", "null"]
-                    },
                     "source_id": {
                         "type": ["integer", "null"],
                         "minimum": 1,
@@ -653,7 +647,7 @@ candidates_resource_schema_patch = {
                     "resume_text": {
                         "type": ["string", "null"]
                     },
-                    "hide": {
+                    "archive": {
                         "type": "boolean"
                     },
                     "added_datetime": {

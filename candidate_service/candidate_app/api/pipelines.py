@@ -125,7 +125,7 @@ def format_search_params(search_params):
         fixed_search_params += key
         fixed_search_params += '='
         if isinstance(value, list):
-            values = ','.join(v for v in value)
+            values = ','.join(str(v) for v in value)
             fixed_search_params += values
             fixed_search_params += '&'
         else:
