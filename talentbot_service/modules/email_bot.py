@@ -33,14 +33,18 @@ class EmailBot(TalentBot):
         :param str subject: Received Email subject
         :param str email_body: Received Email body
         :rtype: tuple (True|False, str|None, int|None)
+        :return: is_authenticated, email_body, user Id
         """
         user_id = TalentbotAuth.get_user_id(email=email_id)
         if user_id:
             user = User.get_by_id(user_id[0])
-            if user.is_disabled == 1:
-                return True, None, None
-            return True, email_body, user_id[0]
-        return False, None, None
+            if user.is_disabled:
+                is_authenticated, user_id = True, None
+                return is_authenticated, email_body, user_id
+            is_authenticated = True
+            return is_authenticated, email_body, user_id[0]
+        is_authenticated, user_id = False, None
+        return is_authenticated, email_body, user_id
 
     def reply(self, recipient, subject, message):
         """

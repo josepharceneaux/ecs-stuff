@@ -34,14 +34,18 @@ class FacebookBot(TalentBot):
         Authenticates user
         :param fb_user_id:
         :rtype: (True|False, TalentbotAuth.facebook_user_id)
+        :return: is_authenticated, user Id
         """
         user_id = TalentbotAuth.get_user_id(facebook_user_id=fb_user_id)
         if user_id:
             user = User.get_by_id(user_id[0])
-            if user.is_disabled == 1:
-                return True, None
-            return True, user_id[0]
-        return False, None
+            if user.is_disabled:
+                is_authenticated, user_id = True, None
+                return is_authenticated, user_id
+            is_authenticated = True
+            return is_authenticated, user_id[0]
+        is_authenticated, user_id = False, None
+        return is_authenticated, user_id
 
     def handle_communication(self, fb_user_id, message):
         """

@@ -33,16 +33,20 @@ class SmsBot(TalentBot):
         """
         Authenticates user
         :rtype: tuple(bool, int)
+        :return: is_authenticated, user Id
         """
         user_phone_id = UserPhone.get_by_phone_value(mobile_number)
         if user_phone_id:
             user_ids = TalentbotAuth.get_user_id(user_phone_id=user_phone_id[0].id)
             if user_ids:
                 user = User.get_by_id(user_ids[0])
-                if user.is_disabled == 1:
-                    return True, None
-                return True, user_ids[0]
-        return False, None
+                if user.is_disabled:
+                    is_authenticated, user_id = True, None
+                    return is_authenticated, user_id
+                is_authenticated = True
+                return is_authenticated, user_ids[0]
+        is_authenticated, user_id = False, None
+        return is_authenticated, user_id
 
     def reply(self, response, recipient):
         """

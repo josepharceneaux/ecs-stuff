@@ -91,7 +91,7 @@ IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
 DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 QUEUE_NAME = 'talentbot_queue'
-USER_DISABLED_MSG = "Kindly get your account enabled first, it is disabled at the moment"
+USER_DISABLED_MSG = "Your account has been suspended. Kindly contact at help@gettalent.com"
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

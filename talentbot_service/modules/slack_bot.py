@@ -41,6 +41,7 @@ class SlackBot(TalentBot):
         :param str message: User's message
         :param str channel_id: Slack channel Id
         :rtype: tuple (True|False, None|str, None|Slack_client, TalentbotAuth.slack_user_id|None)
+        :return: is_authenticated, user message with bot id stripped, slack_client, user_id
         """
         talentbot_auth = TalentbotAuth.get_talentbot_auth(slack_user_id=slack_user_id)
         if talentbot_auth:
@@ -49,8 +50,9 @@ class SlackBot(TalentBot):
             if slack_user_token and user_id:
                 slack_client = SlackClient(slack_user_token)
                 user = User.get_by_id(user_id)
-                if user.is_disabled == 1:
-                    return True, None, slack_client, None
+                if user.is_disabled:
+                    is_authenticated, user_id = True, None
+                    return is_authenticated, message, slack_client, user_id
                 try:
                     if talentbot_auth.bot_id:
                         at_bot = '<@%s>' % talentbot_auth.bot_id
@@ -61,7 +63,8 @@ class SlackBot(TalentBot):
                         at_bot = self.get_bot_id(slack_client)
                 except NotFoundError as error:
                     logger.error(error.message)
-                    return False, None, None, None
+                    is_authenticated, slack_client, user_id = False, None, None
+                    return is_authenticated, message, slack_client, user_id
                 # Slack channel Id starts with 'C' if it is a channel and
                 # Start's with 'D' if it's a private message
                 is_channel = channel_id[0] == 'C'
@@ -71,7 +74,8 @@ class SlackBot(TalentBot):
                         or (is_private_message and slack_user_id != at_bot):
                     return True, message.replace(at_bot, ''), slack_client, user_id
         logger.info("Not authenticated")
-        return False, None, None, None
+        is_authenticated, slack_client, user_id = False, None, None
+        return is_authenticated, message, slack_client, user_id
 
     def get_bot_id(self, slack_client):
         """
