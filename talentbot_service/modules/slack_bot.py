@@ -17,7 +17,7 @@ from talentbot_service.common.models.user import TalentbotAuth
 from talentbot_service.common.models.user import User
 from talentbot_service.common.error_handling import NotFoundError
 # App specific import
-from talentbot_service.modules.constants import I_AM_PARSING_A_RESUME
+from talentbot_service.modules.constants import I_AM_PARSING_A_RESUME, USER_DISABLED_MSG
 from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger
 # 3rd party imports
@@ -48,6 +48,9 @@ class SlackBot(TalentBot):
             user_id = talentbot_auth.user_id
             if slack_user_token and user_id:
                 slack_client = SlackClient(slack_user_token)
+                user = User.get_by_id(user_id)
+                if user.is_disabled == 1:
+                    return True, None, slack_client, None
                 try:
                     if talentbot_auth.bot_id:
                         at_bot = '<@%s>' % talentbot_auth.bot_id
@@ -142,14 +145,18 @@ class SlackBot(TalentBot):
         is_authenticated, message, slack_client, user_id = self.authenticate_user(slack_user_id, message, channel_id)
         if is_authenticated:
             self.timestamp = timestamp
-            if self.is_response_time_more_than_usual(message):
-                self.reply(channel_id, I_AM_PARSING_A_RESUME, slack_client)
-            try:
-                response_generated = self.parse_message(message, user_id)
-                if response_generated:
-                    self.reply(channel_id, response_generated, slack_client)
-                else:
-                    raise IndexError
-            except (IndexError, NameError, KeyError):
-                error_response = random.choice(self.error_messages)
-                self.reply(channel_id, error_response, slack_client)
+            if not user_id:
+                self.reply(channel_id, USER_DISABLED_MSG, slack_client)
+            else:
+                if self.is_response_time_more_than_usual(message):
+                    self.reply(channel_id, I_AM_PARSING_A_RESUME, slack_client)
+                try:
+                    response_generated = self.parse_message(message, user_id)
+                    if response_generated:
+                        self.reply(channel_id, response_generated, slack_client)
+                    else:
+                        raise IndexError
+                except Exception as error:
+                    logger.error("Error occurred while generating response: %s" % error.message)
+                    error_response = random.choice(self.error_messages)
+                    self.reply(channel_id, error_response, slack_client)

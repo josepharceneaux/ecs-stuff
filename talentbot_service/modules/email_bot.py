@@ -8,10 +8,10 @@ with Email.
 # Builtin imports
 import random
 # Common utils
-from talentbot_service.common.models.user import TalentbotAuth
+from talentbot_service.common.models.user import TalentbotAuth, User
 # App specific imports
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
-from talentbot_service.modules.constants import AUTHENTICATION_FAILURE_MSG, I_AM_PARSING_A_RESUME
+from talentbot_service.modules.constants import AUTHENTICATION_FAILURE_MSG, I_AM_PARSING_A_RESUME, USER_DISABLED_MSG
 from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger, app
 from talentbot_service.common.utils.amazon_ses import send_email
@@ -36,6 +36,9 @@ class EmailBot(TalentBot):
         """
         user_id = TalentbotAuth.get_user_id(email=email_id)
         if user_id:
+            user = User.get_by_id(user_id[0])
+            if user.is_disabled == 1:
+                return True, None, None
             return True, email_body, user_id[0]
         return False, None, None
 
@@ -68,16 +71,20 @@ class EmailBot(TalentBot):
         """
         is_authenticated, message, user_id = self.authenticate_user(recipient, subject, message)
         if is_authenticated:
-            if self.is_response_time_more_than_usual(message):
-                self.reply(recipient, subject, I_AM_PARSING_A_RESUME)
-            try:
-                response_generated = self.parse_message(message, user_id)
-                if not response_generated:
-                    raise IndexError
-                response_generated = self.clean_response_message(response_generated)
-                self.reply(recipient, subject, "<br />".join(response_generated.split("\n")))
-            except (IndexError, NameError, KeyError):
-                error_response = random.choice(self.error_messages)
-                self.reply(recipient, subject, error_response)
+            if not user_id:
+                self.reply(recipient, subject, USER_DISABLED_MSG)
+            else:
+                if self.is_response_time_more_than_usual(message):
+                    self.reply(recipient, subject, I_AM_PARSING_A_RESUME)
+                try:
+                    response_generated = self.parse_message(message, user_id)
+                    if not response_generated:
+                        raise IndexError
+                    response_generated = self.clean_response_message(response_generated)
+                    self.reply(recipient, subject, "<br />".join(response_generated.split("\n")))
+                except Exception as error:
+                    logger.error("Error occurred while generating response: %s" % error.message)
+                    error_response = random.choice(self.error_messages)
+                    self.reply(recipient, subject, error_response)
         else:  # User not authenticated
             self.reply(recipient, subject, AUTHENTICATION_FAILURE_MSG)
