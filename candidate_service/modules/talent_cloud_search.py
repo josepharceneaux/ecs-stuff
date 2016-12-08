@@ -433,6 +433,10 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 if not sql_value:
                     continue
 
+                if field_name == 'source_id':
+                    candidate_source = CandidateSource.query.get(sql_value)
+                    resume_text += (' ' + candidate_source.description) if candidate_source else ''
+
                 index_field_type = index_field_options['IndexFieldType']
                 if 'array' in index_field_type:
                     sql_value_array = sql_value.split(group_concat_separator)
@@ -442,10 +446,17 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                     field_name_to_sql_value[field_name] = sql_value_array
 
                 if 'literal' in index_field_type:
-                    if isinstance(field_name_to_sql_value[field_name], (list, set, tuple)):
-                        resume_text += ' ' + ' '.join(field_name_to_sql_value[field_name])
+                    sql_value = field_name_to_sql_value[field_name]
+                    if isinstance(sql_value, (list, set, tuple)):
+                        if field_name == 'custom_field_id_and_value':
+                            resume_text += ' ' + ' '.join(map(lambda value: value.split('|')[1].strip(), sql_value))
+                        else:
+                            resume_text += ' ' + ' '.join(sql_value)
                     else:
-                        resume_text += ' ' + field_name_to_sql_value[field_name]
+                        if field_name == 'custom_field_id_and_value':
+                            resume_text += ' ' + sql_value.split('|')[1].strip()
+                        else:
+                            resume_text += ' ' + sql_value
 
             field_name_to_sql_value['resume_text'] = resume_text.strip()
             action_dict['fields'] = field_name_to_sql_value
