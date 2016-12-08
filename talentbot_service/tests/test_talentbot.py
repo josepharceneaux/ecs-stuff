@@ -483,4 +483,4 @@ def test_add_candidate_from_resume_url(user_first, domain_first, talent_pool):
         # Asserting with file with content of more than 10 MB
         message_tokens = ('%s %s' % (ADD_CANDIDATE_FROM_RESUME_QUESTION, RESUME_URL_WITH_TOO_LARGE_CONTENT)).split(' ')
         response_string = QuestionHandler.add_candidate_handler(message_tokens, user_first.id)
-        assert TOO_LARGE_RESUME_MSG == response_string
+        assert TOO_LARGE_RESUME_MSG % 14.8 == response_string

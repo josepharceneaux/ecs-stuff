@@ -654,7 +654,8 @@ class QuestionHandler(object):
             else:
                 return "Sorry, I couldn't find information on %s" % resume_url
         elif int(resume_size_in_bytes) >= TEN_MB:
-            return TOO_LARGE_RESUME_MSG
+            resume_size_in_mbs = float(resume_size_in_bytes)/(1024*1024)
+            return TOO_LARGE_RESUME_MSG % resume_size_in_mbs
         try:
             '''
             create_bucket() method checks if resume bucket exists on S3 if it does create_bucket() returns bucket

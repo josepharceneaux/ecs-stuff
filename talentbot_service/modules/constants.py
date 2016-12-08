@@ -80,13 +80,13 @@ EMAIL_CAMPAIGN = 'Email Campaign'
 PUSH_CAMPAIGN = 'Push Campaign'
 SMS_CAMPAIGN = 'SMS Campaign'
 SOMETHING_WENT_WRONG = "Sorry! Something went wrong while adding candidate"
-I_AM_PARSING_A_RESUME = "I am parsing a resume, I will notify you as soon as I am done"
+I_AM_PARSING_A_RESUME = "I am parsing given resume, I will notify you as soon as I am done"
 ZERO = 0
 ADD_CANDIDATE_FROM_URL = 72
 TEN_MB = 1024 * 1024 * 10
 INVALID_RESUME_URL_MSG = "Invalid URL"
 NO_RESUME_URL_FOUND_MSG = "No URL found, URL must start with `http://` or `https://`"
-TOO_LARGE_RESUME_MSG = "Resume file size should be less than 10 MB"
+TOO_LARGE_RESUME_MSG = "Resume file size should be less than 10 MB, given resume size is %.1f MB"
 QUEUE_NAME = 'talentbot_queue'
 SUPPORTED_SOCIAL_SITES = {"github": 'github.com', "stackoverflow": 'stackoverflow.com',
                           "linkedin": 'linkedin.com', 'facebook': 'facebook.com', 'twitter': 'twitter.com'}
