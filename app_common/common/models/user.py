@@ -14,7 +14,7 @@ from sqlalchemy import or_
 
 from ..models.db import db
 from ..models.event import Event
-from ..models.candidate import Candidate
+from ..models.candidate import Candidate, SocialNetwork
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
@@ -853,6 +853,13 @@ class UserSocialNetworkCredential(db.Model):
     def get_by_webhook_id_and_social_network_id(cls, webhook_id, social_network_id):
         assert webhook_id and social_network_id
         return cls.query.filter_by(webhook=webhook_id, social_network_id=social_network_id).first()
+
+    @classmethod
+    def get_connected_networks(cls, user_id):
+        assert user_id
+        return cls.query.join(User).filter(User.domain_id == request.user.domain_id).join(SocialNetwork).group_by(SocialNetwork.id).all()
+
+
 
 
 class TalentbotAuth(db.Model):

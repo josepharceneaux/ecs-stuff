@@ -241,7 +241,14 @@ class SocialNetworksResource(Resource):
         .. HTTP Status:: 200 (OK)
                     500 (Internal Server Error)
         """
+
         user_id = request.user.id
+        connected_networks = request.args.get('connected_networks', '0')
+        if connected_networks == '1':
+            user_credentials = UserSocialNetworkCredential.get_connected_networks(request.user.id)
+            social_networks = [user_credential.social_network.to_json() for user_credential in user_credentials]
+            return dict(social_networks=social_networks)
+
         # Get list of networks user is subscribed to from UserSocialNetworkCredential table
         subscribed_networks = None
         subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
