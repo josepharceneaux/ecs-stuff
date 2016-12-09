@@ -195,8 +195,9 @@ class EmailCampaign(db.Model):
         email_campaign_ids = EmailCampaignSmartlist.query.with_entities(EmailCampaignSmartlist.campaign_id).\
             filter(EmailCampaignSmartlist.smartlist_id.in_(smartlist_ids)).all()
         email_campaign_ids = [email_campaign_id[0] for email_campaign_id in email_campaign_ids]
-        scope_dependant_filter = cls.query.join(User).filter(cls.id.in_(email_campaign_ids), cls.user_id == user_id)\
-            if scope == OWNED else cls.query.filter(cls.id.in_(email_campaign_ids))
+        scope_dependant_filter = cls.query.join(User).filter(cls.id.in_(email_campaign_ids), cls.is_hidden == 0,
+                                                             cls.user_id == user_id)\
+            if scope == OWNED else cls.query.filter(cls.id.in_(email_campaign_ids), cls.is_hidden == 0)
         return scope_dependant_filter.all()
 
 

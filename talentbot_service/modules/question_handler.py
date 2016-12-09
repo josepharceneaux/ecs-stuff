@@ -350,6 +350,8 @@ class QuestionHandler(object):
         try:
             count = TalentPoolCandidate.candidate_imports(user_id, user_name, talent_pool_list)
         except NotFoundError:
+            if user_name.lower() == 'i':
+                return "Oops! Something went wrong"
             return 'No user exists in your domain with the name `%s`' % user_name
         if isinstance(count, basestring):
             return count
@@ -398,7 +400,11 @@ class QuestionHandler(object):
         if talent_pools:
             talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
             talent_pool_names = cls.create_ordered_list(talent_pool_names)
-            header = ["There are %d talent pools in your domain `%s`\n" % (len(talent_pools), domain_name)]
+            talent_pool_number = len(talent_pools)
+            is_or_are = 'is' if talent_pool_number == 1 else 'are'
+            plural = '' if talent_pool_number == 1 else 's'
+            header = ["There %s %d talent pool%s in your domain `%s`\n" % (is_or_are, talent_pool_number, plural,
+                                                                           domain_name)]
             response = '%s%s' % (header[0], talent_pool_names[::])
             return response.replace('`None`', '')
         response = "Seems like there is no talent pool in your domain `%s`" % domain_name
@@ -552,17 +558,29 @@ class QuestionHandler(object):
             sms_campaigns = SmsCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
                 SmsCampaign.get_by_user_id(user_id)
         if email_campaigns:  # Appending email campaigns in a representable response list
+            counter = 0
             response.append("*Email Campaigns*")
             for index, email_campaign in enumerate(email_campaigns):
+                counter += 1
                 response.append("%d: `%s`" % (index + 1, email_campaign.name))
+            if not counter:
+                response.pop()
         if push_campaigns:  # Appending push campaigns in a representable response list
             response.append("*Push Campaigns*")
+            counter = 0
             for index, push_campaign in enumerate(push_campaigns):
                 response.append("%d: `%s`" % (index + 1, push_campaign.name))
+                counter += 1
+            if not counter:
+                response.pop()
         if sms_campaigns:  # Appending sms campaigns in a representable response list
             response.append("*SMS Campaigns*")
+            counter = 0
             for index, sms_campaign in enumerate(sms_campaigns):
                 response.append("%d: `%s`" % (index + 1, sms_campaign.name))
+                counter += 1
+            if not counter:
+                response.pop()
         return '\n'.join(response) if len(response) > 1 else "No Campaign found"  # Returning string
 
     @classmethod

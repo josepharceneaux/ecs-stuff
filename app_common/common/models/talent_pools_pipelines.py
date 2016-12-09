@@ -109,7 +109,11 @@ class TalentPoolCandidate(db.Model):
         user = None
         if user_name:
             if user_name.lower() == 'i':
-                user_name = User.filter_by_keywords(id=user_id)[0].first_name
+                first_name = User.filter_by_keywords(id=user_id)[0].first_name
+                last_name = User.filter_by_keywords(id=user_id)[0].last_name
+                user_name = first_name if first_name else last_name
+                if user_name is None:
+                    raise NotFoundError
             domain_id = User.get_domain_id(user_id)
             users = User.get_by_domain_id_and_name(domain_id, user_name)
             if users:
