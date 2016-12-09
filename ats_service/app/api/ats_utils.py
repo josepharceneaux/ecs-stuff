@@ -380,12 +380,12 @@ def create_ats_object(logger, ats_name, url, user_id, credentials):
 def emails_match(gt_candidate, ats_candidate):
     """
     Determine if there are matching email addresses between a GT candidate and a Workday individual.
-    Workday indidviduals have only one, but this returns a list so that all ATS may have the same method signature.
+    Workday individuals have only one, but this returns a list so that all ATS may have the same method signature.
     :param Candidate gt_candidate: getTalent candidate.
     :param ATSCandidate ats_candidate: Workday individual.
     :rtype boolean:
     """
-    if gt_candidate.is_web_hidden:
+    if gt_candidate.is_archived:
         return False
 
     # Get the ATS candidate email address with an ATS-specific static method
@@ -436,7 +436,7 @@ def phones_match(gt_candidate, ats_candidate):
     :param ATSCandidate ats_candidate: Workday individual.
     :rtype boolean:
     """
-    if gt_candidate.is_web_hidden:
+    if gt_candidate.is_archived:
         return False
 
     # Get the ATS candidate email address with an ATS-specific static method
@@ -459,7 +459,7 @@ def emails_and_phones_match(gt_candidate, ats_candidate):
     :param ATSCandidate ats_candidate: Workday individual.
     :rtype boolean:
     """
-    if gt_candidate.is_web_hidden:
+    if gt_candidate.is_archived:
         return False
 
     # Get the ATS candidate email address with an ATS-specific static method
@@ -500,7 +500,7 @@ def emails_or_phones_match(gt_candidate, ats_candidate):
     :param ATSCandidate ats_candidate: Workday individual.
     :rtype boolean:
     """
-    if gt_candidate.is_web_hidden:
+    if gt_candidate.is_archived:
         return False
 
     # Get the ATS candidate email address with an ATS-specific static method
