@@ -45,7 +45,7 @@ class Activity(db.Model):
         CANDIDATE_CREATE_WIDGET = 19
         CANDIDATE_CREATE_MOBILE = 20  # TODO add in
 
-        # params=dict(id, username, campaign_type, candidate_name, name) name being the campaign name.
+        # params=dict(id, username, campaign_type, candidate_name, name, num_candidates) name being the campaign name.
         # All Campaigns
         CAMPAIGN_CREATE = 4
         CAMPAIGN_DELETE = 5
