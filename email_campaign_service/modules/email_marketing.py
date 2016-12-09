@@ -28,7 +28,7 @@ from email_campaign_service.modules.utils import (TRACKING_URL_TYPE, get_candida
 
 # Common Utils
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.models.user import Domain
+from email_campaign_service.common.models.user import Domain, User
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
@@ -203,7 +203,7 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
             # Loop through each candidate and get new_html and new_text
             for candidate_id, candidate_address in candidate_ids_and_emails:
                 new_text, new_html = get_new_text_html_subject_and_campaign_send(
-                    campaign.id, candidate_id, candidate_address, blast_params=blast_params,
+                    campaign.id, candidate_id, candidate_address, current_user, blast_params=blast_params,
                     email_campaign_blast_id=email_campaign_blast_id,
                     blast_datetime=blast_datetime)[:2]
                 logger.info("Marketing email added through client %s", campaign.email_client_id)
@@ -446,8 +446,10 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
 
     campaign = EmailCampaign.get_by_id(campaign_id)
     candidate = Candidate.get_by_id(candidate_id)
+    current_user = User.get_by_id(user_id)
     new_text, new_html, subject, email_campaign_send, blast_params, _ = \
         get_new_text_html_subject_and_campaign_send(campaign.id, candidate_id, candidate_address,
+                                                    current_user,
                                                     blast_params=blast_params,
                                                     email_campaign_blast_id=email_campaign_blast_id,
                                                     blast_datetime=blast_datetime)
@@ -570,23 +572,26 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
             return False
 
 
-def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candidate_address, blast_params=None,
-                                                email_campaign_blast_id=None, blast_datetime=None):
+def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candidate_address, current_user,
+                                                blast_params=None, email_campaign_blast_id=None,
+                                                blast_datetime=None):
     """
     This gets new_html and new_text by URL conversion method and returns
     new_html, new_text, subject, email_campaign_send, blast_params, candidate.
     :param campaign_id: EmailCampaign object id
     :param candidate_id: id of candidate
+    :param candidate_address: Address of Candidate
+    :param current_user: User object
     :param blast_params: email_campaign blast params
     :param email_campaign_blast_id:  email campaign blast id
     :param blast_datetime: email campaign blast datetime
-    :param candidate_address: Address of Candidate
     :type campaign_id: int | long
     :type candidate_id: int | long
+    :type candidate_address: basestring
+    :type current_user: User
     :type blast_params: dict | None
     :type email_campaign_blast_id: int | long | None
     :type blast_datetime: datetime.datetime | None
-    :type candidate_address: basestring
     """
     raise_if_not_positive_int_or_long(campaign_id)
     raise_if_not_positive_int_or_long(candidate_id)
@@ -641,7 +646,8 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candi
 
     # Perform MERGETAG replacements
     [new_html, new_text, subject] = do_mergetag_replacements([new_html, new_text, campaign.subject],
-                                                             candidate, candidate_address)
+                                                             current_user, requested_object=candidate,
+                                                             candidate_address=candidate_address)
     # Perform URL conversions and add in the custom HTML
     logger.info('get_new_text_html_subject_and_campaign_send: email_campaign_send_id: %s' % email_campaign_send.id)
     new_text, new_html = create_email_campaign_url_conversions(new_html=new_html,
@@ -1094,7 +1100,7 @@ def send_test_email(user, request):
     data = get_json_data_if_validated(request, TEST_EMAIL_SCHEMA)
     body_text = data.get('body_text', '')
     [new_html, new_text, subject] = do_mergetag_replacements([data['body_html'], body_text, data['subject']],
-                                                             request.user)
+                                                             request.user, requested_object=request.user)
     try:
         default_email = get_default_email_info()['email']
         send_email(source='"%s" <%s>' % (data['from'], default_email),
