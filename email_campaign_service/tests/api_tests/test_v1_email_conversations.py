@@ -27,7 +27,7 @@ class TestEmailConversations(object):
     URL = EmailCampaignApiUrl.EMAIL_CONVERSATIONS
 
     def test_run_importer_and_get_imported_email_conversation(self, data_for_email_conversation_importer, headers,
-                                                              candidate_first):
+                                                              candidate_first, user_first):
         """
         This tests we import email-conversation with a specific subject and body successfully.
         Email sent to candidate contains merge tags. We also confirm that merge tags have been replaced
@@ -40,11 +40,11 @@ class TestEmailConversations(object):
         response_post = requests.post(self.URL, headers=headers_for_importer)
         assert response_post.status_code == codes.OK
         retry(_get_email_conversations, sleeptime=5, attempts=120, sleepscale=1,
-              args=(self.URL, headers, subject, body, email_client_credentials, candidate_first),
+              args=(self.URL, headers, subject, body, email_client_credentials, candidate_first, user_first),
               retry_exceptions=(AssertionError,))
 
 
-def _get_email_conversations(url, headers, subject, body, email_client_credentials, candidate):
+def _get_email_conversations(url, headers, subject, body, email_client_credentials, candidate, user):
     """
     This gets email-conversations and asserts that we have imported email-conversation for given subject and body
     """
@@ -53,22 +53,23 @@ def _get_email_conversations(url, headers, subject, body, email_client_credentia
     response_get = requests.get(url, headers=headers)
     assert response_get.status_code == codes.OK
     email_conversations = response_get.json()['email_conversations']
-    assert any([subject in item for item in set([email_conversation['subject']
-                                                 for email_conversation in email_conversations])])
-    assert any([body in item for item in set([email_conversation['body'].strip()
-                                                 for email_conversation in email_conversations])])
 
-    assert email_client_credentials['id'] in set([email_conversation['email_client_credentials']['id']
-                                                  for email_conversation in email_conversations])
-    assert email_client_credentials['name'] in set([email_conversation['email_client_credentials']['name']
-                                                    for email_conversation in email_conversations])
+    for key, value in (('subject', subject), ('body', body)):
+        assert any([value.strip() in item for item in set([email_conversation[key].strip()
+                                                           for email_conversation in email_conversations])])
+    for expected_item in ('id', 'name'):
+        assert email_client_credentials[expected_item] in \
+               set([email_conversation['email_client_credentials'][expected_item]
+                    for email_conversation in email_conversations])
     # Asserts for replaced merge tags
     for entity in ('subject', 'body'):
         assert any([candidate.first_name in item for item in set([email_conversation[entity]
                                                                   for email_conversation in email_conversations])])
         assert any([candidate.last_name in item for item in set([email_conversation[entity]
                                                                  for email_conversation in email_conversations])])
-    # This will be in unsubscribe URL.
-    assert any([candidate.last_name in body for body in set([email_conversation['body']
-                                                             for email_conversation in email_conversations])])
+    # This will be for username and unsubscribe URL.
+    for expected_item in (user.name, str(candidate.id)):
+        assert any([expected_item in item for item in set([email_conversation['body']
+                                                           for email_conversation in email_conversations])])
+
     assert_and_delete_email(subject)
