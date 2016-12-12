@@ -5372,3 +5372,75 @@ Joaquín Rodrigo</references>
 <CanonCertification /></DataElementsRollup>
 </ResDoc>
 """
+
+SQUARE_BULLETS = u"""
+<experience end="present" start="730213">Experience
+    <job end="present" id="1" pos="1" sic="481207" sic2="48" span="9" start="732891">
+        <employer>
+            Verizon Wireless</employer>
+        <daterange>
+            <start days="732891" iso8601="2007-08-01">August 2007</start>-
+            <end days="present" iso8601="2016-12-12">
+                Present</end>
+        </daterange>
+        <title>Technical Expert II</title>■
+        <description>
+            100% customer satisfaction and 100% first call resolution for 5 consecutive years based on
+customer surveys.
+■ Troubleshooting for customers experiencing issues with network coverage, smartphones,
+wearable tech, computer applications, modems, and tablets.
+■ Directed customers through the setup of devices with personal/corporate email accounts,
+backup/restoration ofpersonal information, and device preferences.
+■ Sold new devices, accessories, and network features by asking fact finding questions and
+analyzing customer accounts.
+■ Trained new customer service and tech support reps on business systems, applications, sales
+techniques, policies, procedures, and handling escalated situations.
+■ Volunteered as a member of die customer relations team to resolve issues where customers
+were agitated and dissatisfied with the options or resolutions provided.
+■ Multi-tasked different systems and network applications to ensure connection stability and
+network superiority.
+■ Generated and edited hourly reports regarding representative efficiencies.
+■ Provided support for 84 Technical representatives, while management attended meetings and
+conferences.
+* Volunteered at corporate retail locations to assist with hightraffic during the holiday season.</description>
+    </job>
+    <job end="732860" id="2" naics="452111" naics2="45" pos="2" sic="531102" sic2="53" span="4" start="731399">
+        <employer>Wal-Mart</employer>
+        <daterange>
+            <start days="731399" iso8601="2003-07-01">July 2003</start>-
+            <end days="732860" iso8601="2007-07-01">
+                July 2007</end>
+        </daterange>
+        <title>Store AssistantManager/Lead Loss Prevention Agent</title>■
+        <description>
+            Initiated internal investigations based on POS shortages, fraudulent check and credit card
+purchases, and inventory tracking.
+■ Interviewed and interrogated employees regarding merchandise and cash theft.
+■ Collaboration with law enforcement and federal agencies regarding identity theft and credit
+fraud groups.
+■ CCTV and floor surveillance, and apprehension ofinternal and external offenders.
+■ Trained new Assets Protection detectives on the procedures and policies when surveilling and
+apprehending shoplifters.
+* Installation ofdigital CCTV recording systems, visual deterrents, and covert cameras.
+■ Managed cash office operations included daily cash count ($196,000 daily cash average),
+deposits, and shortages/overages.
+■ Managed 8 store departments and 435 associates in a 235,000-square foot location.</description>
+    </job>
+    <job end="731126" id="3" pos="3" sic="6021" sic2="60" span="2" start="730213">
+        <employer>Jamaica Savings Bank</employer>
+        <daterange>
+            <start days="730213" iso8601="2000-04-01">April 2000</start>-
+            <end days="731126" iso8601="2002-10-01">
+                October 2002</end>
+        </daterange>
+        <title>Teller</title>■
+        <description>
+            Processed customer transactions such as deposits and withdrawals, ordering checks, and
+account research.
+■ Recommend additional products such as savings accounts, certificate of deposits, and college
+savings accounts.
+■ Responsible for the accuracy and daily balance ofmy drawer while remaining efficient during
+each transaction.</description>
+    </job>
+</experience>
+"""
