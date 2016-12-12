@@ -91,13 +91,12 @@ def process_meetup_event(event):
             # event created in database (one by api and other by importer)
             group = MeetupGroup.get_by_group_id(event['group']['id'])
             meetup = SocialNetwork.get_by_name('Meetup')
-
+            meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
+            meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials,
+                                       social_network=meetup, headers=meetup_sn.headers)
             if event['status'] in [MEETUP_EVENT_STATUS['upcoming'],
                                    MEETUP_EVENT_STATUS['suggested'],
                                    MEETUP_EVENT_STATUS['proposed']]:
-                meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
-                meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials,
-                                           social_network=meetup, headers=meetup_sn.headers)
                 event_url = get_url(meetup_sn, SocialNetworkUrls.EVENT).format(event['id'])
                 meetup_event_base.get_event(event_url)
             elif event['status'] in [MEETUP_EVENT_STATUS['canceled'], MEETUP_EVENT_STATUS['deleted']]:
@@ -107,7 +106,7 @@ def process_meetup_event(event):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    event_in_db.update(is_deleted_from_vendor=1)
+                    meetup_event_base.archive_email_campaigns_for_deleted_event(event_in_db)
                     logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
                                 % event_in_db.to_json())
                 else:
@@ -242,12 +241,12 @@ def import_eventbrite_event(user_id, event_url, action_type):
         logger.info('Going to process Eventbrite Event: %s' % event_url)
         try:
             eventbrite = SocialNetwork.get_by_name('Eventbrite')
+            eventbrite_sn = EventbriteSocialNetwork(user_id=user_id, social_network_id=eventbrite.id)
+            eventbrite_event_base = EventbriteEventBase(headers=eventbrite_sn.headers,
+                                                        user_credentials=eventbrite_sn.user_credentials,
+                                                        social_network=eventbrite_sn.user_credentials.social_network)
             if action_type in [ACTIONS['created'], ACTIONS['published']]:
                 logger.info('Event Published on Eventbrite, Event URL: %s' % event_url)
-                eventbrite_sn = EventbriteSocialNetwork(user_id=user_id, social_network_id=eventbrite.id)
-                eventbrite_event_base = EventbriteEventBase(headers=eventbrite_sn.headers,
-                                                            user_credentials=eventbrite_sn.user_credentials,
-                                                            social_network=eventbrite_sn.user_credentials.social_network)
                 eventbrite_event_base.get_event(event_url)
             elif action_type == ACTIONS['unpublished']:
                 event_id = event_url.split('/')[-2]
@@ -257,7 +256,7 @@ def import_eventbrite_event(user_id, event_url, action_type):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    event_in_db.update(is_deleted_from_vendor=1)
+                    eventbrite_event_base.archive_email_campaigns_for_deleted_event(event_in_db)
                     logger.info('Event has been marked as is_deleted_from_vendor in gt database: %s'
                                 % event_in_db.to_json())
                 else:
