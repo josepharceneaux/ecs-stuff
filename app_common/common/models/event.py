@@ -1,10 +1,10 @@
-from sqlalchemy.orm import relationship
-from datetime import datetime
-
-from ..error_handling import InvalidUsage, ForbiddenError
 from db import db
-
 from rsvp import RSVP
+from datetime import datetime
+from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.mysql import TINYINT
+from ..utils.validators import is_number
+from ..error_handling import InvalidUsage, ForbiddenError
 
 
 class Event(db.Model):
@@ -15,6 +15,7 @@ class Event(db.Model):
     description = db.Column(db.String(1000))
     social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.Id'), nullable=False)
     user_id = db.Column('userId', db.BIGINT, db.ForeignKey('user.Id'), nullable=False)
+    is_deleted_from_vendor = db.Column('isDeletedFromVendor', TINYINT, default='0', nullable=False)
     organizer_id = db.Column('organizerId', db.Integer, db.ForeignKey('event_organizer.id'), nullable=True)
     venue_id = db.Column('venueId', db.Integer, db.ForeignKey('venue.Id'), nullable=True)
     social_network_group_id = db.Column('socialNetworkGroupId', db.String(100))
@@ -119,7 +120,7 @@ class Event(db.Model):
 
     @classmethod
     def get_events_query(cls, user, search=None, social_network_id=None, sort_by='start_datetime',
-                         sort_type='desc', user_id=None):
+                         sort_type='desc', user_id=None, is_deleted_from_vendor=0):
         """
         This method return query object for events after applying all filters
         :param type(t) user: user object
@@ -128,6 +129,7 @@ class Event(db.Model):
         :param string sort_by: on which field you want to order
         :param string sort_type: acs or desc, sort order
         :param int| long | None user_id: events' owner user id, None for all event in domain
+        :param int is_deleted_from_vendor: 1 if event has been deleted from social-network website
         :return: returns a query object
         """
         from user import User  # This has to be here to avoid circular import
@@ -149,7 +151,12 @@ class Event(db.Model):
         if user_id and User.get_domain_id(user_id) != user.domain_id:
                 raise ForbiddenError("Not authorized to access users' events outside of your domain")
 
+        if not is_number(is_deleted_from_vendor) or int(is_deleted_from_vendor) not in (0, 1):
+            raise InvalidUsage('`is_deleted_from_vendor` can be either 0 or 1')
+
         query = Event.get_by_domain_id(user.domain_id)
+        query = query.filter(Event.is_deleted_from_vendor == is_deleted_from_vendor)
+
         if social_network_id:
             query = query.filter(Event.social_network_id == social_network_id)
         if user_id:

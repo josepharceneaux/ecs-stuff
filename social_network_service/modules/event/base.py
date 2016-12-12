@@ -95,6 +95,7 @@ To add another social network for events management, following are steps:
 """
 
 # Standard Library
+import json
 from abc import ABCMeta
 from abc import abstractmethod
 
@@ -108,6 +109,7 @@ from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.routes import EmailCampaignApiUrl
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.modules.urls import get_url
@@ -204,19 +206,23 @@ class EventBase(object):
         self.rsvps = []
         self.data = None
         self.headers = kwargs.get('headers')
-        if kwargs.get('user_credentials') or kwargs.get('user'):
-            self.user_credentials = kwargs.get('user_credentials')
-            self.user = kwargs.get('user') or User.get_by_id(self.user_credentials.user_id)
-            self.social_network = kwargs.get('social_network')
-            if isinstance(self.user, User):
-                self.api_url = self.social_network.api_url
-                self.member_id, self.access_token, self.refresh_token, self.webhook = self._get_user_credentials()
-                self.venue_id = None
-            else:
-                error_message = "No User found in database with id %(user_id)s" % self.user_credentials.user_id
-                raise NoUserFound('API Error: %s' % error_message)
-        else:
+        if not (kwargs.get('user_credentials') or kwargs.get('user')):
             raise UserCredentialsNotFound('User Credentials are empty/none')
+        self.user_credentials = kwargs.get('user_credentials')
+        self.user = kwargs.get('user') or User.get_by_id(self.user_credentials.user_id)
+        self.social_network = kwargs.get('social_network')
+        if isinstance(self.user, User):
+            self.api_url = self.social_network.api_url
+            self.member_id, self.access_token, self.refresh_token, self.webhook = self._get_user_credentials()
+            self.venue_id = None
+        else:
+            error_message = "No User found in database with id %(user_id)s" % self.user_credentials.user_id
+            raise NoUserFound('API Error: %s' % error_message)
+        access_token = User.generate_jw_token(user_id=self.user.id)
+        self.gt_headers = {
+            'Content-Type': 'application/json',
+            'Authorization': access_token
+        }
 
     def _get_user_credentials(self):
         """
@@ -233,6 +239,30 @@ class EventBase(object):
         refresh_token = user_credentials.refresh_token
         webhook = user_credentials.webhook
         return member_id, access_token, refresh_token, webhook
+
+    def archive_email_campaigns_for_deleted_event(self, event):
+        """
+        Whenever an event is deleted from social-network, we update field `is_deleted_from_vendor` to 1.
+        We then check if it was promoted via email-campaign to getTalent candidates and mark all linked email-campaigns
+        as archived.
+        :param Event event: Event object
+        """
+        event.update(is_deleted_from_vendor=1)
+        base_campaign_events = event.base_campaign_event
+        for base_campaign_event in base_campaign_events:
+            base_campaign = base_campaign_event.base_campaign
+            email_campaigns = base_campaign.email_campaigns.all()
+            for email_campaign in email_campaigns:
+                data = {'is_hidden': 1}
+                try:
+                    response = http_request('patch', EmailCampaignApiUrl.CAMPAIGN % email_campaign.id,
+                                            headers=self.gt_headers, data=json.dumps(data))
+                    if response.ok:
+                        logger.info('Email campaign(id:%s) has been archived successfully.' % email_campaign.id)
+                    else:
+                        logger.info('Email campaign(id:%s) could not be archived.' % email_campaign.id)
+                except Exception:
+                    logger.exception('Email campaign(id:%s) could not be archived.' % email_campaign.id)
 
     @abstractmethod
     def create_event(self, *args, **kwargs):
