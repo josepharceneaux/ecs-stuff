@@ -29,7 +29,7 @@ from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
-SPLIT_DESCRIPTION_REGEXP = re.compile(ur"•≅_|≅_| \* |•|➢|→|\n\n\n")
+SPLIT_DESCRIPTION_REGEXP = re.compile(ur"•≅_|≅_| \* |■|•|➢|→|â|\n\n\n")
 
 
 @contract
