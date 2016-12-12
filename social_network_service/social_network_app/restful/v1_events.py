@@ -49,7 +49,6 @@ class Events(Resource):
         .. Response::
 
             {
-              "count": 1,
               "events": [
                 {
                   "cost": 0,
@@ -70,6 +69,7 @@ class Events(Resource):
                   "title": "Test Event",
                   "url": "",
                   "user_id": 1,
+                  "is_deleted_from_vendor": 0,
                   "venue_id": 2
                 }
               ]
@@ -115,6 +115,7 @@ class Events(Resource):
             event_data = {
                     "organizer_id": 1,
                     "venue_id": 2,
+                    "is_deleted_from_vendor": 1,
                     "title": "Test Event",
                     "description": "Test Event Description",
                     "registration_instruction": "Just Come",
