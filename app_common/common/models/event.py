@@ -1,10 +1,9 @@
-from sqlalchemy.orm import relationship
-from datetime import datetime
-
-from ..error_handling import InvalidUsage, ForbiddenError
 from db import db
-
 from rsvp import RSVP
+from datetime import datetime
+from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.mysql import TINYINT
+from ..error_handling import InvalidUsage, ForbiddenError
 
 
 class Event(db.Model):
@@ -15,6 +14,7 @@ class Event(db.Model):
     description = db.Column(db.String(1000))
     social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.Id'), nullable=False)
     user_id = db.Column('userId', db.BIGINT, db.ForeignKey('user.Id'), nullable=False)
+    is_deleted_from_vendor = db.Column('isDeletedFromVendor', TINYINT, default='0', nullable=False)
     organizer_id = db.Column('organizerId', db.Integer, db.ForeignKey('event_organizer.id'), nullable=True)
     venue_id = db.Column('venueId', db.Integer, db.ForeignKey('venue.Id'), nullable=True)
     social_network_group_id = db.Column('socialNetworkGroupId', db.String(100))

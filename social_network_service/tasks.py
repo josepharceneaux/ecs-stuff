@@ -107,8 +107,9 @@ def process_meetup_event(event):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    Event.delete(event_in_db)
-                    logger.info("Meetup event has been deleted from gt database. event:`%s`" % event_in_db.to_json())
+                    event_in_db.update(is_deleted_from_vendor=1)
+                    logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
+                                % event_in_db.to_json())
                 else:
                     logger.info("Meetup event not found in database. event:`%s`." % event)
 
@@ -256,8 +257,9 @@ def import_eventbrite_event(user_id, event_url, action_type):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    Event.delete(event_in_db)
-                    logger.info('Delete event from gt database, event: %s' % event_in_db.to_json())
+                    event_in_db.update(is_deleted_from_vendor=1)
+                    logger.info('Event has been marked as is_deleted_from_vendor in gt database: %s'
+                                % event_in_db.to_json())
                 else:
                     logger.info("Event unpublished from Eventbrite but it does not exist, don't worry. Event URL: %s"
                                 % event_url)

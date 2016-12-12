@@ -1,0 +1,7 @@
+"""
+This script adds is_deleted_from_vendor field in database table `event`.
+"""
+
+from social_network_service.common.models.db import db
+
+db.session.execute("""ALTER TABLE `event` ADD COLUMN `isDeletedFromVendor` TINYINT(1) DEFAULT 0  NULL AFTER `userId`;""")
