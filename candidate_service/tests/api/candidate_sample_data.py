@@ -297,7 +297,8 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
             'talent_pool_ids': {
                 'add': talent_pool_ids
             },
-            'resume_url': fake.url()
+            'resume_url': fake.url(),
+            'resume_text': fake.text(10000)
         }
 
     return dict(candidates=[_make_data() for _ in xrange(number_of_candidates)])
