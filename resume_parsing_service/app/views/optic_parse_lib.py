@@ -314,7 +314,9 @@ def gen_base_exp_from_exp_tag(experience_xml):
     # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
     if organization and len(organization) > 5:
         organization = string.capwords(organization)
-    title = _tag_text(experience_xml, 'title')
+    # Truncate the tag text based on the candidate JSON schema
+    # GET-1829
+    title = trunc_text(_tag_text(experience_xml, 'title'), 100)
     start_date_str = get_date_from_date_tag(experience_xml, 'start')
 
     if start_date_str:
@@ -630,3 +632,10 @@ def get_country_code_from_address_tag(address):
             return company_country_i3.alpha2
 
     return None
+
+
+def trunc_text(text, length):
+    if len(text) > length:
+        return text[:length - 3] + '...'
+    else:
+        return text
