@@ -855,7 +855,8 @@ def create_or_update_candidate_from_params(
         objective=None,
         summary=None,
         talent_pool_ids=None,
-        resume_url=None
+        resume_url=None,
+        resume_text=None
 ):
     """
     Function will parse each parameter and:
@@ -906,6 +907,7 @@ def create_or_update_candidate_from_params(
     :type   talent_pool_ids:        dict
     :type   delete_talent_pools:    bool
     :type   resume_url              basestring
+    :type   resume_text             basestring
     :rtype                          dict
     """
     # Format inputs
@@ -945,13 +947,14 @@ def create_or_update_candidate_from_params(
         raise InvalidUsage('Candidate ID is required for updating', custom_error.MISSING_INPUT)
 
     if is_updating:  # Update Candidate
-        candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                                         candidate_id, user_id, resume_url, source_id, source_product_id, status_id)
+        candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name,
+                                         objective, summary, candidate_id, user_id, resume_url,
+                                         source_id, source_product_id, status_id, resume_text)
     else:  # Add Candidate
-        candidate_id = _add_candidate(first_name, middle_name, last_name,
-                                      formatted_name, added_datetime, status_id,
-                                      user_id, dice_profile_id, dice_social_profile_id,
-                                      source_id, source_product_id, objective, summary, resume_url)
+        candidate_id = _add_candidate(first_name, middle_name, last_name, formatted_name,
+                                      added_datetime, status_id, user_id, dice_profile_id,
+                                      dice_social_profile_id, source_id, source_product_id,
+                                      objective, summary, resume_url, resume_text)
 
     candidate = Candidate.get_by_id(candidate_id)
     """
@@ -1140,7 +1143,8 @@ def social_network_name_from_url(url):
 
 
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                      candidate_id, user_id, resume_url, source_id, source_product_id, candidate_status_id):
+                      candidate_id, user_id, resume_url, source_id, source_product_id,
+                      candidate_status_id, resume_text):
     """
     Function will update Candidate's primary information.
     Candidate's Primary information include:
@@ -1164,7 +1168,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
 
     update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
                    'source_id': source_id, 'candidate_status_id': candidate_status_id,
-                   'source_product_id': source_product_id}
+                   'source_product_id': source_product_id, 'resume_text': resume_text}
 
     # Strip each key-value and remove keys with empty-string-values
     update_dict = purge_dict(update_dict, remove_empty_strings_only=True)
@@ -1201,21 +1205,21 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
 
 
 def _add_candidate(first_name, middle_name, last_name, formatted_name,
-                   added_time, candidate_status_id, user_id,
-                   dice_profile_id, dice_social_profile_id, source_id,
-                   source_product_id, objective, summary, resume_url):
+                   added_time, candidate_status_id, user_id, dice_profile_id,
+                   dice_social_profile_id, source_id, source_product_id,
+                   objective, summary, resume_url, resume_text):
     """
     Function will add Candidate and its primary information to db
     All empty values (None or empty strings) will be ignored
     :rtype:  int | long
     """
+    # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     add_dict = dict(
         first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         source_product_id=source_product_id, dice_profile_id=dice_profile_id,
         dice_social_profile_id=dice_social_profile_id, source_id=source_id, objective=objective,
-        summary=summary, filename=resume_url, is_dirty=0
-        # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
+        summary=summary, filename=resume_url, resume_text=resume_text, is_dirty=0
     )
 
     # All empty values must be removed

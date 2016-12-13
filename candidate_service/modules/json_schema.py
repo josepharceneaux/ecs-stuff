@@ -65,6 +65,9 @@ candidates_resource_schema_post = {
                     "resume_url": {
                         "type": ["string", "null"]
                     },
+                    "resume_text": {
+                        "type": ["string", "null"]
+                    },
                     "added_datetime": {
                         "type": ["string", "null"],
                         "format": "date-time"
@@ -645,6 +648,9 @@ candidates_resource_schema_patch = {
                         "type": ["string", "null"]
                     },
                     "resume_url": {
+                        "type": ["string", "null"]
+                    },
+                    "resume_text": {
                         "type": ["string", "null"]
                     },
                     "hide": {
