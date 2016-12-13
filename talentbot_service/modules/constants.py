@@ -88,6 +88,7 @@ INVALID_RESUME_URL_MSG = "Invalid URL"
 NO_RESUME_URL_FOUND_MSG = "No URL found, URL must start with `http://` or `https://`"
 TOO_LARGE_RESUME_MSG = "Resume file size should be less than 10 MB, given resume size is %.1f MB"
 QUEUE_NAME = 'talentbot_queue'
+USER_DISABLED_MSG = "Your account has been suspended. Kindly contact at help@gettalent.com"
 SUPPORTED_SOCIAL_SITES = {"github": 'github.com', "stackoverflow": 'stackoverflow.com',
                           "linkedin": 'linkedin.com', 'facebook': 'facebook.com', 'twitter': 'twitter.com'}
 GITHUB = "github"
