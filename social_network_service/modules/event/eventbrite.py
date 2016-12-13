@@ -9,6 +9,7 @@ from datetime import datetime
 from datetime import timedelta
 
 # Application specific
+from social_network_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
 from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import logger
@@ -25,6 +26,7 @@ from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.custom_exceptions import VenueNotFound, EventOrganizerNotFound
+from social_network_service.social_network_app import app
 
 
 class Eventbrite(EventBase):
@@ -287,9 +289,9 @@ class Eventbrite(EventBase):
             # Ticket are going to be created/updated
             ticket_id = self.create_tickets(event_id)
             # Ticket(s) have been created for newly created Event
-            self.publish_event(event_id)
-            logger.info('|  Event %s created Successfully  |'
-                        % self.event_payload['event.name.html'])
+            if app.config[TalentConfigKeys.ENV_KEY] not in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
+                self.publish_event(event_id)
+            logger.info('|  Event %s created Successfully  |' % self.event_payload['event.name.html'])
             self.data['social_network_event_id'] = event_id
             self.data['tickets_id'] = ticket_id
             self.data['url'] = event['url']
@@ -543,13 +545,12 @@ class Eventbrite(EventBase):
         # create url to publish event
         url = get_url(self, Urls.PUBLISH_EVENT).format(str(social_network_event_id))
         # params are None. Access token is present in self.headers
-        response = http_request('POST', url, headers=self.headers,
-                                user_id=self.user.id)
+        response = http_request('POST', url, headers=self.headers, user_id=self.user.id)
         if response.ok:
             logger.info('|  Event has been published  |')
         else:
             error_message = "Event was not Published. There are some " \
-                            "errors: Details: %s  |" % response
+                            "errors: Details: %s  |" % response.text
             log_error({
                 'user_id': self.user.id,
                 'error': error_message,

@@ -29,6 +29,7 @@ class Event(db.Model):
     timezone = db.Column(db.String(100))
     max_attendees = db.Column('maxAttendees', db.Integer)
     tickets_id = db.Column('ticketsId', db.Integer, nullable=True)
+    is_hidden = db.Column('isHidden', db.Boolean, default=False)
     added_datetime = db.Column('addedDateTime', db.DateTime, default=datetime.utcnow)
     updated_datetime = db.Column('updatedDateTime', db.TIMESTAMP, default=datetime.utcnow)
 
@@ -68,11 +69,7 @@ class Event(db.Model):
     @classmethod
     def get_by_user_and_social_network_event_id(cls, user_id, social_network_event_id):
         assert user_id and social_network_event_id
-        return cls.query.filter(
-            db.and_(
-                Event.user_id == user_id,
-                Event.social_network_event_id == social_network_event_id
-            )).first()
+        return cls.query.filter_by(user_id=user_id, social_network_event_id=social_network_event_id).first()
 
     @classmethod
     def get_by_user_id_vendor_id_start_date(cls, user_id, social_network_id, start_date):
@@ -89,38 +86,74 @@ class Event(db.Model):
                                                          social_network_id,
                                                          social_network_event_id):
         assert social_network_id and social_network_event_id and user_id
-        return cls.query.filter(
-            db.and_(
-                Event.user_id == user_id,
-                Event.social_network_id == social_network_id,
-                Event.social_network_event_id == social_network_event_id
-            )
-        ).first()
+        return cls.query.filter_by(user_id=user_id, social_network_id=social_network_id,
+                                   social_network_event_id=social_network_event_id).first()
 
     @classmethod
-    def get_by_user_id_event_id_social_network_event_id(cls, user_id,
-                                                         _id, social_network_event_id):
+    def get_by_user_id_event_id_social_network_event_id(cls, user_id, _id, social_network_event_id):
         assert _id and social_network_event_id and user_id
-        return cls.query.filter(
-            db.and_(
-                Event.user_id == user_id,
-                Event.id == _id,
-                Event.social_network_event_id == social_network_event_id
-            )
-        ).first()
+        return cls.query.filter_by(id=_id, user_id=user_id, social_network_event_id=social_network_event_id).first()
 
     @classmethod
     def get_by_user_and_event_id(cls, user_id, event_id):
         assert user_id and event_id
-        return cls.query.filter(
-            db.and_(
-                Event.user_id == user_id,
-                Event.id == event_id
-            )).first()
+        return cls.query.filter_by(id=event_id, user_id=user_id).first()
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        """
+        This method returns all events that belong to a specific user
+        :param int | long user_id: user id
+        :return: list of events
+        :rtype: list
+        """
+        return cls.query.filter_by(user_id=user_id).all()
+
+    def enable(self):
+        """
+        This instance method marks an event hidden.
+        :return: same event
+        """
+        return self.update(is_hidden=False)
+
+    def disable(self):
+        """
+        This instance method marks an event hidden.
+        :return: same event
+        """
+        return self.update(is_hidden=True)
+
+    @classmethod
+    def enable_events(cls, user_id, social_network_id):
+        """
+        This method enables (marks is_hidden=False for) all events of a specific user.
+        :param int | long user_id: user id
+        :param int | long social_network_id: social network id
+        :return: count of updated events
+        :rtype: int | long
+        """
+        events_count = cls.query.filter_by(user_id=user_id, social_network_id=social_network_id).update({'is_hidden': False})
+        cls.session.commit()
+        return events_count
+
+    @classmethod
+    def disable_events(cls, user_id, social_network_id):
+        """
+        This method hides/disables (marks is_hidden=True for) all events of a specific user.
+        :param int | long user_id: user id
+        :param int | long social_network_id: social network id
+        :return: counts of updated events
+        :rtype: int | long
+        """
+        events_count = cls.query.filter_by(user_id=user_id, social_network_id=social_network_id
+                                           ).update({'is_hidden': True})
+        cls.session.commit()
+        return events_count
 
     @classmethod
     def get_events_query(cls, user, search=None, social_network_id=None, sort_by='start_datetime',
-                         sort_type='desc', user_id=None, is_deleted_from_vendor=0):
+                         sort_type='desc', user_id=None, is_hidden=False, is_deleted_from_vendor=0):
+
         """
         This method return query object for events after applying all filters
         :param type(t) user: user object
@@ -129,6 +162,7 @@ class Event(db.Model):
         :param string sort_by: on which field you want to order
         :param string sort_type: acs or desc, sort order
         :param int| long | None user_id: events' owner user id, None for all event in domain
+        :param bool is_hidden: boolean field to select active or disabled/hidden events
         :param int is_deleted_from_vendor: 1 if event has been deleted from social-network website
         :return: returns a query object
         """
@@ -154,7 +188,7 @@ class Event(db.Model):
         if not is_number(is_deleted_from_vendor) or int(is_deleted_from_vendor) not in (0, 1):
             raise InvalidUsage('`is_deleted_from_vendor` can be either 0 or 1')
 
-        query = Event.get_by_domain_id(user.domain_id)
+        query = Event.get_by_domain_id(user.domain_id).filter(Event.is_hidden == is_hidden)
         query = query.filter(Event.is_deleted_from_vendor == is_deleted_from_vendor)
 
         if social_network_id:
