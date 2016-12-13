@@ -2,26 +2,16 @@
 Test cases for CandidateResource/delete()
 """
 # Candidate Service app instance
-from candidate_service.candidate_app import app
 
 # Models
 from candidate_service.common.models.candidate import CandidateCustomField, CandidateEmail, \
     CandidateTextComment, CandidateReference
 from candidate_service.common.models.tag import CandidateTag
-from candidate_service.common.models.user import Role
-
-# Conftest
-from candidate_service.common.tests.conftest import *
-
-# Helper functions
-from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
-from candidate_service.common.utils.test_utils import send_request, response_info
-
-# Url
 from candidate_service.common.routes import CandidateApiUrl
-
-# Custom errors
+from candidate_service.common.tests.conftest import *
+from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 
 
 class TestDeleteCandidate(object):

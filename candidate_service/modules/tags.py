@@ -2,11 +2,9 @@
 This file contains functions for candidate tag(s) CRUD operations
 """
 # Models
+from candidate_service.common.error_handling import NotFoundError, ForbiddenError, InvalidUsage
 from candidate_service.common.models.db import db
 from candidate_service.common.models.tag import Tag, CandidateTag
-
-# Error handling
-from candidate_service.common.error_handling import NotFoundError, ForbiddenError, InvalidUsage
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 

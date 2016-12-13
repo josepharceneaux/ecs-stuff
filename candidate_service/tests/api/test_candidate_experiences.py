@@ -3,20 +3,12 @@ Test cases for adding, retrieving, updating, and deleting candidate work experie
 """
 import pycountry
 
-# Candidate Service app instance
-from candidate_service.candidate_app import app
-
-# Conftest
-from candidate_service.common.tests.conftest import *
-from ..conftest import test_candidate_1
-
-# Helper functions
-from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.tests.conftest import *
+from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.tests.api.candidate_sample_data import GenerateCandidateData, generate_single_candidate_data
 
 # Custom errors
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 class TestUpdateCandidateExperienceSuccessfully(object):
