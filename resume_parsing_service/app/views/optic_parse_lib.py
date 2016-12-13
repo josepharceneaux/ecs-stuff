@@ -559,8 +559,7 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
                 text = NEWLINES_REGEXP.sub(" ", text)
             if capwords:
                 text = string.capwords(text)
-            text = text.encode('utf-8')
-            return bs4(text, 'lxml').text
+            return text
     return None
 
 
@@ -609,7 +608,8 @@ def scrub_candidate_name(name_unicode):
     http://stackoverflow.com/questions/265960/
 
     :param string name_unicode:
-    :return string:
+    :return name_unicode:
+    :rtype string:
     """
 
     translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)
