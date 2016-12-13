@@ -107,7 +107,8 @@ def parse_optic_xml(resume_xml_text):
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
-    encoded_soup_text = b64encode(bs4(resume_xml_text, 'lxml').getText().encode('utf8', 'replace'))
+    soup_text = bs4(resume_xml_text, 'lxml').getText().encode('utf8', 'replace')
+    encoded_soup_text = b64encode(soup_text)
     contact_xml_list = bs4(resume_xml_text, 'lxml').findAll('contact')
     experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
@@ -133,7 +134,8 @@ def parse_optic_xml(resume_xml_text):
         addresses=parse_candidate_addresses(contact_xml_list),
         talent_pool_ids={'add': None},
         references=references,
-        summary=parse_candidate_summary(summary_xml_list)
+        summary=parse_candidate_summary(summary_xml_list),
+        resume_text=soup_text
     )
 
 
