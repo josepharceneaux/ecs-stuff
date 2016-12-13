@@ -385,7 +385,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
         # Go through results & build action dicts
         for field_name_to_sql_value in results:
             candidate_id = field_name_to_sql_value['id']
-            is_hidden = field_name_to_sql_value['is_web_hidden']
+            is_hidden = field_name_to_sql_value['is_web_hidden']  # TODO: change key to "is_archived" after is_web_hidden is removed from Candidate model
             if is_hidden == 1:
                 logger.info("Unable to upload candidate document of hidden candidate: %s" % candidate_id)
                 continue

@@ -165,6 +165,17 @@ def domain_aois(domain_first):
 def domain_source(access_token_first, user_first):
     """
     Creates a source in domain_first using the API
+    :return
+            {
+                "source":
+                    {
+                        "id": 12,
+                        "domain_id": 6,
+                        "description": "test_source_something",
+                        "notes": "something about the source",
+                        "added_datetime": "2016-02-08 20:45:12"
+                    }
+            }
     :rtype:  dict
     """
     user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id

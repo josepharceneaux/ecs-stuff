@@ -22,7 +22,7 @@ def get_candidate_if_validated(user, candidate_id, user_role='TALENT_ADMIN'):
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id))
         # TODO: error_code=custom_error.CANDIDATE_NOT_FOUND
 
-    if candidate.is_web_hidden:
+    if candidate.is_archived:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id))
         # TODO: error_code=custom_error.CANDIDATE_IS_HIDDEN
 

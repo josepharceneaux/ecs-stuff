@@ -689,7 +689,7 @@ def update_hit_count(url_conversion):
         candidate = Candidate.query.get(email_campaign_send.candidate_id)
         is_open = email_campaign_send_url_conversion.type == TRACKING_URL_TYPE
         # If candidate has been deleted, don't make the activity
-        if not candidate or candidate.is_web_hidden:
+        if not candidate or candidate.is_archived:
             logger.info("Tried performing URL redirect for nonexistent candidate: %s. "
                         "email_campaign_send: %s",
                         email_campaign_send.candidate_id, email_campaign_send.id)

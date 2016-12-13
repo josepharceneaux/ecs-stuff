@@ -82,7 +82,7 @@ def activities_fixture(user_fixture, candidate_source_fixture, request):
 def candidate_fixture(user_fixture, culture_fixture, candidate_source_fixture, request):
     candidate_attrs = dict(
         first_name=random_word(4), last_name=random_word(6), formatted_name=random_word(10),
-        is_web_hidden=0, is_mobile_hidden=0, added_time=datetime.today(), user_id=user_fixture.id,
+        is_archived=0, is_mobile_hidden=0, added_time=datetime.today(), user_id=user_fixture.id,
         domain_can_read=1, domain_can_write=1, source_id=candidate_source_fixture.id,
         source_product_id=2, objective=random_word(6), culture_id=culture_fixture.id, is_dirty=0
     )
