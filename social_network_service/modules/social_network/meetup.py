@@ -5,7 +5,6 @@ class. Meetup contains methods like refresh_access_token(), get_groups() etc.
 
 # Standard Library
 import json
-import time
 
 # 3rd party imports
 from requests import codes
@@ -288,30 +287,6 @@ class Meetup(SocialNetworkBase):
         venue_data['social_network_venue_id'] = venue_id
         return SocialNetworkBase.save_venue(venue_data)
 
-    def get_member_id(self, wait=False):
-        """
-        - If getTalent user has an account on some social network, like Meetup.com, it will have a "member id" for
-            that social network. This "member id" is used to make API subsequent calls to fetch events or RSVPs and
-            relevant data for getTalent user from social network website.
-        :param bool wait: True if we need to add some wait before next call.
-
-        :Example:
-
-            from social_network_service.meetup import Meetup
-            sn = Meetup(user_id=1)
-            sn.get_member_id()
-
-        - We call this method from connect() of SocialNetworkBase class so that we don't need to get 'member id'
-            of getTalent user while making object of some social network class at different places.
-            (e.g. creating object of Meetup() in when importing events)
-
-        **See Also**
-        .. seealso:: connect() method defined in SocialNetworkBase class inside social_network_service/base.py.
-        """
-        if wait:
-            time.sleep(3)  # Adding sleep to avoid Meetup API Throttling.
-        return super(Meetup, self).get_member_id()
-
     @classmethod
     def save_user_credentials_in_db(cls, user_credentials):
         """
@@ -331,8 +306,6 @@ class Meetup(SocialNetworkBase):
         """
         user_credentials_in_db = super(cls, cls).save_user_credentials_in_db(user_credentials)
         try:
-            # Adding sleep to avoid Meetup API Throttling.
-            time.sleep(3)
             meetup = cls(user_id=user_credentials_in_db.user_id,
                          social_network_id=user_credentials_in_db.social_network_id)
             meetup.import_meetup_groups()

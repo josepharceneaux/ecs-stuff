@@ -363,13 +363,11 @@ class SocialNetworkBase(object):
                              % (user_id, social_network.name, social_network.id))
             raise SNServerException('Unable to create user credentials for current user')
 
-    def get_member_id(self, wait=False):
+    def get_member_id(self):
         """
         - If getTalent user has an account on some social network, like Meetup.com, it will have a "member id" for
             that social network. This "member id" is used to make API subsequent calls to fetch events or RSVPs and
             relevant data for getTalent user from social network website.
-
-        :param bool wait: True if we need to add some wait before next call. Only applicable for Meetup
 
         :Example:
 
@@ -565,7 +563,7 @@ class SocialNetworkBase(object):
                                                                         code_to_get_access_token=code)
         self.headers = {'Authorization': 'Bearer ' + access_token}
         # GET member_id of getTalent user
-        member_id = self.get_member_id(wait=True)
+        member_id = self.get_member_id()
         if not member_id:
             raise InternalServerError('Could not get member id from social-network:%s' % self.social_network.name)
         # Check all user_social_network_credentials in database against this member_id
