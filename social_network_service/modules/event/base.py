@@ -465,14 +465,14 @@ class EventBase(object):
         :return: True if event is deleted from vendor, False otherwise.
         :rtype: bool
         """
-        # create url to publish event
+        # create url to unpublish event
         url = get_url(self, Urls.EVENT).format(event_id)
         # params are None. Access token is present in self.headers
         response = http_request(method, url, headers=self.headers, user_id=self.user.id)
         if response.ok:
             logger.info('|  Event has been unpublished (deleted)  |')
         else:
-            error_message = "Event was not unpublished (deleted)."
+            error_message = "Event was not unpublished (deleted):%s" % response.text
             log_error({'user_id': self.user.id, 'error': error_message})
             raise EventNotUnpublished('ApiError: Unable to remove event from %s' % self.social_network.name)
 
