@@ -29,7 +29,7 @@ from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
-SPLIT_DESCRIPTION_REGEXP = re.compile(ur"•≅_|≅_| \* |■|•|➢|→|â|\n\n\n")
+SPLIT_DESCRIPTION_REGEXP = re.compile(ur"•≅_|≅_| \* |■|•|➢|→|â|˘|\n\n\n")
 
 
 @contract
@@ -107,7 +107,11 @@ def parse_optic_xml(resume_xml_text):
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
-    encoded_soup_text = b64encode(bs4(resume_xml_text, 'lxml').getText().encode('utf8', 'replace'))
+    soup_text = bs4(resume_xml_text, 'lxml').getText().encode('utf8', 'replace')
+    non_ascii_chars = set(re.sub(u'[\x00-\x7f]', '', soup_text))
+    if non_ascii_chars:
+        logger.info('ResumeParsingService::Info::Non-ascii chars in resume: {}'.format(non_ascii_chars))
+    encoded_soup_text = b64encode(soup_text)
     contact_xml_list = bs4(resume_xml_text, 'lxml').findAll('contact')
     experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
