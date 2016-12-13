@@ -11,7 +11,7 @@ from db import db
 from ..error_handling import InternalServerError, NotFoundError
 from ..utils.datetime_utils import DatetimeUtils
 from ..custom_contracts import define_custom_contracts
-from ..constants import OWNED
+from app_common.common.utils.talentbot_utils import OWNED
 
 define_custom_contracts()
 

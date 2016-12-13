@@ -26,7 +26,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import desc, extract, and_
 from candidate import Candidate
 from ..error_handling import InvalidUsage, NotFoundError
-from ..constants import OWNED
+from app_common.common.utils.talentbot_utils import OWNED
 
 __author__ = 'Zohaib Ijaz <mzohaib.qc@gmail.com>'
 

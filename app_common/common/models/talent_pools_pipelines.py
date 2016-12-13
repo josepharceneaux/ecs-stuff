@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from user import Domain, UserGroup, User
 from candidate import Candidate
 from ..error_handling import NotFoundError
-from ..constants import OWNED
+from app_common.common.utils.talentbot_utils import OWNED
 # 3rd party imports
 from sqlalchemy import or_, and_, extract
 from sqlalchemy.dialects.mysql import TINYINT
@@ -204,18 +204,22 @@ class TalentPipeline(db.Model):
 
     @classmethod
     @contract
-    def get_own_or_domain_pipelines(cls, user_id, scope):
+    def get_own_or_domain_pipelines(cls, user_id, scope, page_number=1):
         """
         This returns list of Pipelines owned by a specific user or all in domain
+        :param positive page_number: Page number for limiting number of rows returned
         :param positive user_id: User Id
         :param int scope: Weather owned or domain specific
         :rtype: list
         """
+        number_of_records = 10
+        start = (page_number - 1) * number_of_records
+        end = page_number * number_of_records
         if scope == OWNED:
-            return cls.query.join(User).filter(User.id == user_id, cls.is_hidden == 0).all()
+            return cls.query.join(User).filter(User.id == user_id, cls.is_hidden == 0)[start:end]
         else:
             domain_id = User.get_domain_id(user_id)
-            return cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0).all()
+            return cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)[start:end]
 
     @classmethod
     def get_by_user_id_in_desc_order(cls, user_id):

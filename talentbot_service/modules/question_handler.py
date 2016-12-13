@@ -19,11 +19,13 @@ import urllib
 import urllib2
 from datetime import datetime
 from os.path import splitext
+from random import randint
+from time import sleep
 from urlparse import urlparse
 from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
-from talentbot_service.common.constants import OWNED, DOMAIN_SPECIFIC
+from app_common.common.utils.talentbot_utils import DOMAIN_SPECIFIC, OWNED
 from talentbot_service.common.error_handling import NotFoundError, InvalidUsage, InternalServerError
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
@@ -36,11 +38,13 @@ from talentbot_service.common.routes import ResumeApiUrl, CandidateApiUrl
 from talentbot_service.common.utils.handy_functions import send_request
 from talentbot_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
 from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, delete_from_filepicker_s3
+from talentbot_service.common.redis_cache import redis_store
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
     SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, TOO_LARGE_RESUME_MSG, \
-    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN, INVALID_INPUT, CANDIDATE_ALREADY_EXISTS, TWITTER, FACEBOOK
+    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN, INVALID_INPUT, CANDIDATE_ALREADY_EXISTS, TWITTER, FACEBOOK, \
+    CLASSES
 from talentbot_service import logger, app
 # 3rd party imports
 from flask import json
@@ -623,22 +627,39 @@ class QuestionHandler(object):
 
     @classmethod
     @contract
-    def question_10_handler(cls, message_tokens, user_id):
+    def question_10_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'What are my|all pipelines'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param list message_tokens: Tokens of User message
         :param positive user_id:
         :rtype: string
         """
-        # Checking weather user's asking about all pipelines or his/her pipelines
+        # Checking whether user's asking about all pipelines or his/her pipelines
         asking_about_all_pipelines = not bool(re.search(r'my pipe*|my all pipe*', ' '.join(message_tokens).lower()))
         response = ["Your pipelines are following:"] if not asking_about_all_pipelines else\
             ["Pipelines in your domain are following:"]
-        pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, DOMAIN_SPECIFIC if
-                                                               asking_about_all_pipelines else OWNED)
-        for index, pipeline in enumerate(pipelines):
-            response.append("%d- `%s`" % (index + 1, pipeline.name))
-        return '\n'.join(response) if len(response) > 1 else "No pipeline found"
+        scope = DOMAIN_SPECIFIC if asking_about_all_pipelines else OWNED
+        pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope)
+        state = {"class": "TalentPipeline", "method": "get_own_or_domain_pipelines", "page_number": 1,
+                 "params": [user_id, scope], "repr": "pipelines"}
+        redis_store.set(user_id, json.dumps(state))
+        return cls.custom_count_appender(1, pipelines, "pipelines", response)
+
+    @staticmethod
+    @contract
+    def custom_count_appender(start, _list, representative, response):
+        """
+
+        :param list response:
+        :param positive start:
+        :param list _list:
+        :param string representative:
+        :rtype: string
+        """
+        for index, item in enumerate(_list):
+            response.append("%d- `%s`" % (start + index, item.name))
+        return '\n'.join(response) if len(response) > 1 else "No %s found" % representative
 
     @classmethod
     @contract
@@ -989,3 +1010,43 @@ class QuestionHandler(object):
                             % (campaign_type.title(), name, total_sends, 'candidate' if total_sends == 1 else
                                'candidates', interaction_type, interaction_rate))
         return response
+
+    @classmethod
+    @contract
+    def handle_pagination(cls, user_id):
+        """
+        :param positive user_id:
+        """
+        # Acquiring Lock
+        lock = redis_store.get("%dredis_lock" % user_id)
+        if lock is not None:
+            lock = eval(lock)
+        while lock:
+            sleep(randint(1, 2))
+            lock = eval(redis_store.get("%dredis_lock" % user_id))
+        redis_store.set("%dredis_lock" % user_id, True)
+        state = redis_store.get(user_id)
+        if state:
+            try:
+                state = json.loads(state)
+            except Exception as error:
+                logger.info("No state found: %s" % error.message)
+                redis_store.set("%dredis_lock" % user_id, False)
+                return None
+            representative = state["repr"]
+            _class = CLASSES[state["class"]]
+            method = getattr(_class, state["method"])
+            params = state["params"]
+            page_number = state["page_number"]
+            page_number += 1
+            params.append(page_number)
+            _list = method(*tuple(params))
+            if _list:
+                state.update({"page_number": page_number})
+                params.pop()
+                redis_store.set(user_id, json.dumps(state))
+                redis_store.set("%dredis_lock" % user_id, False)
+                start = 1 if page_number == 1 else page_number * 10 - 9
+                return cls.custom_count_appender(start, _list, representative, [])
+            redis_store.delete(user_id)
+            return None

@@ -213,6 +213,9 @@ class TalentBot(object):
         is_hint_question = self.check_for_hint(message)
         if is_hint_question:
             return is_hint_question
+        is_paginator = self.is_paginator(message)
+        if is_paginator:
+            return QuestionHandler.handle_pagination(user_id)
         if len(message.split()) < MIN_WORDS_IN_QUESTION:
             return random.choice(self.error_messages)
         message_tokens = self.tokenize_message(message)
@@ -323,5 +326,17 @@ class TalentBot(object):
         match_ratio = self.match_question(user_message, add_candidates_questions)
         if match_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
             logger.info("Responding before processing")
+            return True
+        return False
+
+    @contract
+    def is_paginator(self, user_message):
+        """
+
+        :param string user_message: User message
+        :rtype: bool
+        """
+        matched_ratio = self.match_question(user_message.lower(), ["next", "previous"])
+        if matched_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
             return True
         return False
