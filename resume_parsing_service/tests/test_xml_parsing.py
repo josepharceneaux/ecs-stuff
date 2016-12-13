@@ -30,6 +30,7 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_pho
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_reference
 from resume_parsing_service.app.views.optic_parse_lib import is_experience_already_exists
+from resume_parsing_service.app.views.optic_parse_lib import trunc_text
 from resume_parsing_service.app.views.utils import extra_skills_parsing
 # JSON Schemas
 from json_schemas import (EMAIL_SCHEMA, PHONE_SCHEMA, EXPERIENCE_SCHEMA, EDU_SCHEMA,\
@@ -927,3 +928,12 @@ def test_bullet_parsing():
             assert experience['bullets'][0]['description'].count('\n') == 7
         if experience['organization'] == u'Jamaica Savings Bank':
             assert experience['bullets'][0]['description'].count('\n') == 2
+
+
+def test_text_is_truncd():
+    title = """I was was a French military and political leader who rose to prominence during the
+    French Revolution and led several successful campaigns during the Revolutionary Wars. As
+    Napoleon I, I was Emperor of the French from 1804 until 1814, and again in 1815. I dominated
+    European and global affairs for more than a decade while leading France against a series of
+    coalitions in the Napoleonic Wars."""
+    assert(len(trunc_text(title, 100)) == 100)
