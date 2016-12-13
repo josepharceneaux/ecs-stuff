@@ -13,6 +13,7 @@ from functools import wraps
 # Third Party
 import requests
 from flask import Flask
+from requests import codes
 from itertools import izip_longest
 from requests import ConnectionError
 from flask import current_app, request
@@ -166,7 +167,7 @@ def log_error(message, app=None):
         logger.error(message)
 
 
-def http_request(method_type, url, params=None, headers=None, data=None, user_id=None, app=None):
+def http_request(method_type, url, params=None, headers=None, data=None, user_id=None, app=None, throttled=False):
     """
     This is common function to make HTTP Requests. It takes method_type (GET or POST)
     and makes call on given URL. It also handles/logs exception.
@@ -177,12 +178,14 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :param data: data to be sent.
     :param user_id: Id of logged in user.
     :param app: flask app object if wanted to use this method using app_context()
+    :param throttled: boolean to detect if it is a recursive call so don't try again and again in case of throttling
     :type method_type: str
     :type url: str
     :type params: dict | None
     :type headers: dict | None
     :type data: dict | None
     :type user_id: int | long | None
+    :type throttled: bool
     :return: response from HTTP request or None
     :Example:
         If we are requesting scheduler_service to GET a task, we will use this method as
@@ -219,6 +222,21 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                 log_exception("http request failed: Method:%s, URL:%s, user_id:%s, Response:%s"
                               % (method_type, url, user_id, e.response.json()))
                 raise UnauthorizedError(str(e.response.json()))
+
+            elif e.response.status_code == codes.TOO_MANY_REQUESTS:  # 429, Throttling
+
+                error_message = e.response.json()
+                if throttled:
+                    raise InternalServerError(str(error_message))
+                if error_message.get('code') == 'throttled':
+                    wait_until = e.response.headers.get('X-RateLimit-Reset')
+                    if wait_until:
+                        time.sleep(wait_until + 1)
+                    else:
+                        time.sleep(10)
+                    return http_request(method_type, url, params=params, headers=headers, data=data, user_id=user_id,
+                                        app=app, throttled=True)
+
             # checks if error occurred on "Server" or is it a bad request
             elif e.response.status_code < InternalServerError.http_status_code():
                 try:
