@@ -12,7 +12,7 @@ import re
 from abc import abstractmethod
 # App specific imports
 from constants import BEST_QUESTION_MATCH_RATIO, GREETINGS, POSITIVE_MESSAGES, HINT, MIN_WORDS_IN_QUESTION, \
-    AVERAGE_QUESTION_MATCH_RATIO, ADD_CANDIDATE_FROM_URL
+    AVERAGE_QUESTION_MATCH_RATIO, ADD_CANDIDATE_FROM_URL, ZERO
 from talentbot_service.modules.question_handler import QuestionHandler
 from talentbot_service import logger
 # 3rd party imports
@@ -241,14 +241,22 @@ class TalentBot(object):
         return re.split(' |,', message)
 
     @staticmethod
-    def match_question(message, question):
+    @contract
+    def match_question(message, questions):
         """
-        Matches user message with predefined messages and returns matched ratio
-        :param str message: User message
-        :param str question:
-        :rtype: int
+        Matches user message with questions and returns max matched ratio
+        :param string message: User message
+        :param string|list questions:
+        :rtype: positive
         """
-        match_ratio = fuzz.partial_ratio(question, message.lower())
+        if isinstance(questions, list):
+            max_matched_ratio = ZERO
+            for question in questions:
+                temp_ratio = fuzz.partial_ratio(question, message)
+                if temp_ratio > max_matched_ratio:
+                    max_matched_ratio = temp_ratio
+            return max_matched_ratio
+        match_ratio = fuzz.partial_ratio(questions, message.lower())
         logger.info("%s : %d%% matched" % (message, match_ratio))
         return match_ratio
 
@@ -289,9 +297,9 @@ class TalentBot(object):
         :rtype: str|None
         """
         hint_questions = self.list_of_questions[6:10]
-        for question in hint_questions:
-            if message.lower() in question:
-                return HINT
+        matched_ratio = self.match_question(message.lower(), hint_questions)
+        if matched_ratio > AVERAGE_QUESTION_MATCH_RATIO:
+            return HINT
         return None
 
     @classmethod
@@ -311,7 +319,8 @@ class TalentBot(object):
         :param string user_message: User message
         :rtype: bool
         """
-        match_ratio = self.match_question(user_message, self.list_of_questions[ADD_CANDIDATE_FROM_URL])
+        add_candidates_questions = self.list_of_questions[ADD_CANDIDATE_FROM_URL:ADD_CANDIDATE_FROM_URL+2]
+        match_ratio = self.match_question(user_message, add_candidates_questions)
         if match_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
             logger.info("Responding before processing")
             return True

@@ -52,23 +52,13 @@ class TestCampaignSchedule(object):
             blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'], campaign_blast[0]['id']),
             access_token=access_token_first)
 
-    def test_periodic_schedule_campaign_and_validate_run(self, headers, access_token_first, talent_pipeline):
+    def test_periodic_schedule_campaign_and_validate_run(self, headers, access_token_first,
+                                                         periodic_scheduled_campaign):
         """
         This is test to schedule an email campaign with all valid parameters. This should get OK
         response. We also assert that scheduler is sending email-campaigns on expected time.
         """
-        subject = '%s-test_schedule_periodic' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
-        campaign_data['frequency_id'] = Frequency.CUSTOM
-        campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow()
-                                                                   + timedelta(seconds=self.START_DATETIME_OFFSET))
-        campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(days=10))
-        response = create_email_campaign_via_api(access_token_first, campaign_data)
-        assert response.status_code == codes.CREATED
-        resp_object = response.json()
-        assert 'campaign' in resp_object
-        assert resp_object['campaign']['id']
-        url = EmailCampaignApiUrl.CAMPAIGN % resp_object['campaign']['id']
+        url = EmailCampaignApiUrl.CAMPAIGN % periodic_scheduled_campaign['id']
         response = requests.get(url, headers=headers)
         assert response.status_code == codes.OK
         assert response.json()['email_campaign']

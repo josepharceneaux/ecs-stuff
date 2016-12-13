@@ -195,8 +195,9 @@ class EmailCampaign(db.Model):
         email_campaign_ids = EmailCampaignSmartlist.query.with_entities(EmailCampaignSmartlist.campaign_id).\
             filter(EmailCampaignSmartlist.smartlist_id.in_(smartlist_ids)).all()
         email_campaign_ids = [email_campaign_id[0] for email_campaign_id in email_campaign_ids]
-        scope_dependant_filter = cls.query.join(User).filter(cls.id.in_(email_campaign_ids), cls.user_id == user_id)\
-            if scope == OWNED else cls.query.filter(cls.id.in_(email_campaign_ids))
+        scope_dependant_filter = cls.query.join(User).filter(cls.id.in_(email_campaign_ids), cls.is_hidden == 0,
+                                                             cls.user_id == user_id)\
+            if scope == OWNED else cls.query.filter(cls.id.in_(email_campaign_ids), cls.is_hidden == 0)
         return scope_dependant_filter.all()
 
 
@@ -285,13 +286,10 @@ class EmailCampaignBlast(db.Model):
     def top_performing_email_campaign(cls, datetime_value, user_id):
         """
         This method returns top performing email campaign from a specific datetime
-        :param int|long user_id: User Id
+        :param positive user_id: User Id
         :param string|datetime|None datetime_value: date during campaign started or updated
         :rtype: type(z)
         """
-        assert isinstance(datetime_value, (datetime, basestring)) or datetime_value is None,\
-            "Invalid datetime value"
-        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
         from .user import User    # To avoid circular dependency this has to be here
         domain_id = User.get_domain_id(user_id)
         if isinstance(datetime_value, datetime):

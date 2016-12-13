@@ -2,21 +2,14 @@
 Test cases for CandidateResource/delete()
 """
 # Candidate Service app instance
-from candidate_service.candidate_app import app
 
 # Conftest
-from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.utils.test_utils import response_info
-from candidate_service.common.utils.handy_functions import send_request
-
-
-# Sample data
 from candidate_sample_data import generate_single_candidate_data
-
-# Custom errors
+from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.utils.handy_functions import send_request
+from candidate_service.common.utils.test_utils import response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
