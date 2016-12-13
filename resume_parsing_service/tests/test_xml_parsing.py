@@ -17,6 +17,7 @@ from .resume_xml import GET_646
 from .resume_xml import PDF
 from .resume_xml import PDF_13
 from .resume_xml import PDF_14
+from .resume_xml import SQUARE_BULLETS
 from .resume_xml import REFERENCE_XML
 # Modules being tested.
 from resume_parsing_service.app import app
@@ -914,3 +915,15 @@ def test_phone_label_testing():
     assert any(phone['label'] == 'Work' for phone in parsed_phones)
     assert any(phone['label'] == 'Home Fax' for phone in parsed_phones)
     assert any(phone['label'] == 'Home' for phone in parsed_phones)
+
+
+def test_bullet_parsing():
+    soup = bs4(SQUARE_BULLETS).findAll('experience')
+    experiences = parse_candidate_experiences(soup)
+    for experience in experiences:
+        if experience['organization'] == u'Verizon Wireless':
+            assert experience['bullets'][0]['description'].count('\n') == 9
+        elif experience['organization'] == u'Wal-mart':
+            assert experience['bullets'][0]['description'].count('\n') == 7
+        if experience['organization'] == u'Jamaica Savings Bank':
+            assert experience['bullets'][0]['description'].count('\n') == 2

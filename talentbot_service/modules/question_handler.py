@@ -32,13 +32,15 @@ from talentbot_service.common.models.talent_pools_pipelines import TalentPool
 from talentbot_service.common.models.email_campaign import EmailCampaign
 from talentbot_service.common.models.sms_campaign import SmsCampaign
 from talentbot_service.common.models.push_campaign import PushCampaign
-from talentbot_service.common.routes import ResumeApiUrl
+from talentbot_service.common.routes import ResumeApiUrl, CandidateApiUrl
+from talentbot_service.common.utils.handy_functions import send_request
+from talentbot_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
 from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, delete_from_filepicker_s3
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
-    SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, \
-    TOO_LARGE_RESUME_MSG, DOC_FORMATS, IMAGE_FORMATS
+    SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, TOO_LARGE_RESUME_MSG, \
+    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN, INVALID_INPUT, CANDIDATE_ALREADY_EXISTS, TWITTER, FACEBOOK
 from talentbot_service import logger, app
 # 3rd party imports
 from flask import json
@@ -94,10 +96,10 @@ class QuestionHandler(object):
             return None
         candidate_index = cls.find_word_in_message('cand', message_tokens)
         if candidate_index is not None:
-            number_of_candidates = 0
+            number_of_candidates = ZERO
             if users:
                 domain_id = users[0].domain_id
-                candidates = Candidate.get_all_in_user_domain(domain_id)
+                candidates = Candidate.get_all_in_user_domain(domain_id, is_hidden=ZERO)
                 number_of_candidates = len(candidates)
             return "Candidates in domain `%s` : %d" % (domain_name, number_of_candidates)
         return "Users in domain `%s` : %d" % (domain_name, len(users))
@@ -172,7 +174,7 @@ class QuestionHandler(object):
             return "Please enter a valid year greater than `1900` and smaller than `current year`."
         if is_valid_year is False:
             user_specific_date = None
-        last_index = self.find_word_in_message('last', message_tokens)
+        last_index = self.find_optional_word(message_tokens, ['last', 'from'])
         if last_index is not None and not is_valid_year:
             if len(message_tokens) > last_index + 1:
                 user_specific_date = self.extract_datetime_from_question(last_index, message_tokens)
@@ -214,7 +216,8 @@ class QuestionHandler(object):
                 campaign_list[0] = "Looks like you don't have any campaigns since that time"
             return '%s%s' % (campaign_list[0], self.create_ordered_list(campaign_list[1::]))
         campaign_blast = campaign_method(user_specific_date, user_id)
-        timespan = self.append_list_with_spaces(message_tokens[last_index::])
+        timespan_starting_index = last_index if last_index is not None else len(message_tokens)
+        timespan = self.append_list_with_spaces(message_tokens[timespan_starting_index::])
         if is_valid_year:
             timespan = user_specific_date
         if campaign_blast:
@@ -244,7 +247,7 @@ class QuestionHandler(object):
         if not isinstance(user_specific_date, datetime) and not is_valid_year \
                 and user_specific_date is None and message_tokens[-1].lower() not in ['campaigns']:
             response_message = 'No valid time duration found\n %s' % response_message
-        return response_message.replace("None", "all the times")
+        return response_message.replace("None", "all the times").replace('from from', 'from')
 
     def question_4_handler(self, message_tokens, user_id):
         """
@@ -347,6 +350,8 @@ class QuestionHandler(object):
         try:
             count = TalentPoolCandidate.candidate_imports(user_id, user_name, talent_pool_list)
         except NotFoundError:
+            if user_name.lower() == 'i':
+                return "Oops! Something went wrong"
             return 'No user exists in your domain with the name `%s`' % user_name
         if isinstance(count, basestring):
             return count
@@ -395,7 +400,11 @@ class QuestionHandler(object):
         if talent_pools:
             talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
             talent_pool_names = cls.create_ordered_list(talent_pool_names)
-            header = ["There are %d talent pools in your domain `%s`\n" % (len(talent_pools), domain_name)]
+            talent_pool_number = len(talent_pools)
+            is_or_are = 'is' if talent_pool_number == 1 else 'are'
+            plural = '' if talent_pool_number == 1 else 's'
+            header = ["There %s %d talent pool%s in your domain `%s`\n" % (is_or_are, talent_pool_number, plural,
+                                                                           domain_name)]
             response = '%s%s' % (header[0], talent_pool_names[::])
             return response.replace('`None`', '')
         response = "Seems like there is no talent pool in your domain `%s`" % domain_name
@@ -549,17 +558,29 @@ class QuestionHandler(object):
             sms_campaigns = SmsCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
                 SmsCampaign.get_by_user_id(user_id)
         if email_campaigns:  # Appending email campaigns in a representable response list
+            counter = 0
             response.append("*Email Campaigns*")
             for index, email_campaign in enumerate(email_campaigns):
+                counter += 1
                 response.append("%d: `%s`" % (index + 1, email_campaign.name))
+            if not counter:
+                response.pop()
         if push_campaigns:  # Appending push campaigns in a representable response list
             response.append("*Push Campaigns*")
+            counter = 0
             for index, push_campaign in enumerate(push_campaigns):
                 response.append("%d: `%s`" % (index + 1, push_campaign.name))
+                counter += 1
+            if not counter:
+                response.pop()
         if sms_campaigns:  # Appending sms campaigns in a representable response list
             response.append("*SMS Campaigns*")
+            counter = 0
             for index, sms_campaign in enumerate(sms_campaigns):
                 response.append("%d: `%s`" % (index + 1, sms_campaign.name))
+                counter += 1
+            if not counter:
+                response.pop()
         return '\n'.join(response) if len(response) > 1 else "No Campaign found"  # Returning string
 
     @classmethod
@@ -634,6 +655,26 @@ class QuestionHandler(object):
         except AttributeError:  # If url doesn't start with http:// or https://
             return NO_RESUME_URL_FOUND_MSG
         try:
+            extension, hostname, resume_size_in_bytes = cls.parse_resume_url(resume_url)
+        except (urllib2.HTTPError, urllib2.URLError):
+            return INVALID_RESUME_URL_MSG
+        # Supported social sites' array
+        supported_social_sites_array = [SUPPORTED_SOCIAL_SITES[GITHUB], SUPPORTED_SOCIAL_SITES[TWITTER],
+                                        SUPPORTED_SOCIAL_SITES[STACK_OVERFLOW]]
+        is_hostname_in_supported_social_sites = hostname in supported_social_sites_array \
+                                                or SUPPORTED_SOCIAL_SITES[LINKEDIN] in hostname \
+                                                or SUPPORTED_SOCIAL_SITES[FACEBOOK] in hostname
+        # If it is social profile link it wont have an extension
+        if not extension and is_hostname_in_supported_social_sites:
+            response_message = cls.get_candidate_from_openweb_and_add(user_id, resume_url)
+            if response_message:
+                return response_message
+            else:
+                return "Sorry, I couldn't find information on %s" % resume_url
+        elif int(resume_size_in_bytes) >= TEN_MB:
+            resume_size_in_mbs = float(resume_size_in_bytes)/(1024*1024)
+            return TOO_LARGE_RESUME_MSG % resume_size_in_mbs
+        try:
             '''
             create_bucket() method checks if resume bucket exists on S3 if it does create_bucket() returns bucket
             object if it does not exist create_bucket() creates the bucket with a predefined name (stored in cfg file).
@@ -644,58 +685,120 @@ class QuestionHandler(object):
             logger.error(error.message)
             return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
         try:
-            filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id)
-            token = User.generate_jw_token(user_id=user_id)
-            header = {'Authorization': token, 'Content-Type': 'application/json'}
-            response = requests.post(
-                ResumeApiUrl.PARSE,
-                headers=header,
-                data=json.dumps({
-                    'filepicker_key': filepicker_key,
-                    'talent_pools': [],
-                    'create_candidate': True
-                })
-            )
-            try:
-                delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
-            except Exception as error:
-                logger.warning("Error occurred while deleting S3 bucket: %s" % error.message)
-            if response.status_code == requests.codes.OK:
-                candidate = response.json()
-                try:
-                    first_name = candidate["candidate"]["first_name"]
-                    talent_pool_name = TalentPool.get_by_id(candidate["candidate"]["talent_pool_ids"]).name
-                    last_name = candidate["candidate"]["last_name"]
-                except KeyError as error:
-                    logger.error("Error occurred while getting candidate from RPS: %s" % error.message)
-                    return SOMETHING_WENT_WRONG  # Replying user with a response message for KeyError error
-                return "Your candidate `%s %s` has been added to `%s` talent pool" % (first_name, last_name,
-                                                                                      talent_pool_name)
-            return SOMETHING_WENT_WRONG  # Replying with a response message if response code from RPS is other than OK
-
+            # saving resume in S3 bucket
+            filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id, extension)
+            return cls.parse_resume_and_add_candidate(user_id, filepicker_key)
         except InvalidUsage as error:
             return error.message
-        except (urllib2.HTTPError, urllib2.URLError):
-            return INVALID_RESUME_URL_MSG
         except urllib.ContentTooShortError:
             return "File size too small"
+        except Exception as error:
+            logger.error("Error occurred downloading resume and saving in bucket: %s" % error.message)
+            return SOMETHING_WENT_WRONG
 
-    @staticmethod
+    @classmethod
     @contract
-    def download_resume_and_save_in_bucket(resume_url, user_id):
+    def get_candidate_from_openweb_and_add(cls, user_id, resume_url):
+        """
+        This method gets candidate from candidates/openweb endpoint if openweb returns a candidate then calls
+        add_openweb_candidate if not then returns None
+        :param positive user_id: User Id
+        :param string resume_url: Resume URL
+        :rtype: string|None
+        """
+        token = User.generate_jw_token(user_id=user_id)
+        response = send_request('get', CandidateApiUrl.OPENWEB, token, params={'url': resume_url})
+        if response.ok:
+            openweb_candidate = json.loads(response.content)
+            try:
+                candidate, talent_pool = cls.add_openweb_candidate(token, openweb_candidate)
+                if candidate and talent_pool:
+                    return ("Your candidate `%s %s` has been added to `%s` talent pool" %
+                            (candidate.get("first_name"), candidate.get("last_name"), talent_pool.name))\
+                        .replace('None', '').replace(' ` `', '')  # If candidate name does not exists remove the None
+                return SOMETHING_WENT_WRONG
+            except InvalidUsage as error:
+                return error.message
+            except Exception as error:
+                logger.error("Error occurred while parsing openweb candidate: %s" % error.message)
+                return SOMETHING_WENT_WRONG
+
+    @classmethod
+    @contract
+    def parse_resume_and_add_candidate(cls, user_id, filepicker_key):
+        """
+        This method sends S3 filepicker key to RPS, deletes resume when it gets parsed and returns an appropriate
+        response message if candidate has been added or not
+        :param positive user_id: User Id
+        :param string filepicker_key: S3 filepicker key f resume
+        :rtype: string
+        """
+        token = User.generate_jw_token(user_id=user_id)
+        header = {'Authorization': token, 'Content-Type': 'application/json'}
+        response = requests.post(ResumeApiUrl.PARSE, headers=header, data=json.dumps(
+            {'filepicker_key': filepicker_key, 'talent_pools': [], 'create_candidate': True}))
+        try:
+            delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
+        except Exception as error:
+            logger.warning("Error occurred while deleting S3 bucket: %s" % error.message)
+        if response.status_code == requests.codes.OK:
+            candidate = response.json()
+            try:
+                first_name = candidate["candidate"]["first_name"]
+                talent_pool_name = TalentPool.get_by_id(candidate["candidate"]["talent_pool_ids"]).name
+                last_name = candidate["candidate"]["last_name"]
+            except KeyError as error:
+                logger.error("Error occurred while getting candidate from RPS: %s" % error.message)
+                return SOMETHING_WENT_WRONG  # Replying user with a response message for KeyError error
+            return ("Your candidate `%s %s` has been added to `%s` talent pool"
+                    % (first_name, last_name, talent_pool_name)) \
+                .replace('None', '').replace(' ` `', '')  # If candidate name does not exists remove the None
+        return SOMETHING_WENT_WRONG  # Replying with a response message if response code from RPS is other than OK
+
+    @classmethod
+    def add_openweb_candidate(cls, token, openweb_candidate):
+        """
+        This method receives scrapped openweb_candidate then appends it in candidates dict and pass this dict to
+        candidate service's /candidates endpoint
+        :param string token: Auth token Bearer type
+        :param dict|None openweb_candidate: Candidate received from openweb against URL
+        :rtype: tuple(dict|None, Talentpool|None)
+        """
+        assert isinstance(token, basestring) and isinstance(openweb_candidate, (dict, None))
+        """
+        Candidate service receives A list of CandidateObjects:
+        e.g. {'candidates': [CandidateObject, CandidateObject, ...]}
+        """
+        candidate = openweb_candidate["candidate"]
+        candidates = {"candidates": [candidate]}
+        response = send_request('post', CandidateApiUrl.CANDIDATES, token, candidates)
+        if response.ok:
+            candidate_id = json.loads(response.content)["candidates"][0]["id"]
+            # Getting candidate from candidate service endpoint
+            resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token)
+            if resp.ok:
+                recently_added_candidate = json.loads(resp.content)["candidate"]
+                return recently_added_candidate, TalentPool.get_by_id(candidate["talent_pool_ids"].get("add"))
+            raise InternalServerError("Error occurred while getting candidate which was recently added")
+        error_code = json.loads(response.content)["error"]["code"]
+        # When a candidate already exists in db, /openweb returns ids of address and skills etc
+        # Which causes INVALID_INPUT so, we are treating INVALID_INPUT as candidate already exists
+        if error_code in [INVALID_INPUT, CANDIDATE_ALREADY_EXISTS]:
+            raise InvalidUsage("Candidate already exists")
+        logger.error("Error occurred while adding candidate through Candidate Service endpoint: %s" % response.content)
+        raise InternalServerError("Sorry! Couldn't add candidate")
+
+    @classmethod
+    @contract
+    def download_resume_and_save_in_bucket(cls, resume_url, user_id, extension):
         """
         Opens url checks if it is valid and then download resume from the url and saves it in S3 gtbot-resume-bucket
+        :param string extension: Resume extension
         :param positive user_id: User Id
         :param string resume_url: Resume URL
         :return: Returns saved resume's key
         :rtype: string
         """
-        meta = urllib2.urlopen(resume_url)
-        resume_size_in_bytes = meta.headers['Content-Length']
-        if int(resume_size_in_bytes) >= TEN_MB:
-            raise InvalidUsage(TOO_LARGE_RESUME_MSG)
-        parsed_data = urlparse(resume_url)
-        _, extension = splitext(parsed_data.path)
         if extension in IMAGE_FORMATS or extension in DOC_FORMATS:
             current_datetime = datetime.utcnow()
             filename = '%d-%s%s%s' % (user_id, current_datetime.date(), current_datetime.time(), extension)
@@ -706,6 +809,21 @@ class QuestionHandler(object):
                 return '{}/{}'.format('UploadedResumes', filename)
         else:
             raise InvalidUsage("Unsupported Resume Type")
+
+    @staticmethod
+    @contract
+    def parse_resume_url(resume_url):
+        """
+        This method parses a url and returns resume's extension, hostname and content_length of resume
+        :param string resume_url: Url of resume or a social profile
+        :rtype: tuple(string|None,string|None,string|None)
+        """
+        meta = urllib2.urlopen(resume_url)
+        resume_size_in_bytes = meta.headers.get('Content-Length')
+        parsed_data = urlparse(resume_url)
+        host_name = parsed_data.hostname
+        _, extension = splitext(parsed_data.path)
+        return extension, host_name, resume_size_in_bytes
 
     @staticmethod
     def is_valid_year(year):

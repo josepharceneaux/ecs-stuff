@@ -20,20 +20,26 @@ def test_mergetag_replacements(user_first, candidate_first):
     user_first.update(first_name=fake.first_name())
     user_first.update(last_name=fake.last_name())
     [subject, body_text, body_html] = do_mergetag_replacements([campaign.subject, campaign.body_text,
-                                                                campaign.body_html], user_first)
+                                                                campaign.body_html], user_first,
+                                                               requested_object=user_first)
     for item in [subject, body_text, body_html]:
         assert user_first.first_name in item
         assert user_first.last_name in item
+        assert user_first.name in item
 
     # Merge tags for candidate
     campaign = create_email_campaign_with_merge_tags(user_first)
 
     [subject, body_text, body_html] = do_mergetag_replacements([campaign.subject, campaign.body_text,
-                                                                campaign.body_html], candidate_first)
+                                                                campaign.body_html], user_first,
+                                                               requested_object=candidate_first)
     for item in [subject, body_text, body_html]:
         assert candidate_first.first_name in item
         assert candidate_first.last_name in item
-        assert candidate_first.id
+
+    for item in [body_text, body_html]:
+        assert str(candidate_first.id) in item
+        assert user_first.name in item
 
     # Test with invalid object(i.e. other than user or candidate)
     try:

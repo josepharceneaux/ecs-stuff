@@ -2,6 +2,7 @@ import json
 
 from contracts import contract
 
+from candidate import Candidate
 from db import db
 import datetime
 from talent_pools_pipelines import TalentPipeline, TalentPool, TalentPoolCandidate
@@ -84,8 +85,16 @@ class SmartlistCandidate(db.Model):
         talent_pool_ids = [talent_pool.id for talent_pool in talent_pools]  # Extracting data on 0th index from tuple
         candidate_ids = TalentPoolCandidate.query.with_entities(TalentPoolCandidate.candidate_id). \
             filter(TalentPoolCandidate.talent_pool_id.in_(talent_pool_ids)).distinct().all()
-        candidate_ids = [candidate_id[0] for candidate_id in candidate_ids]  # Extracting data on 0th index from tuple
+        candidates = []
+        for candidate_id in candidate_ids:
+            candidates.append(Candidate.get_by_id(candidate_id[0]))
+        candidate_ids = [candidate.id for candidate in candidates if not candidate.is_web_hidden]
         smartlist_ids = SmartlistCandidate.query.with_entities(SmartlistCandidate.smartlist_id). \
             filter(SmartlistCandidate.candidate_id.in_(candidate_ids)).distinct().all()
         smartlist_ids = [smartlist_id[0] for smartlist_id in smartlist_ids]  # Extracting data on 0th index from tuple
+        # Checking if any of the selected smartlists is hidden
+        smartlists = []
+        for smartlist_id in smartlist_ids:  # Extracting unhidden campaigns
+            smartlists.append(Smartlist.get_by_id(smartlist_id))
+        smartlist_ids = [smartlist.id for smartlist in smartlists if not smartlist.is_hidden]
         return smartlist_ids

@@ -129,7 +129,7 @@ class Candidate(db.Model):
         domain_id = User.get_domain_id(user_id)
         return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
             .filter(and_(User.id == Candidate.user_id, User.domain_id == domain_id)). \
-            filter(CandidateSkill.description.in_(skills)).distinct().count()
+            filter(CandidateSkill.description.in_(skills), Candidate.is_web_hidden == 0).distinct().count()
 
     @staticmethod
     @contract
@@ -140,23 +140,26 @@ class Candidate(db.Model):
         :param string zipcode: Candidate zipcode
         :rtype: int|long
         """
-        assert isinstance(zipcode, basestring) and zipcode, "Invalid zipcode"
-        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
         from .user import User  # This has to be here to avoid circular import
         domain_id = User.get_domain_id(user_id)
         return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
             filter(and_(Candidate.user_id == User.id, User.domain_id == domain_id)). \
-            filter(CandidateAddress.zip_code == zipcode).distinct().count()
+            filter(CandidateAddress.zip_code == zipcode, Candidate.is_web_hidden == 0).distinct().count()
 
     @classmethod
-    def get_all_in_user_domain(cls, domain_id):
+    def get_all_in_user_domain(cls, domain_id, is_hidden=1):
         """
-        This method returns number of candidates from a certain zipcode
+        This method returns number of candidates from a certain zipcode, if is_hidden is 1 it returns hidden candidtes
+        as well if it is 0 it returns only un-hidden candidates
+        :param int is_hidden: Is_hidden integer
         :param int|long domain_id: Domain Id
         """
         assert domain_id, 'domain_id not provided'
         from user import User  # This has to be here to avoid circular import
-        return cls.query.join(User, User.domain_id == domain_id).filter(Candidate.user_id == User.id).all()
+        common_query = cls.query.join(User, User.domain_id == domain_id).filter(Candidate.user_id == User.id)
+        if is_hidden == 0:
+            return common_query.filter(Candidate.is_web_hidden == 0).all()
+        return common_query.all()
 
 
 class CandidateStatus(db.Model):

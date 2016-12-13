@@ -112,6 +112,7 @@ class BaseCampaignOverview(Resource):
                 "start_datetime": "2016-08-13 16:21:42",
                 "venue_id": 307,
                 "user_id": 1,
+                "is_deleted_from_vendor": 0,
                 "description": "Test Event Description",
                 "social_network_id": 13,
                 "url": "",
