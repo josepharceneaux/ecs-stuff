@@ -770,6 +770,8 @@ class QuestionHandler(object):
         e.g. {'candidates': [CandidateObject, CandidateObject, ...]}
         """
         candidate = openweb_candidate["candidate"]
+        if "dice_profile_id" in candidate:
+            candidate.pop("dice_profile_id")
         candidates = {"candidates": [candidate]}
         response = send_request('post', CandidateApiUrl.CANDIDATES, token, candidates)
         if response.ok:
