@@ -641,8 +641,8 @@ class QuestionHandler(object):
             ["Pipelines in your domain are following:"]
         scope = DOMAIN_SPECIFIC if asking_about_all_pipelines else OWNED
         pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope)
-        state = {"class": "TalentPipeline", "method": "get_own_or_domain_pipelines", "page_number": 1,
-                 "params": [user_id, scope], "repr": "pipelines"}
+        state = {"class": "TalentPipeline", "method": "get_own_or_domain_pipelines", "params": [user_id, scope, 1],
+                 "repr": "pipelines"}
         redis_store.set(user_id, json.dumps(state))
         return cls.custom_count_appender(1, pipelines, "pipelines", response)
 
@@ -1017,13 +1017,12 @@ class QuestionHandler(object):
         """
         :param positive user_id:
         """
-        # Acquiring Lock
-        lock = redis_store.get("%dredis_lock" % user_id)
-        if lock is not None:
-            lock = eval(lock)
+        # Requesting Lock
+        lock = cls.request_lock(user_id)
         while lock:
             sleep(randint(1, 2))
-            lock = eval(redis_store.get("%dredis_lock" % user_id))
+            lock = cls.request_lock(user_id)
+        # Acquiring lock
         redis_store.set("%dredis_lock" % user_id, True)
         state = redis_store.get(user_id)
         if state:
@@ -1031,22 +1030,36 @@ class QuestionHandler(object):
                 state = json.loads(state)
             except Exception as error:
                 logger.info("No state found: %s" % error.message)
+                # Releasing lock
                 redis_store.set("%dredis_lock" % user_id, False)
                 return None
-            representative = state["repr"]
-            _class = CLASSES[state["class"]]
+            # Getting state data from redis
+            representative, _class, params = state["repr"], CLASSES[state["class"]], state["params"]
             method = getattr(_class, state["method"])
-            params = state["params"]
-            page_number = state["page_number"]
+            page_number = params[-1]
+            # Increasing page number
             page_number += 1
-            params.append(page_number)
+            params[-1] = page_number
             _list = method(*tuple(params))
             if _list:
                 state.update({"page_number": page_number})
-                params.pop()
                 redis_store.set(user_id, json.dumps(state))
+                # Releasing lock
                 redis_store.set("%dredis_lock" % user_id, False)
                 start = 1 if page_number == 1 else page_number * 10 - 9
                 return cls.custom_count_appender(start, _list, representative, [])
             redis_store.delete(user_id)
-            return None
+        return None
+
+    @staticmethod
+    @contract
+    def request_lock(user_id):
+        """
+
+        :param positive user_id:
+        :rtype: None|bool
+        """
+        lock = redis_store.get("%dredis_lock" % user_id)
+        if lock is not None:
+            lock = eval(lock)
+        return lock
