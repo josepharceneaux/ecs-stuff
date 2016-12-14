@@ -23,6 +23,7 @@ from ska import (sign_url, Signature)
 # Database Models
 
 from ..models.db import db
+from ..models.event import Event
 from ..models.misc import Activity
 from ..models.email_campaign import EmailCampaign, EmailCampaignBlast, EmailCampaignSend
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist, SmsCampaignBlast,
@@ -70,16 +71,17 @@ class CampaignUtils(object):
     SMS = SmsCampaign.__tablename__
     PUSH = PushCampaign.__tablename__
     EMAIL = EmailCampaign.__tablename__
+    EVENT = Event.__tablename__
 
     # Any campaign service will add the entry of respective model name here
     MODELS = (SmsCampaign, EmailCampaign, PushCampaign)
     SMARTLIST_MODELS = (SmsCampaignSmartlist, PushCampaignSmartlist)
     BLAST_MODELS = (SmsCampaignBlast, EmailCampaignBlast, PushCampaignBlast)
     SEND_MODELS = (SmsCampaignSend, EmailCampaignSend, PushCampaignSend)
-    NAMES = (SMS, EMAIL, PUSH)
+    NAMES = (SMS, EMAIL, PUSH, EVENT)
     # This contains campaign types for which we need to append 'an' in activity message.
     # e.g. 'John' created an SMS campaign
-    WITH_ARTICLE_AN = [_get_campaign_type_prefix(item).lower() for item in [SMS, EMAIL, PUSH]]
+    WITH_ARTICLE_AN = [_get_campaign_type_prefix(item).lower() for item in [SMS, EMAIL, PUSH, EVENT]]
     # This variable is used for sms_campaign_service. In case of 'dev', 'jenkins' or 'qa', our
     # Twilio's account should not be charged while purchasing a number or sending SMS to candidates.
     # This is set to False in case of 'prod'.

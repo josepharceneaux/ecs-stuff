@@ -211,7 +211,7 @@ class TalentActivityManager(object):
             "<b>%(username)s</b> deleted %(count)s campaign(s)",
             "campaign.png"),
         Activity.MessageIds.CAMPAIGN_SEND: (
-            "Campaign <b>%(name)s<b> was sent to %(num_candidates)s candidate(s)",
+            "Campaign <b>%(name)s</b> was sent to %(num_candidates)s candidate(s)",
             "%(count)s campaign(s) sent",
             "campaign.png"),
         Activity.MessageIds.CAMPAIGN_EXPIRE: (

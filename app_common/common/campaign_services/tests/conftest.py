@@ -5,8 +5,6 @@ Here are fixtures to be used across campaign-services.
 """
 # Packages
 import json
-import os
-
 import pytest
 from copy import deepcopy
 from requests import codes
@@ -15,7 +13,7 @@ from requests import codes
 # Application Specific
 
 from ...models.db import db
-from ...tests.app import test_app
+from ...tests.app import test_app, logger
 from ...tests.sample_data import fake
 from ...redis_cache import redis_store2
 from ...constants import (MEETUP, EVENTBRITE)
@@ -211,7 +209,7 @@ def eventbrite():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def test_eventbrite_credentials(request, user_first, eventbrite):
+def test_eventbrite_credentials(user_first, eventbrite):
     """
     Create eventbrite social network credentials for this user so
     we can create event on Eventbrite.com
@@ -268,7 +266,7 @@ def organizer_in_db(user_first):
 
 
 @pytest.fixture(scope="session")
-def eventbrite_event(test_eventbrite_credentials, eventbrite, eventbrite_venue, token_first):
+def eventbrite_event(request, test_eventbrite_credentials, user_first, eventbrite, eventbrite_venue, token_first):
     """
     This method create a dictionary data to create event on eventbrite.
     It uses meetup SocialNetwork model object, venue for meetup
@@ -293,6 +291,27 @@ def eventbrite_event(test_eventbrite_credentials, eventbrite, eventbrite_venue, 
     del _event['venue']
     del _event['event_organizer']
 
+    def fin():
+        try:
+            from social_network_service.modules.event.eventbrite import Eventbrite as EventbriteEventBase
+            from social_network_service.modules.social_network.eventbrite import Eventbrite as EventbriteSocialNetwork
+            with test_app.app_context():
+                # Delete events from vendor
+                eventbrite_sn = EventbriteSocialNetwork(user_id=user_first['id'], social_network_id=eventbrite['id'])
+                eventbrite_event_object = EventbriteEventBase(
+                    headers=eventbrite_sn.headers, user_credentials=eventbrite_sn.user_credentials,
+                    social_network=eventbrite_sn.user_credentials.social_network)
+                events = eventbrite_event_object.get_events(status='draft,live')
+                print 'Got %s events on Eventbrite website' % len(events)
+                for vendor_event in events:
+                    try:
+                        eventbrite_event_object.unpublish_event(vendor_event['id'])
+                    except Exception:
+                        logger.exception('Unable to delete event from Eventbrite website')
+        except Exception:
+            logger.exception('Error occurred while deleting events from Eventbrite website')
+
+    request.addfinalizer(fin)
     return _event
 
 

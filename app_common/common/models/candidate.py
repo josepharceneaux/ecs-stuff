@@ -22,7 +22,9 @@ class Candidate(db.Model):
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
     candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.Id'))
+    # TODO: remove is_web_hidden after all migrations has been completed
     is_web_hidden = db.Column('IsWebHidden', TINYINT, default=False)
+    is_archived = db.Column(TINYINT, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
     user_id = db.Column('OwnerUserId', BIGINT, db.ForeignKey('user.Id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
@@ -108,6 +110,7 @@ class Candidate(db.Model):
                                    source_id=source_id,
                                    source_product_id=product_id).first()
 
+    # TODO: change function to "set_is_archived_to_true" when is_web_hidden has been removed
     @classmethod
     def set_is_web_hidden_to_true(cls, candidate_id):
         """
@@ -1372,6 +1375,7 @@ class CandidateDevice(db.Model):
         query = cls.query.join(Candidate).join(User).join(Domain)
         query = query.filter(cls.one_signal_device_id == one_signal_id)
         query = query.filter(cls.candidate_id == Candidate.id)
+        # TODO: change Candidate.is_web_hidden == 0 to Candidate.is_archived == 0 AFTER is_web_hidden has been removed from Candidate model
         query = query.filter(Candidate.user_id == User.id, Candidate.is_web_hidden == 0)
         query = query.filter(User.domain_id == domain_id)
         return query.first()
