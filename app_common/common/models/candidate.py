@@ -24,7 +24,7 @@ class Candidate(db.Model):
     candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.Id'))
     # TODO: remove is_web_hidden after all migrations has been completed
     is_web_hidden = db.Column('IsWebHidden', TINYINT, default=False)
-    is_archived = db.Column(TINYINT, default=False)
+    is_archived = db.Column(TINYINT, default=0)
     is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
     user_id = db.Column('OwnerUserId', BIGINT, db.ForeignKey('user.Id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
