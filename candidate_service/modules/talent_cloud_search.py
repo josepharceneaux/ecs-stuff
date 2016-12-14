@@ -141,7 +141,8 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 
     # Tags
     'tag_ids':                       dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
-    'tags':                          dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': True})
+    'tags':                          dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': True}),
+    'is_archived':                   dict(IndexFieldType='int',             IntOptions={'SearchEnabled': True})
 }
 
 # Filter all text, text-array, literal and literal-array index fields
@@ -274,6 +275,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.id AS `id`, candidate.firstName AS `first_name`, candidate.lastName AS `last_name`,
                 candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, :date_format) AS `added_time`,
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
+                candidate.is_archived AS `is_archived`,
                 HOUR(candidate.addedTime) AS `added_time_hour`, candidate.sourceId AS `source_id`,
                 candidate.sourceProductId AS `source_product_id`, candidate.totalMonthsExperience AS
                 `total_months_experience`, candidate.isWebHidden AS `is_web_hidden`,
