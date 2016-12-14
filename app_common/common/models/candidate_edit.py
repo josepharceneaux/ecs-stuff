@@ -36,7 +36,7 @@ class CandidateEdit(db.Model):
             'total_months_experience': 7,
             'culture_id': 8,
             'filename': 9,
-            'is_web_hidden': 10
+            'is_web_hidden': 10  # TODO: change to is_archived after is_web_hidden has been removed from Candidate model
         },
         'candidate_address': {
             'address_line_1': 101,

@@ -80,7 +80,7 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
     .. see also:: url_redirect() method of CampaignBase class
     """
     # check if candidate exists in database
-    if not candidate or candidate.is_web_hidden:
+    if not candidate or candidate.is_archived:
         raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: Candidate not found.',
                                error_code=ResourceNotFound.http_status_code())
     # check if campaign_blasts exists in database

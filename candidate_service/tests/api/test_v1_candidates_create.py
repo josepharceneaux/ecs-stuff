@@ -546,11 +546,11 @@ class TestCreateInvalidCandidates(object):
         assert response.json()['errors']
 
 
-class TestCreateHiddenCandidate(object):
-    def test_create_hidden_candidate(self, access_token_first, talent_pool):
+class TestCreateArchivedCandidate(object):
+    def test_create_archived_candidate(self, access_token_first, talent_pool):
         """
-        Test: Create a candidate that was previously web-hidden
-        Expect: 201, candidate should no longer be web hidden.
+        Test: Create a candidate that was previously archived
+        Expect: 201, candidate should no longer be archived.
                 No duplicate records should be in the database
         """
         # Create candidate
@@ -564,32 +564,29 @@ class TestCreateHiddenCandidate(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         first_can_email = get_resp.json()['candidate']['emails'][0]
 
-        # Hide candidate
-        hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
-        hide_resp = send_request('patch', CANDIDATES_URL, access_token_first, hide_data)
-        print response_info(hide_resp)
+        # Archive candidate
+        archive_data = {'candidates': [{'id': candidate_id, 'archive': True}]}
+        archive_resp = send_request('patch', CANDIDATES_URL, access_token_first, archive_data)
+        print response_info(archive_resp)
         candidate = Candidate.get(candidate_id)
         candidate_emails_count = len(candidate.emails)
-        assert hide_resp.status_code == requests.codes.OK
-        assert candidate.is_web_hidden
+        assert archive_resp.status_code == requests.codes.OK
+        assert candidate.is_archived
 
         # Create previously deleted candidate
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         db.session.commit()
         print response_info(create_resp)
         assert create_resp.status_code == requests.codes.CREATED
-        assert not candidate.is_web_hidden
+        assert not candidate.is_archived
         assert CandidateEmail.get_by_address(first_can_email['address'])[0].id == first_can_email['id']
         assert len(candidate.emails) == candidate_emails_count
 
-    def test_create_hidden_candidate_with_different_user_from_same_domain(
-            self, access_token_first, user_first, user_same_domain, talent_pool):
+    def test_create_archived_candidate_with_different_user_from_same_domain(self, access_token_first, talent_pool):
         """
-        Test: Create a candidate that was previously web-hidden with a different
-              user from the same domain
-        Expect: 201, candidate should no longer be web-hidden
+        Test: Create a candidate that was previously archived with a different user from the same domain
+        Expect: 201, candidate should no longer be archived
         """
-
         # Create candidate
         data = CommonData.data(talent_pool)
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
@@ -601,21 +598,20 @@ class TestCreateHiddenCandidate(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         first_can_email = get_resp.json()['candidate']['emails'][0]
 
-        # Hide candidate
-        hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
-        hide_resp = send_request('patch', CANDIDATES_URL, access_token_first, hide_data)
-        print response_info(hide_resp)
+        # Archive candidate
+        archive_data = {'candidates': [{'id': candidate_id, 'archive': True}]}
+        archive_resp = send_request('patch', CANDIDATES_URL, access_token_first, archive_data)
+        print response_info(archive_resp)
         candidate = Candidate.get_by_id(candidate_id)
         candidate_emails_count = len(candidate.emails)
-        assert hide_resp.status_code == requests.codes.OK
+        assert archive_resp.status_code == requests.codes.OK
 
         db.session.refresh(candidate)
         db.session.commit()
 
-        assert candidate.is_web_hidden
+        assert candidate.is_archived
 
-        # Create previously hidden candidate with a different user from the same domain
-
+        # Create previously archived candidate with a different user from the same domain
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
         assert create_resp.status_code == requests.codes.CREATED
@@ -623,14 +619,13 @@ class TestCreateHiddenCandidate(object):
         db.session.refresh(candidate)
         db.session.commit()
 
-        assert not candidate.is_web_hidden
+        assert not candidate.is_archived
         assert CandidateEmail.get_by_address(first_can_email['address'])[0].id == first_can_email['id']
         assert len(candidate.emails) == candidate_emails_count
 
-    def test_create_hidden_candidate_with_fields_that_cannot_be_aggregated(self, access_token_first,
-                                                                           user_first, talent_pool):
+    def test_create_archived_candidate_with_fields_that_cannot_be_aggregated(self, access_token_first, talent_pool):
         """
-        Test: Create a candidate that is currently web-hidden but with a different name
+        Test: Create a candidate that is currently archived but with a different name
         Expect: 200; candidate's full name must be updated
         """
         # Create candidate
@@ -644,13 +639,13 @@ class TestCreateHiddenCandidate(object):
         candidate_email = get_resp.json()['candidate']['emails'][0]
         full_name = get_resp.json()['candidate']['full_name']
 
-        # Hide candidate
-        hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
-        hide_resp = send_request('patch', CANDIDATES_URL, access_token_first, hide_data)
-        print response_info(hide_resp)
+        # Archive candidate
+        archive_data = {'candidates': [{'id': candidate_id, 'archive': True}]}
+        archive_resp = send_request('patch', CANDIDATES_URL, access_token_first, archive_data)
+        print response_info(archive_resp)
         candidate = Candidate.get_by_id(candidate_id)
-        assert hide_resp.status_code == requests.codes.OK
-        assert candidate.is_web_hidden
+        assert archive_resp.status_code == requests.codes.OK
+        assert candidate.is_archived
 
         # Create previously deleted candidate
         data = {'candidates': [{'emails': [{'address': candidate_email['address']}], 'first_name': 'McLovin',
@@ -659,7 +654,7 @@ class TestCreateHiddenCandidate(object):
         db.session.commit()
         print response_info(create_resp)
         assert create_resp.status_code == requests.codes.CREATED
-        assert not candidate.is_web_hidden
+        assert not candidate.is_archived
 
         # Retrieve candidate
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
@@ -667,14 +662,14 @@ class TestCreateHiddenCandidate(object):
         assert get_resp.status_code == requests.codes.OK
         assert get_resp.json()['candidate']['full_name'] != full_name
 
-    def test_create_candidates_and_delete_one_then_create_it_again(
-            self, access_token_first, user_first, talent_pool, access_token_second,
-            user_second, talent_pool_second):
+    def test_create_candidates_and_delete_one_then_create_it_again(self, access_token_first,
+                                                                   talent_pool, access_token_second,
+                                                                   talent_pool_second):
         """
         Test brief:
         1. Create two candidates with the same email address in different domains
-        2. Hide one
-        3. Assert the other candidate is not web-hidden
+        2. Archive one
+        3. Assert the other candidate is not archived
         """
         # Create candidates
         data_1 = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]},
@@ -688,29 +683,27 @@ class TestCreateHiddenCandidate(object):
         candidate_id_1 = create_resp_1.json()['candidates'][0]['id']
         candidate_id_2 = create_resp_2.json()['candidates'][0]['id']
 
-        # Hide candidate_1
-        hide_data = {'candidates': [{'id': candidate_id_1, 'hide': True}]}
-        hide_resp = send_request('patch', CANDIDATES_URL, access_token_first, hide_data)
+        # Archive candidate_1
+        archive_data = {'candidates': [{'id': candidate_id_1, 'archive': True}]}
+        archive_resp = send_request('patch', CANDIDATES_URL, access_token_first, archive_data)
         db.session.commit()
-        print response_info(hide_resp)
+        print response_info(archive_resp)
         candidate = Candidate.get_by_id(candidate_id_1)
-        assert candidate.is_web_hidden
+        assert candidate.is_archived
 
         # Retrieve candidate_1
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id_1, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.NOT_FOUND
-        assert get_resp.json()['error']['code'] == candidate_errors.CANDIDATE_IS_HIDDEN
+        assert get_resp.json()['error']['code'] == candidate_errors.CANDIDATE_IS_ARCHIVED
 
         # Retrieve candidate_2
         get_resp_2 = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id_2, access_token_second)
         print response_info(response=get_resp_2)
         assert get_resp_2.status_code == requests.codes.OK
 
-    def test_recreate_hidden_candidate_using_candidate_with_multiple_emails(self, access_token_first,
-                                                                            user_first, talent_pool):
+    def test_recreate_archived_candidate_using_candidate_with_multiple_emails(self, access_token_first, talent_pool):
         # Create candidate
-
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
                 {'address': fake.safe_email()}, {'address': fake.safe_email()}
@@ -719,14 +712,14 @@ class TestCreateHiddenCandidate(object):
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
 
-        # Hide candidate
+        # Archive candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
-        hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
-        hide_resp = send_request('patch', CANDIDATES_URL, access_token_first, hide_data)
+        archive_data = {'candidates': [{'id': candidate_id, 'archive': True}]}
+        archive_resp = send_request('patch', CANDIDATES_URL, access_token_first, archive_data)
         db.session.commit()
-        print response_info(hide_resp)
+        print response_info(archive_resp)
         candidate = Candidate.get_by_id(candidate_id)
-        assert candidate.is_web_hidden == 1
+        assert candidate.is_archived == 1
 
         # Re-create candidate
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
@@ -736,7 +729,7 @@ class TestCreateHiddenCandidate(object):
 
 
 class TestCreateCandidateAddress(object):
-    def test_create_candidate_address(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_address(self, access_token_first, talent_pool):
         """
         Test: Create new candidate + candidate-address
         Expect: 201
@@ -755,7 +748,7 @@ class TestCreateCandidateAddress(object):
         assert get_resp.status_code == requests.codes.OK
         assert get_country_code_from_name(get_resp.json()['candidate']['addresses'][0]['country']) == country_code
 
-    def test_create_candidate_with_bad_zip_code(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_with_bad_zip_code(self, access_token_first, talent_pool):
         """
         Test:   Attempt to create a Candidate with invalid zip_code
         Expect: 201, but zip_code must be Null
@@ -951,7 +944,7 @@ class TestCreateMilitaryService(object):
         assert can_military_services[-1]['highest_rank'] == can_military_services_data['highest_rank']
         assert can_military_services[-1]['branch'] == can_military_services_data['branch']
 
-    def test_add_military_service_with_empty_values(self, access_token_first, user_first, talent_pool):
+    def test_add_military_service_with_empty_values(self, access_token_first, talent_pool):
         """
         Test:  Add candidate military service with all-empty-values and another one with some empty values
         Expect:  201; but military service should not be added to db if all its data is empty

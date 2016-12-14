@@ -9,6 +9,11 @@ from candidate_sample_data import (fake, generate_single_candidate_data, Generat
 from candidate_service.common.models.candidate import CandidateEmail
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
+
+# Conftest
+from candidate_service.common.tests.conftest import *
+
+# Helper functions
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
@@ -59,33 +64,37 @@ class TestUpdateCandidateSuccessfully(object):
 
 
 class TestUpdateCandidate(object):
-    def test_hide_candidates(self, access_token_first, talent_pool):
+    def test_archive_candidates(self, user_first, access_token_first, talent_pool,
+                                domain_source, domain_aois, domain_custom_fields):
         """
-        Test:  Create a candidate and hide it
+        Test:  Create a candidate and archive it
         Expect: 200; candidate should not be retrievable
         """
         # Create candidate
-        data = generate_single_candidate_data([talent_pool.id])
+        data = generate_single_candidate_data(talent_pool_ids=[talent_pool.id],
+                                              areas_of_interest=domain_aois,
+                                              custom_fields=domain_custom_fields,
+                                              source_id=domain_source['source']['id'])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
 
-        # Hide candidate
+        # Archive candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
-        data = {'candidates': [{'id': candidate_id, 'hide': True}]}
+        data = {'candidates': [{'id': candidate_id, 'archive': True}]}
         update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(update_resp)
         assert update_resp.status_code == 200
-        assert update_resp.json()['hidden_candidate_ids'][0] == candidate_id
+        assert update_resp.json()['archived_candidates'][0] == candidate_id
 
         # Retrieve candidate
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == 404
-        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
+        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_ARCHIVED
 
-    def test_hide_and_unhide_candidates(self, access_token_first, talent_pool):
+    def test_archive_and_unarchive_candidates(self, access_token_first, talent_pool):
         """
-        Test:  Create candidates, hide them, and unhide them again via Patch call
+        Test:  Create candidates, archive them, and un-archive them again via Patch call
         """
         # Create candidates
         data_1 = generate_single_candidate_data([talent_pool.id])
@@ -96,23 +105,27 @@ class TestUpdateCandidate(object):
         candidate_id_1 = create_resp_1.json()['candidates'][0]['id']
         candidate_id_2 = create_resp_2.json()['candidates'][0]['id']
 
-        # Hide both candidates
-        hide_data = {'candidates': [{'id': candidate_id_1, 'hide': True}, {'id': candidate_id_2, 'hide': True}]}
-        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, hide_data)
+        # Archive both candidates
+        archive_data = {'candidates': [
+            {'id': candidate_id_1, 'archive': True}, {'id': candidate_id_2, 'archive': True}]
+        }
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, archive_data)
         print response_info(update_resp)
         assert update_resp.status_code == 200
-        assert len(update_resp.json()['hidden_candidate_ids']) == len(hide_data['candidates'])
+        assert len(update_resp.json()['archived_candidates']) == len(archive_data['candidates'])
 
         # Retrieve candidates
         data = {'candidate_ids': [candidate_id_1, candidate_id_2]}
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE_SEARCH_URI, access_token_first, data)
         print response_info(get_resp)
         assert get_resp.status_code == 404
-        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
+        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_ARCHIVED
 
-        # Un-hide candidates
-        unhide_data = {'candidates': [{'id': candidate_id_1, 'hide': False}, {'id': candidate_id_2, 'hide': False}]}
-        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, unhide_data)
+        # Undo Archived candidates
+        unarchive_data = {'candidates': [
+            {'id': candidate_id_1, 'archive': False}, {'id': candidate_id_2, 'archive': False}]
+        }
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, unarchive_data)
         print response_info(update_resp)
         assert update_resp.status_code == 200
 
@@ -122,8 +135,7 @@ class TestUpdateCandidate(object):
         print response_info(get_resp)
         assert get_resp.status_code == 200
 
-    def test_update_candidate_outside_of_domain(self, access_token_first, user_first, talent_pool,
-                                                access_token_second, user_second):
+    def test_update_candidate_outside_of_domain(self, access_token_first, talent_pool, access_token_second):
         """
         Test: User attempts to update a candidate from a different domain
         Expect: 403

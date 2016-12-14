@@ -42,6 +42,7 @@ from email_campaign_service.common.inter_service_calls.candidate_pool_service_ca
 
 SIX_MONTHS_EXPIRATION_TIME = 15768000
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
+DEFAULT_USER_NAME_MERGETAG = "*|USERNAME|*"
 DEFAULT_LAST_NAME_MERGETAG = "*|LASTNAME|*"
 DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
 TRACKING_PIXEL_URL = "https://s3-us-west-1.amazonaws.com/gettalent-static/pixel.png"
@@ -83,7 +84,7 @@ def jwt_security_key():
 
 
 @contract
-def do_mergetag_replacements(texts, requested_object=None, candidate_address=None):
+def do_mergetag_replacements(texts, current_user, requested_object=None, candidate_address=None):
     """
     Here we do the replacements of merge tags with required values. This serves for candidate and user.
     If no candidate or user is provided, name is set to "John Doe".
@@ -92,6 +93,8 @@ def do_mergetag_replacements(texts, requested_object=None, candidate_address=Non
     :param list[> 0](string) texts: List of e.g. subject, body_text and body_html
     :rtype: list[> 0](string)
     """
+    if not isinstance(current_user, User):
+        raise InvalidUsage('Invalid object passed for user')
     if requested_object and not isinstance(requested_object, (Candidate, User)):
         raise InvalidUsage('Invalid object passed')
 
@@ -103,16 +106,18 @@ def do_mergetag_replacements(texts, requested_object=None, candidate_address=Non
         last_name = requested_object.last_name if requested_object.last_name else last_name
 
     new_texts = []
+    merge_tag_replacement_dict = {DEFAULT_FIRST_NAME_MERGETAG: first_name,
+                                  DEFAULT_LAST_NAME_MERGETAG: last_name,
+                                  DEFAULT_USER_NAME_MERGETAG: current_user.name}
     for text in texts:
-        # Do first/last name replacements
-        text = text.replace(DEFAULT_FIRST_NAME_MERGETAG, first_name) if text and (
-            DEFAULT_FIRST_NAME_MERGETAG in text) else text
-        text = text.replace(DEFAULT_LAST_NAME_MERGETAG, last_name) if text and (
-            DEFAULT_LAST_NAME_MERGETAG in text) else text
-
-        # Do 'Unsubscribe' link replacements
-        if isinstance(requested_object, Candidate) and text and (DEFAULT_PREFERENCES_URL_MERGETAG in text):
-            text = do_prefs_url_replacement(text, requested_object, candidate_address)
+        if text:
+            for key, value in merge_tag_replacement_dict.iteritems():
+                if key in text:
+                    # Do first_name, last_name and username replacements
+                    text = text.replace(key, value)
+            # Do 'Unsubscribe' link replacements
+            if isinstance(requested_object, Candidate) and DEFAULT_PREFERENCES_URL_MERGETAG in text:
+                text = do_prefs_url_replacement(text, requested_object, candidate_address)
         new_texts.append(text)
 
     return new_texts

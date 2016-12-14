@@ -45,6 +45,7 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
 
 GRAPHQL_BASE_URL = GraphqlServiceApiUrl.GRAPHQL
 EMAIL_CAMPAIGN_TYPES = [EmailCampaignTypes.WITHOUT_CLIENT, EmailCampaignTypes.WITH_CLIENT]
+START_DATETIME_OFFSET = 15
 
 
 @pytest.fixture()
@@ -395,7 +396,7 @@ def email_campaign_with_outgoing_email_client(access_token_first, talent_pipelin
     """
     This creates an email-campaign which will be sent via an SMTP server added by user.
     """
-    subject = '%s-test_email_campaign_with_outgoing_email_client' % fake.uuid4()
+    subject = '%s-test_email_campaign_with_smtp_server' % fake.uuid4()[0:4]
     campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
     campaign_data['frequency_id'] = Frequency.DAILY
     campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(weeks=1))
@@ -438,9 +439,12 @@ def data_for_email_conversation_importer(email_clients, headers, user_first, can
     assert response.ok
     assert response.json()
     email_client_response = response.json()['email_client_credentials']
-    email_campaign = create_email_campaign_with_merge_tags(user_first, add_preference_url=False)
+    email_campaign = create_email_campaign_with_merge_tags(user_first)
+    user_first.update(first_name=fake.first_name())
+    user_first.update(last_name=fake.last_name())
     [subject, body_text] = do_mergetag_replacements([email_campaign.subject, email_campaign.body_text],
-                                                    candidate_first, candidate_email.address)
+                                                    user_first, requested_object=candidate_first,
+                                                    candidate_address=candidate_email.address)
     # Send email
     print 'Sending email with SMTP server'
     client = SMTP(email_client_response['host'], email_client_response['port'],
@@ -452,3 +456,31 @@ def data_for_email_conversation_importer(email_clients, headers, user_first, can
     assert response.json()
     imap_email_client_response = response.json()['email_client_credentials']
     return subject, body_text, imap_email_client_response
+
+
+@pytest.fixture()
+def periodic_scheduled_campaign(request, access_token_first, talent_pipeline):
+    """
+    This creates a periodic scheduled campaign. It finally archives the email-campaign so that it does not
+    get sent after the test has finished working.
+    """
+    subject = '%s-test_schedule_periodic' % fake.uuid4()[0:8]
+    campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
+    campaign_data['frequency_id'] = Frequency.CUSTOM
+    campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow()
+                                                               + timedelta(seconds=START_DATETIME_OFFSET))
+    campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(days=10))
+    response = create_email_campaign_via_api(access_token_first, campaign_data)
+    assert response.status_code == codes.CREATED
+    resp_object = response.json()
+    assert 'campaign' in resp_object
+    campaign_id = resp_object['campaign']['id']
+    assert campaign_id
+
+    def fin():
+        data = {'is_hidden': 1}
+        CampaignsTestsHelpers.request_for_ok_response('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id,
+                                                      access_token_first, data)
+
+    request.addfinalizer(fin)
+    return {'id': campaign_id}

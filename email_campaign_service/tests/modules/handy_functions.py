@@ -41,7 +41,7 @@ from email_campaign_service.common.tests.fake_testing_data_generator import Fake
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.modules.utils import (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_PREFERENCES_URL_MERGETAG,
-                                                  DEFAULT_LAST_NAME_MERGETAG)
+                                                  DEFAULT_LAST_NAME_MERGETAG, DEFAULT_USER_NAME_MERGETAG)
 
 
 __author__ = 'basit'
@@ -110,11 +110,12 @@ def create_email_campaign_with_merge_tags(user, add_preference_url=True):
     email_campaign = create_email_campaign(user, add_subject=False)
     # Update email-campaign's body text
     starting_string = 'Hello %s %s' % (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG)
+    ending_string = ' Thanks, %s' % DEFAULT_USER_NAME_MERGETAG
     email_campaign.update(subject=starting_string + email_campaign.subject)
     if add_preference_url:
         starting_string += ', Unsubscribe URL is:%s' % DEFAULT_PREFERENCES_URL_MERGETAG
-    email_campaign.update(body_text=starting_string + email_campaign.body_text,
-                          body_html=starting_string + email_campaign.body_html)
+    email_campaign.update(body_text=starting_string + email_campaign.body_text + ending_string,
+                          body_html=starting_string + email_campaign.body_html + ending_string)
 
     return email_campaign
 

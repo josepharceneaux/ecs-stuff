@@ -9,10 +9,10 @@ with SMS.
 # Builtin import
 import random
 #  Common utils
-from talentbot_service.common.models.user import TalentbotAuth, UserPhone
+from talentbot_service.common.models.user import TalentbotAuth, UserPhone, User
 # App specific imports
 from talentbot_service.modules.constants import TEXT_MESSAGE_MAX_LENGTH, AUTHENTICATION_FAILURE_MSG,\
-    I_AM_PARSING_A_RESUME
+    I_AM_PARSING_A_RESUME, USER_DISABLED_MSG
 from twilio.rest import TwilioRestClient
 from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger
@@ -33,13 +33,20 @@ class SmsBot(TalentBot):
         """
         Authenticates user
         :rtype: tuple(bool, int)
+        :return: is_authenticated, user Id
         """
         user_phone_id = UserPhone.get_by_phone_value(mobile_number)
         if user_phone_id:
-            talentbot_auth = TalentbotAuth.get_user_id(user_phone_id=user_phone_id[0].id)
-            if talentbot_auth:
-                return True, talentbot_auth[0]
-        return False, None
+            user_ids = TalentbotAuth.get_user_id(user_phone_id=user_phone_id[0].id)
+            if user_ids:
+                user = User.get_by_id(user_ids[0])
+                if user.is_disabled:
+                    is_authenticated, user_id = True, None
+                    return is_authenticated, user_id
+                is_authenticated = True
+                return is_authenticated, user_ids[0]
+        is_authenticated, user_id = False, None
+        return is_authenticated, user_id
 
     def reply(self, response, recipient):
         """
@@ -76,18 +83,22 @@ class SmsBot(TalentBot):
         """
         is_authenticated, user_id = self.authenticate_user(recipient)
         if is_authenticated:
-            if self.is_response_time_more_than_usual(message):
-                self.reply(I_AM_PARSING_A_RESUME, recipient)
-            try:
-                response_generated = self.parse_message(message, user_id)
-                if response_generated:
-                    response_generated = self.clean_response_message(response_generated)
-                    self.reply(response_generated, recipient)
-                else:
-                    raise IndexError
-            except (IndexError, NameError, KeyError):
-                error_response = random.choice(self.error_messages)
-                self.reply(error_response, recipient)
+            if not user_id:
+                self.reply(USER_DISABLED_MSG, recipient)
+            else:
+                if self.is_response_time_more_than_usual(message):
+                    self.reply(I_AM_PARSING_A_RESUME, recipient)
+                try:
+                    response_generated = self.parse_message(message, user_id)
+                    if response_generated:
+                        response_generated = self.clean_response_message(response_generated)
+                        self.reply(response_generated, recipient)
+                    else:
+                        raise IndexError
+                except Exception as error:
+                    logger.error("Error occurred while generating response: %s" % error.message)
+                    error_response = random.choice(self.error_messages)
+                    self.reply(error_response, recipient)
         else:  # User not authenticated
             self.reply(AUTHENTICATION_FAILURE_MSG, recipient)
 

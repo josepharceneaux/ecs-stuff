@@ -478,7 +478,7 @@ class CampaignBase(object):
         CampaignUtils.raise_if_not_instance_of_campaign_models(source)
         raise_if_not_instance_of(user, User)
         # set params
-        params = {'username': user.name, 'campaign_name': source.name,
+        params = {'username': user.name, 'name': source.name,
                   'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__)}
         cls.create_activity(user.id, _type=Activity.MessageIds.CAMPAIGN_CREATE, source=source, params=params)
 

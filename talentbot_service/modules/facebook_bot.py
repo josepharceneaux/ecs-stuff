@@ -10,8 +10,8 @@ with Facebook.
 import random
 # Common utils
 from talentbot_service.modules.constants import FACEBOOK_MESSAGE_LIMIT, FACEBOOK_MESSAGE_SPLIT_COUNT, \
-    I_AM_PARSING_A_RESUME
-from talentbot_service.common.models.user import TalentbotAuth
+    I_AM_PARSING_A_RESUME, USER_DISABLED_MSG
+from talentbot_service.common.models.user import TalentbotAuth, User
 # Service specific
 from talentbot_service import app
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
@@ -34,11 +34,18 @@ class FacebookBot(TalentBot):
         Authenticates user
         :param fb_user_id:
         :rtype: (True|False, TalentbotAuth.facebook_user_id)
+        :return: is_authenticated, user Id
         """
         user_id = TalentbotAuth.get_user_id(facebook_user_id=fb_user_id)
         if user_id:
-            return True, user_id[0]
-        return False, None
+            user = User.get_by_id(user_id[0])
+            if user.is_disabled:
+                is_authenticated, user_id = True, None
+                return is_authenticated, user_id
+            is_authenticated = True
+            return is_authenticated, user_id[0]
+        is_authenticated, user_id = False, None
+        return is_authenticated, user_id
 
     def handle_communication(self, fb_user_id, message):
         """
@@ -49,31 +56,35 @@ class FacebookBot(TalentBot):
         """
         is_authenticated, user_id = self.authenticate_user(fb_user_id)
         if is_authenticated:
-            if self.is_response_time_more_than_usual(message):
-                self.reply(fb_user_id, I_AM_PARSING_A_RESUME)
-            try:
-                self.sender_action(fb_user_id, "mark_seen")
-                self.sender_action(fb_user_id, "typing_on")
-                response_generated = self.parse_message(message, user_id)
-                if not response_generated:
-                    raise IndexError
-                response_generated = self.clean_response_message(response_generated)
-                if len(response_generated) > FACEBOOK_MESSAGE_LIMIT:
-                    tokens = response_generated.split('\n')
-                    split_response_message = ""
-                    while len(tokens) > 0:
-                        while len(split_response_message) < FACEBOOK_MESSAGE_SPLIT_COUNT and\
-                                        len(tokens) > 0:
-                            split_response_message = split_response_message + tokens.pop(0) + "\n"
-                        self.reply(fb_user_id, split_response_message)
+            if not user_id:
+                self.reply(fb_user_id, USER_DISABLED_MSG)
+            else:
+                if self.is_response_time_more_than_usual(message):
+                    self.reply(fb_user_id, I_AM_PARSING_A_RESUME)
+                try:
+                    self.sender_action(fb_user_id, "mark_seen")
+                    self.sender_action(fb_user_id, "typing_on")
+                    response_generated = self.parse_message(message, user_id)
+                    if not response_generated:
+                        raise IndexError
+                    response_generated = self.clean_response_message(response_generated)
+                    if len(response_generated) > FACEBOOK_MESSAGE_LIMIT:
+                        tokens = response_generated.split('\n')
                         split_response_message = ""
-                else:
-                    self.reply(fb_user_id, response_generated)
-                self.sender_action(fb_user_id, "typing_off")
-            except (IndexError, NameError, KeyError):
-                error_response = random.choice(self.error_messages)
-                self.reply(fb_user_id, error_response)
-                self.sender_action(fb_user_id, "typing_off")
+                        while len(tokens) > 0:
+                            while len(split_response_message) < FACEBOOK_MESSAGE_SPLIT_COUNT and\
+                                        len(tokens) > 0:
+                                split_response_message = split_response_message + tokens.pop(0) + "\n"
+                            self.reply(fb_user_id, split_response_message)
+                            split_response_message = ""
+                    else:
+                        self.reply(fb_user_id, response_generated)
+                    self.sender_action(fb_user_id, "typing_off")
+                except Exception as error:
+                    logger.error("Error occurred while generating response: %s" % error.message)
+                    error_response = random.choice(self.error_messages)
+                    self.reply(fb_user_id, error_response)
+                    self.sender_action(fb_user_id, "typing_off")
         else:
             logger.info("Un registered user %r accessed Talentbot on Facebook" % fb_user_id)
 

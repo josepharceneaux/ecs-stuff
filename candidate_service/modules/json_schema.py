@@ -43,9 +43,6 @@ candidates_resource_schema_post = {
                     "openweb_id": {
                         "type": ["string", "null"]
                     },
-                    "dice_profile_id": {
-                        "type": ["string", "null"]
-                    },
                     "source_id": {
                         "type": ["integer", "null"],
                         "minimum": 1,
@@ -63,6 +60,9 @@ candidates_resource_schema_post = {
                         "type": ["string", "null"]
                     },
                     "resume_url": {
+                        "type": ["string", "null"]
+                    },
+                    "resume_text": {
                         "type": ["string", "null"]
                     },
                     "added_datetime": {
@@ -625,9 +625,6 @@ candidates_resource_schema_patch = {
                     "openweb_id": {
                         "type": ["string", "null"]
                     },
-                    "dice_profile_id": {
-                        "type": ["string", "null"]
-                    },
                     "source_id": {
                         "type": ["integer", "null"],
                         "minimum": 1,
@@ -647,7 +644,10 @@ candidates_resource_schema_patch = {
                     "resume_url": {
                         "type": ["string", "null"]
                     },
-                    "hide": {
+                    "resume_text": {
+                        "type": ["string", "null"]
+                    },
+                    "archive": {
                         "type": "boolean"
                     },
                     "added_datetime": {

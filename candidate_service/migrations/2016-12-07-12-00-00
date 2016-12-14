@@ -1,0 +1,8 @@
+"""
+This script adds 'is_archived' column to candidate table
+"""
+from candidate_service.common.models.db import db
+from sqlalchemy.dialects.mysql import TINYINT
+
+
+db.session.execute("ALTER TABLE `candidate` ADD `is_archived` TINYINT(1) DEFAULT 0")

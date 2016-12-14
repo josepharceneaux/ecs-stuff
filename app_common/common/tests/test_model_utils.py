@@ -32,11 +32,11 @@ def test_get_fields():
     # Get specific fields plus a relationship and it's fields. events in this case
     fields = Venue.get_fields(include=('address_line_1', 'city', 'country'), relationships=('events',))
     expected_fields = ['address_line_1', 'city', 'country', 'events', ['social_network_event_id', 'social_network_id',
-                                                                       'user_id', 'organizer_id', 'venue_id',
+                                                                       'user_id', 'is_deleted_from_vendor', 'organizer_id', 'venue_id',
                                                                        'social_network_group_id', 'group_url_name',
                                                                        'start_datetime', 'end_datetime',
                                                                        'registration_instruction', 'max_attendees',
-                                                                       'tickets_id', 'added_datetime',
+                                                                       'tickets_id', 'is_hidden', 'added_datetime',
                                                                        'updated_datetime', 'id', 'title', 'description',
                                                                        'url', 'cost', 'currency', 'timezone']]
     assert fields == expected_fields

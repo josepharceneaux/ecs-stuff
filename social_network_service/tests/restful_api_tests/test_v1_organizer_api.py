@@ -92,13 +92,18 @@ class TestOrganizers(object):
         assert response.status_code == codes.CREATED, 'Status should be Ok, Resource created (201)'
         assert 'Location' in response.headers
         response = response.json()
-        assert response['id'] > 0
+        event_organizer_id = response['id']
+        assert event_organizer_id > 0
 
         # Now try to create organizer with same name. It will raise 400 (InvalidUsage)
         response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(event_organizer),
                                  headers=get_headers(token_first))
         logger.info(response.text)
         assert response.status_code == codes.BAD, 'Status should be 400, InvalidUsage'
+        EventOrganizer.session.commit()
+        event_organizer = EventOrganizer.get_by_id(event_organizer_id)
+        assert event_organizer, 'Event organizer not found in db'
+        EventOrganizer.delete(event_organizer.id)
 
     def test_post_with_missing_field(self, token_first, user_first):
         """
