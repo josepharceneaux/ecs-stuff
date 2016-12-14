@@ -142,7 +142,11 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     # Tags
     'tag_ids':                       dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'tags':                          dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': True}),
-    'is_archived':                   dict(IndexFieldType='int',             IntOptions={'SearchEnabled': True})
+
+    # Archive options
+    'is_archived':                   dict(IndexFieldType='int',             IntOptions={'FacetEnabled': True,
+                                                                                        'SearchEnabled': True,
+                                                                                        'ReturnEnabled': True})
 }
 
 # Filter all text, text-array, literal and literal-array index fields
@@ -661,7 +665,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     Set search_limit = 0 for no limit, candidate_ids_only returns dict of candidate_ids.
     Parameters in 'request_vars' could be single values or arrays.
     """
-
     filter_queries_list = []
     filter_query, search_query = '', ''
     if request_vars:
@@ -1123,7 +1126,6 @@ def _get_source_id(request_vars):
     :param request_vars:
     :return:
     """
-
     if isinstance(request_vars['source_ids'], basestring):  # source_id is string
         if 'product_' in request_vars['source_ids']:
             request_vars['product_id'] = request_vars['source_ids'].replace('product_', '')
@@ -1356,6 +1358,14 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
 
     query = request_vars.get('query', '*')
     query = ' '.join(query) if isinstance(query, list) else query
+
+    # CS will search for all candidates unless if candidate's status has been specified
+    if request_vars.get('status'):
+        status = request_vars.get('status')
+        if status == 'active':
+            filter_queries.append("is_archived:0")
+        elif status == 'archived':
+            filter_queries.append("is_archived:1")
 
     if request_vars.get('location'):
         location = request_vars.get('location')
