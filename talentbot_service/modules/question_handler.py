@@ -242,8 +242,8 @@ class QuestionHandler(object):
                                    % (campaign_type, user_specific_date, campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends)
         else:
-            response_message = "Oops! looks like you don't have `%s` campaign from %s" % \
-                                    (campaign_type, timespan)
+            response_message = "Oops! looks like you don't have `%s` campaigns %s" % \
+                                    (campaign_type, "from %s" % timespan if timespan else '')
         if not isinstance(user_specific_date, datetime) and not is_valid_year \
                 and user_specific_date is None and message_tokens[-1].lower() not in ['campaigns']:
             response_message = 'No valid time duration found\n %s' % response_message
