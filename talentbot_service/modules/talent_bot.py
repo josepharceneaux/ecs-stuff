@@ -257,7 +257,8 @@ class TalentBot(object):
                 if temp_ratio > max_matched_ratio:
                     max_matched_ratio = temp_ratio
             return max_matched_ratio
-        match_ratio = fuzz.partial_ratio(questions, message.lower())
+        message_lower = message.lower()
+        match_ratio = fuzz.partial_ratio(questions, message_lower) if partial else fuzz.ratio(questions, message_lower)
         logger.info("%s : %d%% matched" % (message, match_ratio))
         return match_ratio
 
