@@ -780,7 +780,7 @@ class QuestionHandler(object):
             resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token)
             if resp.ok:
                 recently_added_candidate = json.loads(resp.content)["candidate"]
-                return recently_added_candidate, TalentPool.get_by_id(candidate["talent_pool_ids"].get("add"))
+                return recently_added_candidate, TalentPool.get_by_id(candidate["talent_pool_ids"].get("add")[0])
             raise InternalServerError("Error occurred while getting candidate which was recently added")
         error_code = json.loads(response.content)["error"]["code"]
         # When a candidate already exists in db, /openweb returns ids of address and skills etc
