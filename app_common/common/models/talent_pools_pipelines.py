@@ -40,14 +40,20 @@ class TalentPool(db.Model):
 
     @classmethod
     @contract
-    def get_talent_pools_in_user_domain(cls, user_id):
+    def get_talent_pools_in_user_domain(cls, user_id, page_number=None):
         """
-        This method returns talent pools in a user's domain
+        This method returns whether all talent pools or 10 talent pools according to page number in a user's domain
+        :param None|positive page_number: Page number for returning controlled number of records
         :param int|long user_id: User Id
         :rtype: list
         """
         domain_id = User.get_domain_id(user_id)
-        return cls.query.filter(cls.domain_id == domain_id).all()
+        if page_number is None:
+            return cls.query.filter(cls.domain_id == domain_id).all()
+        number_of_records = 10
+        start = (page_number - 1) * number_of_records
+        end = page_number * number_of_records
+        return cls.query.filter(cls.domain_id == domain_id)[start:end]
 
     @classmethod
     @contract
@@ -204,22 +210,25 @@ class TalentPipeline(db.Model):
 
     @classmethod
     @contract
-    def get_own_or_domain_pipelines(cls, user_id, scope, page_number=1):
+    def get_own_or_domain_pipelines(cls, user_id, scope, page_number=None):
         """
         This returns list of Pipelines owned by a specific user or all in domain
-        :param positive page_number: Page number for limiting number of rows returned
+        :param positive|None page_number: Page number for limiting number of rows returned
         :param positive user_id: User Id
         :param int scope: Weather owned or domain specific
         :rtype: list
         """
+        if scope == OWNED:
+            query_object = cls.query.join(User).filter(User.id == user_id, cls.is_hidden == 0)
+        else:
+            domain_id = User.get_domain_id(user_id)
+            query_object = cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
+        if page_number is None:
+            return query_object.all()
         number_of_records = 10
         start = (page_number - 1) * number_of_records
         end = page_number * number_of_records
-        if scope == OWNED:
-            return cls.query.join(User).filter(User.id == user_id, cls.is_hidden == 0)[start:end]
-        else:
-            domain_id = User.get_domain_id(user_id)
-            return cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)[start:end]
+        return query_object[start:end]
 
     @classmethod
     def get_by_user_id_in_desc_order(cls, user_id):

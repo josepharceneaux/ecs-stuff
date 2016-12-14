@@ -5,7 +5,6 @@ This module tests talentbot_service
 import datetime
 from dateutil.relativedelta import relativedelta
 # Common utils
-from talentbot_service.common.constants import OWNED
 from app_common.common.utils.talentbot_utils import DOMAIN_SPECIFIC, OWNED
 from talentbot_service.common.tests.conftest import domain_first, first_group, domain_second, second_group,\
     access_token_first, user_first, candidate_first, talent_pool, user_same_domain, user_second, candidate_second,\

@@ -44,7 +44,7 @@ from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NU
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
     SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, TOO_LARGE_RESUME_MSG, \
     SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN, INVALID_INPUT, CANDIDATE_ALREADY_EXISTS, TWITTER, FACEBOOK, \
-    CLASSES
+    CLASSES, USER_CLIENTS
 from talentbot_service import logger, app
 # 3rd party imports
 from flask import json
@@ -87,7 +87,7 @@ class QuestionHandler(object):
         return ' '.join(_list)
 
     @classmethod
-    def question_0_handler(cls, message_tokens, user_id):
+    def question_0_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'how many users are there in my domain'
         :param int user_id: User Id
@@ -109,7 +109,7 @@ class QuestionHandler(object):
         return "Users in domain `%s` : %d" % (domain_name, len(users))
 
     @classmethod
-    def question_1_handler(cls, message_tokens, user_id):
+    def question_1_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'how many candidates are there with skills [x,y and z]'
         :param int user_id: User Id
@@ -139,7 +139,7 @@ class QuestionHandler(object):
         return response_message.replace(', and,', ' and').replace('and,', 'and')
 
     @classmethod
-    def question_2_handler(cls, message_tokens, user_id):
+    def question_2_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'how many candidates are there from zipcode [x]'
         :param int user_id: User Id
@@ -159,7 +159,7 @@ class QuestionHandler(object):
         response_message = "Number of candidates from zipcode `%s` : `%d`" % (message_tokens[zip_index + 1], count)
         return response_message
 
-    def question_3_handler(self, message_tokens, user_id):
+    def question_3_handler(self, message_tokens, user_id, user_client=None):
         """
         Handles question 'what's the top performing [campaign name] campaign from [year]'
         :param int user_id: User Id
@@ -253,7 +253,7 @@ class QuestionHandler(object):
             response_message = 'No valid time duration found\n %s' % response_message
         return response_message.replace("None", "all the times").replace('from from', 'from')
 
-    def question_4_handler(self, message_tokens, user_id):
+    def question_4_handler(self, message_tokens, user_id, user_client=None):
         """
         Handles question 'how many candidate leads did [user name] import into the
         [talent pool name] in last n months'
@@ -392,7 +392,7 @@ class QuestionHandler(object):
             return "My name is `%s`" % BOT_NAME
 
     @classmethod
-    def question_6_handler(cls, message_tokens, user_id):
+    def question_6_handler(cls, message_tokens, user_id, user_client=None):
         """
         This method handles question what are the talent pools in my domain
         :param int user_id: User Id
@@ -415,7 +415,7 @@ class QuestionHandler(object):
         return response.replace('`None`', '')
 
     @classmethod
-    def question_7_handler(cls, message_tokens, user_id):
+    def question_7_handler(cls, message_tokens, user_id, user_client=None):
         """
         This method handles question What is my group, what group a user belongs to and what are my group
         campaigns|pipelines
@@ -481,7 +481,7 @@ class QuestionHandler(object):
 
     @classmethod
     @contract
-    def question_8_handler(cls, message_tokens, user_id):
+    def question_8_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'What are my campaigns, What are my campaigns in <x> talent pool'
         :param list message_tokens: Tokens of User message
@@ -589,7 +589,7 @@ class QuestionHandler(object):
 
     @classmethod
     @contract
-    def question_9_handler(cls, message_tokens, user_id):
+    def question_9_handler(cls, message_tokens, user_id, user_client=None):
         """
         This method handles question 'show me <x>'
         :param list message_tokens:
@@ -640,10 +640,13 @@ class QuestionHandler(object):
         response = ["Your pipelines are following:"] if not asking_about_all_pipelines else\
             ["Pipelines in your domain are following:"]
         scope = DOMAIN_SPECIFIC if asking_about_all_pipelines else OWNED
-        pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope)
-        state = {"class": "TalentPipeline", "method": "get_own_or_domain_pipelines", "params": [user_id, scope, 1],
-                 "repr": "pipelines"}
-        redis_store.set(user_id, json.dumps(state))
+        if user_client == USER_CLIENTS["SMS"]:  # Saving state for pagination
+            state = {"class": "TalentPipeline", "method": "get_own_or_domain_pipelines", "params": [user_id, scope, 1],
+                     "repr": "pipelines"}
+            redis_store.set(user_id, json.dumps(state))
+            pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope, 1)
+        else:
+            pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope)
         return cls.custom_count_appender(1, pipelines, "pipelines", response)
 
     @staticmethod
@@ -663,7 +666,7 @@ class QuestionHandler(object):
 
     @classmethod
     @contract
-    def add_candidate_handler(cls, message_tokens, user_id):
+    def add_candidate_handler(cls, message_tokens, user_id, user_client=None):
         """
         Adds candidate from a resume url mentioned in message by user
         :param list message_tokens: Tokens of User message

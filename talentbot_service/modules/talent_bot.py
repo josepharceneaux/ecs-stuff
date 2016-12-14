@@ -196,7 +196,7 @@ class TalentBot(object):
         cleaned_message = ' '.join([message.strip() for message in split_message])
         return cleaned_message
 
-    def parse_message(self, message, user_id=None):
+    def parse_message(self, message, user_id=None, user_client=None):
         """
         Checks which is the appropriate message handler for this message and calls that handler
         :param int user_id: User Id
