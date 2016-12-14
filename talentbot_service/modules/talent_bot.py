@@ -242,9 +242,10 @@ class TalentBot(object):
 
     @staticmethod
     @contract
-    def match_question(message, questions):
+    def match_question(message, questions, partial=True):
         """
         Matches user message with questions and returns max matched ratio
+        :param bool partial: Boolean parameter to determine if partial matching is required or not
         :param string message: User message
         :param string|list questions:
         :rtype: positive
@@ -252,7 +253,7 @@ class TalentBot(object):
         if isinstance(questions, list):
             max_matched_ratio = ZERO
             for question in questions:
-                temp_ratio = fuzz.partial_ratio(question, message)
+                temp_ratio = fuzz.partial_ratio(question, message) if partial else fuzz.ratio(question, message)
                 if temp_ratio > max_matched_ratio:
                     max_matched_ratio = temp_ratio
             return max_matched_ratio
@@ -297,7 +298,7 @@ class TalentBot(object):
         :rtype: str|None
         """
         hint_questions = self.list_of_questions[6:10]
-        matched_ratio = self.match_question(message.lower(), hint_questions)
+        matched_ratio = self.match_question(message.lower(), hint_questions, False)
         if matched_ratio > AVERAGE_QUESTION_MATCH_RATIO:
             return HINT
         return None
@@ -319,9 +320,10 @@ class TalentBot(object):
         :param string user_message: User message
         :rtype: bool
         """
-        add_candidates_questions = self.list_of_questions[ADD_CANDIDATE_FROM_URL:ADD_CANDIDATE_FROM_URL+2]
-        match_ratio = self.match_question(user_message, add_candidates_questions)
-        if match_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
-            logger.info("Responding before processing")
-            return True
+        if len(user_message.split()) > MIN_WORDS_IN_QUESTION:
+            add_candidates_questions = self.list_of_questions[ADD_CANDIDATE_FROM_URL:ADD_CANDIDATE_FROM_URL+2]
+            match_ratio = self.match_question(user_message, add_candidates_questions)
+            if match_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
+                logger.info("Responding before processing")
+                return True
         return False
