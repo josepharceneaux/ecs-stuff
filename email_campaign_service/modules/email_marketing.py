@@ -9,7 +9,7 @@ This file contains function used by email-campaign-api.
 import re
 import json
 import getpass
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Third Party
 from celery import chord
@@ -28,7 +28,9 @@ from email_campaign_service.modules.utils import (TRACKING_URL_TYPE, get_candida
 
 # Common Utils
 from email_campaign_service.common.models.db import db
+from email_campaign_service.common.models.event import Event
 from email_campaign_service.common.models.user import Domain, User
+from email_campaign_service.common.models.base_campaign import BaseCampaign
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
@@ -94,10 +96,16 @@ def create_email_campaign(user_id, oauth_token, name, subject, description, _fro
                                    base_campaign_id=base_campaign_id if base_campaign_id else None
                                    )
     EmailCampaign.save(email_campaign)
+    user = User.get_by_id(user_id)
+    campaign_type = CampaignUtils.get_campaign_type_prefix(email_campaign.__tablename__)
+    if base_campaign_id:
+        base_campaign = BaseCampaign.get_by_id(base_campaign_id)
+        if base_campaign.base_campaign_events:
+            campaign_type = CampaignUtils.get_campaign_type_prefix(Event.__tablename__)
 
     # Create activity in a celery task
     celery_create_activity.delay(user_id, Activity.MessageIds.CAMPAIGN_CREATE, email_campaign,
-                                 dict(id=email_campaign.id, name=name),
+                                 dict(id=email_campaign.id, name=name, campaign_type=campaign_type, username=user.name),
                                  'Error occurred while creating activity for email-campaign creation. User(id:%s)'
                                  % user_id)
 

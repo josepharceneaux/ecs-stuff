@@ -177,6 +177,7 @@ class TestEventById(object):
         db.db.session.commit()
         activity = Activity.get_by_user_id_type_source_id(user_id=user_id, source_id=event_id,
                                                           type_=Activity.MessageIds.EVENT_DELETE)
+        assert activity, 'Activity not found'
         data = json.loads(activity.params)
         assert data['event_title'] == event_in_db_second['title']
 

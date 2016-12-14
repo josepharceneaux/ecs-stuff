@@ -374,6 +374,7 @@ class MeetupGroupsResource(Resource):
             groups = meetup.get_groups()
             response = dict(groups=groups, count=len(groups))
         except Exception as e:
+            logger.exception('Could not get meetup groups')
             raise InternalServerError(e.message)
         return response
 

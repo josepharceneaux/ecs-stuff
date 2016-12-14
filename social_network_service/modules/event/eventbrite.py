@@ -289,7 +289,7 @@ class Eventbrite(EventBase):
             # Ticket are going to be created/updated
             ticket_id = self.create_tickets(event_id)
             # Ticket(s) have been created for newly created Event
-            if app.config[TalentConfigKeys.ENV_KEY] not in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
+            if app.config[TalentConfigKeys.ENV_KEY] not in [TalentEnvs.JENKINS]:
                 self.publish_event(event_id)
             logger.info('|  Event %s created Successfully  |' % self.event_payload['event.name.html'])
             self.data['social_network_event_id'] = event_id
