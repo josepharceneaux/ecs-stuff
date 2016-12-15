@@ -231,7 +231,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                 if error_message.get('code') == 'throttled':
                     wait_until = e.response.headers.get('X-RateLimit-Reset')
                     if wait_until:
-                        time.sleep(wait_until + 1)
+                        time.sleep(int(wait_until) + 1)
                     else:
                         time.sleep(10)
                     return http_request(method_type, url, params=params, headers=headers, data=data, user_id=user_id,
