@@ -21,6 +21,7 @@ def migrate_is_web_hidden_data_to_is_archived():
     print "total_number_of_candidates: {}".format(total_number_of_candidates)
 
     start = 0
+    batch = 1
     while start < total_number_of_candidates:
         candidates = Candidate.query.slice(start=start, stop=start + 100).all()
         for candidate in candidates:
@@ -30,7 +31,9 @@ def migrate_is_web_hidden_data_to_is_archived():
                 candidate.is_archived = 0
 
         db.session.commit()
+        print "Batch {} updated candidate IDs: {}".format(batch, [candidate.id for candidate in candidates])
         start += 100
+        batch += 1
 
 
 if __name__ == '__main__':
