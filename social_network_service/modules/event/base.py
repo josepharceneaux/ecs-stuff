@@ -295,6 +295,7 @@ class EventBase(object):
         event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id,
                                                                        self.social_network.id,
                                                                        event_data['social_network_event_id'])
+        event_data['is_deleted_from_vendor'] = 0
         if event:
             event.update(**event_data)
             logger.info('Event updated successfully : %s' % event.to_json())

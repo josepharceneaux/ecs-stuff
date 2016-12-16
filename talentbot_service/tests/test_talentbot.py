@@ -4,6 +4,7 @@ This module tests talentbot_service
 # Builtin imports
 import datetime
 from dateutil.relativedelta import relativedelta
+import uuid
 # Common utils
 from app_common.common.utils.talentbot_utils import DOMAIN_SPECIFIC, OWNED
 from talentbot_service.common.tests.conftest import domain_first, first_group, domain_second, second_group,\
@@ -81,7 +82,7 @@ def test_get_candidates_with_skills(user_first, candidate_first, candidate_secon
     """
     This method checks number of candidates against skills in user's domain.
     """
-    (skill_1, skill_2, skill_3, skill_4) = (fake.word() for _ in range(4))
+    (skill_1, skill_2, skill_3, skill_4) = (uuid.uuid4() for _ in range(4))
     candidate_skill = CandidateSkill(candidate_id=candidate_first.id, description=skill_1, resume_id=0)
     candidate_skill.save()
     count = Candidate.get_candidate_count_with_skills([skill_1], user_first.id)

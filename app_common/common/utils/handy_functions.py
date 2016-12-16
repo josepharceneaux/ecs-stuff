@@ -136,16 +136,7 @@ def log_exception(message, app=None):
     :param app:
     :return:
     """
-    if not app:
-        logger = current_app.config[TalentConfigKeys.LOGGER]
-        logger.exception(message)
-        return
-
-    assert isinstance(app, Flask), "app instance should be flask"
-
-    logger = app.config[TalentConfigKeys.LOGGER]
-    with app.app_context():
-        logger.exception(message)
+    log(message, app=app, level='exception')
 
 
 def log_error(message, app=None):
@@ -155,16 +146,27 @@ def log_error(message, app=None):
     :param app:
     :return:
     """
+    log(message, app=app, level='error')
+
+
+def log(message, app=None, level='info'):
+    """
+        Log message using logger with or without app_context
+        :param str message: message to log
+        :param str level: log level i.e. info, error , exception
+        :param type(t) app: flask app instance
+        """
+    assert level in ('debug', 'info', 'warning', 'error', 'critical', 'exception')
     if not app:
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        logger.error(message)
+        getattr(logger, level)(message)
         return
 
-    assert isinstance(app, Flask), "app instance should be flask"
+    assert isinstance(app, Flask), 'app instance should be flask'
 
     logger = app.config[TalentConfigKeys.LOGGER]
     with app.app_context():
-        logger.error(message)
+        getattr(logger, level)(message)
 
 
 def http_request(method_type, url, params=None, headers=None, data=None, user_id=None, app=None, throttled=False):
@@ -226,12 +228,15 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             elif e.response.status_code == codes.TOO_MANY_REQUESTS:  # 429, Throttling
 
                 error_message = e.response.json()
+                log(error_message, app=app, level='warning')
+
                 if throttled:
                     raise InternalServerError(str(error_message))
                 if error_message.get('code') == 'throttled':
                     wait_until = e.response.headers.get('X-RateLimit-Reset')
+                    log('Request Throttled: Sleep for %s seconds.' % wait_until, app=app, level='warning')
                     if wait_until:
-                        time.sleep(wait_until + 1)
+                        time.sleep(int(wait_until) + 1)
                     else:
                         time.sleep(10)
                     return http_request(method_type, url, params=params, headers=headers, data=data, user_id=user_id,
