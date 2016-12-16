@@ -323,8 +323,10 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "dumb_list_ids": 'id_list',
     # List of ids of smart_lists (For Internal TalentPipeline Search Only)
     "smartlist_ids": 'id_list',
-    # candidate id : to check if candidate is present in smartlist.
-    "id": 'digit'
+    # candidate id: to check if candidate is present in smartlist.
+    "id": 'digit',
+    # is_archived: to check if candidate is activated or archived
+    "status": "string"
 }
 
 
@@ -413,6 +415,8 @@ def validate_and_format_data(request_data):
             request_vars[key] = validate_id_list(key, value)
         if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
             request_vars[key] = validate_sort_by(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == 'string':
+            request_vars[key] = validate_string_list(key, value)
         if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
             request_vars[key] = validate_string_list(key, value)
         if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":

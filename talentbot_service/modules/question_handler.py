@@ -250,8 +250,8 @@ class QuestionHandler(object):
                                    % (campaign_type, user_specific_date, campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends)
         else:
-            response_message = "Oops! looks like you don't have `%s` campaign from %s" % \
-                                    (campaign_type, timespan)
+            response_message = "Oops! looks like you don't have `%s` campaigns %s" % \
+                                    (campaign_type, "from %s" % timespan if timespan else '')
         if not isinstance(user_specific_date, datetime) and not is_valid_year \
                 and user_specific_date is None and message_tokens[-1].lower() not in ['campaigns']:
             response_message = 'No valid time duration found\n %s' % response_message
@@ -807,6 +807,8 @@ class QuestionHandler(object):
         e.g. {'candidates': [CandidateObject, CandidateObject, ...]}
         """
         candidate = openweb_candidate["candidate"]
+        if "dice_profile_id" in candidate:
+            candidate.pop("dice_profile_id")
         candidates = {"candidates": [candidate]}
         response = send_request('post', CandidateApiUrl.CANDIDATES, token, candidates)
         if response.ok:
@@ -815,7 +817,7 @@ class QuestionHandler(object):
             resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token)
             if resp.ok:
                 recently_added_candidate = json.loads(resp.content)["candidate"]
-                return recently_added_candidate, TalentPool.get_by_id(candidate["talent_pool_ids"].get("add"))
+                return recently_added_candidate, TalentPool.get_by_id(candidate["talent_pool_ids"].get("add")[0])
             raise InternalServerError("Error occurred while getting candidate which was recently added")
         error_code = json.loads(response.content)["error"]["code"]
         # When a candidate already exists in db, /openweb returns ids of address and skills etc

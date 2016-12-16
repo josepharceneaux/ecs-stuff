@@ -936,4 +936,4 @@ def test_text_is_truncd():
     Napoleon I, I was Emperor of the French from 1804 until 1814, and again in 1815. I dominated
     European and global affairs for more than a decade while leading France against a series of
     coalitions in the Napoleonic Wars."""
-    assert(len(trunc_text(title, 100)) == 100)
+    assert(len(trunc_text(title, 100)) is 100)

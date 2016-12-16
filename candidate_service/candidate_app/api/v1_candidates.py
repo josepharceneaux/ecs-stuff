@@ -7,47 +7,27 @@ Notes:
 # Standard libraries
 import datetime
 import json
+import requests
 import logging
 import os
 from datetime import date
 from time import time
 
-import requests
+# Flask Specific
 from flask import request
 from flask_restful import Resource
 
-from candidate_service.candidate_app import logger
-
-# Database connection
-from candidate_service.common.models.db import db
-
 # Validators
-from candidate_service.common.talent_config_manager import TalentConfigKeys
-from candidate_service.common.talent_config_manager import TalentEnvs
-from candidate_service.common.utils.models_utils import to_json
-from candidate_service.common.utils.validators import is_valid_email, is_country_code_valid, is_number
-from candidate_service.modules.validators import (
-    does_candidate_belong_to_users_domain, is_custom_field_authorized,
-    is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
-    is_valid_email_client, get_json_if_exist, is_date_valid,
-    get_json_data_if_validated, get_candidate_if_validated,
-    authenticate_candidate_preference_request, is_user_permitted_to_archive_candidate
-)
+from candidate_service.modules.validators import is_user_permitted_to_archive_candidate
 
 # JSON Schemas
-from candidate_service.modules.json_schema import (
-    candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
-    resource_schema_photos_post, resource_schema_photos_patch, language_schema,
-)
 from jsonschema import validate, FormatChecker, ValidationError
-from onesignalsdk.one_signal_sdk import OneSignalSdk
 from redo import retry
 
 from candidate_service.candidate_app import logger
 from candidate_service.common.error_handling import (
     ForbiddenError, InvalidUsage, NotFoundError, InternalServerError, ResourceNotFound
 )
-from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.candidate import (
     Candidate, CandidateAddress, CandidateEducation, CandidateEducationDegree,
@@ -65,16 +45,12 @@ from candidate_service.common.models.user import User, Permission
 from candidate_service.common.talent_config_manager import TalentConfigKeys
 from candidate_service.common.talent_config_manager import TalentEnvs
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
-from candidate_service.common.utils.handy_functions import normalize_value
 from candidate_service.common.utils.models_utils import to_json
-from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
 from candidate_service.common.utils.validators import is_valid_email, is_country_code_valid, is_number
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
 from candidate_service.modules.candidate_engagement import calculate_candidate_engagement_score
-from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
     resource_schema_photos_post, resource_schema_photos_patch, language_schema,
@@ -180,7 +156,7 @@ class CandidatesResource(Resource):
                     candidate_ids_from_candidate_email_obj.append(candidate_id)
                     candidate = Candidate.get_by_id(candidate_id)
 
-                    # Raise error if candidate is not archived and its email matches another candidate's email
+                    # Raise error if candidate is active and its email matches another candidate's email
                     if not candidate.is_archived and (candidate_email_obj not in CachedData.candidate_emails):
                         # Clear cached data
                         CachedData.candidate_emails = []
@@ -189,7 +165,7 @@ class CandidatesResource(Resource):
                                            error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
                                            additional_error_info={'id': candidate_id})
 
-                    # Un-archive candidate if candidate is found
+                    # Activate archived candidate if candidate is found
                     if candidate.is_archived:
                         candidate.is_archived = 0
 
@@ -494,8 +470,8 @@ class CandidatesResource(Resource):
 
         if skip:
             db.session.commit()
-            # Delete candidate from cloud search when candidate is archived
-            delete_candidate_documents(archived_candidate_ids)
+            # Update candidate's document in CS
+            upload_candidate_documents.delay(archived_candidate_ids)
             return {'archived_candidates': archived_candidate_ids}, requests.codes.OK
 
         # Custom fields must belong to user's domain
