@@ -315,15 +315,19 @@ class TalentPipeline(db.Model):
 
     @classmethod
     @contract
-    def pipelines_user_group(cls, user_id):
+    def pipelines_user_group(cls, user_id, page_number=None):
         """
         This returns list of Pipelines in user's group
         :param positive user_id: User Id
+        :param positive|None page_number: Page number for limiting number of rows returned
         :rtype: list
         """
         from user import User    # To avoid circular dependency this has to be here
         user = User.query.filter(User.id == user_id).first()
-        if user:
-            if user.user_group_id:
-                return cls.query.join(User).filter(User.user_group_id == user.user_group_id, cls.is_hidden == 0).all()
-        raise NotFoundError
+        query_object = cls.query.join(User).filter(User.user_group_id == user.user_group_id, cls.is_hidden == 0)
+        if page_number is None:
+            return query_object.all()
+        number_of_records = 10
+        start = (page_number - 1) * number_of_records
+        end = page_number * number_of_records
+        return query_object[start:end]

@@ -199,6 +199,7 @@ class TalentBot(object):
     def parse_message(self, message, user_id=None, user_client=None):
         """
         Checks which is the appropriate message handler for this message and calls that handler
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param str message: User's message
         :rtype str

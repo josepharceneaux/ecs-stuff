@@ -459,16 +459,15 @@ class QuestionHandler(object):
                     response.append("%d: `%s`" % (index + 1, sms_campaign.name))
             return '\n'.join(response) if len(response) > 1 else 'No campaigns exist in your group'
         if group_pipelines:
-            try:
-                pipelines = TalentPipeline.pipelines_user_group(user_id)
-            except NotFoundError:
-                return "Something went wrong"
+            via_sms = True if user_client == USER_CLIENTS["SMS"] else False
+            pipelines = TalentPipeline.pipelines_user_group(user_id, 1 if via_sms else None)
             response = ["Pipelines in your group are following:"]
             if pipelines:
                 response.append("*Pipelines*")
-                for index, pipeline in enumerate(pipelines):
-                    response.append("%d: `%s`" % (index + 1, pipeline.name))
-            return '\n'.join(response) if len(response) > 1 else 'No pipelines exist in your group'
+                # for index, pipeline in enumerate(pipelines):
+                #     response.append("%d: `%s`" % (index + 1, pipeline.name))
+                response = cls.custom_count_appender(1, pipelines, "pipelines", response)
+            return response
         belong_index = cls.find_optional_word(message_tokens, ['belong', 'part'])
         is_user_asking_about_himself = cls.find_word_in_message('i', message_tokens, exact_word=True)
         if belong_index is not None and is_user_asking_about_himself is None:
