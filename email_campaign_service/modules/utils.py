@@ -45,6 +45,7 @@ DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
 DEFAULT_USER_NAME_MERGETAG = "*|USERNAME|*"
 DEFAULT_LAST_NAME_MERGETAG = "*|LASTNAME|*"
 DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
+TEST_PREFERENCE_URL = get_web_app_url() + "/account/subscription-preferences"
 TRACKING_PIXEL_URL = "https://s3-us-west-1.amazonaws.com/gettalent-static/pixel.png"
 TRACKING_URL_TYPE = 0
 TEXT_CLICK_URL_TYPE = 1
@@ -118,6 +119,9 @@ def do_mergetag_replacements(texts, current_user, requested_object=None, candida
             # Do 'Unsubscribe' link replacements
             if isinstance(requested_object, Candidate) and DEFAULT_PREFERENCES_URL_MERGETAG in text:
                 text = do_prefs_url_replacement(text, requested_object, candidate_address)
+            elif isinstance(requested_object, User) and DEFAULT_PREFERENCES_URL_MERGETAG in text:
+                text = text.replace(DEFAULT_PREFERENCES_URL_MERGETAG, TEST_PREFERENCE_URL)
+
         new_texts.append(text)
 
     return new_texts
