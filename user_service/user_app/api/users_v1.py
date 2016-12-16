@@ -13,6 +13,7 @@ from user_service.common.utils.validators import is_valid_email, is_number
 from user_service.common.utils.auth_utils import gettalent_generate_password_hash
 from user_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from user_service.user_app.user_service_utilties import (check_if_user_exists, create_user_for_company,
+                                                         get_users_stats_from_mixpanel,
                                                          send_new_account_email, validate_role)
 
 
@@ -74,7 +75,7 @@ class UserApi(Resource):
                     request.user.id, requested_user_id))
 
             return {
-                'user': requested_user.to_dict()
+                'user': get_users_stats_from_mixpanel(requested_user.to_dict(), True)
             }
 
         # User id is not provided so logged-in user wants to get all users of its domain
@@ -87,7 +88,8 @@ class UserApi(Resource):
                 if not is_number(domain_id) or not Domain.query.get(int(domain_id)):
                     raise InvalidUsage("Invalid Domain Id is provided")
 
-            return {'users': [user.to_dict() for user in User.all_users_of_domain(int(domain_id))]}
+            users_data_dict = {str(user.id): user.to_dict() for user in User.all_users_of_domain(int(domain_id))}
+            return {'users': get_users_stats_from_mixpanel(users_data_dict).values()}
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_USERS)
     def post(self):
