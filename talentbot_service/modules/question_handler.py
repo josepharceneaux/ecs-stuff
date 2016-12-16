@@ -90,6 +90,7 @@ class QuestionHandler(object):
     def question_0_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'how many users are there in my domain'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :return: Response message
@@ -112,6 +113,7 @@ class QuestionHandler(object):
     def question_1_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'how many candidates are there with skills [x,y and z]'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :rtype: str
@@ -142,6 +144,7 @@ class QuestionHandler(object):
     def question_2_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'how many candidates are there from zipcode [x]'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :rtype: str
@@ -162,6 +165,7 @@ class QuestionHandler(object):
     def question_3_handler(self, message_tokens, user_id, user_client=None):
         """
         Handles question 'what's the top performing [campaign name] campaign from [year]'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :rtype: str
@@ -257,6 +261,7 @@ class QuestionHandler(object):
         """
         Handles question 'how many candidate leads did [user name] import into the
         [talent pool name] in last n months'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :rtype: str
@@ -395,21 +400,26 @@ class QuestionHandler(object):
     def question_6_handler(cls, message_tokens, user_id, user_client=None):
         """
         This method handles question what are the talent pools in my domain
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :rtype: str
         """
-        talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
+        via_sms = True if user_client == USER_CLIENTS["SMS"] else False
+        talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id, 1 if via_sms else None)
         _, domain_name = User.get_domain_name_and_its_users(user_id)
         if talent_pools:
-            talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
-            talent_pool_names = cls.create_ordered_list(talent_pool_names)
             talent_pool_number = len(talent_pools)
             is_or_are = 'is' if talent_pool_number == 1 else 'are'
             plural = '' if talent_pool_number == 1 else 's'
             header = ["There %s %d talent pool%s in your domain `%s`\n" % (is_or_are, talent_pool_number, plural,
                                                                            domain_name)]
-            response = '%s%s' % (header[0], talent_pool_names[::])
+            # response = '%s%s' % (header[0], talent_pool_names[::])
+            response = cls.custom_count_appender(1, talent_pools, "talent pools", header)
+            if via_sms:
+                state = {"class": "TalentPool", "method": "get_talent_pools_in_user_domain",
+                         "params": [user_id, 1], "repr": "talent pools"}
+                redis_store.set(user_id, json.dumps(state))
             return response.replace('`None`', '')
         response = "Seems like there is no talent pool in your domain `%s`" % domain_name
         return response.replace('`None`', '')
@@ -419,6 +429,7 @@ class QuestionHandler(object):
         """
         This method handles question What is my group, what group a user belongs to and what are my group
         campaigns|pipelines
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param message_tokens:
         :param int user_id: User Id
         :rtype: str
@@ -484,6 +495,7 @@ class QuestionHandler(object):
     def question_8_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'What are my campaigns, What are my campaigns in <x> talent pool'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param list message_tokens: Tokens of User message
         :param positive user_id:
         :rtype: string
@@ -592,6 +604,7 @@ class QuestionHandler(object):
     def question_9_handler(cls, message_tokens, user_id, user_client=None):
         """
         This method handles question 'show me <x>'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param list message_tokens:
         :param positive user_id:
         :rtype: string
@@ -1028,30 +1041,30 @@ class QuestionHandler(object):
         # Acquiring lock
         redis_store.set("%dredis_lock" % user_id, True)
         state = redis_store.get(user_id)
-        if state:
-            try:
+        try:
+            if state:
                 state = json.loads(state)
-            except Exception as error:
-                logger.info("No state found: %s" % error.message)
-                # Releasing lock
-                redis_store.set("%dredis_lock" % user_id, False)
-                return None
-            # Getting state data from redis
-            representative, _class, params = state["repr"], CLASSES[state["class"]], state["params"]
-            method = getattr(_class, state["method"])
-            page_number = params[-1]
-            # Increasing page number
-            page_number += 1
-            params[-1] = page_number
-            _list = method(*tuple(params))
-            if _list:
-                state.update({"page_number": page_number})
-                redis_store.set(user_id, json.dumps(state))
-                # Releasing lock
-                redis_store.set("%dredis_lock" % user_id, False)
-                start = 1 if page_number == 1 else page_number * 10 - 9
-                return cls.custom_count_appender(start, _list, representative, [])
-            redis_store.delete(user_id)
+                # Getting state data from redis
+                representative, _class, params = state["repr"], CLASSES[state["class"]], state["params"]
+                method = getattr(_class, state["method"])
+                page_number = params[-1]
+                # Increasing page number
+                page_number += 1
+                params[-1] = page_number
+                _list = method(*tuple(params))
+                if _list:
+                    state.update({"page_number": page_number})
+                    redis_store.set(user_id, json.dumps(state))
+                    # Releasing lock
+                    redis_store.set("%dredis_lock" % user_id, False)
+                    start = 1 if page_number == 1 else page_number * 10 - 9
+                    return cls.custom_count_appender(start, _list, representative, [])
+                redis_store.delete(user_id)
+        except Exception as error:
+            logger.info("No state found: %s" % error.message)
+            # Releasing lock
+            redis_store.set("%dredis_lock" % user_id, False)
+            return None
         return None
 
     @staticmethod

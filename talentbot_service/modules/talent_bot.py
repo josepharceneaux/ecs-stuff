@@ -231,7 +231,7 @@ class TalentBot(object):
                 if match_ratio >= BEST_QUESTION_MATCH_RATIO:
                     break
         if message_handler:
-            return message_handler(message_tokens, user_id)
+            return message_handler(message_tokens, user_id, user_client)
         return random.choice(self.error_messages)
 
     @staticmethod
