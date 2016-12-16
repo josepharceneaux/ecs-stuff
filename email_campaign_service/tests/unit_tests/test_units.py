@@ -5,7 +5,7 @@ from contracts import ContractNotRespected
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.error_handling import InvalidUsage
-from email_campaign_service.modules.utils import do_mergetag_replacements
+from email_campaign_service.modules.utils import do_mergetag_replacements, TEST_PREFERENCE_URL
 from email_campaign_service.tests.modules.handy_functions import create_email_campaign_with_merge_tags
 
 __author__ = 'basit'
@@ -16,7 +16,7 @@ def test_mergetag_replacements(user_first, candidate_first):
     Here we test the functionality of function do_mergetag_replacement()
     """
     # Merge tags for user
-    campaign = create_email_campaign_with_merge_tags(user_first, add_preference_url=False)
+    campaign = create_email_campaign_with_merge_tags(user_first)
     user_first.update(first_name=fake.first_name())
     user_first.update(last_name=fake.last_name())
     [subject, body_text, body_html] = do_mergetag_replacements([campaign.subject, campaign.body_text,
@@ -27,6 +27,8 @@ def test_mergetag_replacements(user_first, candidate_first):
         assert user_first.last_name in item
         assert user_first.name in item
 
+    for item in [body_text, body_html]:
+        assert TEST_PREFERENCE_URL in item
     # Merge tags for candidate
     campaign = create_email_campaign_with_merge_tags(user_first)
 
