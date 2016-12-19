@@ -106,7 +106,7 @@ def process_meetup_event(event):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    meetup_event_base.archive_email_campaigns_for_deleted_event(event_in_db)
+                    meetup_event_base.delete_event(event_id, False)
                     logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
                                 % event_in_db.to_json())
                 else:
@@ -256,7 +256,7 @@ def import_eventbrite_event(user_id, event_url, action_type):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    eventbrite_event_base.archive_email_campaigns_for_deleted_event(event_in_db)
+                    eventbrite_event_base.delete_event(event_id, False)
                     logger.info('Event has been marked as is_deleted_from_vendor in gt database: %s'
                                 % event_in_db.to_json())
                 else:
