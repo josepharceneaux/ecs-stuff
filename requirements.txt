@@ -110,3 +110,4 @@ graphene==1.0.2
 graphene-sqlalchemy==1.0
 graphql-flask==1.1.0
 gql==0.1.0
+mixpanel-jql==0.3
