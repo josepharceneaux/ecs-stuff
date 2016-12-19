@@ -281,9 +281,9 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False):
 
     for row in query.send():
         if is_single_user and row['key'][0] == user_data_dict['id']:
-            user_data_dict['logins_per_month'] = row['value'] / 30.0  # Per Month Logins
+            user_data_dict['logins_per_month'] = row['value']
         elif (not is_single_user) and (row['key'][0] in user_data_dict):
-            user_data_dict[row['key'][0]]['logins_per_month'] = row['value'] / 30.0  # Per Month Logins
+            user_data_dict[row['key'][0]]['logins_per_month'] = row['value']
 
     return user_data_dict
 
