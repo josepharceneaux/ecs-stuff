@@ -251,7 +251,7 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False):
         url_prefix = 'staging.gettalent' if app.config[TalentConfigKeys.ENV_KEY] in (
             TalentEnvs.QA, TalentEnvs.DEV, TalentEnvs.JENKINS) else 'app.gettalent'
     else:
-        parsed_url = urlparse('https://staging.gettalent.com/login')
+        parsed_url = urlparse(request_origin)
         url_prefix = parsed_url.netloc
 
     to_date = datetime.utcnow()
