@@ -400,18 +400,10 @@ class SocialNetworkBase(object):
         :return: True if token is valid otherwise False
         :rtype: bool
 
-        - This function is called from validate_and_refresh_access_token()
-         social network service base class inside
-         social_network_service/base.py to check the validity of the access
-         token of current user for a specific social network. We take the
-         access token, make request to social network API on url
-            url = self.api_url + self.api_relative_url
-         and check if it didn't error out.
-
-         We have value of "self.api_relative_url" set by child classes
-            according to API of respective social network. Above url will
-            evaluate in case of Meetup as
-            url = 'https://api.meetup.com/2' + '/member/self'
+        - This function is called from validate_and_refresh_access_token() social network service base class
+        inside social_network_service/base.py to check the validity of the access token of current user for a
+        specific social network. We take the access token, make request to social network API on url
+            say for Meetup 'https://api.meetup.com/2/member/self'
 
         :Example:
                 from social_network_service.meetup import Meetup
