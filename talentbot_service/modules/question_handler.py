@@ -419,7 +419,7 @@ class QuestionHandler(object):
             if via_sms:
                 state = {"class": "TalentPool", "method": "get_talent_pools_in_user_domain",
                          "params": [user_id, 1], "repr": "talent pools"}
-                redis_store.set(user_id, json.dumps(state))
+                redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
             return response.replace('`None`', '')
         response = "Seems like there is no talent pool in your domain `%s`" % domain_name
         return response.replace('`None`', '')
@@ -467,6 +467,10 @@ class QuestionHandler(object):
                 # for index, pipeline in enumerate(pipelines):
                 #     response.append("%d: `%s`" % (index + 1, pipeline.name))
                 response = cls.custom_count_appender(1, pipelines, "pipelines", response)
+                state = {"class": "TalentPipeline", "method": "pipelines_user_group",
+                         "params": [user_id, 1],
+                         "repr": "pipelines"}
+                redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
             return response
         belong_index = cls.find_optional_word(message_tokens, ['belong', 'part'])
         is_user_asking_about_himself = cls.find_word_in_message('i', message_tokens, exact_word=True)
@@ -655,7 +659,7 @@ class QuestionHandler(object):
         if user_client == USER_CLIENTS["SMS"]:  # Saving state for pagination
             state = {"class": "TalentPipeline", "method": "get_own_or_domain_pipelines", "params": [user_id, scope, 1],
                      "repr": "pipelines"}
-            redis_store.set(user_id, json.dumps(state))
+            redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
             pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope, 1)
         else:
             pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope)
@@ -1041,7 +1045,7 @@ class QuestionHandler(object):
             lock = cls.request_lock(user_id)
         # Acquiring lock
         redis_store.set("%dredis_lock" % user_id, True)
-        state = redis_store.get(user_id)
+        state = redis_store.get("bot-pg-%d" % user_id)
         try:
             if state:
                 state = json.loads(state)
@@ -1055,12 +1059,12 @@ class QuestionHandler(object):
                 _list = method(*tuple(params))
                 if _list:
                     state.update({"page_number": page_number})
-                    redis_store.set(user_id, json.dumps(state))
+                    redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
                     # Releasing lock
                     redis_store.set("%dredis_lock" % user_id, False)
                     start = 1 if page_number == 1 else page_number * 10 - 9
                     return cls.custom_count_appender(start, _list, representative, [])
-                redis_store.delete(user_id)
+                redis_store.delete("bot-pg-%d")
         except Exception as error:
             logger.info("No state found: %s" % error.message)
             # Releasing lock
