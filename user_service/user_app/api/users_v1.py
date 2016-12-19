@@ -88,7 +88,7 @@ class UserApi(Resource):
                 if not is_number(domain_id) or not Domain.query.get(int(domain_id)):
                     raise InvalidUsage("Invalid Domain Id is provided")
 
-            users_data_dict = {str(user.id): user.to_dict() for user in User.all_users_of_domain(int(domain_id))}
+            users_data_dict = {user.id: user.to_dict() for user in User.all_users_of_domain(int(domain_id))}
             return {'users': get_users_stats_from_mixpanel(users_data_dict).values()}
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_USERS)

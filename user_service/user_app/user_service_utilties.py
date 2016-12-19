@@ -258,7 +258,7 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False):
     from_date = to_date - timedelta(days=30)
 
     if is_single_user:
-        selector = '"{}" in properties["$current_url"] properties["id"] == 903'.format(url_prefix)
+        selector = '"{}" in properties["$current_url"] and properties["id"] == {}'.format(url_prefix, 903)
     else:
         selector = '"{}" in properties["$current_url"]'.format(url_prefix)
 
@@ -272,13 +272,18 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False):
         'from_date': str(from_date.date()),
         'to_date': str(to_date.date())
     }
-    query = JQL(TalentConfigKeys.MIXPANEL_API_KEY, params).group_by(keys=["e.properties.id"], accumulator=Reducer.count())
+    try:
+        query = JQL(app.config[TalentConfigKeys.MIXPANEL_API_KEY], params).group_by(keys=["e.properties.id"],
+                                                                                    accumulator=Reducer.count())
+    except Exception as e:
+        logger.error("Error while fetching user stats from MixPanel because: %s" % e.message)
+        raise InvalidUsage("Error while fetching user stats")
+
     for row in query.send():
-        if row['key'][0] in user_data_dict:
-            if is_single_user:
-                user_data_dict['logins_per_month'] = row['value'] / 30.0  # Per Month Logins
-            else:
-                user_data_dict[row['key'][0]]['logins_per_month'] = row['value'] / 30.0  # Per Month Logins
+        if is_single_user and row['key'][0] == user_data_dict['id']:
+            user_data_dict['logins_per_month'] = row['value'] / 30.0  # Per Month Logins
+        elif (not is_single_user) and (row['key'][0] in user_data_dict):
+            user_data_dict[row['key'][0]]['logins_per_month'] = row['value'] / 30.0  # Per Month Logins
 
     return user_data_dict
 
