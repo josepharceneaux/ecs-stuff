@@ -35,11 +35,18 @@ def test_call_requires_auth(token_fixture):
     assert response.status_code == requests.codes.unauthorized
 
 
-def test_reponse_is_user_filtered(token_fixture):
+def test_response_is_user_filtered(token_fixture):
     test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1'
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
     assert json.loads(response.content)['total_count'] == 32
+
+
+def test_response_can_exclude_user(token_fixture):
+    test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1' + '?exclude_current_user=1'
+    response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
+        token_fixture.access_token)})
+    assert json.loads(response.content)['total_count'] == 0
 
 
 def test_response_can_be_time_filtered(token_fixture):
