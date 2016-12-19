@@ -258,7 +258,7 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False):
     from_date = to_date - timedelta(days=30)
 
     if is_single_user:
-        selector = '"{}" in properties["$current_url"] and properties["id"] == {}'.format(url_prefix, 903)
+        selector = '"{}" in properties["$current_url"] and properties["id"] == {}'.format(url_prefix, user_data_dict['id'])
     else:
         selector = '"{}" in properties["$current_url"]'.format(url_prefix)
 
