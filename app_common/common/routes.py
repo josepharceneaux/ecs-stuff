@@ -257,6 +257,8 @@ class UserServiceApi(object):
     DOMAIN_AOIS = '/' + VERSION + '/areas_of_interest'
     DOMAIN_AOI = '/' + VERSION + '/areas_of_interest/<int:id>'
 
+    DOMAIN_TAGS = '/' + VERSION + '/tags'
+
     TEST_SETUP = 'test-setup'
 
 

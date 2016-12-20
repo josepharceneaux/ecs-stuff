@@ -38,7 +38,6 @@ class TalentPipelineApi(Resource):
 
         :rtype: dict
         """
-
         talent_pipeline_id = kwargs.get('id')
         interval_in_days = request.args.get('interval', 30)
         candidate_count = request.args.get('candidate-count', False)

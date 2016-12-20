@@ -14,6 +14,7 @@ try:
     from user_service.user_app.api.domain_custom_fields import DomainCustomFieldsResource
     from user_service.user_app.api.domain_areas_of_interest import DomainAreaOfInterestResource
     from user_service.user_app.api.domain_cf_categories import DomainCustomFieldCategoriesResource
+    from user_service.user_app.api.domain_tags import DomainTagResource
 
     # noinspection PyProtectedMember
     logger.debug("Redis connection pool: %s", repr(redis_store._redis_client.connection_pool))
@@ -40,6 +41,9 @@ try:
     api.add_resource(DomainCustomFieldCategoriesResource,
                      UserServiceApi.DOMAIN_CUSTOM_FIELD_CATEGORY,
                      endpoint='domain_custom_field_category')
+
+    # Domain Tags Resource
+    api.add_resource(DomainTagResource, UserServiceApi.DOMAIN_TAGS, endpoint='domain_tags')
 
     from views import users_utilities_blueprint
     from api.users_v1 import users_blueprint
