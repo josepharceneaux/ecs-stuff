@@ -963,13 +963,17 @@ def get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, n
     else:
         # Otherwise, just filter out unsubscribed candidates:
         # their subscription preference's frequencyId is NULL, which means 'Never'
-
         for candidate_id in all_candidate_ids:
-            # Call candidate API to get candidate's subscription preference.
-            subscription_preference = get_candidate_subscription_preference(candidate_id, campaign.user.id, app=app)
-            # campaign_subscription_preference = get_subscription_preference(candidate_id)
-            logger.info("subscription_preference: %s, candidate_id:%s, email_campaign_id:%s"
-                        % (subscription_preference, candidate_id, campaign.id))
+            subscription_preference = {}
+            try:
+                # Call candidate API to get candidate's subscription preference.
+                subscription_preference = get_candidate_subscription_preference(candidate_id, campaign.user.id, app=app)
+                # campaign_subscription_preference = get_subscription_preference(candidate_id)
+                logger.info("subscription_preference: %s, candidate_id:%s, email_campaign_id:%s"
+                            % (subscription_preference, candidate_id, campaign.id))
+            except Exception as error:
+                logger.error('Could not get subscription preference for candidate(id:%s). '
+                             'email_campaign(id:%s). Error:%s' % (candidate_id, campaign.id, error.message))
             if subscription_preference and not subscription_preference.get('frequency_id'):
                 unsubscribed_candidate_ids.append(candidate_id)
 
@@ -984,8 +988,9 @@ def get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, n
         # assign it to subscribed_candidate_ids (doing it explicit just to make it clear)
         subscribed_candidate_ids = new_candidate_ids
     # Logging info of unsubscribed candidates.
-    logger.info("Email campaign id is: %s. Number of unsubscribed candidates: %s. Unsubscribed candidate's ids are:"
-                " %s" % (campaign.id, len(unsubscribed_candidate_ids), unsubscribed_candidate_ids))
+    logger.info("Email campaign(id:%s). Subscribed candidates:%s, Unsubscribed candidates:%s. "
+                "Unsubscribed candidate's ids are: %s" % (campaign.id, len(subscribed_candidate_ids),
+                                                          len(unsubscribed_candidate_ids), unsubscribed_candidate_ids))
     return subscribed_candidate_ids, unsubscribed_candidate_ids
 
 
@@ -1011,13 +1016,12 @@ def get_smartlist_candidates_via_celery(user_id, campaign_id, smartlist_ids, new
     campaign_type = campaign.__tablename__
 
     # Get candidates present in each smartlist
-    tasks = [get_candidates_from_smartlist.subtask(
-        (list_id, True, user_id),
-        link_error=celery_error_handler(
-            campaign_type), queue=campaign_type) for list_id in smartlist_ids]
+    tasks = [get_candidates_from_smartlist.subtask((list_id, True, user_id),
+                                                   link_error=celery_error_handler(campaign_type),
+                                                   queue=campaign_type) for list_id in smartlist_ids]
 
     # Register function to be called after all candidates are fetched from smartlists
-    callback = process_campaign_send.subtask((user_id, campaign_id, smartlist_ids, new_candidates_only, ),
+    callback = process_campaign_send.subtask((user_id, campaign_id, smartlist_ids, new_candidates_only,),
                                              queue=campaign_type)
     # This runs all tasks asynchronously and sets callback function to be hit once all
     # tasks in list finish running without raising any error. Otherwise callback

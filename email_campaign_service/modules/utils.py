@@ -42,8 +42,8 @@ from email_campaign_service.common.inter_service_calls.candidate_pool_service_ca
 
 SIX_MONTHS_EXPIRATION_TIME = 15768000
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
-DEFAULT_USER_NAME_MERGETAG = "*|USERNAME|*"
 DEFAULT_LAST_NAME_MERGETAG = "*|LASTNAME|*"
+DEFAULT_USER_NAME_MERGETAG = "*|USERNAME|*"
 DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
 TEST_PREFERENCE_URL = get_web_app_url() + "/account/subscription-preferences"
 TRACKING_PIXEL_URL = "https://s3-us-west-1.amazonaws.com/gettalent-static/pixel.png"
@@ -68,8 +68,13 @@ def get_candidates_from_smartlist(list_id, candidate_ids_only=False, user_id=Non
     raise_if_not_positive_int_or_long(list_id)
     raise_if_not_instance_of(candidate_ids_only, bool)
     raise_if_not_positive_int_or_long(user_id)
-    candidates = get_candidates_of_smartlist(list_id=list_id, candidate_ids_only=candidate_ids_only,
-                                             access_token=None, user_id=user_id)
+    candidates = []
+    try:
+        candidates = get_candidates_of_smartlist(list_id=list_id, candidate_ids_only=candidate_ids_only,
+                                                 access_token=None, user_id=user_id)
+    except Exception as error:
+        logger.error('Error occurred while getting candidates of smartlist(id:%s).'
+                     '.Reason: %s' % (list_id, error.message))
     logger.info("There are %s candidates in smartlist(id:%s)" % (len(candidates), list_id))
     return candidates
 
