@@ -70,6 +70,7 @@ def get_candidates_from_smartlist(list_id, candidate_ids_only=False, user_id=Non
     raise_if_not_positive_int_or_long(user_id)
     candidates = get_candidates_of_smartlist(list_id=list_id, candidate_ids_only=candidate_ids_only,
                                              access_token=None, user_id=user_id)
+    logger.info("There are %s candidates in smartlist(id:%s)" % (len(candidates), list_id))
     return candidates
 
 

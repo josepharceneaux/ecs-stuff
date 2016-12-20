@@ -125,11 +125,12 @@ def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=Fals
     return data_resp
 
 
-def get_candidate_subscription_preference(candidate_id, user_id):
+def get_candidate_subscription_preference(candidate_id, user_id, app=None):
     """
     Method to get the subscription preference of a candidate with specified candidate id.
     :param candidate_id: Id of candidate for which subscription preference is to be retrieved.
     :param user_id: Id of user.
+    :param app: Flask app instance
     :type candidate_id: int | long
     :type user_id: int | long
     :rtype: int
@@ -137,7 +138,7 @@ def get_candidate_subscription_preference(candidate_id, user_id):
     raise_if_not_positive_int_or_long(candidate_id)
     raise_if_not_positive_int_or_long(user_id)
     resp = http_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % str(candidate_id),
-                        headers=create_oauth_headers(user_id=user_id))
+                        headers=create_oauth_headers(user_id=user_id), app=app)
     if resp.status_code == ForbiddenError.http_status_code():
         raise ForbiddenError('Not authorized to get Candidate(id:%s)' % candidate_id)
     assert resp.status_code == 200

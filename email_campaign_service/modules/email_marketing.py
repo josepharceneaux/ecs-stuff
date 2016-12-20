@@ -304,9 +304,9 @@ def post_processing_campaign_sent(celery_result, campaign, new_candidates_only, 
         if not isinstance(email_campaign_blast_id, (int, long)) or email_campaign_blast_id <= 0:
             logger.error('email_campaign_blast_id must be positive int or long')
             return
-        logger.info('celery_result: %s' % celery_result)
-    sends = celery_result.count(True)
-    _update_blast_sends(email_campaign_blast_id, sends, campaign,  new_candidates_only)
+        sends = celery_result.count(True)
+        logger.info('Campaigns sends:%s, celery_result: %s' % (sends, celery_result))
+        _update_blast_sends(email_campaign_blast_id, sends, campaign,  new_candidates_only)
 
 
 @celery_app.task(name='process_campaign_send')
@@ -343,7 +343,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
         if not isinstance(new_candidates_only, bool):
             logger.error('new_candidates_only must be bool')
             return
-        logger.info('celery_result: %s' % celery_result)
+        logger.info('candidates count:%s, celery_result: %s' % (len(celery_result), celery_result))
 
     # gather all candidates from various smartlists
     for candidate_list in celery_result:
@@ -966,9 +966,10 @@ def get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, n
 
         for candidate_id in all_candidate_ids:
             # Call candidate API to get candidate's subscription preference.
-            subscription_preference = get_candidate_subscription_preference(candidate_id, campaign.user.id)
+            subscription_preference = get_candidate_subscription_preference(candidate_id, campaign.user.id, app=app)
             # campaign_subscription_preference = get_subscription_preference(candidate_id)
-            logger.debug("subscription_preference: %s" % subscription_preference)
+            logger.info("subscription_preference: %s, candidate_id:%s, email_campaign_id:%s"
+                        % (subscription_preference, candidate_id, campaign.id))
             if subscription_preference and not subscription_preference.get('frequency_id'):
                 unsubscribed_candidate_ids.append(candidate_id)
 
