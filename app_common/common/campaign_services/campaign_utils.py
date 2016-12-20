@@ -333,8 +333,8 @@ class CampaignUtils(object):
                                  % (campaign.id, blast_obj.id))
                 raise
             base_class.create_campaign_send_activity(user_id, campaign, total_sends)
-        logger.debug('post_campaign_sent_processing: %s(id:%s) has been sent to %s candidate(s).'
-                     '(User(id:%s))' % (campaign_type, campaign.id, total_sends, user_id))
+        logger.info('post_campaign_sent_processing: %s(id:%s) has been sent to %s candidate(s).'
+                    '(User(id:%s))' % (campaign_type, campaign.id, total_sends, user_id))
 
     @staticmethod
     def delete_scheduled_task(scheduled_task_id, oauth_header):

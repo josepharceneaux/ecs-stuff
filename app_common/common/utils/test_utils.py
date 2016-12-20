@@ -723,14 +723,14 @@ def add_social_network_credentials(app, eventbrite, user):
                                                                                      social_network_id)
 
     if not user_credentials:
-        from social_network_service.modules.social_network.eventbrite import Eventbrite as EventbriteSocialNetwork
+        from social_network_service.modules.social_network.eventbrite import Eventbrite
         with test_app.app_context():
             user_credentials = UserSocialNetworkCredential(
                 social_network_id=social_network_id,
                 user_id=int(user['id']),
                 access_token=eventbrite_kv['access_token'],)
             UserSocialNetworkCredential.save(user_credentials)
-            eventbrite_sn = EventbriteSocialNetwork(user_id=user['id'], social_network_id=eventbrite['id'])
+            eventbrite_sn = Eventbrite(user_id=user['id'], social_network_id=eventbrite['id'])
             member_id = eventbrite_sn.get_member_id()
             user_credentials.update(member_id=member_id)
 

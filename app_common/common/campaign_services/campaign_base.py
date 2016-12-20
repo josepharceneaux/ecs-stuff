@@ -1124,8 +1124,8 @@ class CampaignBase(object):
         if not isinstance(self.campaign, CampaignUtils.MODELS):
             raise InvalidUsage('campaign object was not set properly')
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (self.campaign_type, self.campaign.id,
-                                                                     self.user.id))
+        logger.info('send: %s(id:%s) is being sent. User(id:%s)' % (self.campaign_type, self.campaign.id,
+                                                                    self.user.id))
         if not self.campaign.body_text:
             # body_text is empty
             raise InvalidUsage('Body text is empty for %s(id:%s)' % (self.campaign_type,
@@ -1563,16 +1563,14 @@ class CampaignBase(object):
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         raise_if_dict_values_are_not_int_or_long(dict(url_conversion_id=url_conversion_id))
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        logger.debug('url_redirect: Processing for URL redirection(id:%s).'
-                     % url_conversion_id)
+        logger.info('url_redirect: Processing for URL redirection(id:%s).' % url_conversion_id)
         if verify_signature:  # Need to validate the signed URL
             cls.pre_process_url_redirect(request_args, requested_url)
         # get send_url_conversion model for respective campaign
         send_url_conversion_model = CampaignUtils.get_send_url_conversion_model(campaign_type)
         # get send_url_conversion object for respective campaign model
-        send_url_conversion_obj = \
-            CampaignUtils.get_send_url_conversion_obj_by_url_conversion_id(
-                send_url_conversion_model, url_conversion_id)
+        send_url_conversion_obj = CampaignUtils.get_send_url_conversion_obj_by_url_conversion_id(
+            send_url_conversion_model, url_conversion_id)
         if not send_url_conversion_obj:
             raise ResourceNotFound(
                 'url_redirect: campaign_send_url_conversion_obj not found for '
