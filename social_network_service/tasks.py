@@ -327,13 +327,7 @@ def import_meetup_events():
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
         logger.info('Meetup Event Importer started at UTC: %s' % datetime.datetime.utcnow())
-        import_lock_key = 'Meetup_Event_Importer_Lock'
-        if not redis_store.get(import_lock_key):
-            # set lock for 5 minutes
-            redis_store.set(import_lock_key, True, 5 * 60)
-        else:
-            logger.info('Meetup Event Importer is already running.')
-            return 'Done'
+
         while True:
             try:
                 url = MEETUP_EVENT_STREAM_API_URL
