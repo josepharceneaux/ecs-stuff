@@ -94,6 +94,7 @@ def test_credentials(request):
     """
     return deepcopy(request.getfuncargvalue("test_{}_credentials".format(request.param.lower())))
 
+
 @pytest.fixture(scope="session")
 def test_meetup_credentials(user_first, meetup):
     """
