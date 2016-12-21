@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Upgrade pip if needed
+pip install --upgrade pip
+
 # Install Requirements
 pip install -r requirements.txt
 
