@@ -56,7 +56,7 @@ def meetup():
 
 
 @pytest.fixture(scope="session")
-def meetup_venue(meetup, user_first, token_first):
+def meetup_venue(meetup, user_first, token_first, test_meetup_credentials):
     """
     This fixture returns meetup venue in getTalent database
     """
