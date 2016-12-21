@@ -119,7 +119,7 @@ def test_get_timezones(token_first):
     validate_graphql_response('timezones', response['data'], fields, is_array=True)
 
 
-def test_get_sn_token_status(token_first, meetup):
+def test_get_sn_token_status(token_first, meetup, test_meetup_credentials):
     """
     Validate that Graphql endpoint will return token status for given social network id for `sn_token_status` query.
     In this case, Eventbrite is the social_network and token status should be True.
