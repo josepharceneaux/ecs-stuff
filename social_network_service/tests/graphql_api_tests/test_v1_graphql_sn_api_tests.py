@@ -97,7 +97,7 @@ def test_get_subscribed_social_network(token_first):
     assert_valid_response('subscribed_social_network', SocialNetwork, token_first, None, ignore_id_test=True)
 
 
-def test_get_meetup_groups(token_first):
+def test_get_meetup_groups(token_first, test_meetup_credentials):
     """
     This test validates that `meetup_groups` query is returning a list of user's groups on meetup.
     """
