@@ -208,7 +208,8 @@ class Test_Event_Importer(object):
         RSVP.delete(rsvp.id)
 
 
-@pytest.mark.skipif(ENV != TalentEnvs.DEV, reason='TODO: Need to create mock endpoints for importer')
+@pytest.mark.skipif(ENV in [TalentEnvs.DEV, TalentEnvs.JENKINS],
+                    reason='TODO: Need to create mock endpoints for importer')
 def test_event_import_to_create_new_event(user_first, token_first, event_data, meetup, everbrite_webhook, meetup_group):
     """
     Test Eventbrite and Meetup events importer.
@@ -240,7 +241,8 @@ def test_event_import_to_create_new_event(user_first, token_first, event_data, m
         assert response.status_code == codes.OK
 
 
-@pytest.mark.skipif(ENV != TalentEnvs.DEV, reason='TODO: Need to create mock endpoints for importer')
+@pytest.mark.skipif(ENV in [TalentEnvs.DEV, TalentEnvs.JENKINS],
+                    reason='TODO: Need to create mock endpoints for importer')
 def test_event_import_to_update_existing_event(user_first, token_first, event_data, meetup, meetup_group):
     """
     Test Eventbrite and Meetup events importer.

@@ -27,7 +27,9 @@ from social_network_service.common.campaign_services.tests.conftest import (meet
                                                                             test_eventbrite_credentials, eventbrite,
                                                                             eventbrite_venue, event_in_db, VENDORS,
                                                                             test_eventbrite_credentials_same_domain,
-                                                                            eventbrite_venue_same_domain, organizer_in_db)
+                                                                            eventbrite_venue_same_domain,
+                                                                            organizer_in_db, test_credentials,
+                                                                            EVENTBRITE_CONFIG)
 
 # Models
 from social_network_service.common.models.db import db
@@ -76,7 +78,7 @@ def eventbrite_event_data(eventbrite, eventbrite_venue, test_eventbrite_credenti
     return data
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def everbrite_webhook(test_eventbrite_credentials):
     with app.app_context():
         try:

@@ -1,6 +1,5 @@
 # Std imports
 import json
-from datetime import datetime
 
 # Third Party
 import pytest
@@ -8,13 +7,15 @@ import requests
 from requests import codes
 
 # App specific imports
-from social_network_service.common.utils.test_utils import missing_keys_test, fake
 from social_network_service.social_network_app import logger
+from social_network_service.tests.conftest import EVENTBRITE_CONFIG
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.models.event_organizer import EventOrganizer
+from social_network_service.common.utils.test_utils import missing_keys_test, fake
 from social_network_service.tests.helper_functions import auth_header, get_headers, match_event_organizer_fields
 
 
+@pytest.mark.skipif(EVENTBRITE_CONFIG['skip'], reason=EVENTBRITE_CONFIG['reason'])
 class TestOrganizers(object):
     def test_get_with_invalid_token(self):
         """
