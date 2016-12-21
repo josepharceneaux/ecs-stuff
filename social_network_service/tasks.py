@@ -24,7 +24,7 @@ from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import MeetupGroup, Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.talent_config_manager import TalentConfigKeys
-from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
 from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS, EVENT, MEETUP_EVENT_STREAM_API_URL)
 from social_network_service.modules.event.meetup import Meetup
@@ -327,7 +327,13 @@ def import_meetup_events():
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
         logger.info('Meetup Event Importer started at UTC: %s' % datetime.datetime.utcnow())
-
+        import_lock_key = 'Meetup_Event_Importer_Lock'
+        if not redis_store.get(import_lock_key):
+            # set lock for 5 minutes
+            redis_store.set(import_lock_key, True, 5 * 60)
+        else:
+            logger.info('Meetup Event Importer is already running.')
+            return 'Done'
         while True:
             try:
                 url = MEETUP_EVENT_STREAM_API_URL
@@ -343,9 +349,13 @@ def import_meetup_events():
                             if group:
                                 logger.info('Going to save event: %s' % event)
                                 process_meetup_event.delay(event)
-                        except Exception:
-                            logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
-                            rollback()
+                        except ValueError:
+                            pass
+                        except Exception as e:
+                            logger.exception('Error occurred while parsing event data, Error: %s\nEvent: %s' %
+                                             (e, raw_event))
+                            raise
             except Exception as e:
                 logger.warning('Out of main loop. Cause: %s' % e)
+                time.sleep(5)
                 rollback()

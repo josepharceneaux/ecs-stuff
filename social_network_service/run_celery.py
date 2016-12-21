@@ -17,7 +17,7 @@ from social_network_service.common.talent_celery import CELERY_WORKER_ARGS
 from social_network_service.social_network_app import celery_app, app
 from social_network_service.tasks import import_meetup_events
 
-if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV]:
+if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.QA]:
     # Run importer task for dev environment
     import_meetup_events.delay()
 celery_app.start(argv=CELERY_WORKER_ARGS + [QUEUE_NAME])
