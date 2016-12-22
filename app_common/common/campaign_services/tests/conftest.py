@@ -456,7 +456,7 @@ def email_campaign_same_domain(smartlist_same_domain, base_campaign, token_first
 
 
 @pytest.fixture(scope="function")
-def meetup_venue_second(meetup, user_first, token_first):
+def meetup_venue_second(meetup, user_first, token_first, test_meetup_credentials):
     """
     This fixture returns meetup venue in getTalent database
     """
