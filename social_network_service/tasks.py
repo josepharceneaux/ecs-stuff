@@ -85,6 +85,16 @@ def process_meetup_event(event):
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
+
+        # if same event is received multiple times, accept first and reject remaining
+        meetup_event_lock_key = json.dumps(event)
+        if not redis_store.get(meetup_event_lock_key):
+            # set lock for 5 minutes
+            redis_store.set(meetup_event_lock_key, True, 5 * 60)
+        else:
+            logger.info('Already received this Meetup Event: %s.' % event)
+            return 'Done'
+
         logger.info('Going to process Meetup Event: %s' % event)
         try:
             time.sleep(5)  # wait for event creation api to save event in database otherwise there can be duplicate
