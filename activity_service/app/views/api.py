@@ -13,6 +13,7 @@ from flask import jsonify
 from flask import request
 from flask import Blueprint
 from requests import codes as STATUS_CODES
+from sqlalchemy import not_
 
 # application specific
 from activity_service.common.models.user import User
@@ -27,6 +28,7 @@ from activity_service.common.campaign_services.campaign_utils import CampaignUti
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 POSTS_PER_PAGE = 20
 EPOCH = datetime(year=1970, month=1, day=1)
+EXCLUSIONS = (15, 16, 17)
 mod = Blueprint('activities_api', __name__)
 
 
@@ -340,16 +342,23 @@ class TalentActivityManager(object):
         user_domain_id = User.query.filter_by(id=user_id).value('domainId')
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
+        filters = []
 
-        # Some activity streams do not want the current user's activities. See GET-1998/WEB-912.
+
+        # GET - 1998 / WEB - 912.
+        # Some activity streams do not want the current user's activities.
+        # Additionally we do not want to see some types of activities.
         if exlude_current:
             flattened_user_ids.remove(user_id)
+            filters.append(not_(Activity.type.in_(EXCLUSIONS)))
 
-        filters = [Activity.user_id.in_(flattened_user_ids)]
+        filters.append(Activity.user_id.in_(flattened_user_ids))
         if start_datetime: filters.append(Activity.added_time > start_datetime)
         if end_datetime: filters.append(Activity.added_time < end_datetime)
+
         activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc())\
             .paginate(page, post_qty, False)
+
         activities_response = {
             'total_count': activities.total,
             'items': [{
