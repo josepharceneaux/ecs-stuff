@@ -81,7 +81,7 @@ class RsvpEventImporter(Resource):
 
             if not (social_network.lower() in [MEETUP, EVENTBRITE]):
                 raise InvalidUsage("No social network with name {} found.".format(social_network))
-            import_meetup_events.delay()
+            # import_meetup_events.delay()
 
         return dict(message='Meetup Importer has started at : %s' % datetime.datetime.utcnow())
 

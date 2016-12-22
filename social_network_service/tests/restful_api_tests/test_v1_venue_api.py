@@ -12,6 +12,7 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.modules.constants import EVENTBRITE
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
+from social_network_service.tests.conftest import EVENTBRITE_CONFIG
 from social_network_service.tests.helper_functions import auth_header, get_headers, match_venue_fields
 
 
@@ -57,6 +58,7 @@ class TestVenues(object):
         logger.info(response.text)
         assert response.status_code == codes.UNAUTHORIZED, 'It should be unauthorized (401)'
 
+    @pytest.mark.skipif(EVENTBRITE_CONFIG['skip'], reason=EVENTBRITE_CONFIG['reason'])
     def test_post_with_valid_token(self, token_first):
         """
         Send POST request with valid venue data to create venue endpoint and response should be 201
