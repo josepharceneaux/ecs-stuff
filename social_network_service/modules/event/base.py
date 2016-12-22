@@ -240,16 +240,19 @@ class EventBase(object):
         webhook = user_credentials.webhook
         return member_id, access_token, refresh_token, webhook
 
-    def archive_email_campaigns_for_deleted_event(self, event, is_delete_from_vendor):
+    def archive_email_campaigns_for_deleted_event(self, event, deleted_from_vendor):
         """
         Whenever an event is deleted from social-network, we update field `is_deleted_from_vendor` to 1.
         We then check if it was promoted via email-campaign to getTalent candidates and mark all linked email-campaigns
         as archived.
         :param Event event: Event object
-        :param bool is_delete_from_vendor: flag to mark is_delete_from_vendor true or false
+        :param bool deleted_from_vendor: flag to mark is_delete_from_vendor true or false
         """
 
-        if is_delete_from_vendor:
+        # if deleted_from_vendor is True, it means we are directly deleting event from our api call not from third party
+        # social network that's why we need to un-publish
+        # event from social network and will also mark is_hidden=1.
+        if deleted_from_vendor:
             event.update(is_deleted_from_vendor=1, is_hidden=1)
         else:
             event.update(is_deleted_from_vendor=1)
