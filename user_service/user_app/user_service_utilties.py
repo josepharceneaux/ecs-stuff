@@ -278,12 +278,13 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False):
     }
     try:
         query = JQL(app.config[TalentConfigKeys.MIXPANEL_API_KEY], params).group_by(
-                keys=["e.properties.id", "name"], accumulator=Reducer.count())
+                keys=["e.properties.id", "e.name"], accumulator=Reducer.count())
+        iterator = query.send()
     except Exception as e:
         logger.error("Error while fetching user stats from MixPanel because: %s" % e.message)
         raise InvalidUsage("Error while fetching user stats")
 
-    for row in query.send():
+    for row in iterator:
         user_dict_key = 'logins_per_month' if row['key'][1] == 'Login' else 'searches_per_month'
         if is_single_user and row['key'][0] == user_data_dict['id']:
             user_data_dict[user_dict_key] = row['value']
