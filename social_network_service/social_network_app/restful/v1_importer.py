@@ -24,6 +24,7 @@ from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.modules.constants import EVENTBRITE, EVENT
 from social_network_service.common.constants import MEETUP
+from social_network_service.tasks import import_meetup_events
 from social_network_service.social_network_app import logger, app
 
 rsvp_blueprint = Blueprint('importer', __name__)
@@ -80,18 +81,26 @@ class RsvpEventImporter(Resource):
 
             if not (social_network.lower() in [MEETUP, EVENTBRITE]):
                 raise InvalidUsage("No social network with name {} found.".format(social_network))
+            import_meetup_events.delay()
 
-        return dict(message='Nothing special')
+        return dict(message='Meetup Importer has started at : %s' % datetime.datetime.utcnow())
 
 
 def schedule_importer_job():
     """
-    Schedule 4 general jobs that hits Event and RSVP importer endpoint every hour.
+    Schedule a general job that hits Event  importer endpoint to run Event Importer long running task.
     """
-    task_name = 'Retrieve_{}_{}s'
-    # for mode, sn in itertools.product([RSVP, EVENT], [MEETUP, EVENTBRITE]):
-    url = SocialNetworkApiUrl.IMPORTER % ('event_importer', MEETUP)
-    schedule_job(task_name=task_name.format(MEETUP.title(), EVENT), url=url)
+    import_lock_key = 'Meetup_Event_Importer_Lock'
+    if not redis_store.get(import_lock_key):
+        # set lock for 5 minutes
+        redis_store.set(import_lock_key, True, 5 * 60)
+        task_name = 'Retrieve_{}_{}s'
+        # for mode, sn in itertools.product([RSVP, EVENT], [MEETUP, EVENTBRITE]):
+        url = SocialNetworkApiUrl.IMPORTER % ('event_importer', MEETUP)
+        schedule_job(task_name=task_name.format(MEETUP.title(), EVENT), url=url)
+    else:
+        logger.info('Meetup Event Importer is already running.')
+        return 'Done'
 
 
 def schedule_job(url, task_name):

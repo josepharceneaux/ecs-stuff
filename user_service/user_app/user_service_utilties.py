@@ -2,14 +2,17 @@ __author__ = 'ufarooqi'
 import re
 import random
 import string
-from flask import render_template
-from user_service.user_app import app
+from datetime import datetime, timedelta
+from urlparse import urlparse
+from flask import render_template, request
+from user_service.user_app import app, logger
 from werkzeug.security import gen_salt
+from mixpanel_jql import JQL, Reducer
 
 from user_service.common.routes import get_web_app_url
 from user_service.common.utils.validators import is_number
 from user_service.common.error_handling import InvalidUsage, NotFoundError, UnauthorizedError
-from user_service.common.talent_config_manager import TalentConfigKeys
+from user_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from user_service.common.models.email_campaign import EmailTemplateFolder, UserEmailTemplate
 from user_service.common.models.user import db, Domain, User, UserGroup, Role
 from user_service.common.utils.amazon_ses import send_email
@@ -231,3 +234,62 @@ def send_reset_password_email(email, name, reset_password_url, six_digit_token):
     send_email(source='"getTalent Registration" <support@gettalent.com>',
                subject='getTalent password reset',
                body=new_user_email, to_addresses=[email], email_format='html')
+
+
+def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False):
+    """
+    This method will fetch user stats from MixPanel using JQL
+    :param user_data_dict: Dict containing data for all users in system
+    :param is_single_user: Are we getting stats for a single user
+    :return: Dict containing data for all users in system
+    :rtype: dict
+    """
+    request_origin = request.environ.get('HTTP_ORIGIN', '')
+    logger.info('Request Origin for users GET request is: %s', request_origin)
+
+    if not request_origin:
+        url_prefix = 'staging.gettalent' if app.config[TalentConfigKeys.ENV_KEY] in (
+            TalentEnvs.QA, TalentEnvs.DEV, TalentEnvs.JENKINS) else 'app.gettalent'
+    else:
+        parsed_url = urlparse(request_origin)
+        url_prefix = parsed_url.netloc
+
+    to_date = datetime.utcnow()
+    from_date = to_date - timedelta(days=30)
+
+    if is_single_user:
+        selector = '"{}" in properties["$current_url"] and properties["id"] == {}'.format(url_prefix, user_data_dict['id'])
+    else:
+        selector = '"{}" in properties["$current_url"]'.format(url_prefix)
+
+    params = {
+        'event_selectors': [
+            {
+                'event': 'Login',
+                'selector': selector
+            },
+            {
+                'event': 'Search',
+                'selector': selector
+            }
+        ],
+        'from_date': str(from_date.date()),
+        'to_date': str(to_date.date())
+    }
+    try:
+        query = JQL(app.config[TalentConfigKeys.MIXPANEL_API_KEY], params).group_by(
+                keys=["e.properties.id", "e.name"], accumulator=Reducer.count())
+        iterator = query.send()
+    except Exception as e:
+        logger.error("Error while fetching user stats from MixPanel because: %s" % e.message)
+        raise InvalidUsage("Error while fetching user stats")
+
+    for row in iterator:
+        user_dict_key = 'logins_per_month' if row['key'][1] == 'Login' else 'searches_per_month'
+        if is_single_user and row['key'][0] == user_data_dict['id']:
+            user_data_dict[user_dict_key] = row['value']
+        elif (not is_single_user) and (row['key'][0] in user_data_dict):
+            user_data_dict[row['key'][0]][user_dict_key] = row['value']
+
+    return user_data_dict
+

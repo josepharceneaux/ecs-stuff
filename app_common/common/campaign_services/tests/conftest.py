@@ -35,8 +35,12 @@ from ...tests.api_conftest import (user_first, token_first, talent_pool_session_
 
 __author__ = 'basit'
 
+EVENTBRITE_CONFIG = {'skip': True,
+                     'reason': 'In contact with Eventbrite support for increasing hit rate limit'}
+
 # Add new vendor here to run tests for that particular social-network
-VENDORS = [EVENTBRITE.title(), MEETUP.title()]
+VENDORS = [MEETUP.title(),
+           pytest.mark.skipif(EVENTBRITE_CONFIG['skip'], reason=EVENTBRITE_CONFIG['reason'])(EVENTBRITE.title())]
 
 """
 Fixtures related to Meetup
@@ -52,7 +56,7 @@ def meetup():
 
 
 @pytest.fixture(scope="session")
-def meetup_venue(meetup, user_first, token_first):
+def meetup_venue(meetup, user_first, token_first, test_meetup_credentials):
     """
     This fixture returns meetup venue in getTalent database
     """
@@ -83,7 +87,15 @@ def meetup_venue(meetup, user_first, token_first):
     return {'id': venue_id}
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session", params=VENDORS)
+def test_credentials(request):
+    """
+    This fixture creates credentials for vendors present in VENDORS list
+    """
+    return deepcopy(request.getfuncargvalue("test_{}_credentials".format(request.param.lower())))
+
+
+@pytest.fixture(scope="session")
 def test_meetup_credentials(user_first, meetup):
     """
     Create meetup social network credentials for this user so we can create event on Meetup.com
@@ -217,7 +229,7 @@ def test_eventbrite_credentials(user_first, eventbrite):
     return add_social_network_credentials(test_app, eventbrite, user_first)
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def test_eventbrite_credentials_same_domain(user_same_domain, eventbrite):
     """
     Create eventbrite social network credentials for this user so

@@ -8,6 +8,7 @@ Here we have tests for API
 # Packages
 import requests
 from requests import codes
+import json
 
 # Service Specific
 from ...models.db import db
@@ -281,3 +282,11 @@ class TestDeleteEventWithCampaign(object):
     def test_delete_event_and_associated_campaigns(self, base_campaign, token_first, base_campaign_event_second,
                                                   email_campaign_with_base_id, event_in_db_second):
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_in_db_second['id'], headers=auth_header(token_first))
+        campaign_response = requests.get(EmailCampaignApiUrl.CAMPAIGN % email_campaign_with_base_id['id'],
+                                         headers=auth_header(token_first))
+        campaign_content = campaign_response.json()
+        assert campaign_content['email_campaign']['is_hidden']
+
+        event_response = requests.get(SocialNetworkApiUrl.EVENT % event_in_db_second['id'], headers=auth_header(token_first))
+        event_content = event_response.json()
+        assert event_content['event']['is_deleted_from_vendor'] and event_content['event']['is_hidden']

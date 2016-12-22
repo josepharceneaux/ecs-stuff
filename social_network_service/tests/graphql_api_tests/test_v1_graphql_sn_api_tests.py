@@ -26,22 +26,22 @@ def test_get_me(token_first, user_first):
     assert me['email'] == user_first['email']
 
 
-def test_get_event(token_first, eventbrite_event):
+def test_get_event(token_first, event_in_db):
     """
     Validate that Graphql endpoint is working fine for `event` and `events` queries.
     Also match data for single event.
     """
-    response = assert_valid_response('event', Event, token_first, eventbrite_event['id'])
+    response = assert_valid_response('event', Event, token_first, event_in_db['id'])
     event = response['data']['event']
-    match_data(event, eventbrite_event, Event.get_fields(exclude=('organizer_id', 'url')))
+    match_data(event, event_in_db, Event.get_fields(exclude=('organizer_id', 'url')))
 
 
-def test_get_events_pagination(token_first, eventbrite_event, meetup_event):
+def test_get_events_pagination(token_first, event_in_db, event_in_db_second):
     """
     Validate that pagination is working fine. There are two events created by test user.
     We will get 2 events in first page and then no events in second page (request)
     """
-    assert_valid_response('event', Event, token_first, eventbrite_event['id'])
+    assert_valid_response('event', Event, token_first, event_in_db['id'])
     fields = Event.get_fields()
     query = get_query('events', fields, args=dict(page=1, per_page=10))
     response = get_graphql_data(query, token_first)
@@ -67,13 +67,13 @@ def test_get_events_pagination(token_first, eventbrite_event, meetup_event):
 #     validate_graphql_response('events', response['data'], fields, is_array=True)
 
 
-def test_get_venue(token_first, eventbrite_venue):
+def test_get_venue(token_first, venue_in_db):
     """
     Get a list of venues and a single venue by id. Match response data from expected data.
     """
-    response = assert_valid_response('venue', Venue, token_first, eventbrite_venue['id'])
+    response = assert_valid_response('venue', Venue, token_first, venue_in_db['id'])
     venue = response['data']['venue']
-    assert venue['id'] == eventbrite_venue['id']
+    assert venue['id'] == venue_in_db['id']
 
 
 def test_get_social_network(token_first, eventbrite):
@@ -97,7 +97,7 @@ def test_get_subscribed_social_network(token_first):
     assert_valid_response('subscribed_social_network', SocialNetwork, token_first, None, ignore_id_test=True)
 
 
-def test_get_meetup_groups(token_first):
+def test_get_meetup_groups(token_first, test_meetup_credentials):
     """
     This test validates that `meetup_groups` query is returning a list of user's groups on meetup.
     """
@@ -119,13 +119,13 @@ def test_get_timezones(token_first):
     validate_graphql_response('timezones', response['data'], fields, is_array=True)
 
 
-def test_get_sn_token_status(token_first, eventbrite):
+def test_get_sn_token_status(token_first, meetup, test_meetup_credentials):
     """
     Validate that Graphql endpoint will return token status for given social network id for `sn_token_status` query.
     In this case, Eventbrite is the social_network and token status should be True.
     """
     fields = ['status']
-    query = get_query('sn_token_status', fields, args=dict(id=eventbrite['id']))
+    query = get_query('sn_token_status', fields, args=dict(id=meetup['id']))
     response = get_graphql_data(query, token_first)
     assert 'errors' not in response, 'Response: %s\nQuery: %s' % (response, query)
     validate_graphql_response('sn_token_status', response['data'], fields)

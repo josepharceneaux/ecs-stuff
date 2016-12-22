@@ -347,7 +347,7 @@ def delete_events(user_id, event_ids):
         # if event was not found then it means that, either this event does not exists at all
         # or this user does not create that event, so he is not allowed to get that so push this
         # event id in not_delete list.
-        if event:
+        if event and not event.is_deleted_from_vendor:
             # get social network from event
             social_network = event.social_network
             # social network id is already in mapping dictionary then just add this event id in
