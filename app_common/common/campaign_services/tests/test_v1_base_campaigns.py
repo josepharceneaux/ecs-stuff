@@ -8,7 +8,6 @@ Here we have tests for API
 # Packages
 import requests
 from requests import codes
-import json
 
 # Service Specific
 from ...models.db import db
@@ -19,8 +18,7 @@ from ...constants import HttpMethods
 from ..tests_helpers import CampaignsTestsHelpers, send_request
 from ...models.base_campaign import (BaseCampaign, BaseCampaignEvent)
 from modules.helper_functions import (get_email_campaign_data, assert_email_campaign_overview,
-                                      assert_event_overview)
-from social_network_service.tests.helper_functions import auth_header
+                                      assert_event_overview, auth_header)
 
 __author__ = 'basit'
 
@@ -281,6 +279,9 @@ class TestDeleteEventWithCampaign(object):
 
     def test_delete_event_and_associated_campaigns(self, base_campaign, token_first, base_campaign_event_second,
                                                   email_campaign_with_base_id, event_in_db_second):
+        """
+        This tests if we delete an event through api then campaigns associated with it should be deleted or archived.
+        """
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_in_db_second['id'], headers=auth_header(token_first))
         campaign_response = requests.get(EmailCampaignApiUrl.CAMPAIGN % email_campaign_with_base_id['id'],
                                          headers=auth_header(token_first))

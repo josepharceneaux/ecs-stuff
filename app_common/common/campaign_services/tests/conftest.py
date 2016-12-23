@@ -514,7 +514,7 @@ def meetup_event_second(test_meetup_credentials, meetup, meetup_venue_second,
 
 
 @pytest.fixture(scope="function")
-def eventbrite_venue_second(user_first, eventbrite, token_first):
+def eventbrite_venue_second(test_eventbrite_credentials, user_first, eventbrite, token_first):
     """
     This fixture returns eventbrite venue in getTalent database
     """
