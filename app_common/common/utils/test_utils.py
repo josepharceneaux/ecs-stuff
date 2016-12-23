@@ -706,7 +706,7 @@ def delete_candidate_device(candidate_id, device_id,  token, expected_status=(20
     return response.json()
 
 
-def add_social_network_credentials(app, eventbrite, user, get_member_id=True):
+def add_social_network_credentials(app, eventbrite, user, get_member_id=False):
     eventbrite_key = EVENTBRITE.title()
     # Store and use redis for eventbrite access_token
     if not redis_store2.get(eventbrite_key):
