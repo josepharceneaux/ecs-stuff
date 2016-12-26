@@ -9,7 +9,7 @@ from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
 from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage, NotFoundError)
-from app_common.common.utils.talentbot_utils import OWNED
+from ..utils.talentbot_utils import OWNED
 
 from sqlalchemy.dialects.mysql import LONGTEXT
 

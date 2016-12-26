@@ -25,7 +25,7 @@ from urlparse import urlparse
 from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
-from app_common.common.utils.talentbot_utils import DOMAIN_SPECIFIC, OWNED
+from talentbot_service.common.utils.talentbot_utils import DOMAIN_SPECIFIC, OWNED
 from talentbot_service.common.error_handling import NotFoundError, InvalidUsage, InternalServerError
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from user import Domain, UserGroup, User
 from candidate import Candidate
 from ..error_handling import NotFoundError
-from app_common.common.utils.talentbot_utils import OWNED
+from ..utils.talentbot_utils import OWNED
 # 3rd party imports
 from sqlalchemy import or_, and_, extract
 from sqlalchemy.dialects.mysql import TINYINT
