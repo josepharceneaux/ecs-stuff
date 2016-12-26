@@ -343,13 +343,16 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
         if not isinstance(new_candidates_only, bool):
             logger.error('new_candidates_only must be bool')
             return
-        logger.info('candidates count:%s, celery_result: %s' % (len(celery_result), celery_result))
 
     # gather all candidates from various smartlists
     for candidate_list in celery_result:
         all_candidate_ids.extend(candidate_list)
     all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
+    logger.info('candidates count:%s, email_campaign_id:%s, candidate_ids: %s'
+                % (len(all_candidate_ids), campaign_id, all_candidate_ids))
     campaign = EmailCampaign.get_by_id(campaign_id)
+    # Filter valid candidate ids
+    all_candidate_ids = CampaignBase.filter_existing_candidate_ids(all_candidate_ids, user_id)
     subscribed_candidate_ids, unsubscribed_candidate_ids = get_subscribed_and_unsubscribed_candidate_ids(campaign,
                                                                                                          all_candidate_ids,
                                                                                                          new_candidates_only)
@@ -926,6 +929,7 @@ def get_candidates_from_smartlist_for_email_client_id(campaign, list_ids):
                              'EmailCampaign(id:%s) User(id:%s). Reason: %s'
                              % (list_id, campaign.id, campaign.user.id, error.message))
     all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
+    all_candidate_ids = CampaignBase.filter_existing_candidate_ids(all_candidate_ids, campaign.user.id)
     return all_candidate_ids
 
 

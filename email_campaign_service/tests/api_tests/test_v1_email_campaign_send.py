@@ -187,7 +187,7 @@ class TestSendCampaign(object):
         response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first, 2)
 
-    def test_campaign_send_with_outgoing_email_client(self, email_campaign_with_outgoing_email_client, headers,
+    def test_campaign_send_with_outgcampaign_dataoing_email_client(self, email_campaign_with_outgoing_email_client, headers,
                                                       user_first):
         """
         This sends email-campaign with SMTP server added by user. It should not get any error.
@@ -335,4 +335,14 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_same_candidate_in_multiple_smartlists
         response = requests.post(self.URL % campaign.id, headers=headers)
+        assert_campaign_send(response, campaign, user_first, expected_count=1)
+
+    def test_campaign_send_with_archived_candidate(self, headers, user_first,
+                                                   campaign_with_archived_candidate):
+        """
+        We try to send campaign to a smartlist which contains 2 candidates. One of the candidate is archived, So,
+        campaign should only be sent to 1 candidate.
+        """
+        campaign = campaign_with_archived_candidate
+        response = requests.post(self.URL % campaign['id'], headers=headers)
         assert_campaign_send(response, campaign, user_first, expected_count=1)

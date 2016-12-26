@@ -1,32 +1,33 @@
+"""
+This file contains common pytest fixtures being used across multiple services.
+"""
+
 # Standard Library
-import random
-import requests
-import string
+import json
 import uuid
 from datetime import datetime
 
-# Third Party
-import json
 import pytest
+import requests
 from faker import Faker
+from requests import codes
 from werkzeug.security import gen_salt
 
-from ..models.candidate import Candidate
-from ..models.user import UserGroup
-from auth_utilities import get_access_token, get_or_create
-from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
-
 # Application Specific
+from auth_utilities import get_access_token, get_or_create
+from ..campaign_services.tests_helpers import CampaignsTestsHelpers
+from ..models.candidate import Candidate
 from ..models.db import db
-from ..models.user import (Client, Domain, User, UserPhone, Token, Role)
 from ..models.email_campaign import (EmailCampaign, EmailCampaignBlast, EmailCampaignSmartlist)
-from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast, SmsCampaignSmartlist)
-from ..models.push_campaign import (PushCampaignBlast, PushCampaign, PushCampaignSmartlist)
-from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline, TalentPoolCandidate)
 from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField, CustomFieldCategory)
-from ..utils.handy_functions import send_request
-from ..routes import UserServiceApiUrl
+from ..models.push_campaign import (PushCampaignBlast, PushCampaign, PushCampaignSmartlist)
 from ..models.smartlist import (SmartlistCandidate, Smartlist)
+from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast, SmsCampaignSmartlist)
+from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline, TalentPoolCandidate)
+from ..models.user import (Client, Domain, User, UserPhone, Token, Role)
+from ..models.user import UserGroup
+from ..routes import UserServiceApiUrl, CandidateApiUrl
+from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER, send_request, random_word
 
 fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
@@ -127,7 +128,7 @@ def test_domain_2():
 
 @pytest.fixture()
 def test_culture():
-    culture_attributes = dict(description='Foo {}'.format(randomword(12)), code=randomword(5))
+    culture_attributes = dict(description='Foo {}'.format(random_word(12)), code=random_word(5))
     culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attributes)
     if created:
         db.session.add(culture)
@@ -138,7 +139,7 @@ def test_culture():
 
 @pytest.fixture()
 def test_org():
-    organization_attributes = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
+    organization_attributes = dict(name='Rocket League All Stars - {}'.format(random_word(8)))
     organization, created = get_or_create(session=db.session, model=Organization, **organization_attributes)
     if created:
         db.session.add(organization)
@@ -811,10 +812,6 @@ def push_campaign_second_blast(push_campaign_second):
     return push_campaign_blast
 
 
-def randomword(length):
-    return ''.join(random.choice(string.lowercase) for i in xrange(length))
-
-
 def get_auth_header(access_token):
     """
     This returns auth header dict.
@@ -823,3 +820,20 @@ def get_auth_header(access_token):
     auth_header = {'Authorization': 'Bearer %s' % access_token}
     auth_header.update(JSON_CONTENT_TYPE_HEADER)
     return auth_header
+
+
+@pytest.fixture()
+def smartlist_with_archived_candidate(user_first, talent_pipeline, access_token_first):
+    """
+    This fixture creates a smartlist with 2 candidates and then mark one of the candidates as `archived`.
+    """
+    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
+    smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                                        talent_pipeline,
+                                                                                        emails_list=True,
+                                                                                        create_phone=True,
+                                                                                        count=2)
+    del_resp = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_ids[0], access_token_first)
+    assert del_resp.status_code == codes.NO_CONTENT, del_resp.text
+    return {'id': smartlist_id}

@@ -13,16 +13,16 @@ from requests import codes
 # Application Specific
 
 from ...models.db import db
-from ...tests.app import test_app, logger
 from ...tests.sample_data import fake
-from ...redis_cache import redis_store2
-from ...constants import (MEETUP, EVENTBRITE)
 from ...models.event import MeetupGroup
+from ...redis_cache import redis_store2
+from ...tests.app import test_app, logger
+from ...constants import (MEETUP, EVENTBRITE)
 from ...models.candidate import SocialNetwork
 from ..tests_helpers import CampaignsTestsHelpers
 from ...utils.handy_functions import send_request
 from ...models.event_organizer import EventOrganizer
-from ...talent_config_manager import TalentConfigKeys, TalentEnvs
+from ...talent_config_manager import TalentConfigKeys
 from ...models.user import UserSocialNetworkCredential
 from ...utils.test_utils import add_social_network_credentials, add_test_venue
 from ...routes import (SocialNetworkApiUrl, EmailCampaignApiUrl)
@@ -578,4 +578,3 @@ def event_in_db_second(request):
     e.g. In case of Eventbrite, it will return fixture named as "eventbrite_event_second"
     """
     return deepcopy(request.getfuncargvalue("{}_event_second".format(request.param.lower())))
-

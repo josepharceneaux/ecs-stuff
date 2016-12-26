@@ -2,8 +2,8 @@
 This module contains utility methods will be used in API based tests.
 """
 # Standard imports
-import json
 import uuid
+import json
 import operator
 from time import sleep
 from datetime import datetime, timedelta
@@ -11,25 +11,24 @@ from datetime import datetime, timedelta
 # 3rd party imports
 import requests
 from faker import Faker
-from redo import retrier, retry
 from requests import codes
 from contracts import contract
+from redo import retrier, retry
 from dateutil.parser import parse
 
 # Service specific imports
 from ..tests.app import test_app
-from ..routes import SocialNetworkApiUrl
 from ..error_codes import ErrorCodes
 from ..redis_cache import redis_store2
-from ..tests.conftest import randomword
-from ..models.user import UserSocialNetworkCredential
+from ..routes import SocialNetworkApiUrl
+from handy_functions import send_request, random_word
+from ..error_handling import NotFoundError
 from ..talent_config_manager import TalentConfigKeys
+from ..models.user import UserSocialNetworkCredential
+from ..custom_contracts import define_custom_contracts
 from ..constants import SLEEP_TIME, SLEEP_INTERVAL, RETRY_ATTEMPTS, EVENTBRITE
 from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
                       CandidatePoolApiUrl, SchedulerApiUrl, ActivityApiUrl)
-from ..custom_contracts import define_custom_contracts
-from ..error_handling import NotFoundError
-from handy_functions import send_request
 
 define_custom_contracts()
 fake = Faker()
@@ -462,7 +461,7 @@ def create_talent_pipelines(token, talent_pool_id, count=1, expected_status=(200
     }
     for index in xrange(count):
         talent_pipeline = {
-              "name": randomword(30),
+              "name": random_word(30),
               "description": fake.paragraph(),
               "talent_pool_id": talent_pool_id,
               "date_needed": (datetime.now() + timedelta(days=100)).strftime("%Y-%m-%d")

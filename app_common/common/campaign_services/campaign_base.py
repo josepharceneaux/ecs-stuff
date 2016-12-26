@@ -18,11 +18,12 @@ Any service can inherit from this class to implement/override functionality acco
 import json
 import itertools
 from abc import ABCMeta
-from datetime import datetime, timedelta
 from abc import abstractmethod
+from datetime import datetime, timedelta
 
 # Third Party
 from celery import chord
+from contracts import contract
 from flask import current_app
 
 # Database Models
@@ -42,7 +43,7 @@ from ..talent_config_manager import TalentConfigKeys
 from campaign_utils import (get_model, CampaignUtils)
 from ..utils.validators import raise_if_not_instance_of
 from custom_errors import (CampaignException, EmptyDestinationUrl)
-from ..routes import (ActivityApiUrl, SchedulerApiUrl)
+from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidateApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound, InternalServerError)
 from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 from validators import (validate_form_data,
@@ -50,7 +51,7 @@ from validators import (validate_form_data,
                         validate_blast_candidate_url_conversion_in_db,
                         raise_if_dict_values_are_not_int_or_long, validate_smartlist_ids)
 from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
-                                     generate_jwt_headers)
+                                     generate_jwt_headers, send_request)
 
 
 class CampaignBase(object):
@@ -1839,3 +1840,26 @@ class CampaignBase(object):
             obj = getattr(self, key)
             if isinstance(obj, db.Model):
                 setattr(self, key, db.session.merge(obj))
+
+    @classmethod
+    @contract
+    # TODO: Remove user_id from params once email-campaign-service is made class base
+    def filter_existing_candidate_ids(cls, candidate_ids, user_id):
+        """
+        This calls candidate-service for each candidate_id in candidate_ids and check if candidate is available.
+        It then returns ids of existing candidates and discard non-existing/not-owned etc ids.
+        :param list candidate_ids: List of candidate ids
+        :param positive user_id: Id of user
+        :rtype: list
+        """
+        logger = current_app.config[TalentConfigKeys.LOGGER]
+        access_token = User.generate_jw_token(user_id=user_id)
+        valid_candidate_ids = []
+        for candidate_id in candidate_ids:
+            try:
+                get_response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token)
+                assert get_response.ok, get_response.text
+                valid_candidate_ids.append(candidate_id)
+            except Exception as error:
+                logger.error("Couldn't get candidate(id:%s). Error:%s" % (candidate_id, error.message))
+        return valid_candidate_ids

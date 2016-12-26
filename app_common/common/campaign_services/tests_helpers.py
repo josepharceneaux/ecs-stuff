@@ -19,7 +19,6 @@ from contracts import contract
 
 # Application Specific
 from ..models.db import db
-from ..tests.conftest import fake
 from ..models.smartlist import Smartlist
 from custom_errors import CampaignException
 from ..models.misc import (Frequency, Activity)
@@ -28,8 +27,8 @@ from campaign_utils import get_model, CampaignUtils
 from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
-from ..utils.test_utils import get_fake_dict, get_and_assert_zero, delete_smartlist
 from ..tests.fake_testing_data_generator import FakeCandidatesData
+from ..utils.test_utils import (get_fake_dict, get_and_assert_zero, delete_smartlist, fake)
 from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl, EmailCampaignApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
                               ResourceNotFound, UnprocessableEntity, InternalServerError)

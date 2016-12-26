@@ -114,11 +114,12 @@ class TestGetCampaigns(object):
         """
         Here we try to GET a campaign which is created by email-client. It should not get any error.
         """
+        campaign = email_campaign_with_outgoing_email_client
         fields = ['email_client_credentials_id']
         email_campaign = get_campaign_or_campaigns(access_token_first,
-                                                   campaign_id=email_campaign_with_outgoing_email_client.id,
+                                                   campaign_id=campaign['id'],
                                                    fields=fields)
-        assert_valid_campaign_get(email_campaign, [email_campaign_with_outgoing_email_client], fields=fields)
+        assert_valid_campaign_get(email_campaign, [campaign], fields=fields)
 
     def test_get_campaigns_with_paginated_response(self, email_campaign_of_user_first,
                                                    email_campaign_of_user_second, email_campaign_in_other_domain,
@@ -129,8 +130,7 @@ class TestGetCampaigns(object):
         """
         # Test GET api of email campaign using per_page=1 and default page=1.
         # It should return first campaign in response.
-        email_campaigns = get_campaign_or_campaigns(access_token_first,
-                                                    pagination_query='?per_page=1')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?per_page=1')
         assert len(email_campaigns) == 1
         reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
@@ -139,14 +139,12 @@ class TestGetCampaigns(object):
 
         # Test GET api of email campaign using per_page=1 for page=2. It should
         # return second campaign in response.
-        email_campaigns = get_campaign_or_campaigns(access_token_first,
-                                                    pagination_query='?per_page=1&page=2')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?per_page=1&page=2')
         assert len(email_campaigns) == 1
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
 
         # Test GET api of email campaign with 2 results per_page
-        email_campaigns = get_campaign_or_campaigns(access_token_first,
-                                                    pagination_query='?per_page=2')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?per_page=2')
         assert len(email_campaigns) == 2
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
         assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
@@ -155,16 +153,14 @@ class TestGetCampaigns(object):
 
         # Test GET api of email campaign with default per_page=10 and page =1.
         # It should get both campaigns in response.
-        email_campaigns = get_campaign_or_campaigns(access_token_first,
-                                                    pagination_query='?&page=1')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?&page=1')
         assert len(email_campaigns) == 2
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
         assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
 
         # Test GET api of email campaign with page = 2. No campaign should be received in response
         # as we have created only two campaigns so far and default per_page is 10.
-        email_campaigns = get_campaign_or_campaigns(access_token_first,
-                                                    pagination_query='?page=2')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?page=2')
         assert len(email_campaigns) == 0
 
     def test_get_campaigns_with_invalid_sort_type(self, headers):
