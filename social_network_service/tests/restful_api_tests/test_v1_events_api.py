@@ -4,17 +4,17 @@ This file contain tests for events api
 # Std imports
 import sys
 import json
-import time
 
 # Third-Part imports
+import pytest
 import requests
-from datetime import datetime, timedelta
+from datetime import timedelta
 from requests import codes
 
 # App specific imports
+from social_network_service.tests.conftest import EVENTBRITE_CONFIG
 from social_network_service.common.models import db
 from social_network_service.common.constants import MEETUP
-from social_network_service.common.tests.conftest import fake
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.social_network_app import logger
 from social_network_service.common.models.misc import Activity
@@ -190,6 +190,7 @@ class TestResourceEvents(object):
         assert event_id > 0, 'Event id should be a positive number'
         test_event['id'] = event_id  # Add created event id  in test_event so it can be deleted in tear_down
 
+    @pytest.mark.skipif(EVENTBRITE_CONFIG['skip'], reason=EVENTBRITE_CONFIG['reason'])
     def test_eventbrite_with_missing_required_fields(self, token_first, eventbrite_missing_data,
                                                      test_eventbrite_credentials):
         """

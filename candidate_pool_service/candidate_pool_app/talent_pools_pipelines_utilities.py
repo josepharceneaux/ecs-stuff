@@ -45,7 +45,8 @@ TALENT_PIPELINE_SEARCH_PARAMS = [
     "date_to",
     "id",
     "date_from",
-    "talent_pool_id"
+    "talent_pool_id",
+    "status"
 ]
 
 SCHEDULER_SERVICE_RESPONSE_CODE_TASK_ALREADY_SCHEDULED = 6057

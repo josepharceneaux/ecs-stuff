@@ -240,14 +240,22 @@ class EventBase(object):
         webhook = user_credentials.webhook
         return member_id, access_token, refresh_token, webhook
 
-    def archive_email_campaigns_for_deleted_event(self, event):
+    def archive_email_campaigns_for_deleted_event(self, event, deleted_from_vendor):
         """
         Whenever an event is deleted from social-network, we update field `is_deleted_from_vendor` to 1.
         We then check if it was promoted via email-campaign to getTalent candidates and mark all linked email-campaigns
         as archived.
         :param Event event: Event object
+        :param bool deleted_from_vendor: flag to mark is_delete_from_vendor true or false
         """
-        event.update(is_deleted_from_vendor=1)
+
+        # if deleted_from_vendor is True, it means we are directly deleting event from our api call not from third party
+        # social network that's why we need to un-publish
+        # event from social network and will also mark is_hidden=1.
+        if deleted_from_vendor:
+            event.update(is_deleted_from_vendor=1, is_hidden=1)
+        else:
+            event.update(is_deleted_from_vendor=1)
         base_campaign_events = event.base_campaign_event
         for base_campaign_event in base_campaign_events:
             base_campaign = base_campaign_event.base_campaign
@@ -407,23 +415,24 @@ class EventBase(object):
         # Import RSVPs of events
         self.process_events_rsvps()
 
-    def delete_event(self, event_id):
+    def delete_event(self, event_id, is_delete_from_vendor=True):
         """
         Here we pass an event id, picks it from db, and try to delete
         it both from social network and database. If successfully deleted
         from both sources, returns True, otherwise returns False.
         :param event_id: is the 'id' of event present in our db
         :type event_id: int or long
+        :param is_delete_from_vendor: is flag to delete event from third party
+        :type is_delete_from_vendor: bool
         :return: True if deletion is successful, False otherwise.
         :rtype: bool
         """
         event = Event.get_by_user_and_event_id(self.user.id, event_id)
         if event:
             try:
-                event_name = event.title
-                self.unpublish_event(event.social_network_event_id)
-                Event.delete(event_id)
-                logger.info('Event "%s" has been deleted from database.' % event_name)
+                if is_delete_from_vendor:
+                    self.unpublish_event(event.social_network_event_id)
+                self.archive_email_campaigns_for_deleted_event(event, is_delete_from_vendor)
                 return True
             except Exception:  # some error while removing event
                 logger.exception('delete_event: user_id: %s, event_id: %s, social network: %s(id: %s)'

@@ -13,6 +13,7 @@ from flask import jsonify
 from flask import request
 from flask import Blueprint
 from requests import codes as STATUS_CODES
+from sqlalchemy import not_
 
 # application specific
 from activity_service.common.models.user import User
@@ -27,6 +28,7 @@ from activity_service.common.campaign_services.campaign_utils import CampaignUti
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 POSTS_PER_PAGE = 20
 EPOCH = datetime(year=1970, month=1, day=1)
+EXCLUSIONS = (15, 16, 17)
 mod = Blueprint('activities_api', __name__)
 
 
@@ -45,6 +47,7 @@ def get_activities(page):
     aggregate_limit = request.args.get('aggregate_limit', '5')
     start_param = request.args.get('start_datetime')
     end_param = request.args.get('end_datetime')
+    exclude_current_user = True if request.args.get('exclude_current_user') == '1' else False
     tam = TalentActivityManager(api_id)
 
     if start_param:
@@ -80,7 +83,8 @@ def get_activities(page):
 
         return jsonify(tam.get_activities(user_id=valid_user_id, post_qty=post_qty,
                                           start_datetime=start_datetime,
-                                          end_datetime=end_datetime, page=request_page))
+                                          end_datetime=end_datetime, page=request_page,
+                                          exlude_current=exclude_current_user))
 
 
 @mod.route(ActivityApi.ACTIVITY_MESSAGES, methods=['GET'])
@@ -324,7 +328,8 @@ class TalentActivityManager(object):
         self._check_format_string_regexp = re.compile(r'%\((\w+)\)s')
         self.call_id = call_id
 
-    def get_activities(self, user_id, post_qty, start_datetime=None, end_datetime=None, page=1):
+    def get_activities(self, user_id, post_qty, start_datetime=None, end_datetime=None, page=1,
+                       exlude_current=None):
         """Method for retrieving activity logs based on a domain ID that is extracted via an
            authenticated user ID.
         :param int user_id: ID of the authenticated user.
@@ -337,11 +342,23 @@ class TalentActivityManager(object):
         user_domain_id = User.query.filter_by(id=user_id).value('domainId')
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
-        filters = [Activity.user_id.in_(flattened_user_ids)]
+        filters = []
+
+
+        # GET - 1998 / WEB - 912.
+        # Some activity streams do not want the current user's activities.
+        # Additionally we do not want to see some types of activities.
+        if exlude_current:
+            flattened_user_ids.remove(user_id)
+            filters.append(not_(Activity.type.in_(EXCLUSIONS)))
+
+        filters.append(Activity.user_id.in_(flattened_user_ids))
         if start_datetime: filters.append(Activity.added_time > start_datetime)
         if end_datetime: filters.append(Activity.added_time < end_datetime)
+
         activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc())\
             .paginate(page, post_qty, False)
+
         activities_response = {
             'total_count': activities.total,
             'items': [{

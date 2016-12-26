@@ -706,7 +706,7 @@ def delete_candidate_device(candidate_id, device_id,  token, expected_status=(20
     return response.json()
 
 
-def add_social_network_credentials(app, eventbrite, user):
+def add_social_network_credentials(app, eventbrite, user, get_member_id=False):
     eventbrite_key = EVENTBRITE.title()
     # Store and use redis for eventbrite access_token
     if not redis_store2.get(eventbrite_key):
@@ -723,16 +723,17 @@ def add_social_network_credentials(app, eventbrite, user):
                                                                                      social_network_id)
 
     if not user_credentials:
-        from social_network_service.modules.social_network.eventbrite import Eventbrite as EventbriteSocialNetwork
         with test_app.app_context():
             user_credentials = UserSocialNetworkCredential(
                 social_network_id=social_network_id,
                 user_id=int(user['id']),
                 access_token=eventbrite_kv['access_token'],)
             UserSocialNetworkCredential.save(user_credentials)
-            eventbrite_sn = EventbriteSocialNetwork(user_id=user['id'], social_network_id=eventbrite['id'])
-            member_id = eventbrite_sn.get_member_id()
-            user_credentials.update(member_id=member_id)
+            if get_member_id:
+                from social_network_service.modules.social_network.eventbrite import Eventbrite
+                eventbrite_sn = Eventbrite(user_id=user['id'], social_network_id=eventbrite['id'])
+                member_id = eventbrite_sn.get_member_id()
+                user_credentials.update(member_id=member_id)
 
     social_network_id = eventbrite['id']
     user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user['id'],

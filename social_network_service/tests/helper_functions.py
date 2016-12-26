@@ -18,16 +18,7 @@ from social_network_service.common.utils.graphql_utils import validate_graphql_r
 from social_network_service.social_network_app import logger
 from social_network_service.common.utils.handy_functions import send_request
 from social_network_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-
-
-
-def auth_header(token):
-    """
-    Return dictionary which consist of bearer token only.
-    :param token: bearer token
-    :return:dictionary containing bearer token
-    """
-    return dict(Authorization='Bearer %s' % token)
+from social_network_service.common.campaign_services.tests.modules.helper_functions import auth_header
 
 
 def get_headers(token):

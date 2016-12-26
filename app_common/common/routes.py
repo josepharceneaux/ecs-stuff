@@ -257,6 +257,8 @@ class UserServiceApi(object):
     DOMAIN_AOIS = '/' + VERSION + '/areas_of_interest'
     DOMAIN_AOI = '/' + VERSION + '/areas_of_interest/<int:id>'
 
+    DOMAIN_TAGS = '/' + VERSION + '/tags'
+
     TEST_SETUP = 'test-setup'
 
 
@@ -678,10 +680,12 @@ class SocialNetworkApiUrl(object):
     HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME, GTApis.SOCIAL_NETWORK_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
-    if env == TalentEnvs.DEV:
-        UI_APP_URL = 'http://127.0.0.1:3000/%s'
-    else:
+    if env == TalentEnvs.QA:
         UI_APP_URL = 'https://staging.gettalent.com/%s'
+    elif env == TalentEnvs.PROD:
+        UI_APP_URL = 'https://app.gettalent.com/%s'
+    else:
+        UI_APP_URL = 'http://127.0.0.1:3000/%s'
 
     SUBSCRIBE = UI_APP_URL % 'account/integrations?code=%s'
     EVENTS = HOST_NAME % ('/' + VERSION + '/events')

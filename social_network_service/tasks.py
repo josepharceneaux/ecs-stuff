@@ -24,7 +24,7 @@ from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import MeetupGroup, Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.talent_config_manager import TalentConfigKeys
-from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
 from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS, EVENT, MEETUP_EVENT_STREAM_API_URL)
 from social_network_service.modules.event.meetup import Meetup
@@ -85,6 +85,16 @@ def process_meetup_event(event):
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
+
+        # if same event is received multiple times, accept first and reject remaining
+        meetup_event_lock_key = json.dumps(event)
+        if not redis_store.get(meetup_event_lock_key):
+            # set lock for 5 minutes
+            redis_store.set(meetup_event_lock_key, True, 5 * 60)
+        else:
+            logger.info('Already received this Meetup Event: %s.' % event)
+            return 'Done'
+
         logger.info('Going to process Meetup Event: %s' % event)
         try:
             time.sleep(5)  # wait for event creation api to save event in database otherwise there can be duplicate
@@ -106,7 +116,7 @@ def process_meetup_event(event):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    meetup_event_base.archive_email_campaigns_for_deleted_event(event_in_db)
+                    meetup_event_base.delete_event(event_id, False)
                     logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
                                 % event_in_db.to_json())
                 else:
@@ -256,7 +266,7 @@ def import_eventbrite_event(user_id, event_url, action_type):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    eventbrite_event_base.archive_email_campaigns_for_deleted_event(event_in_db)
+                    eventbrite_event_base.delete_event(event_id, False)
                     logger.info('Event has been marked as is_deleted_from_vendor in gt database: %s'
                                 % event_in_db.to_json())
                 else:
@@ -343,9 +353,13 @@ def import_meetup_events():
                             if group:
                                 logger.info('Going to save event: %s' % event)
                                 process_meetup_event.delay(event)
-                        except Exception:
-                            logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
-                            rollback()
+                        except ValueError:
+                            pass
+                        except Exception as e:
+                            logger.exception('Error occurred while parsing event data, Error: %s\nEvent: %s' %
+                                             (e, raw_event))
+                            raise
             except Exception as e:
                 logger.warning('Out of main loop. Cause: %s' % e)
+                time.sleep(5)
                 rollback()

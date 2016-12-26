@@ -251,7 +251,7 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False):
         url_prefix = 'staging.gettalent' if app.config[TalentConfigKeys.ENV_KEY] in (
             TalentEnvs.QA, TalentEnvs.DEV, TalentEnvs.JENKINS) else 'app.gettalent'
     else:
-        parsed_url = urlparse('https://staging.gettalent.com/login')
+        parsed_url = urlparse(request_origin)
         url_prefix = parsed_url.netloc
 
     to_date = datetime.utcnow()
@@ -267,23 +267,29 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False):
             {
                 'event': 'Login',
                 'selector': selector
+            },
+            {
+                'event': 'Search',
+                'selector': selector
             }
         ],
         'from_date': str(from_date.date()),
         'to_date': str(to_date.date())
     }
     try:
-        query = JQL(app.config[TalentConfigKeys.MIXPANEL_API_KEY], params).group_by(keys=["e.properties.id"],
-                                                                                    accumulator=Reducer.count())
+        query = JQL(app.config[TalentConfigKeys.MIXPANEL_API_KEY], params).group_by(
+                keys=["e.properties.id", "e.name"], accumulator=Reducer.count())
+        iterator = query.send()
     except Exception as e:
         logger.error("Error while fetching user stats from MixPanel because: %s" % e.message)
         raise InvalidUsage("Error while fetching user stats")
 
-    for row in query.send():
+    for row in iterator:
+        user_dict_key = 'logins_per_month' if row['key'][1] == 'Login' else 'searches_per_month'
         if is_single_user and row['key'][0] == user_data_dict['id']:
-            user_data_dict['logins_per_month'] = row['value'] / 30.0  # Per Month Logins
+            user_data_dict[user_dict_key] = row['value']
         elif (not is_single_user) and (row['key'][0] in user_data_dict):
-            user_data_dict[row['key'][0]]['logins_per_month'] = row['value'] / 30.0  # Per Month Logins
+            user_data_dict[row['key'][0]][user_dict_key] = row['value']
 
     return user_data_dict
 
