@@ -187,13 +187,13 @@ class TestSendCampaign(object):
         response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first, 2)
 
-    def test_campaign_send_with_outgcampaign_dataoing_email_client(self, email_campaign_with_outgoing_email_client, headers,
+    def test_campaign_send_with_outgoing_email_client(self, email_campaign_with_outgoing_email_client, headers,
                                                       user_first):
         """
         This sends email-campaign with SMTP server added by user. It should not get any error.
         """
         campaign = email_campaign_with_outgoing_email_client
-        response = requests.post(self.URL % campaign.id, headers=headers)
+        response = requests.post(self.URL % campaign['id'], headers=headers)
         assert_campaign_send(response, campaign, user_first, via_amazon_ses=False)
 
     def test_campaign_send_with_merge_tags(self, headers, user_first, email_campaign_with_merge_tags):

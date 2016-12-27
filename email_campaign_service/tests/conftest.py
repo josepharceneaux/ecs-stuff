@@ -407,9 +407,7 @@ def email_campaign_with_outgoing_email_client(access_token_first, talent_pipelin
     resp_object = response.json()
     assert 'campaign' in resp_object and resp_object['campaign']
     db.session.commit()
-    email_campaign = EmailCampaign.get_by_id(resp_object['campaign']['id'])
-    assert email_campaign
-    return email_campaign
+    return resp_object['campaign']
 
 
 @pytest.fixture()
