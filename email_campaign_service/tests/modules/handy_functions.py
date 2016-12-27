@@ -179,9 +179,9 @@ def assert_valid_campaign_get(email_campaign_dict, referenced_campaigns, fields=
     # Assert id is correct, if returned by API
     if 'id' in expected_email_campaign_fields_set:
         for referenced_campaign in referenced_campaigns:
-            if hasattr(referenced_campaign, 'id') and email_campaign_dict['id'] == referenced_campaign.id:
-                found = True
-            elif email_campaign_dict['id'] == referenced_campaign['id']:
+            referenced_campaign_id = referenced_campaign.id if hasattr(referenced_campaign, 'id') else \
+                referenced_campaign['id']
+            if email_campaign_dict['id'] == referenced_campaign_id:
                 found = True
         assert found
 
