@@ -1359,13 +1359,12 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     query = request_vars.get('query', '*')
     query = ' '.join(query) if isinstance(query, list) else query
 
-    # CS will search for all candidates unless if candidate's status has been specified
-    if request_vars.get('status'):
-        status = request_vars.get('status')
-        if status == 'active':
-            filter_queries.append("is_archived:0")
-        elif status == 'archived':
-            filter_queries.append("is_archived:1")
+    # Search service will always search for active candidates unless specified
+    status = request_vars.get('status', 'active')
+    if status == 'archived':
+        filter_queries.append("is_archived:1")
+    else:
+        filter_queries.append("is_archived:0")
 
     if request_vars.get('location'):
         location = request_vars.get('location')
