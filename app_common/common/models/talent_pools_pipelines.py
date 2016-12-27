@@ -43,7 +43,7 @@ class TalentPool(db.Model):
     def get_talent_pools_in_user_domain(cls, user_id, page_number=None):
         """
         This method returns whether all talent pools or 10 talent pools according to page number in a user's domain
-        :param None|positive page_number: Page number for returning controlled number of records
+        :param None|positive page_number: Page number for returning limited number of records
         :param int|long user_id: User Id
         :rtype: list
         """

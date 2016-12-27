@@ -518,47 +518,38 @@ class QuestionHandler(object):
                                       not asking_about_his_pool and talent_pool_index is not None)
         email_campaigns, sms_campaigns, push_campaigns = (None, None, None)
         response = []
-        if asking_about_specific_pool:  # If user has specified some talent pool's name
-            campaign_index = cls.find_word_in_message('camp', message_tokens)  # Extracting Talentpool names
-            if campaign_index is not None and talent_pool_index is not None:
-                if len(message_tokens) > campaign_index:
-                    if message_tokens[campaign_index + 1].lower() == 'in':
-                        campaign_index += 1
-                talent_pool_names = message_tokens[campaign_index + 1:talent_pool_index:]
-                talent_pool_names_list = cls.create_list_of_talent_pools('\\'.join(talent_pool_names))
-                response.append("Campaigns in %s talent pools" %
-                                (' ,'.join(["`%s`" % talent_pool_name for talent_pool_name in talent_pool_names_list])
-                                 if talent_pool_names_list else "all"))
-                email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, OWNED, talent_pool_names_list)\
-                    if not asking_about_all_campaigns else\
-                    EmailCampaign.email_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, talent_pool_names_list)
-                push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, OWNED, talent_pool_names_list) \
-                    if not asking_about_all_campaigns else \
-                    PushCampaign.push_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, talent_pool_names_list)
-                sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, OWNED, talent_pool_names_list) \
-                    if not asking_about_all_campaigns else \
-                    SmsCampaign.sms_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, talent_pool_names_list)
-        if asking_about_all_pools:  # If user's asking about all talent pools in his/her domain
-            email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, OWNED) if not\
-                asking_about_all_campaigns else EmailCampaign.email_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC)
-            push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, OWNED) \
-                if not asking_about_all_campaigns else \
-                PushCampaign.push_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC)
-            sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, OWNED) \
-                if not asking_about_all_campaigns else \
-                SmsCampaign.sms_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC)
-        if asking_about_his_pool:  # If user's asking about his talent pools
-            user_talent_pool_names = TalentPool.get_talent_pool_owned_by_user(user_id)
-            user_talent_pool_names = [pool_name[0] for pool_name in user_talent_pool_names]
-            email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, OWNED, user_talent_pool_names) \
-                if not asking_about_all_campaigns else \
-                EmailCampaign.email_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, user_talent_pool_names)
-            push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, OWNED, user_talent_pool_names) \
-                if not asking_about_all_campaigns else \
-                PushCampaign.push_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, user_talent_pool_names)
-            sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, OWNED, user_talent_pool_names) \
-                if not asking_about_all_campaigns else \
-                SmsCampaign.sms_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, user_talent_pool_names)
+        scope = OWNED if not asking_about_all_campaigns else DOMAIN_SPECIFIC
+        if asking_about_all_pools or asking_about_his_pool or asking_about_specific_pool:
+            user_talent_pool_names = None
+            if asking_about_his_pool:  # If user's asking about his talent pools
+                user_talent_pool_names = TalentPool.get_talent_pool_owned_by_user(user_id)
+                user_talent_pool_names = [pool_name[0] for pool_name in user_talent_pool_names]
+            if asking_about_specific_pool:  # If user has specified some talent pool's name
+                campaign_index = cls.find_word_in_message('camp', message_tokens)  # Extracting Talentpool names
+                if campaign_index is not None and talent_pool_index is not None:
+                    if len(message_tokens) > campaign_index:
+                        if message_tokens[campaign_index + 1].lower() == 'in':
+                            campaign_index += 1
+                    talent_pool_names = message_tokens[campaign_index + 1:talent_pool_index:]
+                    user_talent_pool_names = cls.create_list_of_talent_pools('\\'.join(talent_pool_names))
+                    response.append("Campaigns in %s talent pools" %
+                                    (' ,'.join(
+                                        ["`%s`" % talent_pool_name for talent_pool_name in user_talent_pool_names])
+                                     if user_talent_pool_names else "all"))
+            state_array = []  # To store multiple methods as a single state e.g Email, Push and SMS Campaigns
+            email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names)
+            # Generating State object and appending it in state_array
+            state_array.append(cls.create_state_object("EmailCampaign", "email_campaigns_in_talent_pool",
+                                                       [user_id, scope, user_talent_pool_names], "Email Campaigns"))
+            push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names)
+            # Generating State object and appending it in state_array
+            state_array.append(cls.create_state_object("PushCampaign", "push_campaigns_in_talent_pool",
+                                                       [user_id, scope, user_talent_pool_names], "Push Campaigns"))
+            sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names)
+            # Generating State object and appending it in state_array
+            state_array.append(cls.create_state_object("SmsCampaign", "sms_campaigns_in_talent_pool",
+                                                       [user_id, scope, user_talent_pool_names], "SMS Campaigns"))
+            cls.save_state(state_array, user_id)
         is_asking_for_campaigns_in_pool = not asking_about_specific_pool and not \
             asking_about_all_pools and not asking_about_his_pool
         # Appending suitable response header
@@ -1045,26 +1036,29 @@ class QuestionHandler(object):
             lock = cls.request_lock(user_id)
         # Acquiring lock
         redis_store.set("%dredis_lock" % user_id, True)
-        state = redis_store.get("bot-pg-%d" % user_id)
+        states = redis_store.get("bot-pg-%d" % user_id)
         try:
-            if state:
-                state = json.loads(state)
+            if states:
+                states = json.loads(states)
                 # Getting state data from redis
-                representative, _class, params = state["repr"], CLASSES[state["class"]], state["params"]
-                method = getattr(_class, state["method"])
-                page_number = params[-1]
-                # Increasing page number
-                page_number += 1
-                params[-1] = page_number
-                _list = method(*tuple(params))
-                if _list:
-                    state.update({"page_number": page_number})
-                    redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
-                    # Releasing lock
-                    redis_store.set("%dredis_lock" % user_id, False)
-                    start = 1 if page_number == 1 else page_number * 10 - 9
-                    return cls.custom_count_appender(start, _list, representative, [])
-                redis_store.delete("bot-pg-%d")
+                response = []
+                for state in states:
+                    representative, _class, params = state["repr"], CLASSES[state["class"]], state["params"]
+                    method = getattr(_class, state["method"])
+                    page_number = params[-1]
+                    # Increasing page number
+                    page_number += 1
+                    params[-1] = page_number
+                    _list = method(*tuple(params))
+                    if _list:
+                        state.update({"page_number": page_number})
+                        redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
+                        # Releasing lock
+                        redis_store.set("%dredis_lock" % user_id, False)
+                        start = 1 if page_number == 1 else page_number * 10 - 9
+                        response.append(cls.custom_count_appender(start, _list, representative, []))
+                return response
+            redis_store.delete("bot-pg-%d")
         except Exception as error:
             logger.info("No state found: %s" % error.message)
             # Releasing lock
@@ -1084,3 +1078,27 @@ class QuestionHandler(object):
         if lock is not None:
             lock = eval(lock)
         return lock
+
+    @staticmethod
+    @contract
+    def create_state_object(_class, method, params, representative):
+        """
+        This methods takes required parameters for pagination state and save them in redis as state
+        :param string _class:
+        :param string method:
+        :param list params:
+        :param string representative:
+        :rtype: dict
+        """
+        state = {"class": _class, "method": method, "params": params, "repr": representative}
+        return state
+
+    @staticmethod
+    @contract
+    def save_state(state, user_id):
+        """
+        This method saves state dict in redis
+        :param positive user_id: User Id
+        :param dict|list state: dict or list of dicts of required objects for state maintenance
+        """
+        redis_store.set("bot-pg-%d" % user_id, json.dumps(state))

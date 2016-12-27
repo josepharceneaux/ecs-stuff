@@ -181,9 +181,10 @@ class EmailCampaign(db.Model):
 
     @classmethod
     @contract
-    def email_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
+    def email_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None, page_number=None):
         """
         Returns EmailCampaigns in talent pool
+        :param positive|None page_number: Page number for returning limited number of records
         :param int scope: Number which determines weather user asking about all domain campaigns or only his campaigns
         :param positive user_id: User Id
         :param list|None talentpool_names: list of Talentpool names or None
@@ -198,7 +199,12 @@ class EmailCampaign(db.Model):
         scope_dependant_filter = cls.query.join(User).filter(cls.id.in_(email_campaign_ids), cls.is_hidden == 0,
                                                              cls.user_id == user_id)\
             if scope == OWNED else cls.query.filter(cls.id.in_(email_campaign_ids), cls.is_hidden == 0)
-        return scope_dependant_filter.all()
+        if page_number is None:
+            return scope_dependant_filter.all()
+        number_of_records = 10
+        start = (page_number - 1) * number_of_records
+        end = page_number * number_of_records
+        return scope_dependant_filter[start:end]
 
 
 class EmailCampaignSmartlist(db.Model):
