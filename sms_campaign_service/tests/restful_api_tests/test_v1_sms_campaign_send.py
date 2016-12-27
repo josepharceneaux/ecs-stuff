@@ -32,18 +32,15 @@ class TestSendSmsCampaign(object):
         User auth token is invalid, it should result in Unauthorized error.
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
-                                                         self.URL % sms_campaign_of_user_first['id'],
-                                                         None)
+                                                         self.URL % sms_campaign_of_user_first['id'])
 
-    def test_post_with_id_of_deleted_record(self, access_token_first,
-                                            sms_campaign_of_user_first):
+    def test_post_with_id_of_deleted_record(self, access_token_first, sms_campaign_of_user_first):
         """
         User auth token is valid. It first deletes the campaign from database and then tries
         to update the record. It should result in ResourceNotFound error.
         """
-        CampaignsTestsHelpers.request_after_deleting_campaign(
-            sms_campaign_of_user_first, SmsCampaignApiUrl.CAMPAIGN,
-            self.URL, self.HTTP_METHOD, access_token_first)
+        CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_user_first, SmsCampaignApiUrl.CAMPAIGN,
+                                                              self.URL, self.HTTP_METHOD, access_token_first)
 
     def test_campaign_send_with_deleted_smartlist(self, access_token_first, sms_campaign_of_user_first, headers):
         """
