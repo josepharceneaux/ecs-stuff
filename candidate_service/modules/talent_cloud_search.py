@@ -764,13 +764,17 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         filter_query = "(or %s %s)" % (dumb_list_filter_query_string, filter_query)
 
     # CS will search for all candidates unless if candidate's status has been specified
-    status = request_vars.get('status', 'active')
+    status = request_vars.get('status')
+    candidate_status = ''
     if status == 'active':
         candidate_status = "(term field=is_archived 0)"
-    else:
+    elif status == 'archived':
         candidate_status = "(term field=is_archived 1)"
 
-    filter_query = "(and %s %s %s %s)" % (filter_query, domain_filter, talent_pool_filter, candidate_status)
+    if candidate_status:
+        filter_query = "(and %s %s %s %s)" % (filter_query, domain_filter, talent_pool_filter, candidate_status)
+    else:
+        filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
 
     params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene', query_options={'fields': QUERY_OPTIONS})
     if offset:
