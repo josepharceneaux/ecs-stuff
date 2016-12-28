@@ -763,7 +763,14 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     if dumb_list_filter_query_string:
         filter_query = "(or %s %s)" % (dumb_list_filter_query_string, filter_query)
 
-    filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
+    # CS will search for all candidates unless if candidate's status has been specified
+    status = request_vars.get('status', 'active')
+    if status == 'active':
+        candidate_status = "(term field=is_archived 0)"
+    else:
+        candidate_status = "(term field=is_archived 1)"
+
+    filter_query = "(and %s %s %s %s)" % (filter_query, domain_filter, talent_pool_filter, candidate_status)
 
     params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene', query_options={'fields': QUERY_OPTIONS})
     if offset:
@@ -1358,14 +1365,6 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
 
     query = request_vars.get('query', '*')
     query = ' '.join(query) if isinstance(query, list) else query
-
-    # CS will search for all candidates unless if candidate's status has been specified
-    if request_vars.get('status'):
-        status = request_vars.get('status')
-        if status == 'active':
-            filter_queries.append("is_archived:0")
-        elif status == 'archived':
-            filter_queries.append("is_archived:1")
 
     if request_vars.get('location'):
         location = request_vars.get('location')
