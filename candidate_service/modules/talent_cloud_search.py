@@ -441,10 +441,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
                 if field_name == 'source_id':
                     candidate_source = CandidateSource.query.get(sql_value)
-                    logger.info("resume_text: {}\ndata_type: {}".format(resume_text, type(resume_text)))
-                    logger.info("candidate_source_description: {}".format(candidate_source.description if candidate_source else ''))
                     resume_text += (' ' + candidate_source.description) if candidate_source else ''
-                    logger.info("resume_text: {}\ndata_type: {}".format(resume_text, type(resume_text)))
 
                 index_field_type = index_field_options['IndexFieldType']
                 if 'array' in index_field_type:
@@ -1362,12 +1359,13 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     query = request_vars.get('query', '*')
     query = ' '.join(query) if isinstance(query, list) else query
 
-    # Search service will always search for active candidates unless specified
-    status = request_vars.get('status', 'active')
-    if status == 'archived':
-        filter_queries.append("is_archived:1")
-    else:
-        filter_queries.append("is_archived:0")
+    # CS will search for all candidates unless if candidate's status has been specified
+    if request_vars.get('status'):
+        status = request_vars.get('status')
+        if status == 'active':
+            filter_queries.append("(term field=is_archived 0)")
+        elif status == 'archived':
+            filter_queries.append("(term field=is_archived 1)")
 
     if request_vars.get('location'):
         location = request_vars.get('location')
