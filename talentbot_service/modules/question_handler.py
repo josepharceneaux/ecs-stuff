@@ -417,8 +417,8 @@ class QuestionHandler(object):
             # response = '%s%s' % (header[0], talent_pool_names[::])
             response = cls.custom_count_appender(1, talent_pools, "talent pools", header)
             if via_sms:
-                state = {"class": "TalentPool", "method": "get_talent_pools_in_user_domain",
-                         "params": [user_id, 1], "repr": "talent pools"}
+                state = [{"class": "TalentPool", "method": "get_talent_pools_in_user_domain",
+                         "params": [user_id, 1], "repr": "talent pools"}]
                 redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
             return response.replace('`None`', '')
         response = "Seems like there is no talent pool in your domain `%s`" % domain_name
@@ -467,9 +467,9 @@ class QuestionHandler(object):
                 # for index, pipeline in enumerate(pipelines):
                 #     response.append("%d: `%s`" % (index + 1, pipeline.name))
                 response = cls.custom_count_appender(1, pipelines, "pipelines", response)
-                state = {"class": "TalentPipeline", "method": "pipelines_user_group",
-                         "params": [user_id, 1],
-                         "repr": "pipelines"}
+                state = [{"class": "TalentPipeline", "method": "pipelines_user_group",
+                          "params": [user_id, 1],
+                          "repr": "pipelines"}]
                 redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
             return response
         belong_index = cls.find_optional_word(message_tokens, ['belong', 'part'])
@@ -519,6 +519,7 @@ class QuestionHandler(object):
         email_campaigns, sms_campaigns, push_campaigns = (None, None, None)
         response = []
         scope = OWNED if not asking_about_all_campaigns else DOMAIN_SPECIFIC
+        page_number = 1 if USER_CLIENTS["SMS"] == user_client else None
         if asking_about_all_pools or asking_about_his_pool or asking_about_specific_pool:
             user_talent_pool_names = None
             if asking_about_his_pool:  # If user's asking about his talent pools
@@ -537,18 +538,21 @@ class QuestionHandler(object):
                                         ["`%s`" % talent_pool_name for talent_pool_name in user_talent_pool_names])
                                      if user_talent_pool_names else "all"))
             state_array = []  # To store multiple methods as a single state e.g Email, Push and SMS Campaigns
-            email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names)
+            email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names,
+                                                                           page_number)
             # Generating State object and appending it in state_array
             state_array.append(cls.create_state_object("EmailCampaign", "email_campaigns_in_talent_pool",
-                                                       [user_id, scope, user_talent_pool_names], "Email Campaigns"))
-            push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names)
+                                                       [user_id, scope, user_talent_pool_names, 1], "Email Campaigns"))
+            push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names,
+                                                                        page_number)
             # Generating State object and appending it in state_array
             state_array.append(cls.create_state_object("PushCampaign", "push_campaigns_in_talent_pool",
-                                                       [user_id, scope, user_talent_pool_names], "Push Campaigns"))
-            sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names)
+                                                       [user_id, scope, user_talent_pool_names, 1], "Push Campaigns"))
+            sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names,
+                                                                     page_number)
             # Generating State object and appending it in state_array
             state_array.append(cls.create_state_object("SmsCampaign", "sms_campaigns_in_talent_pool",
-                                                       [user_id, scope, user_talent_pool_names], "SMS Campaigns"))
+                                                       [user_id, scope, user_talent_pool_names, 1], "SMS Campaigns"))
             cls.save_state(state_array, user_id)
         is_asking_for_campaigns_in_pool = not asking_about_specific_pool and not \
             asking_about_all_pools and not asking_about_his_pool
@@ -561,12 +565,25 @@ class QuestionHandler(object):
         domain_id = User.get_domain_id(user_id) if is_asking_for_campaigns_in_pool else None
         # Getting campaigns
         if is_asking_for_campaigns_in_pool:
-            email_campaigns = EmailCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
-                EmailCampaign.get_by_user_id(user_id)
-            push_campaigns = PushCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
-                PushCampaign.get_by_user_id(user_id)
-            sms_campaigns = SmsCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
-                SmsCampaign.get_by_user_id(user_id)
+            state_array = []
+            email_campaigns = EmailCampaign.get_by_domain_id(domain_id, page_number) if asking_about_all_campaigns else\
+                EmailCampaign.get_by_user_id(user_id, page_number)
+            state_array.append(cls.create_state_object("EmailCampaign", "get_by_domain_id" if asking_about_all_campaigns
+                                                       else "get_by_user_id", [domain_id, 1]
+                                                       if asking_about_all_campaigns else [user_id, 1],
+                                                       "Email Campaigns"))
+            push_campaigns = PushCampaign.get_by_domain_id(domain_id, page_number) if asking_about_all_campaigns else\
+                PushCampaign.get_by_user_id(user_id, page_number)
+            state_array.append(cls.create_state_object("PushCampaign", "get_by_domain_id" if asking_about_all_campaigns
+                                                       else "get_by_user_id", [domain_id, 1]
+                                                       if asking_about_all_campaigns else [user_id, 1],
+                                                       "Push Campaigns"))
+            sms_campaigns = SmsCampaign.get_by_domain_id(domain_id, page_number) if asking_about_all_campaigns else\
+                SmsCampaign.get_by_user_id(user_id, page_number)
+            state_array.append(cls.create_state_object("SmsCampaign", "get_by_domain_id" if asking_about_all_campaigns
+                                                       else "get_by_user_id", [domain_id, 1] if asking_about_all_campaigns
+                                                       else [user_id, 1], "Sms Campaigns"))
+            cls.save_state(state_array, user_id)
         if email_campaigns:  # Appending email campaigns in a representable response list
             counter = 0
             response.append("*Email Campaigns*")
@@ -648,8 +665,8 @@ class QuestionHandler(object):
             ["Pipelines in your domain are following:"]
         scope = DOMAIN_SPECIFIC if asking_about_all_pipelines else OWNED
         if user_client == USER_CLIENTS["SMS"]:  # Saving state for pagination
-            state = {"class": "TalentPipeline", "method": "get_own_or_domain_pipelines", "params": [user_id, scope, 1],
-                     "repr": "pipelines"}
+            state = [{"class": "TalentPipeline", "method": "get_own_or_domain_pipelines", "params": [user_id, scope, 1],
+                     "repr": "pipelines"}]
             redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
             pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope, 1)
         else:
@@ -1045,7 +1062,7 @@ class QuestionHandler(object):
                 for state in states:
                     representative, _class, params = state["repr"], CLASSES[state["class"]], state["params"]
                     method = getattr(_class, state["method"])
-                    page_number = params[-1]
+                    page_number = params[-1] or 1
                     # Increasing page number
                     page_number += 1
                     params[-1] = page_number

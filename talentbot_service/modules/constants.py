@@ -2,9 +2,9 @@
 This script contains Talentbot constants
 """
 from talentbot_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool
-from talentbot_service.common.models.sms_campaign import SmsCampaignBlast
-from talentbot_service.common.models.email_campaign import EmailCampaignBlast
-from talentbot_service.common.models.push_campaign import PushCampaignBlast
+from talentbot_service.common.models.sms_campaign import SmsCampaignBlast,  SmsCampaign
+from talentbot_service.common.models.email_campaign import EmailCampaignBlast, EmailCampaign
+from talentbot_service.common.models.push_campaign import PushCampaignBlast,  PushCampaign
 
 BOT_NAME = "gtbot"
 AT_BOT = ""
@@ -101,7 +101,8 @@ TWITTER = 'twitter'
 INVALID_INPUT = 3000
 CANDIDATE_ALREADY_EXISTS = 3013
 USER_CLIENTS = {'SMS': 1, 'FACEBOOK': 2, 'EMAIL': 3, 'SLACK': 4}
-CLASSES = {"TalentPipeline": TalentPipeline, "TalentPool": TalentPool}
+CLASSES = {"TalentPipeline": TalentPipeline, "TalentPool": TalentPool, "EmailCampaign": EmailCampaign,
+           "SmsCampaign": SmsCampaign, "PushCampaign": PushCampaign}
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

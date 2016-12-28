@@ -99,10 +99,16 @@ class EmailCampaign(db.Model):
         return unicode(self.id)
 
     @classmethod
-    def get_by_domain_id(cls, domain_id):
+    def get_by_domain_id(cls, domain_id, page_number=None):
         assert domain_id, 'domain_id not given'
         from user import User  # This has to be here to avoid circular import
-        return cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
+        common_query = cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
+        if page_number is None:
+            return common_query
+        number_of_records = 10
+        start = (page_number - 1) * number_of_records
+        end = page_number * number_of_records
+        return common_query[start:end]
 
     @classmethod
     def search_by_id_in_domain(cls, email_campaign_id, domain_id):
@@ -141,13 +147,20 @@ class EmailCampaign(db.Model):
 
     @classmethod
     @contract
-    def get_by_user_id(cls, user_id):
+    def get_by_user_id(cls, user_id, page_number=None):
         """
         Returns EmailCampaigns against a User Id
         :param positive user_id: User Id
+        :param positive|None page_number: Page number for returning limited number of records
         :rtype: list
         """
-        return cls.query.filter(cls.user_id == user_id, cls.is_hidden == 0).all()
+        query_object = cls.query.filter(cls.user_id == user_id, cls.is_hidden == 0)
+        if page_number is None:
+            return query_object.all()
+        number_of_records = 10
+        start = (page_number - 1) * number_of_records
+        end = page_number * number_of_records
+        return query_object[start:end]
 
     @classmethod
     @contract

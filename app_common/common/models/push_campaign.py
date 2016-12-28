@@ -72,15 +72,22 @@ class PushCampaign(db.Model):
         return return_dict
 
     @classmethod
-    def get_by_user_id(cls, user_id):
+    def get_by_user_id(cls, user_id, page_number=None):
         """
         This method returns all PushCampaign objects that are owned by a user.
+        :param page_number:
         :param user_id: User id
         :return: list of PushCampaign objects
         :rtype:  list[PushCampaign]
         """
         assert isinstance(user_id, (int, long)) and user_id > 0, 'User id is not valid integer'
-        return cls.query.filter_by(user_id=user_id).all()
+        query_object = cls.query.filter_by(user_id=user_id)
+        if page_number is None:
+            return query_object.all()
+        number_of_records = 10
+        start = (page_number - 1) * number_of_records
+        end = page_number * number_of_records
+        return query_object[start:end]
 
     @classmethod
     def get_by_id_and_user_id(cls, _id, user_id):
@@ -111,14 +118,21 @@ class PushCampaign(db.Model):
 
     @classmethod
     @contract
-    def get_by_domain_id(cls, domain_id):
+    def get_by_domain_id(cls, domain_id, page_number=None):
         """
         Returns all PushCampaigns with same domain_id
+        :param positive|None page_number: Page number for pagination purpose
         :param positive domain_id: Domain Id
         :rtype: list
         """
         from user import User
-        return cls.query.join(User).filter(User.domain_id == domain_id).all()
+        query_object = cls.query.join(User).filter(User.domain_id == domain_id)
+        if page_number is None:
+            return query_object.all()
+        number_of_records = 10
+        start = (page_number - 1) * number_of_records
+        end = page_number * number_of_records
+        return query_object[start:end]
 
     @classmethod
     @contract
@@ -137,9 +151,10 @@ class PushCampaign(db.Model):
 
     @classmethod
     @contract
-    def push_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
+    def push_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None, page_number=None):
         """
         Returns PushCampaigns in talent pool
+        :param positive|None page_number: Page number for pagination purpose
         :param int scope: Number which determines weather user asking about all domain campaigns or only his campaigns
         :param positive user_id:
         :param list|None talentpool_names:
@@ -153,7 +168,12 @@ class PushCampaign(db.Model):
         push_campaign_ids = [email_campaign_id[0] for email_campaign_id in push_campaign_ids]
         scope_dependant_filter = cls.query.join(User).filter(cls.id.in_(push_campaign_ids), cls.user_id == user_id)\
             if scope == OWNED else cls.query.filter(cls.id.in_(push_campaign_ids))
-        return scope_dependant_filter.all()
+        if page_number is None:
+            return scope_dependant_filter.all()
+        number_of_records = 10
+        start = (page_number - 1) * number_of_records
+        end = page_number * number_of_records
+        return scope_dependant_filter[start:end]
 
 
 class PushCampaignBlast(db.Model):
