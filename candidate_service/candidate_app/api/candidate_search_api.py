@@ -65,8 +65,6 @@ class CandidateSearch(Resource):
 
         else:
             request_vars = validate_and_format_data(request.args)
-            # Setting status to `active` if it's not provided already
-            request_vars['status'] = request_vars.get('status', 'active')
 
             if 'smartlist_ids' in request_vars:
                 request_vars['search_params_list'] = []
