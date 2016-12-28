@@ -766,13 +766,14 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     if dumb_list_filter_query_string:
         filter_query = "(or %s %s)" % (dumb_list_filter_query_string, filter_query)
 
-    # CS will search for all candidates unless if candidate's status has been specified
+    # CS will search for active candidates only unless if specified
     status = request_vars.get('status')
-    candidate_status = ''
-    if status == 'active':
-        candidate_status = "(term field=is_archived 0)"
-    elif status == 'archived':
+    if status == 'archived':
         candidate_status = "(term field=is_archived 1)"
+    elif status == 'all':
+        candidate_status = ''
+    else:
+        candidate_status = "(term field=is_archived 0)"
 
     if candidate_status:
         filter_query = "(and %s %s %s %s)" % (filter_query, domain_filter, talent_pool_filter, candidate_status)
