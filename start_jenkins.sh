@@ -87,4 +87,3 @@ echo "Tests completed."
 
 # Declare success with this string that Jenkins looks for - see Jenkins config.
 echo "My work here is done."
-
