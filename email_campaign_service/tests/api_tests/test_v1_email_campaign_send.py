@@ -193,7 +193,7 @@ class TestSendCampaign(object):
         This sends email-campaign with SMTP server added by user. It should not get any error.
         """
         campaign = email_campaign_with_outgoing_email_client
-        response = requests.post(self.URL % campaign.id, headers=headers)
+        response = requests.post(self.URL % campaign['id'], headers=headers)
         assert_campaign_send(response, campaign, user_first, via_amazon_ses=False)
 
     def test_campaign_send_with_merge_tags(self, headers, user_first, email_campaign_with_merge_tags):
@@ -335,4 +335,14 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_same_candidate_in_multiple_smartlists
         response = requests.post(self.URL % campaign.id, headers=headers)
+        assert_campaign_send(response, campaign, user_first, expected_count=1)
+
+    def test_campaign_send_with_archived_candidate(self, headers, user_first,
+                                                   campaign_with_archived_candidate):
+        """
+        We try to send campaign to a smartlist which contains 2 candidates. One of the candidate is archived, So,
+        campaign should only be sent to 1 candidate.
+        """
+        campaign = campaign_with_archived_candidate
+        response = requests.post(self.URL % campaign['id'], headers=headers)
         assert_campaign_send(response, campaign, user_first, expected_count=1)

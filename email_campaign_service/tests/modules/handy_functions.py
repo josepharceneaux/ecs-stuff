@@ -9,10 +9,9 @@
 # Standard Imports
 import re
 import json
-import uuid
 import email
 import imaplib
-import datetime
+from datetime import datetime, timedelta
 
 # Third Party
 import requests
@@ -43,7 +42,6 @@ from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.modules.utils import (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_PREFERENCES_URL_MERGETAG,
                                                   DEFAULT_LAST_NAME_MERGETAG, DEFAULT_USER_NAME_MERGETAG)
 
-
 __author__ = 'basit'
 
 TEST_EMAIL_ID = 'test.gettalent@gmail.com'
@@ -53,25 +51,27 @@ EMAIL_TEMPLATE_BODY = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional
                       '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through ' \
                       'script</p>\r\n</body>\r\n</html>\r\n'
 EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS = [{'from': fake.safe_email()}, {'from': fake.safe_email(),
-                                      'reply_to': fake.safe_email()}, {'from': fake.safe_email(),
-                                      'reply_to': fake.safe_email(), 'body_text': fake.sentence()},
+                                                                    'reply_to': fake.safe_email()},
+                                      {'from': fake.safe_email(),
+                                       'reply_to': fake.safe_email(), 'body_text': fake.sentence()},
                                       {'from': fake.safe_email(), 'reply_to': fake.safe_email(),
                                        'description': fake.sentence(), 'body_text': fake.sentence(),
-                                       'start_datetime': DatetimeUtils.to_utc_str(datetime.datetime.utcnow()
-                                                                                  + datetime.timedelta(minutes=20))},
+                                       'start_datetime': DatetimeUtils.to_utc_str(datetime.utcnow()
+                                                                                  + timedelta(minutes=20))},
                                       {'from': fake.safe_email(), 'reply_to': fake.safe_email(),
                                        'body_text': fake.sentence(), 'start_datetime': DatetimeUtils.to_utc_str(
-                                         datetime.datetime.utcnow() + datetime.timedelta(minutes=20)),
-                                       'end_datetime': DatetimeUtils.to_utc_str(datetime.datetime.utcnow()
-                                                                                + datetime.timedelta(minutes=40))}]
+                                          datetime.utcnow() + timedelta(minutes=20)),
+                                       'end_datetime': DatetimeUtils.to_utc_str(datetime.utcnow()
+                                                                                + timedelta(minutes=40))}]
 EMAIL_TEMPLATE_INVALID_DATA_TYPES = [{'name': fake.random_number(), 'is_immutable': 1},
-                                     {'name': fake.word(), 'is_immutable': fake.random_int(2,)},
+                                     {'name': fake.word(), 'is_immutable': fake.random_int(2, )},
                                      {'name': fake.word(), 'is_immutable': fake.word()}, {'name': fake.word(),
-                                     'is_immutable': ON, 'parent_id': fake.word()}]
+                                                                                          'is_immutable': ON,
+                                                                                          'parent_id': fake.word()}]
 
 SPECIAL_CHARACTERS = '!@#$%^&*()_+'
 TEST_MAIL_DATA = {
-    "subject": "Test Email-%s-%s" % (fake.uuid4(), SPECIAL_CHARACTERS),
+    "subject": "Test Email-%s-%s" % (fake.uuid4()[0:8], SPECIAL_CHARACTERS),
     "from": fake.name(),
     "body_html": "<html><body><h1>Welcome to email campaign service "
                  "<a href=https://www.github.com>Github</a></h1></body></html>",
@@ -179,7 +179,9 @@ def assert_valid_campaign_get(email_campaign_dict, referenced_campaigns, fields=
     # Assert id is correct, if returned by API
     if 'id' in expected_email_campaign_fields_set:
         for referenced_campaign in referenced_campaigns:
-            if email_campaign_dict['id'] == referenced_campaign.id:
+            referenced_campaign_id = referenced_campaign.id if hasattr(referenced_campaign, 'id') else \
+                referenced_campaign['id']
+            if email_campaign_dict['id'] == referenced_campaign_id:
                 found = True
         assert found
 
@@ -250,7 +252,7 @@ def assert_and_delete_email(subject, username=app.config[TalentConfigKeys.GT_GMA
     # search the inbox for given email-subject
     search_criteria = '(SUBJECT "%s")' % subject
     result, [msg_ids] = mail_connection.search(None, search_criteria)
-    assert msg_ids, "Email with subject %s was not found at time: %s." % (subject, str(datetime.datetime.utcnow()))
+    assert msg_ids, "Email with subject %s was not found at time: %s." % (subject, str(datetime.utcnow()))
     print "Email(s) found with subject: %s" % subject
     if delete_email:
         # This is kind of finalizer which removes email from inbox. It shouldn't affect our test. So we are not
@@ -318,6 +320,10 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     sends have been updated as expected. It then checks the source URL is correctly formed or
     in database table "url_conversion".
     """
+    if type(campaign) == dict:
+        db.session.commit()
+        campaign = EmailCampaign.get_by_id(campaign['id'])
+
     msg_ids = ''
     assert response.status_code == expected_status
     assert response.json()
@@ -339,7 +345,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         sends_url_conversions.extend(campaign_send.url_conversions)
         if not email_client:
             if via_amazon_ses:  # If email-campaign is sent via Amazon SES, we should have message_id and request_id
-                                # saved in database table "email_campaign_sends"
+                # saved in database table "email_campaign_sends"
                 assert campaign_send.ses_message_id
                 assert campaign_send.ses_request_id
             CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
@@ -354,7 +360,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         #                     retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.error))
         #
         #     assert msg_ids, "Email with subject %s was not found at time: %s." % (campaign.subject,
-        #                                                               str(datetime.datetime.utcnow()))
+        #                                                               str(datetime.utcnow()))
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
         # get URL conversion record from database table 'url_conversion' and delete it
@@ -394,7 +400,7 @@ def get_template_folder(headers):
     :return: template_folder_id, template_folder_name
     :rtype: tuple[int, str]
     """
-    template_folder_name = 'test_template_folder_%i' % datetime.datetime.now().microsecond
+    template_folder_name = 'test_template_folder_%i' % datetime.now().microsecond
 
     data = {'name': template_folder_name,
             'is_immutable': ON}
@@ -413,7 +419,7 @@ def data_to_create_email_template(headers, template_owner, body_html='', body_te
     """
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(headers)
-    template_name = 'test_email_template_%i' % datetime.datetime.utcnow().microsecond
+    template_name = 'test_email_template_%i' % datetime.utcnow().microsecond
     is_immutable = ON
     data = dict(
         name=template_name,
@@ -494,12 +500,12 @@ def create_email_campaign_via_api(access_token, data, is_json=True):
     return response
 
 
-def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
-                                      campaign_name=fake.name(), assert_candidates=True, create_smartlist=True):
+def create_data_for_campaign_creation(access_token, talent_pipeline, subject=fake.name(),
+                                      campaign_name=fake.name(), assert_candidates=True, create_smartlist=True,
+                                      smartlist_id=None):
     """
     This function returns the required data to create an email campaign
     """
-    smartlist_id = ''
     body_text = fake.sentence()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
     if create_smartlist:
@@ -515,20 +521,33 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
             }
 
 
+def create_scheduled_email_campaign_data(access_token, talent_pipeline, **kwargs):
+    """
+    This returns data to create an scheduled email-campaign.
+    :rtype: dict
+    """
+    campaign_data = create_data_for_campaign_creation(access_token, talent_pipeline, **kwargs)
+    campaign_data['frequency_id'] = Frequency.ONCE
+    campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(weeks=1))
+    campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow()
+                                                             + timedelta(weeks=2))
+    return campaign_data
+
+
 def send_campaign_email_to_candidate(campaign, email, candidate_id, sent_datetime=None, blast_id=None):
     """
     This function will create a campaign send object and then it will send the email to given email address.
     :param EmailCampaign campaign: EmailCampaign object
     :param CandidateEmail email: CandidateEmail object
     :param (int | long) candidate_id: candidate unique id
-    :param (datetime.datetime | None) sent_datetime: Campaign send time to be set in campaign send object.
+    :param (datetime | None) sent_datetime: Campaign send time to be set in campaign send object.
     :param (None| int | long) blast_id: campaign blast id
     """
     # Create an campaign send object
     email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
                                             candidate_id=candidate_id,
                                             sent_datetime=sent_datetime if sent_datetime
-                                            else datetime.datetime.utcnow(),
+                                            else datetime.utcnow(),
                                             blast_id=blast_id)
     EmailCampaignSend.save(email_campaign_send)
     default_email = get_default_email_info()['email']
@@ -625,8 +644,8 @@ def create_data_for_campaign_creation_with_all_parameters(access_token, talent_p
                                                                             emails_list=True,
                                                                             assert_candidates=assert_candidates,
                                                                             )
-    start_datetime = DatetimeUtils.to_utc_str(datetime.datetime.utcnow() + datetime.timedelta(minutes=20))
-    end_datetime = DatetimeUtils.to_utc_str(datetime.datetime.utcnow() + datetime.timedelta(minutes=40))
+    start_datetime = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=20))
+    end_datetime = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=40))
 
     return {'name': campaign_name,
             'from': email_from,
