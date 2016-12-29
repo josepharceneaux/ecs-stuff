@@ -460,6 +460,11 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                         if field_name == 'custom_field_id_and_value':
                             resume_text += ' ' + ' '.join(map(lambda value: value.split('|')[1].strip(), sql_value))
                         else:
+                            # Temporary loggers for debugging, should remove once GET-2018 is resolved -Amir
+                            logger.info("sql_value: {}".format(sql_value))
+                            logger.info("sql_value_type: {}".format(type(sql_value)))
+                            logger.info("resume_text_value: {}".format(resume_text))
+                            logger.info("resume_text_type: {}".format(type(resume_text)))
                             resume_text += ' ' + ' '.join(sql_value)
                     else:
                         if field_name == 'custom_field_id_and_value':
