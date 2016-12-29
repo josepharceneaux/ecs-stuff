@@ -503,6 +503,7 @@ class QuestionHandler(object):
         :param positive user_id:
         :rtype: string
         """
+        via_sms = True if user_client == USER_CLIENTS["SMS"] else False
         is_group_campaigns = True if cls.find_word_in_message('group', message_tokens, True) is not None else False
         if is_group_campaigns:  # If user's asking for campaigns in his group we already have handler for that
             return cls.question_7_handler(message_tokens, user_id)
@@ -519,7 +520,7 @@ class QuestionHandler(object):
         email_campaigns, sms_campaigns, push_campaigns = (None, None, None)
         response = []
         scope = OWNED if not asking_about_all_campaigns else DOMAIN_SPECIFIC
-        page_number = 1 if USER_CLIENTS["SMS"] == user_client else None
+        page_number = 1 if via_sms else None
         if asking_about_all_pools or asking_about_his_pool or asking_about_specific_pool:
             user_talent_pool_names = None
             if asking_about_his_pool:  # If user's asking about his talent pools
@@ -540,20 +541,22 @@ class QuestionHandler(object):
             state_array = []  # To store multiple methods as a single state e.g Email, Push and SMS Campaigns
             email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names,
                                                                            page_number)
-            # Generating State object and appending it in state_array
-            state_array.append(cls.create_state_object("EmailCampaign", "email_campaigns_in_talent_pool",
-                                                       [user_id, scope, user_talent_pool_names, 1], "Email Campaigns"))
             push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names,
                                                                         page_number)
-            # Generating State object and appending it in state_array
-            state_array.append(cls.create_state_object("PushCampaign", "push_campaigns_in_talent_pool",
-                                                       [user_id, scope, user_talent_pool_names, 1], "Push Campaigns"))
             sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names,
                                                                      page_number)
-            # Generating State object and appending it in state_array
-            state_array.append(cls.create_state_object("SmsCampaign", "sms_campaigns_in_talent_pool",
-                                                       [user_id, scope, user_talent_pool_names, 1], "SMS Campaigns"))
-            cls.save_state(state_array, user_id)
+            if via_sms:
+                # Generating State object and appending it in state_array
+                state_array.append(cls.create_state_object("PushCampaign", "push_campaigns_in_talent_pool",
+                                                           [user_id, scope, user_talent_pool_names, 1],
+                                                           "Push Campaigns"))
+                state_array.append(cls.create_state_object("EmailCampaign", "email_campaigns_in_talent_pool",
+                                                           [user_id, scope, user_talent_pool_names, 1],
+                                                           "Email Campaigns"))
+                state_array.append(cls.create_state_object("SmsCampaign", "sms_campaigns_in_talent_pool",
+                                                           [user_id, scope, user_talent_pool_names, 1],
+                                                           "SMS Campaigns"))
+                cls.save_state(state_array, user_id)
         is_asking_for_campaigns_in_pool = not asking_about_specific_pool and not \
             asking_about_all_pools and not asking_about_his_pool
         # Appending suitable response header
@@ -568,22 +571,19 @@ class QuestionHandler(object):
             state_array = []
             email_campaigns = EmailCampaign.get_by_domain_id(domain_id, page_number) if asking_about_all_campaigns else\
                 EmailCampaign.get_by_user_id(user_id, page_number)
-            state_array.append(cls.create_state_object("EmailCampaign", "get_by_domain_id" if asking_about_all_campaigns
-                                                       else "get_by_user_id", [domain_id, 1]
-                                                       if asking_about_all_campaigns else [user_id, 1],
-                                                       "Email Campaigns"))
             push_campaigns = PushCampaign.get_by_domain_id(domain_id, page_number) if asking_about_all_campaigns else\
                 PushCampaign.get_by_user_id(user_id, page_number)
-            state_array.append(cls.create_state_object("PushCampaign", "get_by_domain_id" if asking_about_all_campaigns
-                                                       else "get_by_user_id", [domain_id, 1]
-                                                       if asking_about_all_campaigns else [user_id, 1],
-                                                       "Push Campaigns"))
             sms_campaigns = SmsCampaign.get_by_domain_id(domain_id, page_number) if asking_about_all_campaigns else\
                 SmsCampaign.get_by_user_id(user_id, page_number)
-            state_array.append(cls.create_state_object("SmsCampaign", "get_by_domain_id" if asking_about_all_campaigns
-                                                       else "get_by_user_id", [domain_id, 1] if asking_about_all_campaigns
-                                                       else [user_id, 1], "Sms Campaigns"))
-            cls.save_state(state_array, user_id)
+            if via_sms:
+                # Generating State object and appending it in state_array
+                method_name = "get_by_domain_id" if asking_about_all_campaigns else "get_by_user_id"
+                parameters = [domain_id, 1] if asking_about_all_campaigns else [user_id, 1]
+                state_array.append(cls.create_state_object("SmsCampaign", method_name, parameters, "Sms Campaigns"))
+                state_array.append(cls.create_state_object("PushCampaign", method_name, parameters, "Push Campaigns"))
+                state_array.append(cls.create_state_object("EmailCampaign", method_name, parameters, "Email Campaigns"))
+                cls.save_state(state_array, user_id)
+
         if email_campaigns:  # Appending email campaigns in a representable response list
             counter = 0
             response.append("*Email Campaigns*")
@@ -1075,7 +1075,7 @@ class QuestionHandler(object):
                         start = 1 if page_number == 1 else page_number * 10 - 9
                         response.append(cls.custom_count_appender(start, _list, representative, []))
                 return response
-            redis_store.delete("bot-pg-%d")
+            redis_store.delete("bot-pg-%d" % user_id)
         except Exception as error:
             logger.info("No state found: %s" % error.message)
             # Releasing lock
