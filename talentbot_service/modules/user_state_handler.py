@@ -16,7 +16,6 @@ class UserStateHandler(object):
         """
         This method removes saved users' states from redis db to avoid deadlocks
         """
-        logger.info("Flushing user states saved in redis")
         # Getting registered user phone ids
         user_phone_ids = TalentbotAuth.get_all_user_phone_ids()
         # Getting first entry of tuples
@@ -32,3 +31,5 @@ class UserStateHandler(object):
             user_ids = list(*zip(*user_ids))
             for user_id in user_ids:
                 redis_store.delete("bot-pg-%d" % user_id)
+                redis_store.delete("%dredis_lock" % user_id)
+            logger.info("Flushed user states successfully")

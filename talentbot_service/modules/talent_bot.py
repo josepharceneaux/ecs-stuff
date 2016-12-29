@@ -214,9 +214,9 @@ class TalentBot(object):
         is_hint_question = self.check_for_hint(message)
         if is_hint_question:
             return is_hint_question
-        is_paginator = self.is_paginator(message)
+        is_paginator, number = self.is_paginator(message)
         if is_paginator:
-            return QuestionHandler.handle_pagination(user_id)
+            return QuestionHandler.handle_pagination(user_id, number)
         if len(message.split()) < MIN_WORDS_IN_QUESTION:
             return random.choice(self.error_messages)
         message_tokens = self.tokenize_message(message)
@@ -336,11 +336,14 @@ class TalentBot(object):
     @contract
     def is_paginator(self, user_message):
         """
-
+        This method checks if user's asking about next or previous page
         :param string user_message: User message
-        :rtype: bool
+        :rtype: tuple(bool,int)
         """
-        matched_ratio = self.match_question(user_message.lower(), ["next", "previous"])
+        matched_ratio = self.match_question(user_message.lower(), "next")
         if matched_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
-            return True
-        return False
+            return True, 1
+        matched_ratio = self.match_question(user_message.lower(), "previous")
+        if matched_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
+            return True, -1
+        return False, 0

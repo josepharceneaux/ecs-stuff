@@ -279,7 +279,7 @@ class UserPhone(db.Model):
     def get_by_phone_value(cls, phone_value):
         if not isinstance(phone_value, basestring):
             raise InvalidUsage("phone_value is invalid")
-        return cls.query.with_entities(cls.user_id).filter_by(value=phone_value).all()
+        return cls.query.filter_by(value=phone_value).all()
 
     @classmethod
     def get_user_ids_by_phone_ids(cls, phone_ids):

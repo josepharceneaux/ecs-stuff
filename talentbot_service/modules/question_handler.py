@@ -1042,9 +1042,13 @@ class QuestionHandler(object):
 
     @classmethod
     @contract
-    def handle_pagination(cls, user_id):
+    def handle_pagination(cls, user_id, number):
         """
-        :param positive user_id:
+        This method handles pagination, if user says next it gets method from state and add 1 in page number
+        and returns next records
+        :param int number: Add this in page number
+        :param positive user_id: User Id
+        :rtype: None|list
         """
         # Requesting Lock
         lock = cls.request_lock(user_id)
@@ -1059,22 +1063,31 @@ class QuestionHandler(object):
                 states = json.loads(states)
                 # Getting state data from redis
                 response = []
+                new_states = []
                 for state in states:
                     representative, _class, params = state["repr"], CLASSES[state["class"]], state["params"]
                     method = getattr(_class, state["method"])
                     page_number = params[-1] or 1
-                    # Increasing page number
-                    page_number += 1
+                    if number < 0 and page_number > 1:
+                        # Decreasing page number
+                        page_number += number
+                    elif number > 0:
+                        page_number += number
+                    else:
+                        # Releasing lock
+                        redis_store.set("%dredis_lock" % user_id, False)
+                        return None
                     params[-1] = page_number
                     _list = method(*tuple(params))
                     if _list:
                         state.update({"page_number": page_number})
-                        redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
-                        # Releasing lock
-                        redis_store.set("%dredis_lock" % user_id, False)
+                        new_states.append(state)
                         start = 1 if page_number == 1 else page_number * 10 - 9
                         response.append(cls.custom_count_appender(start, _list, representative, []))
-                return response
+                redis_store.set("bot-pg-%d" % user_id, json.dumps(new_states))
+                # Releasing lock
+                redis_store.set("%dredis_lock" % user_id, False)
+                return '\n'.join(response)
             redis_store.delete("bot-pg-%d" % user_id)
         except Exception as error:
             logger.info("No state found: %s" % error.message)
@@ -1087,8 +1100,8 @@ class QuestionHandler(object):
     @contract
     def request_lock(user_id):
         """
-
-        :param positive user_id:
+        Returns user specific lock from redis
+        :param positive user_id: User Id
         :rtype: None|bool
         """
         lock = redis_store.get("%dredis_lock" % user_id)
