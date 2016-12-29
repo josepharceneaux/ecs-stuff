@@ -82,7 +82,7 @@ class BaseCampaignLinkEvent(Resource):
         This links an event with base-campaign.
         """
         event_in_db = Event.get_by_id(event_id)
-        if not event_in_db:
+        if not event_in_db or event_in_db.is_deleted_from_vendor or event_in_db.is_hidden:
             raise ResourceNotFound('Requested event not found in database')
         is_event_in_domain = Event.get_by_event_id_and_domain_id(event_id, request.user.domain_id)
         if not is_event_in_domain:
