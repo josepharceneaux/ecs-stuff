@@ -420,6 +420,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
             # Massage 'field_name_to_sql_value' values into the types they are supposed to be
             resume_text = ''
+            logger.info("resume_text_1: {}; data_type: {}".format(resume_text, type(resume_text)))
             for field_name in field_name_to_sql_value.keys():
                 index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
 
@@ -441,7 +442,9 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
                 if field_name == 'source_id':
                     candidate_source = CandidateSource.query.get(sql_value)
+                    logger.info("candidate_source_description: {}".format(candidate_source.description if candidate_source else ''))
                     resume_text += (' ' + candidate_source.description) if candidate_source else ''
+                    logger.info("resume_text_2: {}".format(resume_text))
 
                 index_field_type = index_field_options['IndexFieldType']
                 if 'array' in index_field_type:
@@ -763,14 +766,19 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     if dumb_list_filter_query_string:
         filter_query = "(or %s %s)" % (dumb_list_filter_query_string, filter_query)
 
-    # CS will search for all candidates unless if candidate's status has been specified
-    status = request_vars.get('status', 'active')
-    if status == 'active':
-        candidate_status = "(term field=is_archived 0)"
-    else:
+    # CS will search for active candidates only unless if specified
+    status = request_vars.get('status')
+    if status == 'archived':
         candidate_status = "(term field=is_archived 1)"
+    elif status == 'all':
+        candidate_status = ''
+    else:
+        candidate_status = "(term field=is_archived 0)"
 
-    filter_query = "(and %s %s %s %s)" % (filter_query, domain_filter, talent_pool_filter, candidate_status)
+    if candidate_status:
+        filter_query = "(and %s %s %s %s)" % (filter_query, domain_filter, talent_pool_filter, candidate_status)
+    else:
+        filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
 
     params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene', query_options={'fields': QUERY_OPTIONS})
     if offset:

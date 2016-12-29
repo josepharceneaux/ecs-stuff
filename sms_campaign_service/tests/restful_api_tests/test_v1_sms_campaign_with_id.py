@@ -282,13 +282,13 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         response = requests.delete(self.URL % sms_campaign_of_user_first['id'], headers=headers)
         assert_campaign_delete(response, user_first.id, sms_campaign_of_user_first['id'])
 
-    def test_delete_campaign_with_other_user_of_same_domain(self, headers_same_domain, user_same_domain,
+    def test_delete_campaign_with_other_user_of_same_domain(self, headers_same, user_same_domain,
                                                             sms_campaign_of_user_first):
         """
         Some other user of same domain tries to delete the sms-campaign created by some other user.
         It should get OK response.
         """
-        response = requests.delete(self.URL % sms_campaign_of_user_first['id'], headers=headers_same_domain)
+        response = requests.delete(self.URL % sms_campaign_of_user_first['id'], headers=headers_same)
         assert_campaign_delete(response, user_same_domain.id, sms_campaign_of_user_first['id'])
 
     def test_with_sms_campaign_in_other_domain(self, headers, sms_campaign_in_other_domain):

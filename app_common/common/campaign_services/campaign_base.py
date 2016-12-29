@@ -18,11 +18,12 @@ Any service can inherit from this class to implement/override functionality acco
 import json
 import itertools
 from abc import ABCMeta
-from datetime import datetime, timedelta
 from abc import abstractmethod
+from datetime import datetime, timedelta
 
 # Third Party
 from celery import chord
+from contracts import contract
 from flask import current_app
 
 # Database Models
@@ -41,16 +42,16 @@ from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
 from campaign_utils import (get_model, CampaignUtils)
 from ..utils.validators import raise_if_not_instance_of
+from ..utils.candidate_utils import get_candidate_if_validated
 from custom_errors import (CampaignException, EmptyDestinationUrl)
-from ..routes import (ActivityApiUrl, SchedulerApiUrl)
+from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidateApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound, InternalServerError)
 from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
-from validators import (validate_form_data,
-                        validation_of_data_to_schedule_campaign,
-                        validate_blast_candidate_url_conversion_in_db,
-                        raise_if_dict_values_are_not_int_or_long, validate_smartlist_ids)
+from validators import (validate_form_data, validation_of_data_to_schedule_campaign,
+                        validate_blast_candidate_url_conversion_in_db, validate_smartlist_ids,
+                        raise_if_dict_values_are_not_int_or_long)
 from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
-                                     generate_jwt_headers)
+                                     generate_jwt_headers, send_request)
 
 
 class CampaignBase(object):
@@ -1189,6 +1190,7 @@ class CampaignBase(object):
         """
         pass
 
+    @contract
     def get_smartlist_candidates(self, smartlist_id):
         """
         This will get the candidates associated to a provided smart list. This makes
@@ -1198,33 +1200,34 @@ class CampaignBase(object):
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
         :Example:
-                SmsCampaignBase.get_candidates(1)
+                SmsCampaignBase().get_smartlist_candidates(1)
 
-        :param int | long smartlist_id: smartlist id
-        rtype list[list[Candidate]]
+        :param positive smartlist_id: smartlist id
         :return: Returns array of candidates in the campaign's smartlists.
         :rtype: list
         :exception: Invalid usage
+
         **See Also**
         .. see also:: send() method in SmsCampaignBase class.
         """
-        candidates = []
         logger = current_app.config[TalentConfigKeys.LOGGER]
         # As this method is called per smartlist_id for all smartlist_ids associated with
         # a campaign. So, in case iteration for any smartlist_id encounters some error,
         # we just log the error and move on to next iteration. In case of any error, we return
         # empty list.
         try:
-            raise_if_not_instance_of(smartlist_id, (int, long))
             candidates_ids = get_candidates_of_smartlist(smartlist_id, candidate_ids_only=True,
                                                          access_token=self.auth_token)
-            candidates = [Candidate.get_by_id(candidate_id) for candidate_id in candidates_ids]
         except Exception:
-            logger.exception('get_smartlist_candidates: Error while fetching candidates for '
-                             'smartlist(id:%s)' % smartlist_id)
+            logger.exception('get_smartlist_candidates: Error while fetching candidates for smartlist(id:%s)'
+                             % smartlist_id)
+            return
+        # Filter valid candidate ids
+        candidates = self.filter_existing_candidate_ids(candidates_ids, self.user.id, candidate_ids_only=False)
+
         if not candidates:
-            logger.error('get_smartlist_candidates: No Candidate found. smartlist id is %s. '
-                         '(User(id:%s))' % (smartlist_id, self.user.id))
+            logger.error('get_smartlist_candidates: No Candidate found. smartlist id is %s. (User(id:%s))'
+                         % (smartlist_id, self.user.id))
         return candidates
 
     @staticmethod
@@ -1839,3 +1842,29 @@ class CampaignBase(object):
             obj = getattr(self, key)
             if isinstance(obj, db.Model):
                 setattr(self, key, db.session.merge(obj))
+
+    @classmethod
+    @contract
+    # TODO: Remove user_id from params once email-campaign-service is made class base
+    def filter_existing_candidate_ids(cls, candidate_ids, user_id, candidate_ids_only=True):
+        """
+        For each candidate_id in candidate_ids it calls function "get_candidate_if_validated" defined in
+        common/utils/candidate_utils.py to check if candidate is available.
+        It then returns ids or objects of existing candidates and discard non-existing/not-owned etc ids depending
+        upon value of "candidate_ids_only".
+        :param list candidate_ids: List of candidate ids
+        :param positive user_id: Id of user
+        :param bool candidate_ids_only: True if we want to return only ids of candidates
+        :rtype: list
+        """
+        logger = current_app.config[TalentConfigKeys.LOGGER]
+        user = User.get_by_id(user_id)
+        candidates = []
+        for candidate_id in candidate_ids:
+            try:
+                candidate = get_candidate_if_validated(user, candidate_id)
+                assert candidate, 'Candidate(id:%s) not found' % candidate_id
+                candidates.append(candidate)
+            except Exception as error:
+                logger.error("Couldn't get candidate(id:%s). Error:%s" % (candidate_id, error.message))
+        return [candidate.id for candidate in candidates] if candidate_ids_only else candidates
