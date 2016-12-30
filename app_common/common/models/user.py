@@ -146,9 +146,6 @@ class User(db.Model):
             'dice_user_id': self.dice_user_id,
             'user_group_id': self.user_group_id,
             'role': self.role.name,
-            'logins_per_month': 0,
-            'searches_per_month': 0,
-            'candidates_count': 0,
             'added_time': self.added_time.replace(
                     tzinfo=pytz.UTC).isoformat() if self.added_time else None,
             'updated_time': self.updated_time.replace(
