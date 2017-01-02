@@ -527,11 +527,13 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         db.session.commit()
         if not blast_url:
-            assert campaign.blasts[blast_index].sends == expected_count
+            blast_sends = campaign.blasts[blast_index].sends
         else:
             response = send_request('get', blast_url, access_token)
-            if response.ok:
-                assert response.json()['blast']['sends'] == expected_count
+            blast_sends = response.json()['blast']['sends']
+        print 'Expected Sends:%d' % expected_count
+        print 'Received Sends:%d' % blast_sends
+        assert blast_sends == expected_count
 
     @staticmethod
     @contract
