@@ -313,8 +313,9 @@ def delete_emails(mail_connection, msg_ids, subject):
         logger.exception(error.message)
 
 
-def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False, expected_status=codes.OK,
-                         abort_time_for_sends=300, via_amazon_ses=True, delete_email=True):
+def assert_campaign_send(response, campaign, user, blast_sends=1, blasts_count=1, total_sends=1,
+                         email_client=False, expected_status=codes.OK, abort_time_for_sends=300, via_amazon_ses=True,
+                         delete_email=True):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -331,13 +332,13 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
-    CampaignsTestsHelpers.assert_campaign_blasts(campaign, 1, timeout=abort_time_for_sends)
+    CampaignsTestsHelpers.assert_campaign_blasts(campaign, expected_count=blasts_count, timeout=abort_time_for_sends)
 
     # assert on sends
-    CampaignsTestsHelpers.assert_blast_sends(campaign, expected_count,
+    CampaignsTestsHelpers.assert_blast_sends(campaign, blast_index=blasts_count - 1, expected_count=blast_sends,
                                              abort_time_for_sends=abort_time_for_sends)
     campaign_sends = campaign.sends.all()
-    assert len(campaign_sends) == expected_count
+    assert len(campaign_sends) == total_sends
     sends_url_conversions = []
     # assert on activity of individual campaign sends
     for campaign_send in campaign_sends:

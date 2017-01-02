@@ -327,6 +327,16 @@ class TestSendCampaign(object):
         response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first, 40)
 
+    def test_campaign_send_with_hundred_sends(self, headers, user_first, campaign_to_ten_candidates_not_sent):
+        """
+        Here we send one campaign to 10 candidates 10 times. Total sends should be 100.
+        """
+        campaign = campaign_to_ten_candidates_not_sent
+        for number in xrange(1, 11):
+            response = requests.post(self.URL % campaign.id, headers=headers)
+            assert_campaign_send(response, campaign, user_first, blasts_count=number,
+                                 blast_sends=10, total_sends=number * 10)
+
     def test_campaign_send_with_two_smartlists_having_same_candidate(
             self, headers, user_first, campaign_with_same_candidate_in_multiple_smartlists):
         """
@@ -335,14 +345,13 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_same_candidate_in_multiple_smartlists
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first, expected_count=1)
+        assert_campaign_send(response, campaign, user_first)
 
-    def test_campaign_send_with_archived_candidate(self, headers, user_first,
-                                                   campaign_with_archived_candidate):
+    def test_campaign_send_with_archived_candidate(self, headers, user_first, campaign_with_archived_candidate):
         """
         We try to send campaign to a smartlist which contains 2 candidates. One of the candidate is archived, So,
         campaign should only be sent to 1 candidate.
         """
         campaign = campaign_with_archived_candidate
         response = requests.post(self.URL % campaign['id'], headers=headers)
-        assert_campaign_send(response, campaign, user_first, expected_count=1)
+        assert_campaign_send(response, campaign, user_first)
