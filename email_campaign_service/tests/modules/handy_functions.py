@@ -313,7 +313,7 @@ def delete_emails(mail_connection, msg_ids, subject):
         logger.exception(error.message)
 
 
-def assert_campaign_send(response, campaign, user, blast_sends=1, blasts_count=1, total_sends=1,
+def assert_campaign_send(response, campaign, user, blast_sends=1, blasts_count=1, total_sends=None,
                          email_client=False, expected_status=codes.OK, abort_time_for_sends=300, via_amazon_ses=True,
                          delete_email=True):
     """
@@ -321,6 +321,8 @@ def assert_campaign_send(response, campaign, user, blast_sends=1, blasts_count=1
     sends have been updated as expected. It then checks the source URL is correctly formed or
     in database table "url_conversion".
     """
+    if not total_sends:
+        total_sends = blast_sends
     if type(campaign) == dict:
         db.session.commit()
         campaign = EmailCampaign.get_by_id(campaign['id'])
