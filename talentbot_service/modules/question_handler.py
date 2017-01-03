@@ -1048,7 +1048,7 @@ class QuestionHandler(object):
         and returns next records
         :param int number: Add this in page number
         :param positive user_id: User Id
-        :rtype: None|list
+        :rtype: None|string
         """
         # Requesting Lock
         lock = cls.request_lock(user_id)
@@ -1084,7 +1084,7 @@ class QuestionHandler(object):
                         new_states.append(state)
                         start = 1 if page_number == 1 else page_number * 10 - 9
                         response.append(cls.custom_count_appender(start, _list, representative, []))
-                redis_store.set("bot-pg-%d" % user_id, json.dumps(new_states))
+                        redis_store.set("bot-pg-%d" % user_id, json.dumps(new_states))
                 # Releasing lock
                 redis_store.set("%dredis_lock" % user_id, False)
                 return '\n'.join(response)

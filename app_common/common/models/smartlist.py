@@ -32,6 +32,15 @@ class Smartlist(db.Model):
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, self.id)
 
+    @classmethod
+    def get_by_ids(cls, smartlist_id, is_hidden=True):
+        assert isinstance(smartlist_id, (list, long, int)), "Invalid smartlist id type"
+        if isinstance(smartlist_id, list):
+            if not is_hidden:
+                return cls.query.filter(cls.id.in_(smartlist_id), cls.is_hidden == 0).all()
+            return cls.query.filter(cls.id.in_(smartlist_id)).all()
+        return cls.query.filter_by(id=smartlist_id).first()
+
     def to_dict(self, include_stats=False, get_stats_function=None):
         smart_list = {
             'id': self.id,
@@ -85,16 +94,13 @@ class SmartlistCandidate(db.Model):
         talent_pool_ids = [talent_pool.id for talent_pool in talent_pools]  # Extracting data on 0th index from tuple
         candidate_ids = TalentPoolCandidate.query.with_entities(TalentPoolCandidate.candidate_id). \
             filter(TalentPoolCandidate.talent_pool_id.in_(talent_pool_ids)).distinct().all()
-        candidates = []
-        for candidate_id in candidate_ids:
-            candidates.append(Candidate.get_by_id(candidate_id[0]))
-        candidate_ids = [candidate.id for candidate in candidates if not candidate.is_web_hidden]
+        candidate_ids = list(*zip(*candidate_ids))  # Converting tuple to list
+        candidates = Candidate.get_by_id(candidate_ids, False)
+        candidate_ids = [candidate.id for candidate in candidates]
         smartlist_ids = SmartlistCandidate.query.with_entities(SmartlistCandidate.smartlist_id). \
             filter(SmartlistCandidate.candidate_id.in_(candidate_ids)).distinct().all()
         smartlist_ids = [smartlist_id[0] for smartlist_id in smartlist_ids]  # Extracting data on 0th index from tuple
         # Checking if any of the selected smartlists is hidden
-        smartlists = []
-        for smartlist_id in smartlist_ids:  # Extracting unhidden campaigns
-            smartlists.append(Smartlist.get_by_id(smartlist_id))
-        smartlist_ids = [smartlist.id for smartlist in smartlists if not smartlist.is_hidden]
+        smartlists = Smartlist.get_by_ids(smartlist_ids, False)
+        smartlist_ids = [smartlist.id for smartlist in smartlists]
         return smartlist_ids

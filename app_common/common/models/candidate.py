@@ -94,7 +94,12 @@ class Candidate(db.Model):
         return ' '.join([name for name in [self.first_name, self.last_name] if isinstance(name, basestring)])
 
     @classmethod
-    def get_by_id(cls, candidate_id):
+    def get_by_id(cls, candidate_id, is_hidden=True):
+        assert isinstance(candidate_id, (list, long, int)), "Invalid candidate id type"
+        if isinstance(candidate_id, list):
+            if not is_hidden:
+                return cls.query.filter(cls.id.in_(candidate_id), cls.is_web_hidden == 0).all()
+            return cls.query.filter(cls.id.in_(candidate_id)).all()
         return cls.query.filter_by(id=candidate_id).first()
 
     @classmethod
