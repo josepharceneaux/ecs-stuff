@@ -826,6 +826,11 @@ class QuestionHandler(object):
         candidate = openweb_candidate["candidate"]
         if "dice_profile_id" in candidate:
             candidate.pop("dice_profile_id")
+        # Adding candidate in first talent pool
+        if candidate["talent_pool_ids"].get("add"):
+            candidate["talent_pool_ids"]["add"] = candidate["talent_pool_ids"]["add"][0:1]
+        else:
+            raise InvalidUsage("Candidate already exists")
         candidates = {"candidates": [candidate]}
         response = send_request('post', CandidateApiUrl.CANDIDATES, token, candidates)
         if response.ok:
