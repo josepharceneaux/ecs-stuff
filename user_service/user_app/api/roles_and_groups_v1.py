@@ -107,13 +107,15 @@ class UserGroupsApi(Resource):
     @require_all_permissions(Permission.PermissionNames.CAN_GET_DOMAIN_GROUPS)
     def get(self, **kwargs):
         """
-        GET /groups/<group_id>/users Fetch all users in a user_group
+        GET /groups/<group_id>/users?include_stats=True     Fetch all users in a user_group and also include stats
 
         :return A dictionary containing id and lastName of all users of a user_group
         :rtype: dict
         """
 
         requested_group_id = kwargs.get('group_id')
+        include_stats_flag = request.args.get('include_stats', False)
+
         requested_group = UserGroup.query.get(requested_group_id)
 
         if not requested_group:
@@ -124,7 +126,7 @@ class UserGroupsApi(Resource):
                                     "group %s" % (request.user.id, requested_group_id))
 
         users_data_dict = {user.id: user.to_dict() for user in UserGroup.all_users_of_group(requested_group_id)}
-        return {"users": get_users_stats_from_mixpanel(users_data_dict).values()}
+        return {"users": get_users_stats_from_mixpanel(users_data_dict, False, include_stats_flag).values()}
 
     @require_any_permission(Permission.PermissionNames.CAN_ADD_DOMAIN_GROUPS)
     def post(self, **kwargs):

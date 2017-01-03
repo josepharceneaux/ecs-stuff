@@ -1,4 +1,5 @@
 import math
+import sys
 # import operator
 import os
 import time
@@ -1083,14 +1084,14 @@ def _cloud_search_fetch_all(params):
     search_service = _cloud_search_domain_connection()
     params['cursor'] = 'initial'  # Initialize cursor
     # remove start, as it is produces error with cursor
-    del params['start']
+    if 'start' in params:
+        del params['start']
     no_more_candidates = False
     total_found = 0
     candidate_ids = []
     error = False
     # If size is more than 10000, cloud_search will give error, so set size to chunk of 10000 candidates and fetch all
-    if params['size'] > CLOUD_SEARCH_MAX_LIMIT:
-        params['size'] = CLOUD_SEARCH_MAX_LIMIT
+    params['size'] = min(params.get('size', sys.maxint), CLOUD_SEARCH_MAX_LIMIT)
     while not no_more_candidates:
         # Get the next batch of candidates
         results = search_service.search(**params)

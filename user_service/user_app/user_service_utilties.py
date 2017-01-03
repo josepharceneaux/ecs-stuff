@@ -2,20 +2,24 @@ __author__ = 'ufarooqi'
 import re
 import random
 import string
-from datetime import datetime, timedelta
+from sqlalchemy import func
 from urlparse import urlparse
+from mixpanel_jql import JQL, Reducer
+from werkzeug.security import gen_salt
+from datetime import datetime, timedelta
 from flask import render_template, request
 from user_service.user_app import app, logger
-from werkzeug.security import gen_salt
-from mixpanel_jql import JQL, Reducer
 
 from user_service.common.routes import get_web_app_url
 from user_service.common.utils.validators import is_number
+from user_service.common.models.candidate import Candidate
+from user_service.common.utils.amazon_ses import send_email
+from user_service.common.models.email_campaign import EmailCampaign
+from user_service.common.models.talent_pools_pipelines import TalentPipeline
 from user_service.common.error_handling import InvalidUsage, NotFoundError, UnauthorizedError
 from user_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from user_service.common.models.email_campaign import EmailTemplateFolder, UserEmailTemplate
 from user_service.common.models.user import db, Domain, User, UserGroup, Role
-from user_service.common.utils.amazon_ses import send_email
 from user_service.common.utils.auth_utils import gettalent_generate_password_hash
 
 PASSWORD_RECOVERY_JWT_SALT = \
@@ -236,14 +240,33 @@ def send_reset_password_email(email, name, reset_password_url, six_digit_token):
                body=new_user_email, to_addresses=[email], email_format='html')
 
 
-def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False):
+def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False, include_stats=False):
     """
-    This method will fetch user stats from MixPanel using JQL
+    This method will fetch user stats from MixPanel using JQL and Candidate Table using SQL
     :param user_data_dict: Dict containing data for all users in system
     :param is_single_user: Are we getting stats for a single user
+    :param include_stats: Include statistics of user in response
     :return: Dict containing data for all users in system
     :rtype: dict
     """
+
+    if not include_stats:
+        return user_data_dict
+
+    if is_single_user:
+        user_data_dict['candidates_count'] = 0
+        user_data_dict['logins_per_month'] = 0
+        user_data_dict['searches_per_month'] = 0
+        user_data_dict['campaigns_count'] = 0
+        user_data_dict['pipelines_count'] = 0
+    else:
+        for user_id, user_data in user_data_dict.iteritems():
+            user_data['candidates_count'] = 0
+            user_data['logins_per_month'] = 0
+            user_data['searches_per_month'] = 0
+            user_data['campaigns_count'] = 0
+            user_data['pipelines_count'] = 0
+
     request_origin = request.environ.get('HTTP_ORIGIN', '')
     logger.info('Request Origin for users GET request is: %s', request_origin)
 
@@ -290,6 +313,31 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False):
             user_data_dict[user_dict_key] = row['value']
         elif (not is_single_user) and (row['key'][0] in user_data_dict):
             user_data_dict[row['key'][0]][user_dict_key] = row['value']
+
+    # Get Candidate, Pipeline and Campaigns Stats of a User
+    if is_single_user:
+        user_data_dict['pipelines_count'] = TalentPipeline.query.filter_by(user_id=user_data_dict['id']).count()
+        user_data_dict['campaigns_count'] = EmailCampaign.query.filter_by(user_id=user_data_dict['id']).count()
+        user_data_dict['candidates_count'] = Candidate.query.filter_by(user_id=user_data_dict['id']).count()
+    else:
+        users_candidate_count = db.session.query(Candidate.user_id,
+                                                 func.count(Candidate.user_id)).group_by(Candidate.user_id).all()
+        users_pipelines_count = db.session.query(TalentPipeline.user_id,
+                                                 func.count(TalentPipeline.user_id)).group_by(TalentPipeline.user_id).all()
+        users_campaigns_count = db.session.query(EmailCampaign.user_id,
+                                                 func.count(EmailCampaign.user_id)).group_by(EmailCampaign.user_id).all()
+
+        for user_id, count in users_candidate_count:
+            if user_id in user_data_dict:
+                user_data_dict[user_id]['candidates_count'] = count
+
+        for user_id, count in users_pipelines_count:
+            if user_id in user_data_dict:
+                user_data_dict[user_id]['pipelines_count'] = count
+
+        for user_id, count in users_campaigns_count:
+            if user_id in user_data_dict:
+                user_data_dict[user_id]['campaigns_count'] = count
 
     return user_data_dict
 
