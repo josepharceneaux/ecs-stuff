@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from user import Domain, UserGroup, User
 from candidate import Candidate
 from ..error_handling import NotFoundError
-from ..utils.talentbot_utils import OWNED
+from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE
 # 3rd party imports
 from sqlalchemy import or_, and_, extract
 from sqlalchemy.dialects.mysql import TINYINT
@@ -50,9 +50,8 @@ class TalentPool(db.Model):
         domain_id = User.get_domain_id(user_id)
         if page_number is None:
             return cls.query.filter(cls.domain_id == domain_id).all()
-        number_of_records = 10
-        start = (page_number - 1) * number_of_records
-        end = page_number * number_of_records
+        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
+        end = page_number * NUMBER_OF_ROWS_PER_PAGE
         return cls.query.filter(cls.domain_id == domain_id)[start:end]
 
     @classmethod
@@ -225,9 +224,8 @@ class TalentPipeline(db.Model):
             query_object = cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
         if page_number is None:
             return query_object.all()
-        number_of_records = 10
-        start = (page_number - 1) * number_of_records
-        end = page_number * number_of_records
+        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
+        end = page_number * NUMBER_OF_ROWS_PER_PAGE
         return query_object[start:end]
 
     @classmethod
@@ -327,7 +325,6 @@ class TalentPipeline(db.Model):
         query_object = cls.query.join(User).filter(User.user_group_id == user.user_group_id, cls.is_hidden == 0)
         if page_number is None:
             return query_object.all()
-        number_of_records = 10
-        start = (page_number - 1) * number_of_records
-        end = page_number * number_of_records
+        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
+        end = page_number * NUMBER_OF_ROWS_PER_PAGE
         return query_object[start:end]

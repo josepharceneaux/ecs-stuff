@@ -9,7 +9,7 @@ from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
 from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage, NotFoundError)
-from ..utils.talentbot_utils import OWNED
+from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE
 
 from sqlalchemy.dialects.mysql import LONGTEXT
 
@@ -100,14 +100,19 @@ class EmailCampaign(db.Model):
 
     @classmethod
     def get_by_domain_id(cls, domain_id, page_number=None):
+        """
+        This methods returns list of email campaigns in a user's domain
+        :param long|int domain_id: Domain Id
+        :param None|long|int page_number: Page number for pagination purpose
+        :rtype: list|flask_sqlalchemy.BaseQuery
+        """
         assert domain_id, 'domain_id not given'
         from user import User  # This has to be here to avoid circular import
         common_query = cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
         if page_number is None:
             return common_query
-        number_of_records = 10
-        start = (page_number - 1) * number_of_records
-        end = page_number * number_of_records
+        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
+        end = page_number * NUMBER_OF_ROWS_PER_PAGE
         return common_query[start:end]
 
     @classmethod
@@ -157,9 +162,8 @@ class EmailCampaign(db.Model):
         query_object = cls.query.filter(cls.user_id == user_id, cls.is_hidden == 0)
         if page_number is None:
             return query_object.all()
-        number_of_records = 10
-        start = (page_number - 1) * number_of_records
-        end = page_number * number_of_records
+        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
+        end = page_number * NUMBER_OF_ROWS_PER_PAGE
         return query_object[start:end]
 
     @classmethod
@@ -214,9 +218,8 @@ class EmailCampaign(db.Model):
             if scope == OWNED else cls.query.filter(cls.id.in_(email_campaign_ids), cls.is_hidden == 0)
         if page_number is None:
             return scope_dependant_filter.all()
-        number_of_records = 10
-        start = (page_number - 1) * number_of_records
-        end = page_number * number_of_records
+        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
+        end = page_number * NUMBER_OF_ROWS_PER_PAGE
         return scope_dependant_filter[start:end]
 
 

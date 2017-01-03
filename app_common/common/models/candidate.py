@@ -95,6 +95,12 @@ class Candidate(db.Model):
 
     @classmethod
     def get_by_id(cls, candidate_id, is_hidden=True):
+        """
+        This method returns candidates against a single id or list of ids
+        :param list|long|int candidate_id: Candidate Id or list of Candidate Ids
+        :param boolean is_hidden: If True returns all candidates else returns visible candidates
+        :rtype: Candidate|list
+        """
         assert isinstance(candidate_id, (list, long, int)), "Invalid candidate id type"
         if isinstance(candidate_id, list):
             if not is_hidden:

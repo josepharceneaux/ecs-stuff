@@ -11,7 +11,7 @@ from db import db
 from ..error_handling import InternalServerError, NotFoundError
 from ..utils.datetime_utils import DatetimeUtils
 from ..custom_contracts import define_custom_contracts
-from ..utils.talentbot_utils import OWNED
+from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE
 
 define_custom_contracts()
 
@@ -86,9 +86,8 @@ class SmsCampaign(db.Model):
             join(User, UserPhone.user_id == User.id).filter(User.domain_id == domain_id)
         if page_number is None:
             return query_object.all()
-        number_of_records = 10
-        start = (page_number - 1) * number_of_records
-        end = page_number * number_of_records
+        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
+        end = page_number * NUMBER_OF_ROWS_PER_PAGE
         return query_object[start:end]
 
     @classmethod
@@ -107,9 +106,8 @@ class SmsCampaign(db.Model):
             query_object = cls.query.filter(cls.user_phone_id.in_(user_phone_ids))
             if page_number is None:
                 return query_object.all()
-            number_of_records = 10
-            start = (page_number - 1) * number_of_records
-            end = page_number * number_of_records
+            start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
+            end = page_number * NUMBER_OF_ROWS_PER_PAGE
             return query_object[start:end]
         return None
 
@@ -162,7 +160,7 @@ class SmsCampaign(db.Model):
             if scope == OWNED else cls.query.filter(cls.id.in_(sms_campaign_ids))
         if page_number is None:
             return scope_dependant_filter.all()
-        number_of_records = 10
+        number_of_records = NUMBER_OF_ROWS_PER_PAGE
         start = (page_number - 1) * number_of_records
         end = page_number * number_of_records
         return scope_dependant_filter[start:end]

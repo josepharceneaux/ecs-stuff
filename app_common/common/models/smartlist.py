@@ -34,7 +34,14 @@ class Smartlist(db.Model):
 
     @classmethod
     def get_by_ids(cls, smartlist_id, is_hidden=True):
+        """
+        This method returns candidates against list of Candidate Ids or single Candidate Id
+        :param int|long smartlist_id: Smartlist Id
+        :param bool is_hidden: if True returns all candidates with hidden if False returns unhidden candidates
+        :rtype: Smartlist|list
+        """
         assert isinstance(smartlist_id, (list, long, int)), "Invalid smartlist id type"
+        assert isinstance(is_hidden, bool), "Invalid page number"
         if isinstance(smartlist_id, list):
             if not is_hidden:
                 return cls.query.filter(cls.id.in_(smartlist_id), cls.is_hidden == 0).all()
