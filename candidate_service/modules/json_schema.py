@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 
 MAX_INT = sys.maxint
-CURRENT_YEAR = datetime.now().year
+CURRENT_YEAR = datetime.utcnow().year
 MAX_SOURCE_PRODUCT_ID = 6
 
 candidates_resource_schema_post = {

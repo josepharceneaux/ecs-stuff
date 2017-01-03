@@ -420,7 +420,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
             # Massage 'field_name_to_sql_value' values into the types they are supposed to be
             resume_text = ''
-            logger.info("resume_text_1: {}; data_type: {}".format(resume_text, type(resume_text)))
             for field_name in field_name_to_sql_value.keys():
                 index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
 
@@ -442,9 +441,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
                 if field_name == 'source_id':
                     candidate_source = CandidateSource.query.get(sql_value)
-                    logger.info("candidate_source_description: {}".format(candidate_source.description if candidate_source else ''))
                     resume_text += (' ' + candidate_source.description) if candidate_source else ''
-                    logger.info("resume_text_2: {}".format(resume_text))
 
                 index_field_type = index_field_options['IndexFieldType']
                 if 'array' in index_field_type:
@@ -461,10 +458,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                             resume_text += ' ' + ' '.join(map(lambda value: value.split('|')[1].strip(), sql_value))
                         else:
                             # Temporary loggers for debugging, should remove once GET-2018 is resolved -Amir
-                            logger.info("sql_value: {}".format(sql_value))
-                            logger.info("sql_value_type: {}".format(type(sql_value)))
-                            logger.info("resume_text_value: {}".format(resume_text))
-                            logger.info("resume_text_type: {}".format(type(resume_text)))
                             resume_text += ' ' + ' '.join(sql_value)
                     else:
                         if field_name == 'custom_field_id_and_value':
