@@ -1,4 +1,5 @@
 import math
+import sys
 # import operator
 import os
 import time
@@ -460,6 +461,11 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                         if field_name == 'custom_field_id_and_value':
                             resume_text += ' ' + ' '.join(map(lambda value: value.split('|')[1].strip(), sql_value))
                         else:
+                            # Temporary loggers for debugging, should remove once GET-2018 is resolved -Amir
+                            logger.info("sql_value: {}".format(sql_value))
+                            logger.info("sql_value_type: {}".format(type(sql_value)))
+                            logger.info("resume_text_value: {}".format(resume_text))
+                            logger.info("resume_text_type: {}".format(type(resume_text)))
                             resume_text += ' ' + ' '.join(sql_value)
                     else:
                         if field_name == 'custom_field_id_and_value':
@@ -1085,14 +1091,14 @@ def _cloud_search_fetch_all(params):
     search_service = _cloud_search_domain_connection()
     params['cursor'] = 'initial'  # Initialize cursor
     # remove start, as it is produces error with cursor
-    del params['start']
+    if 'start' in params:
+        del params['start']
     no_more_candidates = False
     total_found = 0
     candidate_ids = []
     error = False
     # If size is more than 10000, cloud_search will give error, so set size to chunk of 10000 candidates and fetch all
-    if params['size'] > CLOUD_SEARCH_MAX_LIMIT:
-        params['size'] = CLOUD_SEARCH_MAX_LIMIT
+    params['size'] = min(params.get('size', sys.maxint), CLOUD_SEARCH_MAX_LIMIT)
     while not no_more_candidates:
         # Get the next batch of candidates
         results = search_service.search(**params)

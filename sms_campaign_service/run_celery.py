@@ -17,8 +17,8 @@ from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 
 try:
-    celery_app.start(argv=CELERY_WORKER_ARGS + [CampaignUtils.SMS])
+    logger.info('Starting celery app for %s' % app.name)
+    celery_app.start(argv=CELERY_WORKER_ARGS + [CampaignUtils.SMS] + ['-n', CampaignUtils.SMS])
 except Exception as e:
     logger.exception("Couldn't start Celery worker for sms_campaign_service in "
                      "%s environment." % (app.config[TalentConfigKeys.ENV_KEY]))
-
