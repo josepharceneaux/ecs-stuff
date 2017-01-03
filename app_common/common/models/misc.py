@@ -76,6 +76,10 @@ class Activity(db.Model):
         CAMPAIGN_EMAIL_OPEN = 16
         CAMPAIGN_EMAIL_CLICK = 17
 
+        CAMPAIGN_EVENT_CLICK = 31
+        CAMPAIGN_EVENT_SEND = 32
+        CAMPAIGN_EVENT_OPEN = 33
+
         # Social Network Service
         RSVP_EVENT = 23
         EVENT_CREATE = 28

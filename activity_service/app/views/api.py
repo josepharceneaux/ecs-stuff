@@ -274,6 +274,18 @@ class TalentActivityManager(object):
             "<b>%(candidate_name)s</b> opened an email from campaign <b>%(campaign_name)s</b>",
             "%(count)s candidates opened an email from campaign <b>%(campaign_name)s</b>",
             "campaign.png"),
+        Activity.MessageIds.CAMPAIGN_EVENT_CLICK: (
+            "<b>%(candidate_name)s</b> clicked on an email from event campaign <b>%(campaign_name)s</b>",
+            "Campaign <b>%(campaign_name)s</b> was clicked %(count)s time(s)",
+            "campaign.png"),
+        Activity.MessageIds.CAMPAIGN_EVENT_SEND: (
+            "<b>%(candidate_name)s</b> received an email from event campaign <b>%(campaign_name)s</b>",
+            "%(count)s candidate(s) received an email from event campaign <b>%(campaign_name)s</b>",
+            "campaign.png"),
+        Activity.MessageIds.CAMPAIGN_EVENT_OPEN: (
+            "<b>%(candidate_name)s</b> opened an email from event campaign <b>%(campaign_name)s</b>",
+            "%(count)s candidates opened an email from event campaign <b>%(campaign_name)s</b>",
+            "campaign.png"),
         Activity.MessageIds.CAMPAIGN_EMAIL_CLICK: (
             "<b>%(candidate_name)s</b> clicked on an email from campaign <b>%(campaign_name)s</b>",
             "Campaign <b>%(campaign_name)s</b> was clicked %(count)s time(s)",

@@ -97,15 +97,10 @@ def create_email_campaign(user_id, oauth_token, name, subject, description, _fro
                                    )
     EmailCampaign.save(email_campaign)
     user = User.get_by_id(user_id)
-    campaign_type = CampaignUtils.get_campaign_type_prefix(email_campaign.__tablename__)
-    if base_campaign_id:
-        base_campaign = BaseCampaign.get_by_id(base_campaign_id)
-        if base_campaign.base_campaign_events:
-            campaign_type = CampaignUtils.get_campaign_type_prefix(Event.__tablename__)
-
     # Create activity in a celery task
     celery_create_activity.delay(user_id, Activity.MessageIds.CAMPAIGN_CREATE, email_campaign,
-                                 dict(id=email_campaign.id, name=name, campaign_type=campaign_type, username=user.name),
+                                 dict(id=email_campaign.id, name=name, campaign_type=_get_campaign_type(email_campaign),
+                                      username=user.name),
                                  'Error occurred while creating activity for email-campaign creation. User(id:%s)'
                                  % user_id)
 
@@ -163,6 +158,21 @@ def create_email_campaign(user_id, oauth_token, name, subject, description, _fro
 
     db.session.commit()
     return {'id': email_campaign.id}
+
+
+def _get_campaign_type(email_campaign):
+    """
+    Here we get the type of campaign for activity creation. Default campaign type is `email campaign`.
+    If given email-campaign object has associated base_campaign_id and linked base-campaign has some event in the
+    chain, then we set the type of campaign to be `event campaign`.
+    :param EmailCampaign email_campaign:
+    """
+    campaign_type = CampaignUtils.get_campaign_type_prefix(email_campaign.__tablename__)
+    if email_campaign.base_campaign_id:
+        base_campaign = BaseCampaign.get_by_id(email_campaign.base_campaign_id)
+        if base_campaign.base_campaign_events:
+            campaign_type = CampaignUtils.get_campaign_type_prefix(Event.__tablename__)
+    return campaign_type
 
 
 def send_email_campaign(current_user, campaign, new_candidates_only=False):
