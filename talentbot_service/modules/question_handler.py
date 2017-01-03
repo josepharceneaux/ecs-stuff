@@ -414,12 +414,14 @@ class QuestionHandler(object):
             plural = '' if talent_pool_number == 1 else 's'
             header = ["There %s %d talent pool%s in your domain `%s`\n" % (is_or_are, talent_pool_number, plural,
                                                                            domain_name)]
-            # response = '%s%s' % (header[0], talent_pool_names[::])
-            response = cls.custom_count_appender(1, talent_pools, "talent pools", header)
             if via_sms:
                 state = [{"class": "TalentPool", "method": "get_talent_pools_in_user_domain",
                          "params": [user_id, 1], "repr": "talent pools"}]
                 redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
+                if talent_pool_number >= 10:
+                    header = ["Top 10 talent pools in your domain `%s` are following:\n"
+                              " Type `next` to view next 10\n" % domain_name]
+            response = cls.custom_count_appender(1, talent_pools, "talent pools", header)
             return response.replace('`None`', '')
         response = "Seems like there is no talent pool in your domain `%s`" % domain_name
         return response.replace('`None`', '')
@@ -560,11 +562,13 @@ class QuestionHandler(object):
         is_asking_for_campaigns_in_pool = not asking_about_specific_pool and not \
             asking_about_all_pools and not asking_about_his_pool
         # Appending suitable response header
-        response = ["All campaigns in your domain are following:"] if (is_asking_for_campaigns_in_pool
+        response = ["Campaigns in your domain are following:"] if (is_asking_for_campaigns_in_pool
                                                                        and asking_about_all_campaigns) else \
             ["Your Campaigns are following:"] if not asking_about_all_campaigns and is_asking_for_campaigns_in_pool\
             else ["Campaigns in all Talent pools"] if asking_about_all_pools else ["Campaigns in your Talent pools"] \
             if asking_about_his_pool else ["Campaigns in your group are following:"] if len(response) == 0 else response
+        if via_sms:
+            response[0] = response[0].title().replace("campaigns", "top 10 campaigns").title()
         domain_id = User.get_domain_id(user_id) if is_asking_for_campaigns_in_pool else None
         # Getting campaigns
         if is_asking_for_campaigns_in_pool:
@@ -586,14 +590,14 @@ class QuestionHandler(object):
 
         if email_campaigns:  # Appending email campaigns in a representable response list
             counter = 0
-            response.append("*Email Campaigns*")
+            response.append("*Top 10 Email Campaigns*" if via_sms else "*Email Campaigns*")
             for index, email_campaign in enumerate(email_campaigns):
                 counter += 1
                 response.append("%d: `%s`" % (index + 1, email_campaign.name))
             if not counter:
                 response.pop()
         if push_campaigns:  # Appending push campaigns in a representable response list
-            response.append("*Push Campaigns*")
+            response.append("*Top 10 Push Campaigns*" if via_sms else "*Push Campaigns*")
             counter = 0
             for index, push_campaign in enumerate(push_campaigns):
                 response.append("%d: `%s`" % (index + 1, push_campaign.name))
@@ -601,7 +605,7 @@ class QuestionHandler(object):
             if not counter:
                 response.pop()
         if sms_campaigns:  # Appending sms campaigns in a representable response list
-            response.append("*SMS Campaigns*")
+            response.append("*Top 10 SMS Campaigns*" if via_sms else "*SMS Campaigns*")
             counter = 0
             for index, sms_campaign in enumerate(sms_campaigns):
                 response.append("%d: `%s`" % (index + 1, sms_campaign.name))
@@ -660,14 +664,16 @@ class QuestionHandler(object):
         :rtype: string
         """
         # Checking whether user's asking about all pipelines or his/her pipelines
+        via_sms = user_client == USER_CLIENTS["SMS"]
         asking_about_all_pipelines = not bool(re.search(r'my pipe*|my all pipe*', ' '.join(message_tokens).lower()))
         response = ["Your pipelines are following:"] if not asking_about_all_pipelines else\
             ["Pipelines in your domain are following:"]
         scope = DOMAIN_SPECIFIC if asking_about_all_pipelines else OWNED
-        if user_client == USER_CLIENTS["SMS"]:  # Saving state for pagination
+        if via_sms:  # Saving state for pagination
             state = [{"class": "TalentPipeline", "method": "get_own_or_domain_pipelines", "params": [user_id, scope, 1],
                      "repr": "pipelines"}]
             redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
+            response[0] = response[0].lower().replace("pipelines", "top 10 pipelines").title()
             pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope, 1)
         else:
             pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope)
