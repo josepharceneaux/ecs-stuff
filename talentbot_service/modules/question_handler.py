@@ -706,49 +706,46 @@ class QuestionHandler(object):
         try:
             resume_url = re.search("(?P<url>((https?)|(ftps?))://[^\s]+)", ' '.join(message_tokens)).group("url")
             resume_url = resume_url.strip('>')
-        except AttributeError:  # If url doesn't start with http:// or https://
-            return NO_RESUME_URL_FOUND_MSG
-        try:
             extension, hostname, resume_size_in_bytes = cls.parse_resume_url(resume_url)
-        except (urllib2.HTTPError, urllib2.URLError):
-            return INVALID_RESUME_URL_MSG
-        # Supported social sites' array
-        supported_social_sites_array = [SUPPORTED_SOCIAL_SITES[GITHUB], SUPPORTED_SOCIAL_SITES[TWITTER],
-                                        SUPPORTED_SOCIAL_SITES[STACK_OVERFLOW]]
-        is_hostname_in_supported_social_sites = hostname in supported_social_sites_array \
+            # Supported social sites' array
+            supported_social_sites_array = [SUPPORTED_SOCIAL_SITES[GITHUB], SUPPORTED_SOCIAL_SITES[TWITTER],
+                                            SUPPORTED_SOCIAL_SITES[STACK_OVERFLOW]]
+            is_hostname_in_supported_social_sites = hostname in supported_social_sites_array \
                                                 or SUPPORTED_SOCIAL_SITES[LINKEDIN] in hostname \
                                                 or SUPPORTED_SOCIAL_SITES[FACEBOOK] in hostname
-        # If it is social profile link it wont have an extension
-        if not extension and is_hostname_in_supported_social_sites:
-            response_message = cls.get_candidate_from_openweb_and_add(user_id, resume_url)
-            if response_message:
-                return response_message
-            else:
-                return "Sorry, I couldn't find information on %s" % resume_url
-        elif int(resume_size_in_bytes) >= TEN_MB:
-            resume_size_in_mbs = float(resume_size_in_bytes)/(1024*1024)
-            return TOO_LARGE_RESUME_MSG % resume_size_in_mbs
-        try:
+            # If it is social profile link it wont have an extension
+            if not extension and is_hostname_in_supported_social_sites:
+                response_message = cls.get_candidate_from_openweb_and_add(user_id, resume_url)
+                if response_message:
+                    return response_message
+                else:
+                    return "Sorry, I couldn't find information on %s" % resume_url
+            elif int(resume_size_in_bytes) >= TEN_MB:
+                resume_size_in_mbs = float(resume_size_in_bytes)/(1024*1024)
+                return TOO_LARGE_RESUME_MSG % resume_size_in_mbs
             '''
             create_bucket() method checks if resume bucket exists on S3 if it does create_bucket() returns bucket
             object if it does not exist create_bucket() creates the bucket with a predefined name (stored in cfg file).
             If some error occurs while creating bucket create_bucket() raises InternalServerError
             '''
             create_bucket()
-        except InternalServerError as error:
-            logger.error(error.message)
-            return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
-        try:
             # saving resume in S3 bucket
             filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id, extension)
             return cls.parse_resume_and_add_candidate(user_id, filepicker_key)
-        except InvalidUsage as error:
-            return error.message
-        except urllib.ContentTooShortError:
-            return "File size too small"
         except Exception as error:
+            if isinstance(error, AttributeError):
+                return NO_RESUME_URL_FOUND_MSG
+            if isinstance(error, (urllib2.HTTPError, urllib2.URLError)):
+                return INVALID_RESUME_URL_MSG
+            if isinstance(error, InternalServerError):
+                logger.error(error.message)
+                return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
+            if isinstance(error, InvalidUsage):
+                return error.message
+            if isinstance(error, urllib.ContentTooShortError):
+                return "File size too small"
             logger.error("Error occurred downloading resume and saving in bucket: %s" % error.message)
-            return SOMETHING_WENT_WRONG
+        return SOMETHING_WENT_WRONG
 
     @classmethod
     @contract
@@ -793,20 +790,19 @@ class QuestionHandler(object):
             {'filepicker_key': filepicker_key, 'talent_pools': [], 'create_candidate': True}))
         try:
             delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
-        except Exception as error:
-            logger.warning("Error occurred while deleting S3 bucket: %s" % error.message)
-        if response.status_code == requests.codes.OK:
-            candidate = response.json()
-            try:
+            if response.status_code == requests.codes.OK:
+                candidate = response.json()
                 first_name = candidate["candidate"]["first_name"]
                 talent_pool_name = TalentPool.get_by_id(candidate["candidate"]["talent_pool_ids"]).name
                 last_name = candidate["candidate"]["last_name"]
-            except KeyError as error:
+                return ("Your candidate `%s %s` has been added to `%s` talent pool"
+                        % (first_name, last_name, talent_pool_name)) \
+                    .replace('None', '').replace(' ` `', '')  # If candidate name does not exists remove the None
+        except Exception as error:
+            if isinstance(error, KeyError):
                 logger.error("Error occurred while getting candidate from RPS: %s" % error.message)
                 return SOMETHING_WENT_WRONG  # Replying user with a response message for KeyError error
-            return ("Your candidate `%s %s` has been added to `%s` talent pool"
-                    % (first_name, last_name, talent_pool_name)) \
-                .replace('None', '').replace(' ` `', '')  # If candidate name does not exists remove the None
+            logger.warning("Error occurred while deleting S3 bucket: %s" % error.message)
         return SOMETHING_WENT_WRONG  # Replying with a response message if response code from RPS is other than OK
 
     @classmethod
