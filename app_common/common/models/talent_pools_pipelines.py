@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from user import Domain, UserGroup, User
 from candidate import Candidate
 from ..error_handling import NotFoundError
-from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE
+from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE, get_paginated_objects
 # 3rd party imports
 from sqlalchemy import or_, and_, extract
 from sqlalchemy.dialects.mysql import TINYINT
@@ -48,11 +48,10 @@ class TalentPool(db.Model):
         :rtype: list
         """
         domain_id = User.get_domain_id(user_id)
+        query_object = cls.query.filter(cls.domain_id == domain_id)
         if page_number is None:
-            return cls.query.filter(cls.domain_id == domain_id).all()
-        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
-        end = page_number * NUMBER_OF_ROWS_PER_PAGE
-        return cls.query.filter(cls.domain_id == domain_id)[start:end]
+            return query_object.all()
+        return get_paginated_objects(query_object, page_number)
 
     @classmethod
     @contract
@@ -224,9 +223,7 @@ class TalentPipeline(db.Model):
             query_object = cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
         if page_number is None:
             return query_object.all()
-        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
-        end = page_number * NUMBER_OF_ROWS_PER_PAGE
-        return query_object[start:end]
+        return get_paginated_objects(query_object, page_number)
 
     @classmethod
     def get_by_user_id_in_desc_order(cls, user_id):
@@ -325,6 +322,4 @@ class TalentPipeline(db.Model):
         query_object = cls.query.join(User).filter(User.user_group_id == user.user_group_id, cls.is_hidden == 0)
         if page_number is None:
             return query_object.all()
-        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
-        end = page_number * NUMBER_OF_ROWS_PER_PAGE
-        return query_object[start:end]
+        return get_paginated_objects(query_object, page_number)

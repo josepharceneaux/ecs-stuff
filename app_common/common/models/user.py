@@ -914,10 +914,10 @@ class TalentbotAuth(db.Model):
         tb_auth = TalentbotAuth.query.filter(getattr(TalentbotAuth, key[0]) == kwargs.get(key[0])).first()
         return tb_auth
 
-    @staticmethod
-    def get_all_user_phone_ids():
+    @classmethod
+    def get_all_user_phone_ids(cls):
         """
         Thi method returns all registered user_phone_ids
         :rtype: list
         """
-        return TalentbotAuth.query.with_entities(TalentbotAuth.user_phone_id).distinct().all()
+        return cls.query.with_entities(cls.user_phone_id).distinct().all()

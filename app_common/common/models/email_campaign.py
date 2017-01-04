@@ -9,7 +9,7 @@ from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
 from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage, NotFoundError)
-from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE
+from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE, get_paginated_objects
 
 from sqlalchemy.dialects.mysql import LONGTEXT
 
@@ -111,9 +111,7 @@ class EmailCampaign(db.Model):
         common_query = cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
         if page_number is None:
             return common_query
-        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
-        end = page_number * NUMBER_OF_ROWS_PER_PAGE
-        return common_query[start:end]
+        return get_paginated_objects(common_query, page_number)
 
     @classmethod
     def search_by_id_in_domain(cls, email_campaign_id, domain_id):
@@ -162,9 +160,7 @@ class EmailCampaign(db.Model):
         query_object = cls.query.filter(cls.user_id == user_id, cls.is_hidden == 0)
         if page_number is None:
             return query_object.all()
-        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
-        end = page_number * NUMBER_OF_ROWS_PER_PAGE
-        return query_object[start:end]
+        return get_paginated_objects(query_object, page_number)
 
     @classmethod
     @contract
@@ -218,9 +214,7 @@ class EmailCampaign(db.Model):
             if scope == OWNED else cls.query.filter(cls.id.in_(email_campaign_ids), cls.is_hidden == 0)
         if page_number is None:
             return scope_dependant_filter.all()
-        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
-        end = page_number * NUMBER_OF_ROWS_PER_PAGE
-        return scope_dependant_filter[start:end]
+        return get_paginated_objects(scope_dependant_filter, page_number)
 
 
 class EmailCampaignSmartlist(db.Model):

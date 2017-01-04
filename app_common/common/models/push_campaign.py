@@ -26,7 +26,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import desc, extract, and_
 from candidate import Candidate
 from ..error_handling import InvalidUsage, NotFoundError
-from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE
+from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE, get_paginated_objects
 
 __author__ = 'Zohaib Ijaz <mzohaib.qc@gmail.com>'
 
@@ -84,9 +84,7 @@ class PushCampaign(db.Model):
         query_object = cls.query.filter_by(user_id=user_id)
         if page_number is None:
             return query_object.all()
-        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
-        end = page_number * NUMBER_OF_ROWS_PER_PAGE
-        return query_object[start:end]
+        return get_paginated_objects(query_object, page_number)
 
     @classmethod
     def get_by_id_and_user_id(cls, _id, user_id):
@@ -128,9 +126,7 @@ class PushCampaign(db.Model):
         query_object = cls.query.join(User).filter(User.domain_id == domain_id)
         if page_number is None:
             return query_object.all()
-        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
-        end = page_number * NUMBER_OF_ROWS_PER_PAGE
-        return query_object[start:end]
+        return get_paginated_objects(query_object, page_number)
 
     @classmethod
     @contract
@@ -168,9 +164,7 @@ class PushCampaign(db.Model):
             if scope == OWNED else cls.query.filter(cls.id.in_(push_campaign_ids))
         if page_number is None:
             return scope_dependant_filter.all()
-        start = (page_number - 1) * NUMBER_OF_ROWS_PER_PAGE
-        end = page_number * NUMBER_OF_ROWS_PER_PAGE
-        return scope_dependant_filter[start:end]
+        return get_paginated_objects(scope_dependant_filter, page_number)
 
 
 class PushCampaignBlast(db.Model):
