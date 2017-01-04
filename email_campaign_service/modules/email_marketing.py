@@ -535,8 +535,11 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
         email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
 
     # Create activity in a celery task
+    activity_message_id = Activity.MessageIds.CAMPAIGN_EMAIL_SEND
+    if _get_campaign_type(campaign) == 'event':
+        activity_message_id = Activity.MessageIds.CAMPAIGN_EVENT_SEND
     celery_create_activity.delay(campaign.user.id,
-                                 Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
+                                 activity_message_id,
                                  email_campaign_send,
                                  dict(campaign_name=campaign.name, candidate_name=candidate.name),
                                  'Could not add `campaign send activity` for email-campaign(id:%s) and User(id:%s)' %
@@ -716,9 +719,14 @@ def update_hit_count(url_conversion):
                         email_campaign_send.candidate_id, email_campaign_send.id)
         else:
             # Create activity in a celery task
+            activity_open_message_id = Activity.MessageIds.CAMPAIGN_EMAIL_OPEN
+            activity_click_message_id = Activity.MessageIds.CAMPAIGN_EMAIL_CLICK
+            if _get_campaign_type(email_campaign_send.email_campaign) == 'event':
+                activity_open_message_id = Activity.MessageIds.CAMPAIGN_EVENT_OPEN
+                activity_click_message_id = Activity.MessageIds.CAMPAIGN_EVENT_CLICK
             celery_create_activity.delay(candidate.user_id,
-                                         Activity.MessageIds.CAMPAIGN_EMAIL_OPEN if is_open
-                                         else Activity.MessageIds.CAMPAIGN_EMAIL_CLICK,
+                                         activity_open_message_id if is_open
+                                         else activity_click_message_id,
                                          email_campaign_send,
                                          dict(candidateId=candidate.id,
                                               campaign_name=email_campaign_send.email_campaign.name,

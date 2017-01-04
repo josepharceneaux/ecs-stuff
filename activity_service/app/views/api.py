@@ -276,7 +276,7 @@ class TalentActivityManager(object):
             "campaign.png"),
         Activity.MessageIds.CAMPAIGN_EVENT_CLICK: (
             "<b>%(candidate_name)s</b> clicked on an email from event campaign <b>%(campaign_name)s</b>",
-            "Campaign <b>%(campaign_name)s</b> was clicked %(count)s time(s)",
+            "Event Campaign <b>%(campaign_name)s</b> was clicked %(count)s time(s)",
             "campaign.png"),
         Activity.MessageIds.CAMPAIGN_EVENT_SEND: (
             "<b>%(candidate_name)s</b> received an email from event campaign <b>%(campaign_name)s</b>",
