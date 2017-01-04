@@ -537,11 +537,6 @@ def parse_candidate_summary(xml_summary_tags):
 
 
 def parse_candidate_linkedin_urls(soup_text):
-    # "social_networks": [
-    #     {
-    #         "name": "Facebook",
-    #         "profile_url": "http://www.facebook.com/1024359318"
-    #     },
     output = []
     URL_PREFIX = 'https://www.'
     # TODO re.I not working as intended
