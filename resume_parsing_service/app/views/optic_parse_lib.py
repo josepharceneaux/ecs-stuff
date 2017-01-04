@@ -540,6 +540,7 @@ def parse_candidate_linkedin_urls(soup_text):
     output = []
     URL_PREFIX = 'https://www.'
     # TODO re.I not working as intended
+    # RegEx for getting text in format: linkedin.com/in/<usernameSlug>
     LINKEDIN_REGEX = re.compile('linkedin.com/in/+(?:[A-Z][A-Z0-9_]*)', re.I)
 
     profile_urls = LINKEDIN_REGEX.findall(soup_text)
