@@ -318,7 +318,7 @@ def gen_base_exp_from_exp_tag(experience_xml):
     organization = _tag_text(experience_xml, 'employer')
     # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
     if organization and len(organization) > 5:
-        organization = string.capwords(organization)
+        organization = trunc_text(string.capwords(organization), 100)
     title = _tag_text(experience_xml, 'title')
     # Truncate the tag text based on the candidate JSON schema
     # GET-1829
