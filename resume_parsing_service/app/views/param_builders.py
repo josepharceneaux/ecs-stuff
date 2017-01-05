@@ -24,17 +24,19 @@ def build_params_from_json(request):
                                               custom_error_code=error_constants.JSON_SCHEMA_ERROR['code'])
     logger.info('Beginning parsing with JSON params: {}'.format(request_json))
 
-    filepicker_key = request_json['filepicker_key']
     create_candidate = request_json.get('create_candidate', False)
-    resume_file_name = request_json.get('resume_file_name', filepicker_key)
-    talent_pool_ids = request_json.get('talent_pool_ids')
+    filepicker_key = request_json['filepicker_key']
     resume_file = None
+    resume_file_name = request_json.get('resume_file_name', filepicker_key)
+    source_id = request_json.get('source_id')
+    talent_pool_ids = request_json.get('talent_pool_ids')
 
     return {
         'create_candidate': create_candidate,
         'filename': resume_file_name,
         'filepicker_key': filepicker_key,
         'resume_file': resume_file,
+        'source_id': source_id,
         'talent_pools': talent_pool_ids
     }
 
