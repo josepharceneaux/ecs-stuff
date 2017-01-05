@@ -19,6 +19,7 @@ from ...redis_cache import redis_store2
 from ...tests.app import test_app, logger
 from ...constants import (MEETUP, EVENTBRITE)
 from ...models.candidate import SocialNetwork
+from ...models.email_campaign import EmailCampaign
 from ..tests_helpers import CampaignsTestsHelpers
 from ...utils.handy_functions import send_request
 from ...models.event_organizer import EventOrganizer
@@ -27,7 +28,7 @@ from ...models.user import UserSocialNetworkCredential
 from ...utils.test_utils import add_social_network_credentials, add_test_venue
 from ...routes import (SocialNetworkApiUrl, EmailCampaignApiUrl)
 from ..tests.modules.helper_functions import (EVENT_DATA, create_email_campaign_with_base_id,
-                                              create_an_rsvp_in_database)
+                                              create_an_rsvp_in_database, send_campaign_with_client_id)
 from ...tests.api_conftest import (user_first, token_first, talent_pool_session_scope, smartlist_first, talent_pool,
                                    candidate_first, talent_pipeline, user_same_domain, token_same_domain, user_second,
                                    token_second, test_data, headers, headers_other, headers_same_domain,
@@ -578,3 +579,31 @@ def event_in_db_second(request):
     e.g. In case of Eventbrite, it will return fixture named as "eventbrite_event_second"
     """
     return deepcopy(request.getfuncargvalue("{}_event_second".format(request.param.lower())))
+
+
+@pytest.fixture(scope="function", params=VENDORS)
+def event_campaign_with_client_id(token_first, email_campaign_with_base_id, event_in_db_second):
+
+    email_campaign = EmailCampaign.get(email_campaign_with_base_id['id'])
+    response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT %
+                            (email_campaign.base_campaign_id, event_in_db_second['id']),
+                            token_first)
+    assert response.status_code == codes.CREATED, response.text
+    assert response.json()['id']
+    return send_campaign_with_client_id(email_campaign, token_first, email_campaign.base_campaign_id)
+
+
+@pytest.fixture(scope="function", params=VENDORS)
+def event_campaign(token_first, email_campaign_with_base_id, event_in_db_second):
+
+    email_campaign = EmailCampaign.get(email_campaign_with_base_id['id'])
+    response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT %
+                            (email_campaign.base_campaign_id, event_in_db_second['id']),
+                            token_first)
+    assert response.status_code == codes.CREATED, response.text
+    assert response.json()['id']
+    response = send_request('post', EmailCampaignApiUrl.SEND % email_campaign.id, token_first)
+    assert response.status_code == codes.OK, response.text
+    db.session.commit()
+    return email_campaign
+

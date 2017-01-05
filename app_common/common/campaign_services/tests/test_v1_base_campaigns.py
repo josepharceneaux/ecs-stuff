@@ -5,7 +5,10 @@ Here we have tests for API
     - /v1/base-campaigns
     - /v1/base-campaigns/:base-campaign_id/link-event/:event_id
 """
+# Standard Imports
+import re
 # Packages
+
 import requests
 from requests import codes
 
@@ -17,6 +20,8 @@ from ...routes import EmailCampaignApiUrl, SocialNetworkApiUrl
 from ...constants import HttpMethods
 from ..tests_helpers import CampaignsTestsHelpers, send_request
 from ...models.base_campaign import (BaseCampaign, BaseCampaignEvent)
+from ...models.email_campaign import EmailCampaignBlast, EmailCampaignSend
+from ...models.misc import UrlConversion, Activity
 from modules.helper_functions import (get_email_campaign_data, assert_email_campaign_overview,
                                       assert_event_overview, auth_header)
 
@@ -291,3 +296,50 @@ class TestDeleteEventWithCampaign(object):
         event_response = requests.get(SocialNetworkApiUrl.EVENT % event_in_db_second['id'], headers=auth_header(token_first))
         event_content = event_response.json()
         assert event_content['event']['is_deleted_from_vendor'] and event_content['event']['is_hidden']
+
+
+class TestEventCampaignActivity(object):
+    """
+    Here are the tests for activity of event campaign
+    """
+
+    def test_event_campaign_with_client_id(self, event_campaign_with_client_id):
+        response = event_campaign_with_client_id['response']
+        campaign = event_campaign_with_client_id['campaign']
+        json_response = response.json()
+        email_campaign_sends = json_response['email_campaign_sends'][0]
+        new_html = email_campaign_sends['new_html']
+        redirect_url = re.findall('"([^"]*)"', new_html)  # get the redirect URL from html
+        assert len(redirect_url) > 0
+        redirect_url = redirect_url[0]
+
+        # get the url conversion id from the redirect url
+        url_conversion_id = re.findall('[\n\r]*redirect\/\s*([^?\n\r]*)', redirect_url)
+        assert len(url_conversion_id) > 0
+        url_conversion_id = int(url_conversion_id[0])
+        db.session.commit()
+        url_conversion = UrlConversion.get(url_conversion_id)
+        assert url_conversion
+        email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
+        assert email_campaign_blast
+        opens_count_before = email_campaign_blast.opens
+        hit_count_before = url_conversion.hit_count
+        response = requests.get(redirect_url)
+        assert response.status_code == requests.codes.OK
+        db.session.commit()
+        opens_count_after = email_campaign_blast.opens
+        hit_count_after = url_conversion.hit_count
+        assert opens_count_after == opens_count_before + 1
+        assert hit_count_after == hit_count_before + 1
+        campaign_send = EmailCampaignSend.query.filter(EmailCampaignSend.campaign_id==campaign.id).order_by('-id').first()
+        activity = Activity.query.filter(Activity.source_table == EmailCampaignSend.__tablename__ and
+                                         Activity.source_id == campaign_send.id).order_by('-id').first()
+        assert activity.type == Activity.MessageIds.CAMPAIGN_EVENT_OPEN
+        UrlConversion.delete(url_conversion)
+
+    def test_activity_send_event_campaign(self, event_campaign):
+        campaign_send = EmailCampaignSend.query.filter(EmailCampaignSend.campaign_id ==
+                                                       event_campaign.id).order_by('-id').first()
+        activity = Activity.query.filter(Activity.source_table == EmailCampaignSend.__tablename__ and
+                                         Activity.source_id == campaign_send.id).order_by('-id').first()
+        assert activity.type == Activity.MessageIds.CAMPAIGN_EVENT_SEND

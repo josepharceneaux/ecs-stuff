@@ -3,6 +3,9 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
 Here we have helper functions to be used in tests
 """
+# Standard Imports
+import re
+
 # Packages
 from requests import codes
 from datetime import datetime, timedelta
@@ -14,6 +17,8 @@ from ....tests.sample_data import fake
 from ....utils.test_utils import send_request
 from ....utils.datetime_utils import DatetimeUtils
 from ....routes import (EmailCampaignApiUrl, SocialNetworkApiUrl)
+from ...tests_helpers import CampaignsTestsHelpers
+from ....models.email_campaign import EmailClient
 
 __author__ = 'basit'
 
@@ -137,3 +142,27 @@ def auth_header(token):
     :return:dictionary containing bearer token
     """
     return dict(Authorization='Bearer %s' % token)
+
+
+def send_campaign_with_client_id(email_campaign, access_token, base_campaign_id=0):
+    """
+    This make given campaign a client-campaign, sends it and asserts valid response.
+    """
+    email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
+    if base_campaign_id:
+        email_campaign.update(base_campaign_id=base_campaign_id)
+    response = CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND, email_campaign, access_token)
+    json_response = response.json()
+    assert 'email_campaign_sends' in json_response
+    email_campaign_sends = json_response['email_campaign_sends'][0]
+    assert 'new_html' in email_campaign_sends
+    new_html = email_campaign_sends['new_html']
+    matched = re.search(r'&\w+;', new_html)  # check the new_html for escaped HTML characters using regex
+    assert not matched  # Fail if HTML escaped characters found, as they render the URL useless
+    assert 'new_text' in email_campaign_sends  # Check if there is email text which candidate would see in email
+    assert 'email_campaign_id' in email_campaign_sends  # Check if there is email campaign id in response
+    assert email_campaign.id == email_campaign_sends['email_campaign_id']  # Check if both IDs are same
+    return_value = dict()
+    return_value['response'] = response
+    return_value['campaign'] = email_campaign
+    return return_value
