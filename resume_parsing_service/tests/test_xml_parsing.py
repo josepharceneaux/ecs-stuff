@@ -21,15 +21,16 @@ from .resume_xml import SQUARE_BULLETS
 from .resume_xml import REFERENCE_XML
 # Modules being tested.
 from resume_parsing_service.app import app
+from resume_parsing_service.app.views.optic_parse_lib import is_experience_already_exists
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_addresses
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_educations
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_emails
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_experiences
+from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_linkedin_urls
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_name
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_phones
-from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_reference
-from resume_parsing_service.app.views.optic_parse_lib import is_experience_already_exists
+from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
 from resume_parsing_service.app.views.optic_parse_lib import trunc_text
 from resume_parsing_service.app.views.utils import extra_skills_parsing
 # JSON Schemas
@@ -937,3 +938,9 @@ def test_text_is_truncd():
     European and global affairs for more than a decade while leading France against a series of
     coalitions in the Napoleonic Wars."""
     assert(len(trunc_text(title, 100)) is 100)
+
+
+def test_linkedin_urls_captured():
+    group1 = 'https://www.linkedin.com/in/bSmith I am just an old chap with a http://www.linkedin.com/in/afadasdf profile link www.linkedin.com/in/potatos'
+    urls = parse_candidate_linkedin_urls(group1)
+    assert(len(urls) is 3)
