@@ -529,10 +529,14 @@ def fetch_resume_fp_key_response(token_fixture, fp_key, create_mode=False):
                                           token_fixture.access_token),
                                       'Content-Type': 'application/json'
                                   },
-                                  data=json.dumps({'filepicker_key': fp_key,
-                                                   # 'Local Test Upload' prefix.
-                                                   'resume_file_name': 'LTU_{}'.format(fp_key),
-                                                   'create_candidate': create_mode})
+                                  data=json.dumps(
+                                      {'filepicker_key': fp_key,
+                                       # 'Local Test Upload' prefix.
+                                       'resume_file_name': 'LTU_{}'.format(fp_key),
+                                       'create_candidate': create_mode,
+                                       'source_id': 2
+                                      }
+                                  )
                                  )
     content = json.loads(test_response.content)
     status_code = test_response.status_code
