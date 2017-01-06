@@ -474,7 +474,6 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
                                                     blast_params=blast_params,
                                                     email_campaign_blast_id=email_campaign_blast_id,
                                                     blast_datetime=blast_datetime)
-    logger.info('send_campaign_emails_to_candidate: Candidate id:%s ' % candidate_id)
     # Only in case of production we should send mails to candidate address else mails will
     # go to test account. To avoid spamming actual email addresses, while testing.
     if not CampaignUtils.IS_DEV:
@@ -488,7 +487,8 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
             to_address = campaign.user.email
         else:
             to_address = app.config[TalentConfigKeys.GT_GMAIL_ID]
-
+    logger.info("sending email-campaign(id:%s) to candidate(id:%s)'s email_address:%s"
+                % (campaign_id, candidate_id, to_address))
     email_client_credentials_id = campaign.email_client_credentials_id
     if email_client_credentials_id:  # In case user wants to send email-campaign via added SMTP server.
         try:
@@ -523,13 +523,14 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
 
         username = getpass.getuser()
         # Save SES message ID & request ID
-        logger.info('''Marketing email sent successfully.
+        logger.info('''Marketing email(id:%s) sent successfully.
                        Recipients    : %s,
                        UserId        : %s,
                        System User Name: %s,
                        Environment   : %s,
                        Email Response: %s
-                    ''', to_address, user_id, username, app.config[TalentConfigKeys.ENV_KEY], email_response)
+                    ''', campaign_id, to_address, user_id, username, app.config[TalentConfigKeys.ENV_KEY],
+                    email_response)
         request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
         message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
         email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
@@ -576,7 +577,6 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
     raise_if_not_instance_of(blast_datetime, datetime)
 
     with app.app_context():
-        logger.info('sending campaign to candidate(id:%s).' % candidate_id)
         try:
             result_sent = send_campaign_emails_to_candidate(
                 user_id=user_id,
@@ -666,14 +666,16 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candi
     #             for campaign_field_name, campaign_field_value in campaign_fields.items():
     #                 campaign[campaign_field_name] = campaign_field_value
     new_html, new_text = campaign.body_html or "", campaign.body_text or ""
-    logger.info('get_new_text_html_subject_and_campaign_send: candidate_id: %s' % candidate.id)
+    logger.info('get_new_text_html_subject_and_campaign_send: campaign_id:%s, candidate_id: %s'
+                % (campaign_id, candidate.id))
 
     # Perform MERGETAG replacements
     [new_html, new_text, subject] = do_mergetag_replacements([new_html, new_text, campaign.subject],
                                                              current_user, requested_object=candidate,
                                                              candidate_address=candidate_address)
     # Perform URL conversions and add in the custom HTML
-    logger.info('get_new_text_html_subject_and_campaign_send: email_campaign_send_id: %s' % email_campaign_send.id)
+    logger.info('get_new_text_html_subject_and_campaign_send: campaign_id:%s, email_campaign_send_id: %s'
+                % (campaign_id, email_campaign_send.id))
     new_text, new_html = create_email_campaign_url_conversions(new_html=new_html,
                                                                new_text=new_text,
                                                                is_track_text_clicks=campaign.is_track_text_clicks,

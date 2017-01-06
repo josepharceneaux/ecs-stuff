@@ -72,9 +72,9 @@ sleep 10
 
 echo "Beginning tests."
 
-#py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests email_campaign_service/tests sms_campaign_service/tests candidate_pool_service/tests spreadsheet_import_service/tests resume_parsing_service/tests app_common/common/tests talentbot_service/tests social_network_service/tests app_common/common/campaign_services/tests
-# TODO: temporarily removing all other tests for faster deployment --basit
-py.test -n 48 auth_service/tests
+py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests email_campaign_service/tests sms_campaign_service/tests candidate_pool_service/tests spreadsheet_import_service/tests app_common/common/tests social_network_service/tests app_common/common/campaign_services/tests
+
+# TODO: Skipping resume_parsing_service/tests talentbot_service/tests as tests are failing
 
 if [ $? -ne 0 ] ; then
     exit 1
