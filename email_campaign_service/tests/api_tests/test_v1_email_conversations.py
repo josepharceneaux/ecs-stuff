@@ -39,10 +39,9 @@ class TestEmailConversations(object):
         # This will run the importer for email-conversations
         response_post = requests.post(self.URL, headers=headers_for_importer)
         assert response_post.status_code == codes.OK
-        # TODO: use new account for jenkins to send email-campaigns to. (GET-2043)
-        # retry(_get_email_conversations, sleeptime=5, attempts=120, sleepscale=1,
-        #       args=(self.URL, headers, subject, body, email_client_credentials, candidate_first, user_first),
-        #       retry_exceptions=(AssertionError,))
+        retry(_get_email_conversations, sleeptime=5, attempts=120, sleepscale=1,
+              args=(self.URL, headers, subject, body, email_client_credentials, candidate_first, user_first),
+              retry_exceptions=(AssertionError,))
 
 
 def _get_email_conversations(url, headers, subject, body, email_client_credentials, candidate, user):
