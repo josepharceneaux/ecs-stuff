@@ -36,10 +36,10 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   get_campaign_or_campaigns,
                                                                   assert_talent_pipeline_response,
                                                                   create_email_campaign,
-                                                                  create_email_campaign_via_api,
                                                                   EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS,
-                                                                  create_data_for_campaign_creation,
                                                                   create_data_for_campaign_creation_with_all_parameters)
+from app_common.common.campaign_services.tests_helpers import create_email_campaign_via_api, \
+    create_data_for_campaign_creation
 
 
 class TestGetCampaigns(object):

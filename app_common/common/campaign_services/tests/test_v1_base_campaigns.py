@@ -334,6 +334,9 @@ class TestEventCampaignActivity(object):
     """
 
     def test_event_campaign_with_client_id(self, event_campaign_with_client_id):
+        """
+        This gets an event campaign with client id, tests its open activity.
+        """
         response = event_campaign_with_client_id['response']
         campaign = event_campaign_with_client_id['campaign']
         json_response = response.json()
@@ -361,15 +364,17 @@ class TestEventCampaignActivity(object):
         hit_count_after = url_conversion.hit_count
         assert opens_count_after == opens_count_before + 1
         assert hit_count_after == hit_count_before + 1
-        campaign_send = EmailCampaignSend.query.filter(EmailCampaignSend.campaign_id==campaign.id).order_by('-id').first()
-        activity = Activity.query.filter(Activity.source_table == EmailCampaignSend.__tablename__ and
-                                         Activity.source_id == campaign_send.id).order_by('-id').first()
-        assert activity.type == Activity.MessageIds.CAMPAIGN_EVENT_OPEN
+        campaign_send = EmailCampaignSend.query.filter(EmailCampaignSend.campaign_id == campaign.id).order_by('-id').first()
+        CampaignsTestsHelpers.assert_for_activity(campaign.user_id, Activity.MessageIds.CAMPAIGN_EVENT_OPEN,
+                                                  campaign_send.id)
         UrlConversion.delete(url_conversion)
 
     def test_activity_send_event_campaign(self, event_campaign):
+        """
+        This gets an event campaign, tests its send activity.
+        """
+        CampaignsTestsHelpers.assert_blast_sends(event_campaign, 1)
         campaign_send = EmailCampaignSend.query.filter(EmailCampaignSend.campaign_id ==
                                                        event_campaign.id).order_by('-id').first()
-        activity = Activity.query.filter(Activity.source_table == EmailCampaignSend.__tablename__ and
-                                         Activity.source_id == campaign_send.id).order_by('-id').first()
-        assert activity.type == Activity.MessageIds.CAMPAIGN_EVENT_SEND
+        CampaignsTestsHelpers.assert_for_activity(event_campaign.user_id, Activity.MessageIds.CAMPAIGN_EVENT_SEND,
+                                                  campaign_send.id)

@@ -19,8 +19,9 @@ from ...redis_cache import redis_store2
 from ...tests.app import test_app, logger
 from ...constants import (MEETUP, EVENTBRITE)
 from ...models.candidate import SocialNetwork
+from ...models.talent_pools_pipelines import TalentPipeline
 from ...models.email_campaign import EmailCampaign
-from ..tests_helpers import CampaignsTestsHelpers
+from ..tests_helpers import CampaignsTestsHelpers, create_scheduled_email_campaign_data, create_email_campaign_via_api
 from ...utils.handy_functions import send_request
 from ...models.event_organizer import EventOrganizer
 from ...talent_config_manager import TalentConfigKeys
@@ -581,10 +582,44 @@ def event_in_db_second(request):
     return deepcopy(request.getfuncargvalue("{}_event_second".format(request.param.lower())))
 
 
-@pytest.fixture(scope="function", params=VENDORS)
-def event_campaign_with_client_id(token_first, email_campaign_with_base_id, event_in_db_second):
+@pytest.fixture()
+def scheduled_campaign(token_first, talent_pipeline):
+    """
+    This returns campaign id which was scheduled to be sent after some time.
+    """
+    talent_pipeline = TalentPipeline.get(talent_pipeline.id)
+    campaign_data = create_scheduled_email_campaign_data(token_first, talent_pipeline)
+    response = create_email_campaign_via_api(token_first, campaign_data)
+    assert response.status_code == codes.CREATED
+    resp_object = response.json()
+    assert 'campaign' in resp_object
+    assert resp_object['campaign']['id']
+    return {'id': resp_object['campaign']['id']}
 
-    email_campaign = EmailCampaign.get(email_campaign_with_base_id['id'])
+
+@pytest.fixture()
+def scheduled_email_campaign_with_base_id(base_campaign, token_first, talent_pipeline):
+    """
+    This returns campaign id which was scheduled and linked with base campaign to be sent after some time.
+    """
+    db.session.commit()
+    talent_pipeline = TalentPipeline.get(talent_pipeline['id'])
+    campaign_data = create_scheduled_email_campaign_data(token_first, talent_pipeline)
+    campaign_data['base_campaign_id'] = base_campaign['id']
+    response = create_email_campaign_via_api(token_first, campaign_data)
+    assert response.status_code == codes.CREATED
+    resp_object = response.json()
+    assert 'campaign' in resp_object
+    assert resp_object['campaign']['id']
+    return {'id': resp_object['campaign']['id']}
+
+
+@pytest.fixture(scope="function", params=VENDORS)
+def event_campaign_with_client_id(token_first, scheduled_email_campaign_with_base_id, event_in_db_second):
+    """
+    This returns scheduled event campaign with client id
+    """
+    email_campaign = EmailCampaign.get(scheduled_email_campaign_with_base_id['id'])
     response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT %
                             (email_campaign.base_campaign_id, event_in_db_second['id']),
                             token_first)
@@ -594,9 +629,11 @@ def event_campaign_with_client_id(token_first, email_campaign_with_base_id, even
 
 
 @pytest.fixture(scope="function", params=VENDORS)
-def event_campaign(token_first, email_campaign_with_base_id, event_in_db_second):
-
-    email_campaign = EmailCampaign.get(email_campaign_with_base_id['id'])
+def event_campaign(token_first, scheduled_email_campaign_with_base_id, event_in_db_second):
+    """
+    This returns scheduled event campaign
+    """
+    email_campaign = EmailCampaign.get(scheduled_email_campaign_with_base_id['id'])
     response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT %
                             (email_campaign.base_campaign_id, event_in_db_second['id']),
                             token_first)
@@ -606,4 +643,6 @@ def event_campaign(token_first, email_campaign_with_base_id, event_in_db_second)
     assert response.status_code == codes.OK, response.text
     db.session.commit()
     return email_campaign
+
+
 

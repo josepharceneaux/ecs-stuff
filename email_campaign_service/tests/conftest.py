@@ -22,6 +22,7 @@ from email_campaign_service.modules.utils import do_mergetag_replacements
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
+from email_campaign_service.common.campaign_services.tests.conftest import scheduled_campaign
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
                                                                  EmailTemplateFolder, EmailCampaign,
@@ -34,11 +35,11 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   add_email_template,
                                                                   get_template_folder, assert_valid_template_folder,
                                                                   EmailCampaignTypes, data_for_creating_email_clients,
-                                                                  create_data_for_campaign_creation,
-                                                                  create_email_campaign_via_api,
+
                                                                   send_campaign_with_client_id,
-                                                                  create_email_campaign_with_merge_tags,
-                                                                  create_scheduled_email_campaign_data)
+                                                                  create_email_campaign_with_merge_tags)
+from app_common.common.campaign_services.tests_helpers import create_email_campaign_via_api, \
+    create_scheduled_email_campaign_data, create_data_for_campaign_creation
 
 __author__ = 'basit'
 
@@ -95,20 +96,6 @@ def campaign_with_two_candidates(email_campaign_of_user_first, access_token_firs
     campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline, email_campaign_of_user_first,
                                                count=2)
     return campaign
-
-
-@pytest.fixture()
-def scheduled_campaign(access_token_first, talent_pipeline):
-    """
-    This returns campaign id which was scheduled to be sent after some time.
-    """
-    campaign_data = create_scheduled_email_campaign_data(access_token_first, talent_pipeline)
-    response = create_email_campaign_via_api(access_token_first, campaign_data)
-    assert response.status_code == codes.CREATED
-    resp_object = response.json()
-    assert 'campaign' in resp_object
-    assert resp_object['campaign']['id']
-    return {'id': resp_object['campaign']['id']}
 
 
 @pytest.fixture()

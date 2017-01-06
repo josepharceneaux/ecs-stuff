@@ -170,7 +170,7 @@ def _get_campaign_type(email_campaign):
     campaign_type = CampaignUtils.get_campaign_type_prefix(email_campaign.__tablename__)
     if email_campaign.base_campaign_id:
         base_campaign = BaseCampaign.get_by_id(email_campaign.base_campaign_id)
-        if base_campaign.base_campaign_events:
+        if len(base_campaign.base_campaign_event):
             campaign_type = CampaignUtils.get_campaign_type_prefix(Event.__tablename__)
     return campaign_type
 
