@@ -527,7 +527,7 @@ def parse_candidate_reference(xml_references_list):
 def parse_candidate_summary(xml_summary_tags):
     """
     :param bs4_ResultSet xml_summary_tags:
-    :rtype: string | None
+    :rtype: string
     """
     # GET-1903. If there is more than one summary tag use the first one.
     if xml_summary_tags:
