@@ -619,6 +619,7 @@ def event_campaign_with_client_id(token_first, scheduled_email_campaign_with_bas
     """
     This returns scheduled event campaign with client id
     """
+    db.session.commit()
     email_campaign = EmailCampaign.get(scheduled_email_campaign_with_base_id['id'])
     response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT %
                             (email_campaign.base_campaign_id, event_in_db_second['id']),
@@ -633,6 +634,7 @@ def event_campaign(token_first, scheduled_email_campaign_with_base_id, event_in_
     """
     This returns scheduled event campaign
     """
+    db.session.commit()
     email_campaign = EmailCampaign.get(scheduled_email_campaign_with_base_id['id'])
     response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT %
                             (email_campaign.base_campaign_id, event_in_db_second['id']),

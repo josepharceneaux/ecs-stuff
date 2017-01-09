@@ -17,13 +17,13 @@ import requests
 from email_campaign_service.common.models.db import db
 from email_campaign_service.tests.conftest import fake
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.common.models.misc import UrlConversion
+from email_campaign_service.common.models.misc import UrlConversion, Activity
 from email_campaign_service.common.models.candidate import Candidate
 from email_campaign_service.modules.utils import do_mergetag_replacements
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
-                                                                 EmailCampaignSmartlist)
+                                                                 EmailCampaignSmartlist, EmailCampaignSend)
 from email_campaign_service.tests.modules.handy_functions import (assert_campaign_send,
                                                                   create_email_campaign_smartlists,
                                                                   send_campaign_with_client_id)
@@ -355,3 +355,65 @@ class TestSendCampaign(object):
         campaign = campaign_with_archived_candidate
         response = requests.post(self.URL % campaign['id'], headers=headers)
         assert_campaign_send(response, campaign, user_first)
+
+    def test_email_campaign_open_activity(self, access_token_first, send_email_campaign_by_client_id_response):
+        """
+        This gets an email campaign with client id, tests its open activity.
+        :param access_token_first: Access token of user first
+        :param send_email_campaign_by_client_id_response: sent email campaign object by client id
+        """
+        response = send_email_campaign_by_client_id_response['response']
+        campaign = send_email_campaign_by_client_id_response['campaign']
+        json_response = response.json()
+        email_campaign_sends = json_response['email_campaign_sends'][0]
+        new_html = email_campaign_sends['new_html']
+        redirect_url = re.findall('"([^"]*)"', new_html)  # get the redirect URL from html
+        assert len(redirect_url) > 0
+        redirect_url = redirect_url[0]
+
+        # get the url conversion id from the redirect url
+        url_conversion_id = re.findall('[\n\r]*redirect\/\s*([^?\n\r]*)', redirect_url)
+        assert len(url_conversion_id) > 0
+        url_conversion_id = int(url_conversion_id[0])
+        db.session.commit()
+        url_conversion = UrlConversion.get(url_conversion_id)
+        assert url_conversion
+        email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
+        assert email_campaign_blast
+        opens_count_before = email_campaign_blast.opens
+        hit_count_before = url_conversion.hit_count
+        response = requests.get(redirect_url)
+        assert response.status_code == requests.codes.OK
+        db.session.commit()
+        opens_count_after = email_campaign_blast.opens
+        hit_count_after = url_conversion.hit_count
+        assert opens_count_after == opens_count_before + 1
+        assert hit_count_after == hit_count_before + 1
+        CampaignsTestsHelpers.assert_blast_sends(campaign, 2)
+        campaign_send = requests.get(EmailCampaignApiUrl.SENDS % campaign.id,
+                                     headers=dict(Authorization='Bearer %s' % access_token_first))
+        campaign_send = campaign_send.json()
+        CampaignsTestsHelpers.assert_for_activity(campaign.user_id, Activity.MessageIds.CAMPAIGN_EMAIL_OPEN,
+                                                  campaign_send['sends'][0]['id'])
+        UrlConversion.delete(url_conversion)
+
+    def test_activity_send_email_campaign(self, access_token_first, sent_campaign):
+        """
+        This gets a sent email campaign object with client id and without client id and test
+        :param access_token_first: access token of user first
+        :param sent_campaign: Object of sent campaign
+        """
+        expected_sends = 2
+        expected_blasts = 1
+        CampaignsTestsHelpers.assert_campaign_blasts(sent_campaign, expected_blasts, access_token=access_token_first,
+                                                     timeout=100)
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_sends)
+        response = requests.get(EmailCampaignApiUrl.SENDS % sent_campaign.id,
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        json_resp = response.json()['sends'][0]
+        assert json_resp['campaign_id'] == sent_campaign.id
+        assert json_resp['candidate_id'] == sent_campaign.sends[0].candidate_id
+        if not sent_campaign.email_client_id:
+            CampaignsTestsHelpers.assert_for_activity(sent_campaign.user_id, Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
+                                                      sent_campaign.sends[0].id)
+
