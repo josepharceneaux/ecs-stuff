@@ -21,7 +21,7 @@ from ...constants import (MEETUP, EVENTBRITE)
 from ...models.candidate import SocialNetwork
 from ...models.talent_pools_pipelines import TalentPipeline
 from ...models.email_campaign import EmailCampaign
-from ..tests_helpers import CampaignsTestsHelpers, create_scheduled_email_campaign_data, create_email_campaign_via_api
+from ..tests.modules.email_campaign_helper_functions import CampaignsTestsHelpers, create_scheduled_email_campaign_data, create_email_campaign_via_api
 from ...utils.handy_functions import send_request
 from ...models.event_organizer import EventOrganizer
 from ...talent_config_manager import TalentConfigKeys

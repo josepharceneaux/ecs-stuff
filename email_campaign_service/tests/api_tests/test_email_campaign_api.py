@@ -22,6 +22,7 @@ from requests import codes
 # Application Specific
 from email_campaign_service.tests.conftest import fake
 from email_campaign_service.common.models.misc import Frequency
+from email_campaign_service.common.tests.conftest import talent_pipeline
 from email_campaign_service.common.models.email_campaign import EmailClient
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.tests.modules.__init__ import CAMPAIGN_OPTIONAL_FIELDS
@@ -38,7 +39,7 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   create_email_campaign,
                                                                   EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS,
                                                                   create_data_for_campaign_creation_with_all_parameters)
-from app_common.common.campaign_services.tests_helpers import create_email_campaign_via_api, \
+from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import create_email_campaign_via_api, \
     create_data_for_campaign_creation
 
 

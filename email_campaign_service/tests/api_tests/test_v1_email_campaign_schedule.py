@@ -12,7 +12,7 @@ from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.tests.fake_testing_data_generator import fake
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from app_common.common.campaign_services.tests_helpers import create_email_campaign_via_api, \
+from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import create_email_campaign_via_api, \
     create_data_for_campaign_creation
 
 __author__ = 'basit'
