@@ -74,7 +74,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
         total_pages = response_body['max_pages']
         candidates.extend(response_body['candidates'])
 
-        if total_pages == page_no:
+        if total_pages >= page_no:
             cursor = response_body['cursor']
         else:
             has_more_candidates = False
