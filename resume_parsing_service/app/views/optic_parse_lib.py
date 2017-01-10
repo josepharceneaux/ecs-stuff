@@ -527,13 +527,13 @@ def parse_candidate_reference(xml_references_list):
 def parse_candidate_summary(xml_summary_tags):
     """
     :param bs4_ResultSet xml_summary_tags:
-    :rtype: string | None
+    :rtype: string
     """
-    summary = ''
-    for summary_tag in xml_summary_tags:
-        summary += summary_tag.text.strip()
-
-    return summary
+    # GET-1903. If there is more than one summary tag use the first one.
+    if xml_summary_tags:
+        return xml_summary_tags[0].text.strip()
+    else:
+        return ''
 
 
 def parse_candidate_linkedin_urls(soup_text):
