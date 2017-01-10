@@ -13,6 +13,7 @@ import time
 import datetime
 
 # 3rd party imports
+import pytest
 import requests
 from redo import retry
 from celery.result import AsyncResult
@@ -26,7 +27,8 @@ from social_network_service.common.models.user import UserSocialNetworkCredentia
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
-from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS, EVENT, MEETUP_EVENT_STREAM_API_URL)
+from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS, EVENT, MEETUP_EVENT_STREAM_API_URL,
+                                                      ROOT_DIR, TEST_DIR)
 from social_network_service.modules.event.meetup import Meetup
 from social_network_service.modules.rsvp.meetup import Meetup as MeetupRsvp
 from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
@@ -363,3 +365,15 @@ def import_meetup_events():
                 logger.warning('Out of main loop. Cause: %s' % e)
                 time.sleep(5)
                 rollback()
+
+
+@celery.task(name="run_tests")
+def run_tests(args, file_path):
+    """
+    This task takes list of args which are actually list of test modules, functions or some search criteria based on
+    which pytest will run tests.
+    :param list args: list of pytest args
+    :param str file_path: html file path
+    """
+    args.extend(['--html={}'.format(file_path)])
+    pytest.main(args)
