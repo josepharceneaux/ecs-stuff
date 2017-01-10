@@ -246,7 +246,7 @@ class EventBase(object):
         We then check if it was promoted via email-campaign to getTalent candidates and mark all linked email-campaigns
         as archived.
         :param Event event: Event object
-        :param bool deleted_from_vendor: flag to mark 'is_delete_from_vendor' field true or false
+        :param bool deleted_from_vendor: flag to mark 'is_deleted_from_vendor' field true or false
         """
         # if deleted_from_vendor is True, it means we are directly deleting event from our api call not from third party
         # social network that's why we need to un-publish
