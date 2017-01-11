@@ -587,7 +587,9 @@ def scheduled_campaign(token_first, talent_pipeline):
     """
     This returns campaign id which was scheduled to be sent after some time.
     """
-    talent_pipeline = TalentPipeline.get(talent_pipeline.id)
+    # talent_pipeline is dictionary which contains 'id' attribute only.
+    # Here getting TalentPipeline object on the basis of 'id' to pass into another function.
+    talent_pipeline = TalentPipeline.get(talent_pipeline['id'])
     campaign_data = create_scheduled_email_campaign_data(token_first, talent_pipeline)
     response = create_email_campaign_via_api(token_first, campaign_data)
     assert response.status_code == codes.CREATED
@@ -603,6 +605,8 @@ def scheduled_email_campaign_with_base_id(base_campaign, token_first, talent_pip
     This returns campaign id which was scheduled and linked with base campaign to be sent after some time.
     """
     db.session.commit()
+    # talent_pipeline is dictionary which contains 'id' attribute only.
+    # Here getting TalentPipeline object on the basis of 'id' to pass into another function.
     talent_pipeline = TalentPipeline.get(talent_pipeline['id'])
     campaign_data = create_scheduled_email_campaign_data(token_first, talent_pipeline)
     campaign_data['base_campaign_id'] = base_campaign['id']
