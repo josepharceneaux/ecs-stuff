@@ -13,6 +13,7 @@ import time
 import datetime
 
 # 3rd party imports
+import pytest
 import requests
 from redo import retry
 from celery.result import AsyncResult
@@ -374,3 +375,16 @@ def import_meetup_events():
                 logger.warning('Out of main loop. Cause: %s' % e)
                 time.sleep(5)
                 rollback()
+
+
+@celery.task(name="run_tests")
+def run_tests(args, file_path, output_formats):
+    """
+    This task takes list of args which are actually list of test modules, functions or some search criteria based on
+    which pytest will run tests.
+    :param list args: list of pytest args
+    :param str file_path: html file path
+    :param list output_formats: list of output formats
+    """
+    args.extend(['--{0}={1}.{0}'.format(_type, file_path) for _type in output_formats])
+    pytest.main(args)

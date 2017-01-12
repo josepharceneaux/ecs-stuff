@@ -670,6 +670,10 @@ class SocialNetworkApi(object):
     GRAPHQL = '/graphql'
     WEBHOOK = '/webhook/<int:user_id>'
     MEETUP_IMPORTER = '/meetup_importer'
+    TESTS = '/tests'
+    TESTS_LIST = '/tests/list'
+    TEST_REPORT = '/tests/report'
+    ASSETS = '/assets/<path:path>'
 
 
 class SocialNetworkApiUrl(object):
@@ -715,6 +719,11 @@ class SocialNetworkApiUrl(object):
         MEETUP_IMPORTER = 'https://emails.ngrok.io/meetup_importer'
     else:
         MEETUP_IMPORTER = HOST_NAME % '/meetup_importer'
+
+    TESTS = HOST_NAME % '/tests'
+    TESTS_LIST = HOST_NAME % '/tests/list'
+    TEST_REPORT = HOST_NAME % '/tests/report'
+    ASSETS = HOST_NAME % '/assets/%s'
 
 
 class SmsCampaignApi(object):
