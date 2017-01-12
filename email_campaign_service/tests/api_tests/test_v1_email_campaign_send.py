@@ -23,7 +23,7 @@ from email_campaign_service.modules.utils import do_mergetag_replacements
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
-                                                                 EmailCampaignSmartlist, EmailCampaignSend)
+                                                                 EmailCampaignSmartlist)
 from email_campaign_service.tests.modules.handy_functions import (assert_campaign_send,
                                                                   create_email_campaign_smartlists,
                                                                   send_campaign_with_client_id)

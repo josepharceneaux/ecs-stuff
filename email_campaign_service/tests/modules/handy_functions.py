@@ -7,10 +7,10 @@
 """
 
 # Standard Imports
+import re
+import json
 import email
 import imaplib
-import json
-import re
 from datetime import datetime, timedelta
 
 # Third Party

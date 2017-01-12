@@ -60,8 +60,6 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject=fak
     body_text = fake.sentence()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
     if create_smartlist:
-        # db.session.commit()
-        # talent_pipeline = TalentPipeline.get(talent_pipeline.id)
         smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
                                                                                 talent_pipeline,
                                                                                 emails_list=True,

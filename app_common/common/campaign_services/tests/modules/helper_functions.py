@@ -144,7 +144,7 @@ def auth_header(token):
     return dict(Authorization='Bearer %s' % token)
 
 
-def send_campaign_with_client_id(email_campaign, access_token, base_campaign_id=0):
+def send_campaign_with_client_id(email_campaign, access_token, base_campaign_id=False):
     """
     This make given campaign a client-campaign, sends it and asserts valid response.
     """
