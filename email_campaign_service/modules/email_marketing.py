@@ -99,7 +99,7 @@ def create_email_campaign(user_id, oauth_token, name, subject, description, _fro
     user = User.get_by_id(user_id)
     # Create activity in a celery task
     celery_create_activity.delay(user_id, Activity.MessageIds.CAMPAIGN_CREATE, email_campaign,
-                                 dict(id=email_campaign.id, name=name, campaign_type=_get_campaign_type(email_campaign),
+                                 dict(id=email_campaign.id, name=name, campaign_type=CampaignUtils.get_campaign_type(email_campaign),
                                       username=user.name),
                                  'Error occurred while creating activity for email-campaign creation. User(id:%s)'
                                  % user_id)
@@ -158,21 +158,6 @@ def create_email_campaign(user_id, oauth_token, name, subject, description, _fro
 
     db.session.commit()
     return {'id': email_campaign.id}
-
-
-def _get_campaign_type(email_campaign):
-    """
-    Here we get the type of campaign for activity creation. Default campaign type is `email campaign`.
-    If given email-campaign object has associated base_campaign_id and linked base-campaign has some event in the
-    chain, then we set the type of campaign to be `event campaign`.
-    :param EmailCampaign email_campaign:
-    """
-    campaign_type = CampaignUtils.get_campaign_type_prefix(email_campaign.__tablename__)
-    if email_campaign.base_campaign_id:
-        base_campaign = BaseCampaign.get_by_id(email_campaign.base_campaign_id)
-        if len(base_campaign.base_campaign_event):
-            campaign_type = CampaignUtils.get_campaign_type_prefix(Event.__tablename__)
-    return campaign_type
 
 
 def send_email_campaign(current_user, campaign, new_candidates_only=False):
@@ -536,9 +521,8 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
         email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
 
     # Create activity in a celery task
-    activity_message_id = Activity.MessageIds.CAMPAIGN_EMAIL_SEND
-    if _get_campaign_type(campaign) == 'event':
-        activity_message_id = Activity.MessageIds.CAMPAIGN_EVENT_SEND
+    activity_message_id = CampaignUtils.get_campaign_activity_type_id(campaign, 'SEND')
+
     celery_create_activity.delay(campaign.user.id,
                                  activity_message_id,
                                  email_campaign_send,
@@ -721,11 +705,10 @@ def update_hit_count(url_conversion):
                         email_campaign_send.candidate_id, email_campaign_send.id)
         else:
             # Create activity in a celery task
-            activity_open_message_id = Activity.MessageIds.CAMPAIGN_EMAIL_OPEN
-            activity_click_message_id = Activity.MessageIds.CAMPAIGN_EMAIL_CLICK
-            if _get_campaign_type(email_campaign_send.email_campaign) == 'event':
-                activity_open_message_id = Activity.MessageIds.CAMPAIGN_EVENT_OPEN
-                activity_click_message_id = Activity.MessageIds.CAMPAIGN_EVENT_CLICK
+            activity_open_message_id = CampaignUtils.get_campaign_activity_type_id(email_campaign_send.email_campaign,
+                                                                                   'OPEN')
+            activity_click_message_id = CampaignUtils.get_campaign_activity_type_id(email_campaign_send.email_campaign,
+                                                                                    'CLICK')
             celery_create_activity.delay(candidate.user_id,
                                          activity_open_message_id if is_open
                                          else activity_click_message_id,

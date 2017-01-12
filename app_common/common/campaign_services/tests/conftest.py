@@ -605,6 +605,7 @@ def scheduled_email_campaign_with_base_id(base_campaign, token_first, talent_pip
     """
     This returns campaign id which was scheduled and linked with base campaign to be sent after some time.
     """
+    # commiting db session to get new Object of TalentPipeline created through api
     db.session.commit()
     # talent_pipeline is dictionary which contains 'id' attribute only.
     # Here getting TalentPipeline object on the basis of 'id' to pass into another function.
@@ -624,6 +625,7 @@ def event_campaign_with_client_id(token_first, scheduled_email_campaign_with_bas
     """
     This returns scheduled event campaign with client id
     """
+    # commiting db session to get new Object of Email campaign created through api
     db.session.commit()
     email_campaign = EmailCampaign.get(scheduled_email_campaign_with_base_id['id'])
     response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT %
@@ -646,7 +648,4 @@ def event_campaign(token_first, scheduled_email_campaign_with_base_id, event_in_
                             token_first)
     assert response.status_code == codes.CREATED, response.text
     assert response.json()['id']
-    response = send_request('post', EmailCampaignApiUrl.SEND % email_campaign.id, token_first)
-    assert response.status_code == codes.OK, response.text
-    db.session.commit()
     return email_campaign

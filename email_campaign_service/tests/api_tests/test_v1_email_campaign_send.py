@@ -24,9 +24,11 @@ from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailCampaignSmartlist)
-from email_campaign_service.tests.modules.handy_functions import (assert_campaign_send,
-                                                                  create_email_campaign_smartlists,
+from email_campaign_service.tests.modules.handy_functions import (create_email_campaign_smartlists,
                                                                   send_campaign_with_client_id)
+from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
+    assert_campaign_send
+
 __author__ = 'basit'
 
 
@@ -148,7 +150,7 @@ class TestSendCampaign(object):
         no_of_sends = 2
         campaign = campaign_with_two_candidates
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first, no_of_sends)
+        assert_campaign_send(response, campaign, user_first.id, no_of_sends)
 
     def test_campaign_send_with_no_href_in_anchor_tag(self, campaign_with_two_candidates, headers, user_first):
         """
@@ -158,7 +160,7 @@ class TestSendCampaign(object):
         campaign = campaign_with_two_candidates
         campaign.update(body_html='<html><body><a>%s</a></body></html>' % fake.sentence())
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first, no_of_sends)
+        assert_campaign_send(response, campaign, user_first.id, no_of_sends)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(self, headers, user_first,
                                                                                     campaign_with_two_candidates):
@@ -171,7 +173,7 @@ class TestSendCampaign(object):
         for candidate in user_first.candidates:
             candidate.emails[0].update(address=same_email)
         response = requests.post(self.URL % campaign_with_two_candidates.id, headers=headers)
-        assert_campaign_send(response, campaign_with_two_candidates, user_first, 1)
+        assert_campaign_send(response, campaign_with_two_candidates, user_first.id, 1)
         if not campaign_with_two_candidates.email_client_id:
             json_resp = response.json()
             assert str(campaign_with_two_candidates.id) in json_resp['message']
@@ -185,7 +187,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first, 2)
+        assert_campaign_send(response, campaign, user_first.id, 2)
 
     def test_campaign_send_with_outgoing_email_client(self, email_campaign_with_outgoing_email_client, headers,
                                                       user_first):
@@ -194,7 +196,7 @@ class TestSendCampaign(object):
         """
         campaign = email_campaign_with_outgoing_email_client
         response = requests.post(self.URL % campaign['id'], headers=headers)
-        assert_campaign_send(response, campaign, user_first, via_amazon_ses=False)
+        assert_campaign_send(response, campaign, user_first.id, via_amazon_ses=False)
 
     def test_campaign_send_with_merge_tags(self, headers, user_first, email_campaign_with_merge_tags):
         """
@@ -212,7 +214,7 @@ class TestSendCampaign(object):
                                                       candidate_address=candidate_address,
                                                       )
         campaign.update(subject=modified_subject)
-        msg_ids = assert_campaign_send(response, campaign, user_first, 1, delete_email=False, via_amazon_ses=False)
+        msg_ids = assert_campaign_send(response, campaign, user_first.id, 1, delete_email=False, via_amazon_ses=False)
         # TODO: Emails are being delayed, commenting for now
         # mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
         #                                       app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
@@ -244,7 +246,7 @@ class TestSendCampaign(object):
         """
         response = send_email_campaign_by_client_id_response['response']
         campaign = send_email_campaign_by_client_id_response['campaign']
-        assert_campaign_send(response, campaign, user_first, 2, email_client=True)
+        assert_campaign_send(response, campaign, user_first.id, 2, email_client=True)
 
     def test_campaign_send_with_email_client_id_using_merge_tags(self, email_campaign_with_merge_tags, user_first,
                                                                  access_token_first):
@@ -265,9 +267,9 @@ class TestSendCampaign(object):
             assert candidate['first_name'] in email_campaign_send[entity]
             assert candidate['last_name'] in email_campaign_send[entity]
             assert str(candidate['id']) in email_campaign_send[entity]  # This will be in unsubscribe URL.
-        assert_campaign_send(response, email_campaign, user_first, expected_sends, email_client=True)
+        assert_campaign_send(response, email_campaign, user_first.id, expected_sends, email_client=True)
 
-    def test_redirect_url(self, send_email_campaign_by_client_id_response):
+    def test_redirect_url(self, access_token_first, send_email_campaign_by_client_id_response):
         """
         Test the url which is sent to candidates in email to be valid.
         This is the url which included in email to candidate in order to be
@@ -306,6 +308,12 @@ class TestSendCampaign(object):
         hit_count_after = url_conversion.hit_count
         assert opens_count_after == opens_count_before + 1
         assert hit_count_after == hit_count_before + 1
+        CampaignsTestsHelpers.assert_blast_sends(campaign, 2)
+        campaign_send = requests.get(EmailCampaignApiUrl.SENDS % campaign.id,
+                                     headers=dict(Authorization='Bearer %s' % access_token_first))
+        campaign_send = campaign_send.json()
+        CampaignsTestsHelpers.assert_for_activity(campaign.user_id, Activity.MessageIds.CAMPAIGN_EMAIL_OPEN,
+                                                  campaign_send['sends'][0]['id'])
         UrlConversion.delete(url_conversion)
 
     def test_campaign_send_with_two_smartlists(self, access_token_first, headers, user_first, talent_pipeline,
@@ -325,7 +333,7 @@ class TestSendCampaign(object):
         campaign = email_campaign_of_user_first
         create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2], email_campaign_id=campaign.id)
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first, 40)
+        assert_campaign_send(response, campaign, user_first.id, 40)
 
     def test_campaign_send_with_hundred_sends(self, headers, user_first, campaign_to_ten_candidates_not_sent):
         """
@@ -334,7 +342,7 @@ class TestSendCampaign(object):
         campaign = campaign_to_ten_candidates_not_sent
         for number in xrange(1, 11):
             response = requests.post(self.URL % campaign.id, headers=headers)
-            assert_campaign_send(response, campaign, user_first, blasts_count=number,
+            assert_campaign_send(response, campaign, user_first.id, blasts_count=number,
                                  blast_sends=10, total_sends=number * 10)
 
     def test_campaign_send_with_two_smartlists_having_same_candidate(
@@ -345,7 +353,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_same_candidate_in_multiple_smartlists
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first)
+        assert_campaign_send(response, campaign, user_first.id)
 
     def test_campaign_send_with_archived_candidate(self, headers, user_first, campaign_with_archived_candidate):
         """
@@ -354,48 +362,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_archived_candidate
         response = requests.post(self.URL % campaign['id'], headers=headers)
-        assert_campaign_send(response, campaign, user_first)
-
-    def test_email_campaign_open_activity(self, access_token_first, send_email_campaign_by_client_id_response):
-        """
-        This gets an email campaign with client id, tests its open activity.
-        :param access_token_first: Access token of user first
-        :param send_email_campaign_by_client_id_response: sent email campaign object by client id
-        """
-        response = send_email_campaign_by_client_id_response['response']
-        campaign = send_email_campaign_by_client_id_response['campaign']
-        json_response = response.json()
-        email_campaign_sends = json_response['email_campaign_sends'][0]
-        new_html = email_campaign_sends['new_html']
-        redirect_url = re.findall('"([^"]*)"', new_html)  # get the redirect URL from html
-        assert len(redirect_url) > 0
-        redirect_url = redirect_url[0]
-
-        # get the url conversion id from the redirect url
-        url_conversion_id = re.findall('[\n\r]*redirect\/\s*([^?\n\r]*)', redirect_url)
-        assert len(url_conversion_id) > 0
-        url_conversion_id = int(url_conversion_id[0])
-        db.session.commit()
-        url_conversion = UrlConversion.get(url_conversion_id)
-        assert url_conversion
-        email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
-        assert email_campaign_blast
-        opens_count_before = email_campaign_blast.opens
-        hit_count_before = url_conversion.hit_count
-        response = requests.get(redirect_url)
-        assert response.status_code == requests.codes.OK
-        db.session.commit()
-        opens_count_after = email_campaign_blast.opens
-        hit_count_after = url_conversion.hit_count
-        assert opens_count_after == opens_count_before + 1
-        assert hit_count_after == hit_count_before + 1
-        CampaignsTestsHelpers.assert_blast_sends(campaign, 2)
-        campaign_send = requests.get(EmailCampaignApiUrl.SENDS % campaign.id,
-                                     headers=dict(Authorization='Bearer %s' % access_token_first))
-        campaign_send = campaign_send.json()
-        CampaignsTestsHelpers.assert_for_activity(campaign.user_id, Activity.MessageIds.CAMPAIGN_EMAIL_OPEN,
-                                                  campaign_send['sends'][0]['id'])
-        UrlConversion.delete(url_conversion)
+        assert_campaign_send(response, campaign, user_first.id)
 
     def test_activity_send_email_campaign(self, access_token_first, sent_campaign):
         """

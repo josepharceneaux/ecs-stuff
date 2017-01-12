@@ -76,9 +76,10 @@ class Activity(db.Model):
         CAMPAIGN_EMAIL_OPEN = 16
         CAMPAIGN_EMAIL_CLICK = 17
 
-        CAMPAIGN_EVENT_CLICK = 31
-        CAMPAIGN_EVENT_SEND = 32
-        CAMPAIGN_EVENT_OPEN = 33
+        # EVENT_CAMPAIGN_SERVICE 1200-1299
+        CAMPAIGN_EVENT_CLICK = 1201
+        CAMPAIGN_EVENT_SEND = 1202
+        CAMPAIGN_EVENT_OPEN = 1203
 
         # Social Network Service
         RSVP_EVENT = 23
@@ -86,6 +87,7 @@ class Activity(db.Model):
         EVENT_DELETE = 29
         EVENT_UPDATE = 30
 
+        # TODO Change ID's as commented below (SMS_CAMPAIGN_SERVICE 1000-1099)
         # SMS campaign
         CAMPAIGN_SMS_SEND = 24
         CAMPAIGN_SMS_CLICK = 25
@@ -124,7 +126,7 @@ class Activity(db.Model):
         # SMS_CAMPAIGN_SERVICE 1000-1099
         CAMPAIGN_SMS_CREATE = 1000
 
-        # EMAIL_CAMPAIGN_SERVICE 1100-1199
+        # PUSH_CAMPAIGN_SERVICE 1100-1199
         CAMPAIGN_PUSH_CREATE = 1100
         CAMPAIGN_PUSH_SEND = 1101
         CAMPAIGN_PUSH_CLICK = 1102

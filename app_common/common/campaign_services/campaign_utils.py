@@ -26,6 +26,7 @@ from ..models.db import db
 from ..models.event import Event
 from ..models.misc import Activity
 from ..models.email_campaign import EmailCampaign, EmailCampaignBlast, EmailCampaignSend
+from ..models.base_campaign import BaseCampaign
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist, SmsCampaignBlast,
                                    SmsCampaignSend)
 from ..models.push_campaign import (PushCampaign, PushCampaignBlast, PushCampaignSmartlist,
@@ -419,6 +420,40 @@ class CampaignUtils(object):
             raise InternalServerError('Error occurred while deleting records from table `%s`. Campaigns ids: %s. '
                                       'Error details: %s' % (campaigns[0].campaign_type, campaign_ids, error.message))
         return dict(message='%d campaign(s) deleted successfully.' % len(campaign_ids)), requests.codes.OK
+
+    @classmethod
+    def get_campaign_type(cls, campaign):
+        """
+        Here we get the campaign object and returns type of campaign e.g Email, Push
+        :param campaign: Any type of campaign e.g Email campaign, SMS campaign
+        """
+        cls.raise_if_not_instance_of_campaign_models(campaign)
+        campaign_type_prefix = CampaignUtils.get_campaign_type_prefix(campaign.__tablename__)
+        # TODO: Currently 'base_campaign_id' is only implemented in email campaign
+        if campaign.base_campaign_id:
+            base_campaign = BaseCampaign.get_by_id(campaign.base_campaign_id)
+            if base_campaign.base_campaign_events.all():
+                campaign_type_prefix = CampaignUtils.get_campaign_type_prefix(Event.__tablename__)
+        return campaign_type_prefix
+
+    @classmethod
+    def get_campaign_activity_type_id(cls, campaign, action='SEND'):
+        """
+        Here we get the campaign object and returns message id of activity
+        :param campaign: It may be any type of campaign e.g Email campaign, SMS campaign
+        :param action: Action of activity e.g Send, Open, Click
+        """
+        cls.raise_if_not_instance_of_campaign_models(campaign)
+        campaign_type = CampaignUtils.get_campaign_type_prefix(campaign.__tablename__)
+        # TODO: Currently 'base_campaign_id' is only implemented in email campaign
+        if campaign.base_campaign_id:
+            base_campaign = BaseCampaign.get_by_id(campaign.base_campaign_id)
+            if base_campaign.base_campaign_events.all():
+                campaign_type = CampaignUtils.get_campaign_type_prefix(Event.__tablename__)
+        campaign_type = campaign_type.upper()
+        campaign_send_type = 'CAMPAIGN_%s_%s' % (campaign_type, action.upper())
+        campaign_send_type = CampaignUtils.get_activity_message_id(campaign_send_type)
+        return campaign_send_type
 
 
 @contract

@@ -24,6 +24,7 @@ from ...models.email_campaign import EmailCampaignBlast, EmailCampaignSend
 from ...models.misc import UrlConversion, Activity
 from modules.helper_functions import (get_email_campaign_data, assert_email_campaign_overview,
                                       assert_event_overview, auth_header)
+from ..tests.modules.email_campaign_helper_functions import assert_campaign_send
 
 __author__ = 'basit'
 
@@ -317,13 +318,15 @@ class TestDeleteEventWithCampaign(object):
         """
         This tests if we delete an event through api then campaigns associated with it should be deleted or archived.
         """
-        response = requests.delete(SocialNetworkApiUrl.EVENT % event_in_db_second['id'], headers=auth_header(token_first))
+        response = requests.delete(SocialNetworkApiUrl.EVENT % event_in_db_second['id'],
+                                   headers=auth_header(token_first))
         campaign_response = requests.get(EmailCampaignApiUrl.CAMPAIGN % email_campaign_with_base_id['id'],
                                          headers=auth_header(token_first))
         campaign_content = campaign_response.json()
         assert campaign_content['email_campaign']['is_hidden']
 
-        event_response = requests.get(SocialNetworkApiUrl.EVENT % event_in_db_second['id'], headers=auth_header(token_first))
+        event_response = requests.get(SocialNetworkApiUrl.EVENT % event_in_db_second['id'],
+                                      headers=auth_header(token_first))
         event_content = event_response.json()
         assert event_content['event']['is_deleted_from_vendor'] and event_content['event']['is_hidden']
 
@@ -364,17 +367,16 @@ class TestEventCampaignActivity(object):
         hit_count_after = url_conversion.hit_count
         assert opens_count_after == opens_count_before + 1
         assert hit_count_after == hit_count_before + 1
-        campaign_send = EmailCampaignSend.query.filter(EmailCampaignSend.campaign_id == campaign.id).order_by('-id').first()
+        campaign_send = EmailCampaignSend.query.filter(EmailCampaignSend.campaign_id == campaign.id).first()
         CampaignsTestsHelpers.assert_for_activity(campaign.user_id, Activity.MessageIds.CAMPAIGN_EVENT_OPEN,
                                                   campaign_send.id)
         UrlConversion.delete(url_conversion)
 
-    def test_activity_send_event_campaign(self, event_campaign):
+    def test_activity_send_event_campaign(self, token_first, event_campaign):
         """
         This gets an event campaign, tests its send activity.
         """
-        CampaignsTestsHelpers.assert_blast_sends(event_campaign, 1)
-        campaign_send = EmailCampaignSend.query.filter(EmailCampaignSend.campaign_id ==
-                                                       event_campaign.id).order_by('-id').first()
-        CampaignsTestsHelpers.assert_for_activity(event_campaign.user_id, Activity.MessageIds.CAMPAIGN_EVENT_SEND,
-                                                  campaign_send.id)
+        response = send_request('post', EmailCampaignApiUrl.SEND % event_campaign.id, token_first)
+        assert response.status_code == codes.OK, response.text
+        db.session.commit()
+        assert_campaign_send(response, event_campaign, event_campaign.user_id)
