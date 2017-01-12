@@ -59,6 +59,7 @@ crashlytics-build.properties
 ### talent-flask-services Specific Files to exclude
 resume_parsing_service/Dockertest
 social_network_service/assets/*.html
+social_network_service/assets/*.json
 
 
 ### Python template
