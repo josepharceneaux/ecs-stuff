@@ -26,6 +26,7 @@ from social_network_service.common.models.user import UserSocialNetworkCredentia
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
+from social_network_service.custom_exceptions import HitLimitReached
 from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS, EVENT, MEETUP_EVENT_STREAM_API_URL)
 from social_network_service.modules.event.meetup import Meetup
 from social_network_service.modules.rsvp.meetup import Meetup as MeetupRsvp
@@ -101,7 +102,11 @@ def process_meetup_event(event):
             # event created in database (one by api and other by importer)
             group = MeetupGroup.get_by_group_id(event['group']['id'])
             meetup = SocialNetwork.get_by_name('Meetup')
-            meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
+            try:
+                meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
+            except HitLimitReached:
+                meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id,
+                                                validate_token=False)
             meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials,
                                        social_network=meetup, headers=meetup_sn.headers)
             if event['status'] in [MEETUP_EVENT_STATUS['upcoming'],
