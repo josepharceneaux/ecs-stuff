@@ -151,6 +151,8 @@ def tests():
     that path in browser.
 
     You can call this endpoint using GET or POST request.
+    Using `output` query parameter with GET or POST you can tell what is the output format you want. There are two
+    possible formats for now, html and json. You can specify both using comma separated string like `html,json`
 
     Using GET request, we can specify an input string which will be matched with all tests and those tests will be run
     that contain given input string in test function name.
@@ -194,9 +196,25 @@ def tests():
                 }
             }
         }
+
+        :Response:
+            Response will look like
+            {
+                "html": "http://127.0.0.1:8007/assets/2017-01-12T12:33:00.892360.html",
+                "json": "http://127.0.0.1:8007/assets/2017-01-12T12:33:00.892360.json"
+            }
     """
     token = request.args.get('token', '')
     validate_jwt_token(token)
+    output = request.args.get('output', 'html')
+
+    if isinstance(output, basestring):
+        output = output.split(',')
+        for index, item in enumerate(output):
+            if item not in ('json', 'html'):
+                del output[index]
+    if len(output) == 0:
+        output = ['html']
     args = []
     if request.method == 'GET':
         """In GET request, we can select tests to run using name or module parameter.
@@ -241,16 +259,12 @@ def tests():
             raise InvalidUsage('Invalid data. No test is selected to run.')
 
     assets = STATIC_DIR + '/{}'
-    file_name = '{}{}'.format(datetime.utcnow().isoformat(), '.html')
+    file_name = datetime.utcnow().isoformat()
     file_path = assets.format(file_name)
-    with open(file_path, 'wb') as f:
-        f.write('We are running your tests. Wait a moment')
-        f.close()
-    run_tests.delay(args, file_path)
+    run_tests.delay(args, file_path, output)
     url = SocialNetworkApiUrl.ASSETS % file_name
-    if request.args.get('redirect') == '1':
-        return redirect(url)
-    return jsonify({'output': url})
+    response = {_type: '{}.{}'.format(url, _type) for _type in output}
+    return jsonify(response)
 
 
 @app.route(SocialNetworkApi.ASSETS)

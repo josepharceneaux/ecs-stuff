@@ -53,11 +53,17 @@ from social_network_service.common.constants import FACEBOOK, MEETUP
 from social_network_service.social_network_app import logger
 from social_network_service.tests.helper_functions import get_headers
 
+ENVIRONMENT = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
+
 
 @pytest.fixture(autouse=True)
 def _environment(request):
-    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
-    request.config._environment.append(('Environment', env))
+    request.config._environment.append(('Environment', ENVIRONMENT))
+
+
+@pytest.fixture(scope='session', autouse=True)
+def extra_json_environment(request):
+    request.config._json_environment.append(('Environment', ENVIRONMENT))
 
 
 @pytest.fixture(scope='session')
