@@ -579,4 +579,3 @@ def is_token_valid(social_network_id, user_id):
         return False, social_network.name
     else:
         raise ResourceNotFound("Invalid social network id given")
-
