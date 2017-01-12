@@ -118,9 +118,12 @@ def process_meetup_event(event):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    meetup_event_base.delete_event(event_id, False)
-                    logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
-                                % event_in_db.to_json())
+                    if meetup_event_base.delete_event(event_in_db.id, delete_from_vendor=False):
+                        logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
+                    else:
+                        logger.info('Event could not be marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
                 else:
                     logger.info("Meetup event not found in database. event:`%s`." % event)
 
@@ -268,9 +271,12 @@ def import_eventbrite_event(user_id, event_url, action_type):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    eventbrite_event_base.delete_event(event_id, False)
-                    logger.info('Event has been marked as is_deleted_from_vendor in gt database: %s'
-                                % event_in_db.to_json())
+                    if eventbrite_event_base.delete_event(event_in_db.id, delete_from_vendor=False):
+                        logger.info('Event has been marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
+                    else:
+                        logger.info('Event could not be marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
                 else:
                     logger.info("Event unpublished from Eventbrite but it does not exist, don't worry. Event URL: %s"
                                 % event_url)

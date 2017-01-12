@@ -653,4 +653,3 @@ def get_test_info(path):
             result[module_name]['classes'][class_name] = methods
         result[module_name]['functions'] = filter(lambda x: x.startswith('test_'), module.__dict__.keys())
     return result
-
