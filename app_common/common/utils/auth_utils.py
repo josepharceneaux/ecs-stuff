@@ -242,3 +242,11 @@ def has_role(user, role):
         role=role, roles=', '.join(accepted_roles))
 
     return user.role.name == role_name
+
+
+def validate_jwt_token(token):
+    """This function gets jwt token and validates. It raises 401 error if token is not valid"""
+    token = token.split('.')
+    secret_key_id = token.pop()
+    json_web_token = '.'.join(token)
+    User.verify_jw_token(secret_key_id, json_web_token)

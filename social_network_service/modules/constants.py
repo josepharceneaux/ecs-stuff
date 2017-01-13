@@ -1,6 +1,7 @@
 """
 This file consists constants used in social-network-service
 """
+import os
 
 __author__ = 'basit'
 
@@ -44,3 +45,6 @@ MEETUP_EVENT_STATUS = {
     'deleted': 'deleted'
 }
 
+TEST_DIR = os.path.abspath(os.path.dirname(__file__) + '/../tests/')
+ROOT_DIR = os.path.abspath(os.path.dirname(__file__) + '/../')
+STATIC_DIR = os.path.abspath(os.path.dirname(__file__) + '/../assets/')

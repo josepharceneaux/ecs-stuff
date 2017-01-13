@@ -98,6 +98,7 @@ To add another social network for events management, following are steps:
 import json
 from abc import ABCMeta
 from abc import abstractmethod
+import time
 
 # 3rd party
 from flask import request
@@ -287,6 +288,8 @@ class EventBase(object):
         :return: event model object
         :rtype type(t)
         """
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         response = http_request('get', event_url, headers=self.headers)
         if response.ok:
             event = response.json()
@@ -476,6 +479,8 @@ class EventBase(object):
         """
         # create url to unpublish event
         url = get_url(self, Urls.EVENT).format(event_id)
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         # params are None. Access token is present in self.headers
         response = http_request(method, url, headers=self.headers, user_id=self.user.id)
         if response.ok:
