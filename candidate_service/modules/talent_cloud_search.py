@@ -1,4 +1,5 @@
 import math
+import sys
 # import operator
 import os
 import time
@@ -141,7 +142,12 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 
     # Tags
     'tag_ids':                       dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
-    'tags':                          dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': True})
+    'tags':                          dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': True}),
+
+    # Archive options
+    'is_archived':                   dict(IndexFieldType='int',             IntOptions={'FacetEnabled': True,
+                                                                                        'SearchEnabled': True,
+                                                                                        'ReturnEnabled': True})
 }
 
 # Filter all text, text-array, literal and literal-array index fields
@@ -274,6 +280,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.id AS `id`, candidate.firstName AS `first_name`, candidate.lastName AS `last_name`,
                 candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, :date_format) AS `added_time`,
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
+                candidate.is_archived AS `is_archived`,
                 HOUR(candidate.addedTime) AS `added_time_hour`, candidate.sourceId AS `source_id`,
                 candidate.sourceProductId AS `source_product_id`, candidate.totalMonthsExperience AS
                 `total_months_experience`, candidate.isWebHidden AS `is_web_hidden`,
@@ -385,7 +392,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
         # Go through results & build action dicts
         for field_name_to_sql_value in results:
             candidate_id = field_name_to_sql_value['id']
-            is_hidden = field_name_to_sql_value['is_web_hidden']
+            is_hidden = field_name_to_sql_value['is_web_hidden']  # TODO: change key to "is_archived" after is_web_hidden is removed from Candidate model
             if is_hidden == 1:
                 logger.info("Unable to upload candidate document of hidden candidate: %s" % candidate_id)
                 continue
@@ -451,6 +458,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                         if field_name == 'custom_field_id_and_value':
                             resume_text += ' ' + ' '.join(map(lambda value: value.split('|')[1].strip(), sql_value))
                         else:
+                            # Temporary loggers for debugging, should remove once GET-2018 is resolved -Amir
                             resume_text += ' ' + ' '.join(sql_value)
                     else:
                         if field_name == 'custom_field_id_and_value':
@@ -659,7 +667,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     Set search_limit = 0 for no limit, candidate_ids_only returns dict of candidate_ids.
     Parameters in 'request_vars' could be single values or arrays.
     """
-
     filter_queries_list = []
     filter_query, search_query = '', ''
     if request_vars:
@@ -758,7 +765,19 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     if dumb_list_filter_query_string:
         filter_query = "(or %s %s)" % (dumb_list_filter_query_string, filter_query)
 
-    filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
+    # CS will search for active candidates only unless if specified
+    status = request_vars.get('status')
+    if status == 'archived':
+        candidate_status = "(term field=is_archived 1)"
+    elif status == 'all':
+        candidate_status = ''
+    else:
+        candidate_status = "(term field=is_archived 0)"
+
+    if candidate_status:
+        filter_query = "(and %s %s %s %s)" % (filter_query, domain_filter, talent_pool_filter, candidate_status)
+    else:
+        filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
 
     params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene', query_options={'fields': QUERY_OPTIONS})
     if offset:
@@ -1065,14 +1084,14 @@ def _cloud_search_fetch_all(params):
     search_service = _cloud_search_domain_connection()
     params['cursor'] = 'initial'  # Initialize cursor
     # remove start, as it is produces error with cursor
-    del params['start']
+    if 'start' in params:
+        del params['start']
     no_more_candidates = False
     total_found = 0
     candidate_ids = []
     error = False
     # If size is more than 10000, cloud_search will give error, so set size to chunk of 10000 candidates and fetch all
-    if params['size'] > CLOUD_SEARCH_MAX_LIMIT:
-        params['size'] = CLOUD_SEARCH_MAX_LIMIT
+    params['size'] = min(params.get('size', sys.maxint), CLOUD_SEARCH_MAX_LIMIT)
     while not no_more_candidates:
         # Get the next batch of candidates
         results = search_service.search(**params)
@@ -1121,7 +1140,6 @@ def _get_source_id(request_vars):
     :param request_vars:
     :return:
     """
-
     if isinstance(request_vars['source_ids'], basestring):  # source_id is string
         if 'product_' in request_vars['source_ids']:
             request_vars['product_id'] = request_vars['source_ids'].replace('product_', '')

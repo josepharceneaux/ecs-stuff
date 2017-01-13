@@ -2,18 +2,12 @@
 Test cases for CandidateCustomFieldResource
 """
 # Candidate Service app instance
-from candidate_service.candidate_app import app
 
 import sys
 
-# Conftest
-from candidate_service.common.tests.conftest import *
-
-# Helper functions
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
-
-# Custom errors
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 VALUE = fake.text()

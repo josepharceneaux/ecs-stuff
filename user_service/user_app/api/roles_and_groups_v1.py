@@ -7,6 +7,7 @@ from user_service.common.talent_api import TalentApi
 from user_service.common.utils.validators import is_number
 from user_service.common.models.user import User, Domain, UserGroup, db, Role, Permission
 from user_service.common.utils.auth_utils import require_oauth, require_any_permission, require_all_permissions
+from user_service.user_app.user_service_utilties import get_users_stats_from_mixpanel
 
 
 class GetAllRolesApi(Resource):
@@ -106,13 +107,15 @@ class UserGroupsApi(Resource):
     @require_all_permissions(Permission.PermissionNames.CAN_GET_DOMAIN_GROUPS)
     def get(self, **kwargs):
         """
-        GET /groups/<group_id>/users Fetch all users in a user_group
+        GET /groups/<group_id>/users?include_stats=True     Fetch all users in a user_group and also include stats
 
         :return A dictionary containing id and lastName of all users of a user_group
         :rtype: dict
         """
 
         requested_group_id = kwargs.get('group_id')
+        include_stats_flag = request.args.get('include_stats', False)
+
         requested_group = UserGroup.query.get(requested_group_id)
 
         if not requested_group:
@@ -122,8 +125,8 @@ class UserGroupsApi(Resource):
             raise UnauthorizedError("User %s doesn't have appropriate permission to add users to a "
                                     "group %s" % (request.user.id, requested_group_id))
 
-        all_users_of_group = UserGroup.all_users_of_group(requested_group_id)
-        return {"users": [user.to_dict() for user in all_users_of_group]}
+        users_data_dict = {user.id: user.to_dict() for user in UserGroup.all_users_of_group(requested_group_id)}
+        return {"users": get_users_stats_from_mixpanel(users_data_dict, False, include_stats_flag).values()}
 
     @require_any_permission(Permission.PermissionNames.CAN_ADD_DOMAIN_GROUPS)
     def post(self, **kwargs):

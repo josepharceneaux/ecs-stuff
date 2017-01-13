@@ -257,6 +257,8 @@ class UserServiceApi(object):
     DOMAIN_AOIS = '/' + VERSION + '/areas_of_interest'
     DOMAIN_AOI = '/' + VERSION + '/areas_of_interest/<int:id>'
 
+    DOMAIN_TAGS = '/' + VERSION + '/tags'
+
     TEST_SETUP = 'test-setup'
 
 
@@ -470,6 +472,8 @@ class CandidateApiUrl(object):
     PIPELINES = HOST_NAME % ('/' + VERSION + '/candidates/%s/pipelines')
     STATUSES = HOST_NAME % ('/' + VERSION + '/candidate_statuses')
 
+    OPENWEB = HOST_NAME % ('/' + VERSION + '/candidates/openweb')
+
 
 class WidgetApi(object):
     """
@@ -666,6 +670,10 @@ class SocialNetworkApi(object):
     GRAPHQL = '/graphql'
     WEBHOOK = '/webhook/<int:user_id>'
     MEETUP_IMPORTER = '/meetup_importer'
+    TESTS = '/tests'
+    TESTS_LIST = '/tests/list'
+    TEST_REPORT = '/tests/report'
+    ASSETS = '/assets/<path:path>'
 
 
 class SocialNetworkApiUrl(object):
@@ -676,10 +684,12 @@ class SocialNetworkApiUrl(object):
     HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME, GTApis.SOCIAL_NETWORK_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
-    if env == TalentEnvs.DEV:
-        UI_APP_URL = 'http://127.0.0.1:3000/%s'
-    else:
+    if env == TalentEnvs.QA:
         UI_APP_URL = 'https://staging.gettalent.com/%s'
+    elif env == TalentEnvs.PROD:
+        UI_APP_URL = 'https://app.gettalent.com/%s'
+    else:
+        UI_APP_URL = 'http://127.0.0.1:3000/%s'
 
     SUBSCRIBE = UI_APP_URL % 'account/integrations?code=%s'
     EVENTS = HOST_NAME % ('/' + VERSION + '/events')
@@ -709,6 +719,11 @@ class SocialNetworkApiUrl(object):
         MEETUP_IMPORTER = 'https://emails.ngrok.io/meetup_importer'
     else:
         MEETUP_IMPORTER = HOST_NAME % '/meetup_importer'
+
+    TESTS = HOST_NAME % '/tests'
+    TESTS_LIST = HOST_NAME % '/tests/list'
+    TEST_REPORT = HOST_NAME % '/tests/report'
+    ASSETS = HOST_NAME % '/assets/%s'
 
 
 class SmsCampaignApi(object):

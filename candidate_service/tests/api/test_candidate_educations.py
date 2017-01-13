@@ -1,21 +1,14 @@
 # Candidate Service app instance
-from candidate_service.candidate_app import app
 
 # Conftest
-from candidate_service.common.tests.conftest import *
-
 import pycountry
 
-# Helper functions
-from helpers import get_country_code_from_name
-from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.utils.test_utils import send_request, response_info
-
-# Sample data
 from candidate_sample_data import GenerateCandidateData, generate_single_candidate_data
-
-# Custom errors
+from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.tests.conftest import *
+from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from helpers import get_country_code_from_name
 
 
 class TestCreateCandidateEducation(object):

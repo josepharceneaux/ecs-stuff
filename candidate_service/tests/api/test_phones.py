@@ -2,22 +2,14 @@
 Test cases for adding, retrieving, updating, and deleting candidate phones
 """
 # Candidate Service app instance
-from candidate_service.candidate_app import app
 
 # Conftest
-from candidate_service.common.tests.conftest import *
-
-from candidate_service.common.models.candidate import PhoneLabel
-
-# Helper functions
-from candidate_service.common.utils.test_utils import send_request, response_info
-from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.utils.validators import get_phone_number_extension_if_exists
-
-# Candidate sample data
 from candidate_sample_data import fake, GenerateCandidateData, candidate_phones, generate_single_candidate_data
-
-# Custom errors
+from candidate_service.common.models.candidate import PhoneLabel
+from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.tests.conftest import *
+from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.utils.validators import get_phone_number_extension_if_exists
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 

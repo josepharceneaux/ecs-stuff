@@ -128,3 +128,12 @@ def create_an_rsvp_in_database(candidate_id, event_id, access_token, expected_st
     }
     rsvp = RSVP(**data)
     RSVP.save(rsvp)
+
+
+def auth_header(token):
+    """
+    Return dictionary which consist of bearer token only.
+    :param token: bearer token
+    :return:dictionary containing bearer token
+    """
+    return dict(Authorization='Bearer %s' % token)

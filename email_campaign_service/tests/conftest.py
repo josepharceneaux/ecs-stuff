@@ -5,9 +5,6 @@
 
 This file contains fixtures for tests of email-campaign-service
 """
-
-__author__ = 'basit'
-
 # Standard Library
 from datetime import timedelta
 
@@ -15,7 +12,6 @@ from datetime import timedelta
 from requests import codes
 
 # Application Specific
-# Common fixtures
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.modules.email_clients import SMTP
 from email_campaign_service.email_campaign_app import app
@@ -41,7 +37,11 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   create_data_for_campaign_creation,
                                                                   create_email_campaign_via_api,
                                                                   send_campaign_with_client_id,
-                                                                  create_email_campaign_with_merge_tags)
+                                                                  create_email_campaign_with_merge_tags,
+                                                                  create_scheduled_email_campaign_data)
+
+__author__ = 'basit'
+
 
 GRAPHQL_BASE_URL = GraphqlServiceApiUrl.GRAPHQL
 EMAIL_CAMPAIGN_TYPES = [EmailCampaignTypes.WITHOUT_CLIENT, EmailCampaignTypes.WITH_CLIENT]
@@ -102,8 +102,7 @@ def scheduled_campaign(access_token_first, talent_pipeline):
     """
     This returns campaign id which was scheduled to be sent after some time.
     """
-    campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, fake.word())
-    campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(days=1))
+    campaign_data = create_scheduled_email_campaign_data(access_token_first, talent_pipeline)
     response = create_email_campaign_via_api(access_token_first, campaign_data)
     assert response.status_code == codes.CREATED
     resp_object = response.json()
@@ -397,12 +396,7 @@ def email_campaign_with_outgoing_email_client(access_token_first, talent_pipelin
     This creates an email-campaign which will be sent via an SMTP server added by user.
     """
     subject = '%s-test_email_campaign_with_smtp_server' % fake.uuid4()[0:4]
-    campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
-    campaign_data['frequency_id'] = Frequency.DAILY
-    campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(weeks=1))
-    campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow()
-                                                             + timedelta(weeks=1) + timedelta(days=4))
-
+    campaign_data = create_scheduled_email_campaign_data(access_token_first, talent_pipeline, subject=subject)
     # GET email-client-id
     response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=outgoing', headers=headers)
     assert response.ok
@@ -410,15 +404,12 @@ def email_campaign_with_outgoing_email_client(access_token_first, talent_pipelin
     email_client_response = response.json()['email_client_credentials']
     assert len(email_client_response) == 1
     campaign_data['email_client_credentials_id'] = email_client_response[0]['id']
-
     response = create_email_campaign_via_api(access_token_first, campaign_data)
     assert response.status_code == requests.codes.CREATED
     resp_object = response.json()
     assert 'campaign' in resp_object and resp_object['campaign']
     db.session.commit()
-    email_campaign = EmailCampaign.get_by_id(resp_object['campaign']['id'])
-    assert email_campaign
-    return email_campaign
+    return resp_object['campaign']
 
 
 @pytest.fixture()
@@ -484,3 +475,17 @@ def periodic_scheduled_campaign(request, access_token_first, talent_pipeline):
 
     request.addfinalizer(fin)
     return {'id': campaign_id}
+
+
+@pytest.fixture()
+def campaign_with_archived_candidate(smartlist_with_archived_candidate, access_token_first, talent_pipeline):
+    """
+    This creates an email-campaign associated to smartlist which has one archived candidate in it.
+    """
+    campaign_data = create_scheduled_email_campaign_data(access_token_first, talent_pipeline,
+                                                         create_smartlist=False,
+                                                         smartlist_id=smartlist_with_archived_candidate['id']
+                                                         )
+    response = create_email_campaign_via_api(access_token_first, campaign_data)
+    assert response.ok, 'campaign creation failed:%s' % response.text
+    return response.json()['campaign']

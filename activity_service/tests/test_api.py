@@ -35,11 +35,18 @@ def test_call_requires_auth(token_fixture):
     assert response.status_code == requests.codes.unauthorized
 
 
-def test_reponse_is_user_filtered(token_fixture):
+def test_response_is_user_filtered(token_fixture):
     test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1'
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
     assert json.loads(response.content)['total_count'] == 32
+
+
+def test_response_can_exclude_user(token_fixture):
+    test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1' + '?exclude_current_user=1'
+    response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
+        token_fixture.access_token)})
+    assert json.loads(response.content)['total_count'] == 0
 
 
 def test_response_can_be_time_filtered(token_fixture):
@@ -155,7 +162,7 @@ def test_pipeline_create_and_read(user_fixture, token_fixture):
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
     assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
-    assert any(activity['readable_text'] == u'You created a pipeline: <b>test_PL1</b>.' for activity in
+    assert any(activity['readable_text'] == u'<b>You</b> created a pipeline: <b>test_PL1</b>.' for activity in
         activities['activities'])
 
 def test_talentPool_create_and_read(user_fixture, token_fixture):
@@ -179,7 +186,7 @@ def test_talentPool_create_and_read(user_fixture, token_fixture):
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
     assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
-    assert any(activity['readable_text'] == u'You created a Talent Pool: <b>test_pool1</b>.' for activity in activities['activities'])
+    assert any(activity['readable_text'] == u'<b>You</b> created a Talent Pool: <b>test_pool1</b>.' for activity in activities['activities'])
 
 
 def test_dumblist_create_and_read(user_fixture, token_fixture):
@@ -203,7 +210,7 @@ def test_dumblist_create_and_read(user_fixture, token_fixture):
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
     assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
-    assert any(activity['readable_text'] == u'You created a list: <b>dumblist1</b>.' for activity in activities['activities'])
+    assert any(activity['readable_text'] == u'<b>You</b> created a list: <b>dumblist1</b>.' for activity in activities['activities'])
 
 
 def test_health_check():

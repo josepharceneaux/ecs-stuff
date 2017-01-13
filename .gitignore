@@ -14,9 +14,6 @@
 .idea/dictionaries
 .idea/modules.xml
 .idea/runConfigurations/Run_social_network_manager.xml
-.idea/runConfigurations/Build_Scheduler_Service.xml
-.idea/runConfigurations/Run_Scheduler_Service__Staging_.xml
-.idea/runConfigurations/Test_Scheduler_Service.xml
 .idea/runConfigurations/Run_scheduler_service.xml
 .idea/runConfigurations/Test_CandidatePoolService.xml
 .idea/runConfigurations/Test_PushCampaignService.xml
@@ -61,6 +58,8 @@ crashlytics-build.properties
 
 ### talent-flask-services Specific Files to exclude
 resume_parsing_service/Dockertest
+social_network_service/assets/*.html
+social_network_service/assets/*.json
 
 
 ### Python template

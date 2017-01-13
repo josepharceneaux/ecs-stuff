@@ -2,24 +2,23 @@
 Helper functions for candidate CRUD operations and tracking edits made to the Candidate
 """
 # Standard libraries
-import re
 import datetime
-import urlparse
 import hashlib
-import dateutil.parser
-import simplejson as json
-import pycountry
-import phonenumbers
-from flask import request
+import re
+import urlparse
 from datetime import date
+
+import dateutil.parser
+import phonenumbers
+import pycountry
+import simplejson as json
+from flask import request
 from nameparser import HumanName
 
-# Database connection and logger
-from candidate_service.common.models.db import db
-from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.candidate_app import logger
-
-# Models
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
+from candidate_service.common.geo_services.geo_coordinates import get_coordinates
+from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.candidate import (
     Candidate, CandidateEmail, CandidatePhone, CandidateWorkPreference, CandidatePreferredLocation,
     CandidateAddress, CandidateExperience, CandidateEducation, CandidateEducationDegree,
@@ -27,39 +26,28 @@ from candidate_service.common.models.candidate import (
     SocialNetwork, CandidateEducationDegreeBullet, CandidateExperienceBullet, ClassificationType,
     CandidatePhoto, PhoneLabel, EmailLabel, CandidateSubscriptionPreference
 )
-from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
-from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
-from candidate_service.common.models.associations import CandidateAreaOfInterest
+from candidate_service.common.models.candidate_edit import CandidateView
+from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
     EmailCampaignSendUrlConversion
-from candidate_service.common.models.misc import AreaOfInterest, UrlConversion
 from candidate_service.common.models.language import CandidateLanguage
+from candidate_service.common.models.misc import AreaOfInterest, UrlConversion
+from candidate_service.common.models.smartlist import Smartlist
+from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.user import User, Permission
-
-# Modules
-from track_changes import track_edits, track_areas_of_interest_edits
-
-# Error handling
-from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
-
-# Validations
+from candidate_service.common.utils.datetime_utils import DatetimeUtils
+from candidate_service.common.utils.handy_functions import purge_dict
+from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name, get_country_code_from_name
+from candidate_service.common.utils.talent_s3 import get_s3_url
 from candidate_service.common.utils.validators import sanitize_zip_code, is_number, parse_phone_number
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
     do_phones_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
     get_education_degree_if_exists, does_military_service_exist, do_emails_exist, remove_duplicates
 )
-
-# Common utilities
-from candidate_service.common.utils.talent_s3 import get_s3_url
-from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name, get_country_code_from_name
-from candidate_service.common.utils.datetime_utils import DatetimeUtils
-from candidate_service.common.geo_services.geo_coordinates import get_coordinates
-
-# Handy functions
-from candidate_service.common.utils.handy_functions import purge_dict
+from track_changes import track_edits, track_areas_of_interest_edits
 
 
 ##################################################
@@ -867,7 +855,8 @@ def create_or_update_candidate_from_params(
         objective=None,
         summary=None,
         talent_pool_ids=None,
-        resume_url=None
+        resume_url=None,
+        resume_text=None
 ):
     """
     Function will parse each parameter and:
@@ -918,6 +907,7 @@ def create_or_update_candidate_from_params(
     :type   talent_pool_ids:        dict
     :type   delete_talent_pools:    bool
     :type   resume_url              basestring
+    :type   resume_text             basestring
     :rtype                          dict
     """
     # Format inputs
@@ -957,13 +947,14 @@ def create_or_update_candidate_from_params(
         raise InvalidUsage('Candidate ID is required for updating', custom_error.MISSING_INPUT)
 
     if is_updating:  # Update Candidate
-        candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                                         candidate_id, user_id, resume_url, source_id, source_product_id, status_id)
+        candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name,
+                                         objective, summary, candidate_id, user_id, resume_url,
+                                         source_id, source_product_id, status_id, resume_text)
     else:  # Add Candidate
-        candidate_id = _add_candidate(first_name, middle_name, last_name,
-                                      formatted_name, added_datetime, status_id,
-                                      user_id, dice_profile_id, dice_social_profile_id,
-                                      source_id, source_product_id, objective, summary, resume_url)
+        candidate_id = _add_candidate(first_name, middle_name, last_name, formatted_name,
+                                      added_datetime, status_id, user_id, dice_profile_id,
+                                      dice_social_profile_id, source_id, source_product_id,
+                                      objective, summary, resume_url, resume_text)
 
     candidate = Candidate.get_by_id(candidate_id)
     """
@@ -1152,7 +1143,8 @@ def social_network_name_from_url(url):
 
 
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                      candidate_id, user_id, resume_url, source_id, source_product_id, candidate_status_id):
+                      candidate_id, user_id, resume_url, source_id, source_product_id,
+                      candidate_status_id, resume_text):
     """
     Function will update Candidate's primary information.
     Candidate's Primary information include:
@@ -1176,7 +1168,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
 
     update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
                    'source_id': source_id, 'candidate_status_id': candidate_status_id,
-                   'source_product_id': source_product_id}
+                   'source_product_id': source_product_id, 'resume_text': resume_text}
 
     # Strip each key-value and remove keys with empty-string-values
     update_dict = purge_dict(update_dict, remove_empty_strings_only=True)
@@ -1213,21 +1205,21 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
 
 
 def _add_candidate(first_name, middle_name, last_name, formatted_name,
-                   added_time, candidate_status_id, user_id,
-                   dice_profile_id, dice_social_profile_id, source_id,
-                   source_product_id, objective, summary, resume_url):
+                   added_time, candidate_status_id, user_id, dice_profile_id,
+                   dice_social_profile_id, source_id, source_product_id,
+                   objective, summary, resume_url, resume_text):
     """
     Function will add Candidate and its primary information to db
     All empty values (None or empty strings) will be ignored
     :rtype:  int | long
     """
+    # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     add_dict = dict(
         first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         source_product_id=source_product_id, dice_profile_id=dice_profile_id,
         dice_social_profile_id=dice_social_profile_id, source_id=source_id, objective=objective,
-        summary=summary, filename=resume_url, is_dirty=0
-        # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
+        summary=summary, filename=resume_url, resume_text=resume_text, is_dirty=0
     )
 
     # All empty values must be removed

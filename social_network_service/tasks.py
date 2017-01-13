@@ -13,6 +13,7 @@ import time
 import datetime
 
 # 3rd party imports
+import pytest
 import requests
 from redo import retry
 from celery.result import AsyncResult
@@ -24,8 +25,9 @@ from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import MeetupGroup, Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.talent_config_manager import TalentConfigKeys
-from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
+from social_network_service.custom_exceptions import HitLimitReached
 from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS, EVENT, MEETUP_EVENT_STREAM_API_URL)
 from social_network_service.modules.event.meetup import Meetup
 from social_network_service.modules.rsvp.meetup import Meetup as MeetupRsvp
@@ -85,19 +87,32 @@ def process_meetup_event(event):
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
+
+        # if same event is received multiple times, accept first and reject remaining
+        meetup_event_lock_key = json.dumps(event)
+        if not redis_store.get(meetup_event_lock_key):
+            # set lock for 5 minutes
+            redis_store.set(meetup_event_lock_key, True, 5 * 60)
+        else:
+            logger.info('Already received this Meetup Event: %s.' % event)
+            return 'Done'
+
         logger.info('Going to process Meetup Event: %s' % event)
         try:
             time.sleep(5)  # wait for event creation api to save event in database otherwise there can be duplicate
             # event created in database (one by api and other by importer)
             group = MeetupGroup.get_by_group_id(event['group']['id'])
             meetup = SocialNetwork.get_by_name('Meetup')
-
+            try:
+                meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
+            except HitLimitReached:
+                meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id,
+                                                validate_token=False)
+            meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials,
+                                       social_network=meetup, headers=meetup_sn.headers)
             if event['status'] in [MEETUP_EVENT_STATUS['upcoming'],
                                    MEETUP_EVENT_STATUS['suggested'],
                                    MEETUP_EVENT_STATUS['proposed']]:
-                meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
-                meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials,
-                                           social_network=meetup, headers=meetup_sn.headers)
                 event_url = get_url(meetup_sn, SocialNetworkUrls.EVENT).format(event['id'])
                 meetup_event_base.get_event(event_url)
             elif event['status'] in [MEETUP_EVENT_STATUS['canceled'], MEETUP_EVENT_STATUS['deleted']]:
@@ -107,8 +122,12 @@ def process_meetup_event(event):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    Event.delete(event_in_db)
-                    logger.info("Meetup event has been deleted from gt database. event:`%s`" % event_in_db.to_json())
+                    if meetup_event_base.delete_event(event_in_db.id, delete_from_vendor=False):
+                        logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
+                    else:
+                        logger.info('Event could not be marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
                 else:
                     logger.info("Meetup event not found in database. event:`%s`." % event)
 
@@ -241,12 +260,12 @@ def import_eventbrite_event(user_id, event_url, action_type):
         logger.info('Going to process Eventbrite Event: %s' % event_url)
         try:
             eventbrite = SocialNetwork.get_by_name('Eventbrite')
+            eventbrite_sn = EventbriteSocialNetwork(user_id=user_id, social_network_id=eventbrite.id)
+            eventbrite_event_base = EventbriteEventBase(headers=eventbrite_sn.headers,
+                                                        user_credentials=eventbrite_sn.user_credentials,
+                                                        social_network=eventbrite_sn.user_credentials.social_network)
             if action_type in [ACTIONS['created'], ACTIONS['published']]:
                 logger.info('Event Published on Eventbrite, Event URL: %s' % event_url)
-                eventbrite_sn = EventbriteSocialNetwork(user_id=user_id, social_network_id=eventbrite.id)
-                eventbrite_event_base = EventbriteEventBase(headers=eventbrite_sn.headers,
-                                                            user_credentials=eventbrite_sn.user_credentials,
-                                                            social_network=eventbrite_sn.user_credentials.social_network)
                 eventbrite_event_base.get_event(event_url)
             elif action_type == ACTIONS['unpublished']:
                 event_id = event_url.split('/')[-2]
@@ -256,8 +275,12 @@ def import_eventbrite_event(user_id, event_url, action_type):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    Event.delete(event_in_db)
-                    logger.info('Delete event from gt database, event: %s' % event_in_db.to_json())
+                    if eventbrite_event_base.delete_event(event_in_db.id, delete_from_vendor=False):
+                        logger.info('Event has been marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
+                    else:
+                        logger.info('Event could not be marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
                 else:
                     logger.info("Event unpublished from Eventbrite but it does not exist, don't worry. Event URL: %s"
                                 % event_url)
@@ -342,9 +365,26 @@ def import_meetup_events():
                             if group:
                                 logger.info('Going to save event: %s' % event)
                                 process_meetup_event.delay(event)
-                        except Exception:
-                            logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
-                            rollback()
+                        except ValueError:
+                            pass
+                        except Exception as e:
+                            logger.exception('Error occurred while parsing event data, Error: %s\nEvent: %s' %
+                                             (e, raw_event))
+                            raise
             except Exception as e:
                 logger.warning('Out of main loop. Cause: %s' % e)
+                time.sleep(5)
                 rollback()
+
+
+@celery.task(name="run_tests")
+def run_tests(args, file_path, output_formats):
+    """
+    This task takes list of args which are actually list of test modules, functions or some search criteria based on
+    which pytest will run tests.
+    :param list args: list of pytest args
+    :param str file_path: html file path
+    :param list output_formats: list of output formats
+    """
+    args.extend(['--{0}={1}.{0}'.format(_type, file_path) for _type in output_formats])
+    pytest.main(args)

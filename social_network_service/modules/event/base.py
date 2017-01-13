@@ -95,8 +95,10 @@ To add another social network for events management, following are steps:
 """
 
 # Standard Library
+import json
 from abc import ABCMeta
 from abc import abstractmethod
+import time
 
 # 3rd party
 from flask import request
@@ -108,6 +110,7 @@ from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.routes import EmailCampaignApiUrl
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.modules.urls import get_url
@@ -204,19 +207,23 @@ class EventBase(object):
         self.rsvps = []
         self.data = None
         self.headers = kwargs.get('headers')
-        if kwargs.get('user_credentials') or kwargs.get('user'):
-            self.user_credentials = kwargs.get('user_credentials')
-            self.user = kwargs.get('user') or User.get_by_id(self.user_credentials.user_id)
-            self.social_network = kwargs.get('social_network')
-            if isinstance(self.user, User):
-                self.api_url = self.social_network.api_url
-                self.member_id, self.access_token, self.refresh_token, self.webhook = self._get_user_credentials()
-                self.venue_id = None
-            else:
-                error_message = "No User found in database with id %(user_id)s" % self.user_credentials.user_id
-                raise NoUserFound('API Error: %s' % error_message)
-        else:
+        if not (kwargs.get('user_credentials') or kwargs.get('user')):
             raise UserCredentialsNotFound('User Credentials are empty/none')
+        self.user_credentials = kwargs.get('user_credentials')
+        self.user = kwargs.get('user') or User.get_by_id(self.user_credentials.user_id)
+        self.social_network = kwargs.get('social_network')
+        if isinstance(self.user, User):
+            self.api_url = self.social_network.api_url
+            self.member_id, self.access_token, self.refresh_token, self.webhook = self._get_user_credentials()
+            self.venue_id = None
+        else:
+            error_message = "No User found in database with id %(user_id)s" % self.user_credentials.user_id
+            raise NoUserFound('API Error: %s' % error_message)
+        access_token = User.generate_jw_token(user_id=self.user.id)
+        self.gt_headers = {
+            'Content-Type': 'application/json',
+            'Authorization': access_token
+        }
 
     def _get_user_credentials(self):
         """
@@ -234,6 +241,37 @@ class EventBase(object):
         webhook = user_credentials.webhook
         return member_id, access_token, refresh_token, webhook
 
+    def archive_email_campaigns_for_deleted_event(self, event, deleted_from_vendor):
+        """
+        Whenever an event is deleted from social-network, we update field `is_deleted_from_vendor` to 1.
+        We then check if it was promoted via email-campaign to getTalent candidates and mark all linked email-campaigns
+        as archived.
+        :param Event event: Event object
+        :param bool deleted_from_vendor: flag to mark 'is_deleted_from_vendor' field true or false
+        """
+        # if deleted_from_vendor is True, it means we are directly deleting event from our api call not from third party
+        # social network that's why we need to un-publish
+        # event from social network and will also mark is_hidden=1.
+        if deleted_from_vendor:
+            event.update(is_deleted_from_vendor=1, is_hidden=1)
+        else:
+            event.update(is_deleted_from_vendor=1)
+        base_campaign_events = event.base_campaign_event
+        for base_campaign_event in base_campaign_events:
+            base_campaign = base_campaign_event.base_campaign
+            email_campaigns = base_campaign.email_campaigns.all()
+            for email_campaign in email_campaigns:
+                data = {'is_hidden': 1}
+                try:
+                    response = http_request('patch', EmailCampaignApiUrl.CAMPAIGN % email_campaign.id,
+                                            headers=self.gt_headers, data=json.dumps(data))
+                    if response.ok:
+                        logger.info('Email campaign(id:%s) has been archived successfully.' % email_campaign.id)
+                    else:
+                        logger.info('Email campaign(id:%s) could not be archived.' % email_campaign.id)
+                except Exception:
+                    logger.exception('Email campaign(id:%s) could not be archived.' % email_campaign.id)
+
     @abstractmethod
     def create_event(self, *args, **kwargs):
         """
@@ -250,6 +288,8 @@ class EventBase(object):
         :return: event model object
         :rtype type(t)
         """
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         response = http_request('get', event_url, headers=self.headers)
         if response.ok:
             event = response.json()
@@ -265,6 +305,7 @@ class EventBase(object):
         event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id,
                                                                        self.social_network.id,
                                                                        event_data['social_network_event_id'])
+        event_data['is_deleted_from_vendor'] = 0
         if event:
             event.update(**event_data)
             logger.info('Event updated successfully : %s' % event.to_json())
@@ -376,23 +417,24 @@ class EventBase(object):
         # Import RSVPs of events
         self.process_events_rsvps()
 
-    def delete_event(self, event_id):
+    def delete_event(self, event_id, delete_from_vendor=True):
         """
         Here we pass an event id, picks it from db, and try to delete
         it both from social network and database. If successfully deleted
         from both sources, returns True, otherwise returns False.
         :param event_id: is the 'id' of event present in our db
         :type event_id: int or long
+        :param delete_from_vendor: is flag to delete event from third party
+        :type delete_from_vendor: bool
         :return: True if deletion is successful, False otherwise.
         :rtype: bool
         """
         event = Event.get_by_user_and_event_id(self.user.id, event_id)
         if event:
             try:
-                event_name = event.title
-                self.unpublish_event(event.social_network_event_id)
-                Event.delete(event_id)
-                logger.info('Event "%s" has been deleted from database.' % event_name)
+                if delete_from_vendor:
+                    self.unpublish_event(event.social_network_event_id)
+                self.archive_email_campaigns_for_deleted_event(event, delete_from_vendor)
                 return True
             except Exception:  # some error while removing event
                 logger.exception('delete_event: user_id: %s, event_id: %s, social network: %s(id: %s)'
@@ -435,14 +477,16 @@ class EventBase(object):
         :return: True if event is deleted from vendor, False otherwise.
         :rtype: bool
         """
-        # create url to publish event
+        # create url to unpublish event
         url = get_url(self, Urls.EVENT).format(event_id)
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         # params are None. Access token is present in self.headers
         response = http_request(method, url, headers=self.headers, user_id=self.user.id)
         if response.ok:
             logger.info('|  Event has been unpublished (deleted)  |')
         else:
-            error_message = "Event was not unpublished (deleted)."
+            error_message = "Event was not unpublished (deleted):%s" % response.text
             log_error({'user_id': self.user.id, 'error': error_message})
             raise EventNotUnpublished('ApiError: Unable to remove event from %s' % self.social_network.name)
 

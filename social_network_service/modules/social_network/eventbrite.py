@@ -24,8 +24,8 @@ class Eventbrite(SocialNetworkBase):
 
     - This overrides following SocialNetworkBase class methods
 
-        - validate_token()
-        - get_access_and_refresh_token()
+        - get_access_and_refresh_token
+        - save_user_credentials_in_db etc
 
     :Example:
 

@@ -18,11 +18,8 @@ from resume_parsing_service.app.views.ocr_lib import abbyy_ocr_image
 from resume_parsing_service.app.views.pdf_utils import (convert_pdf_to_text, decrypt_pdf)
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
+from resume_parsing_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
 
-
-IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
-                 '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
-DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 

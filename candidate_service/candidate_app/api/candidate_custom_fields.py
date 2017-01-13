@@ -1,28 +1,24 @@
 # Standard library
-import requests
-import json
 import datetime
-from requests import codes as http_status_codes
+import json
 
-# Flask specific
+import requests
 from flask import request
 from flask_restful import Resource
-# Models
-from candidate_service.common.models.db import db
+from requests import codes as http_status_codes
+
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from candidate_service.common.models.candidate import CandidateCustomField
-from candidate_service.common.models.user import Permission
+from candidate_service.common.models.db import db
 from candidate_service.common.models.misc import CustomField
-# Validators
+from candidate_service.common.models.user import Permission
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.json_schema.candidate_custom_fields import ccf_schema
+from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 from candidate_service.modules.validators import (
     get_candidate_if_validated, does_candidate_cf_exist, is_custom_field_authorized, get_json_data_if_validated
 )
-from candidate_service.json_schema.candidate_custom_fields import ccf_schema
-# Error handling
-from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
-# Cloud search
-from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 
 
 class CandidateCustomFieldResource(Resource):

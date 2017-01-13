@@ -9,10 +9,12 @@ import re
 import string
 import time
 from functools import wraps
+from datetime import datetime
 
 # Third Party
 import requests
 from flask import Flask
+from requests import codes
 from itertools import izip_longest
 from requests import ConnectionError
 from flask import current_app, request
@@ -35,7 +37,6 @@ JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 def random_word(length):
     """Creates a random lowercase string, useful for testing data."""
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
-
 
 def random_letter_digit_string(size=6, chars=string.lowercase + string.digits):
     """Creates a random string of lowercase/uppercase letter and digits."""
@@ -135,16 +136,7 @@ def log_exception(message, app=None):
     :param app:
     :return:
     """
-    if not app:
-        logger = current_app.config[TalentConfigKeys.LOGGER]
-        logger.exception(message)
-        return
-
-    assert isinstance(app, Flask), "app instance should be flask"
-
-    logger = app.config[TalentConfigKeys.LOGGER]
-    with app.app_context():
-        logger.exception(message)
+    log(message, app=app, level='exception')
 
 
 def log_error(message, app=None):
@@ -154,19 +146,30 @@ def log_error(message, app=None):
     :param app:
     :return:
     """
+    log(message, app=app, level='error')
+
+
+def log(message, app=None, level='info'):
+    """
+        Log message using logger with or without app_context
+        :param str message: message to log
+        :param str level: log level i.e. info, error , exception
+        :param type(t) app: flask app instance
+        """
+    assert level in ('debug', 'info', 'warning', 'error', 'critical', 'exception')
     if not app:
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        logger.error(message)
+        getattr(logger, level)(message)
         return
 
-    assert isinstance(app, Flask), "app instance should be flask"
+    assert isinstance(app, Flask), 'app instance should be flask'
 
     logger = app.config[TalentConfigKeys.LOGGER]
     with app.app_context():
-        logger.error(message)
+        getattr(logger, level)(message)
 
 
-def http_request(method_type, url, params=None, headers=None, data=None, user_id=None, app=None):
+def http_request(method_type, url, params=None, headers=None, data=None, user_id=None, app=None, throttled=False):
     """
     This is common function to make HTTP Requests. It takes method_type (GET or POST)
     and makes call on given URL. It also handles/logs exception.
@@ -177,18 +180,20 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :param data: data to be sent.
     :param user_id: Id of logged in user.
     :param app: flask app object if wanted to use this method using app_context()
+    :param throttled: boolean to detect if it is a recursive call so don't try again and again in case of throttling
     :type method_type: str
     :type url: str
     :type params: dict | None
     :type headers: dict | None
     :type data: dict | None
     :type user_id: int | long | None
+    :type throttled: bool
     :return: response from HTTP request or None
     :Example:
         If we are requesting scheduler_service to GET a task, we will use this method as
             http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=oauth_header)
     """
-
+    log('http_request: URL: %s , Datetime: %s' % (url, datetime.utcnow()), app=app, level='info')
     if app and not isinstance(app, Flask):
         raise InternalServerError(error_message="app instance should be flask")
 
@@ -219,6 +224,24 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                 log_exception("http request failed: Method:%s, URL:%s, user_id:%s, Response:%s"
                               % (method_type, url, user_id, e.response.json()))
                 raise UnauthorizedError(str(e.response.json()))
+
+            elif e.response.status_code == codes.TOO_MANY_REQUESTS:  # 429, Throttling
+
+                error_message = e.response.json()
+                log(error_message, app=app, level='warning')
+
+                if throttled:
+                    raise InternalServerError(str(error_message))
+                if error_message.get('code') == 'throttled':
+                    wait_until = e.response.headers.get('X-RateLimit-Reset')
+                    log('Request Throttled: Sleep for %s seconds.' % wait_until, app=app, level='warning')
+                    if wait_until:
+                        time.sleep(int(wait_until) + 1)
+                    else:
+                        time.sleep(30)
+                    return http_request(method_type, url, params=params, headers=headers, data=data, user_id=user_id,
+                                        app=app, throttled=True)
+
             # checks if error occurred on "Server" or is it a bad request
             elif e.response.status_code < InternalServerError.http_status_code():
                 try:

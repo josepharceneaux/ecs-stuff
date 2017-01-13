@@ -13,6 +13,7 @@ from user_service.common.utils.validators import is_valid_email, is_number
 from user_service.common.utils.auth_utils import gettalent_generate_password_hash
 from user_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from user_service.user_app.user_service_utilties import (check_if_user_exists, create_user_for_company,
+                                                         get_users_stats_from_mixpanel,
                                                          send_new_account_email, validate_role)
 
 
@@ -55,8 +56,9 @@ class UserApi(Resource):
     @require_all_permissions(Permission.PermissionNames.CAN_GET_USERS)
     def get(self, **kwargs):
         """
-        GET /users/<id>             Fetch user object with user's basic info
-        GET /users?domain_id=1      Fetch all user ids of a given domain
+        GET /users/<id>                             Fetch user object with user's basic info
+        GET /users?domain_id=1                      Fetch all user ids of a given domain
+        GET /users?domain_id=1&include_stats=True   Fetch all user ids of a given domain and also include stats
 
         :return A dictionary containing user basic info except safety critical info or a dictionary containing
                 all user_ids of a domain
@@ -64,6 +66,7 @@ class UserApi(Resource):
         """
 
         requested_user_id = kwargs.get('id')
+        include_stats_flag = request.args.get('include_stats', False)
         if requested_user_id:
             requested_user = User.query.get(requested_user_id)
             if not requested_user:
@@ -74,7 +77,7 @@ class UserApi(Resource):
                     request.user.id, requested_user_id))
 
             return {
-                'user': requested_user.to_dict()
+                'user': get_users_stats_from_mixpanel(requested_user.to_dict(), True, include_stats_flag)
             }
 
         # User id is not provided so logged-in user wants to get all users of its domain
@@ -87,7 +90,8 @@ class UserApi(Resource):
                 if not is_number(domain_id) or not Domain.query.get(int(domain_id)):
                     raise InvalidUsage("Invalid Domain Id is provided")
 
-            return {'users': [user.to_dict() for user in User.all_users_of_domain(int(domain_id))]}
+            users_data_dict = {user.id: user.to_dict() for user in User.all_users_of_domain(int(domain_id))}
+            return {'users': get_users_stats_from_mixpanel(users_data_dict, False, include_stats_flag).values()}
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_USERS)
     def post(self):

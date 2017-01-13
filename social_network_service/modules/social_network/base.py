@@ -179,13 +179,15 @@ class SocialNetworkBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self,  user_id, social_network_id=None, validate_credentials=True, exclude_fields=()):
+    def __init__(self,  user_id, social_network_id=None, validate_credentials=True, validate_token=True,
+                 exclude_fields=()):
         """
         - This sets the user's credentials as base class property so that it can be used in other classes.
         - We also check the validity of access token and try to refresh it in case it has expired.
         :param int|long user_id: Id of User
         :param int|long|None social_network_id: Social Network Id
         :param bool validate_credentials: If True, this will validate the credentials of user for given social network.
+        :param bool validate_token: If True, this will validate auth token of user for given social network.
         """
         self.events = []
         self.api_relative_url = None
@@ -226,7 +228,10 @@ class SocialNetworkBase(object):
             self.headers = {'Authorization': 'Bearer ' + self.access_token}
             # token validity is checked here. If token is expired, we refresh it
             # here and save new access token in database.
-            self.access_token_status = self.validate_and_refresh_access_token()
+            if validate_token:
+                self.access_token_status = self.validate_and_refresh_access_token()
+            else:
+                self.access_token_status = True
             if not self.access_token_status:
                 # Access token has expired. Couldn't refresh it for given
                 # social network.
@@ -235,7 +240,7 @@ class SocialNetworkBase(object):
                 raise AccessTokenHasExpired('Access token has expired for %s' % self.social_network.name)
             self.start_date_dt = None
             self.webhook_id = None
-            if not self.user_credentials.member_id:
+            if not self.user_credentials.member_id and validate_token:
                 # gets and save the member id of gt-user
                 self.get_member_id()
 
@@ -400,18 +405,10 @@ class SocialNetworkBase(object):
         :return: True if token is valid otherwise False
         :rtype: bool
 
-        - This function is called from validate_and_refresh_access_token()
-         social network service base class inside
-         social_network_service/base.py to check the validity of the access
-         token of current user for a specific social network. We take the
-         access token, make request to social network API on url
-            url = self.api_url + self.api_relative_url
-         and check if it didn't error out.
-
-         We have value of "self.api_relative_url" set by child classes
-            according to API of respective social network. Above url will
-            evaluate in case of Meetup as
-            url = 'https://api.meetup.com/2' + '/member/self'
+        - This function is called from validate_and_refresh_access_token() social network service base class
+        inside social_network_service/base.py to check the validity of the access token of current user for a
+        specific social network. We take the access token, make request to social network API on url
+            say for Meetup 'https://api.meetup.com/2/member/self'
 
         :Example:
                 from social_network_service.meetup import Meetup

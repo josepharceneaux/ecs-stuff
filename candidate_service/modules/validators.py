@@ -6,29 +6,25 @@ import json
 import re
 from datetime import datetime
 
-# Flask Specific
-from flask import request
 from dateutil.parser import parse
+from flask import request
+from jsonschema import validate, ValidationError, FormatChecker
 
-# Models
-from candidate_service.common.models.db import db
+from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
+                                                     SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from candidate_service.common.models.candidate import (
     Candidate, CandidateEmail, CandidateEducation, CandidateExperience, CandidatePhone,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateMilitaryService
 )
-from candidate_service.common.models.email_campaign import EmailClient
-from candidate_service.common.models.user import User
-from candidate_service.common.models.misc import AreaOfInterest, CustomField
-
+from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign
-from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
-                                                     SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
-from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
-from ..custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.common.models.email_campaign import EmailClient
+from candidate_service.common.models.user import User, Role
+from candidate_service.common.models.misc import AreaOfInterest, CustomField
+from candidate_service.common.models.user import User
 from candidate_service.common.utils.validators import is_number, format_phone_number
-
-# Json schema validation
-from jsonschema import validate, ValidationError, FormatChecker
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 def remove_duplicates(collection):
@@ -71,9 +67,9 @@ def get_candidate_if_exists(candidate_id):
     if not candidate:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_NOT_FOUND)
-    if candidate.is_web_hidden:
+    if candidate.is_archived:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
-                            error_code=custom_error.CANDIDATE_IS_HIDDEN)
+                            error_code=custom_error.CANDIDATE_IS_ARCHIVED)
     return candidate
 
 
@@ -81,7 +77,7 @@ def get_candidate_if_validated(user, candidate_id):
     """
     Function will return candidate if:
         1. it exists
-        2. not hidden, and
+        2. not archived, and
         3. belongs to user's domain
     :type user: User
     :type candidate_id: int | long
@@ -91,9 +87,9 @@ def get_candidate_if_validated(user, candidate_id):
     if not candidate:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_NOT_FOUND)
-    if candidate.is_web_hidden:
+    if candidate.is_archived:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
-                            error_code=custom_error.CANDIDATE_IS_HIDDEN)
+                            error_code=custom_error.CANDIDATE_IS_ARCHIVED)
 
     if user and user.role.name != 'TALENT_ADMIN' and candidate.user.domain_id != user.domain_id:
         raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
@@ -327,8 +323,10 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "dumb_list_ids": 'id_list',
     # List of ids of smart_lists (For Internal TalentPipeline Search Only)
     "smartlist_ids": 'id_list',
-    # candidate id : to check if candidate is present in smartlist.
-    "id": 'digit'
+    # candidate id: to check if candidate is present in smartlist.
+    "id": 'digit',
+    # is_archived: to check if candidate is activated or archived
+    "status": "string"
 }
 
 
@@ -417,6 +415,8 @@ def validate_and_format_data(request_data):
             request_vars[key] = validate_id_list(key, value)
         if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
             request_vars[key] = validate_sort_by(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == 'string':
+            request_vars[key] = validate_string_list(key, value)
         if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
             request_vars[key] = validate_string_list(key, value)
         if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
@@ -713,3 +713,13 @@ def get_json_data_if_validated(request_body, json_schema, format_checker=True):
     except ValidationError as e:
         raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
     return body_dict
+
+
+def is_user_permitted_to_archive_candidate(user, candidate):
+    """
+    Function will return true if user is candidate's owner or an admin, otherwise false
+    :type user: User
+    :type candidate: Candidate
+    :rtype: bool
+    """
+    return True if 'ADMIN' in Role.get(user.role_id).name or user.id == candidate.user_id else False

@@ -5,8 +5,6 @@ Here are fixtures to be used across campaign-services.
 """
 # Packages
 import json
-import os
-
 import pytest
 from copy import deepcopy
 from requests import codes
@@ -15,16 +13,16 @@ from requests import codes
 # Application Specific
 
 from ...models.db import db
-from ...tests.app import test_app
 from ...tests.sample_data import fake
-from ...redis_cache import redis_store2
-from ...constants import (MEETUP, EVENTBRITE)
 from ...models.event import MeetupGroup
+from ...redis_cache import redis_store2
+from ...tests.app import test_app, logger
+from ...constants import (MEETUP, EVENTBRITE)
 from ...models.candidate import SocialNetwork
 from ..tests_helpers import CampaignsTestsHelpers
 from ...utils.handy_functions import send_request
 from ...models.event_organizer import EventOrganizer
-from ...talent_config_manager import TalentConfigKeys, TalentEnvs
+from ...talent_config_manager import TalentConfigKeys
 from ...models.user import UserSocialNetworkCredential
 from ...utils.test_utils import add_social_network_credentials, add_test_venue
 from ...routes import (SocialNetworkApiUrl, EmailCampaignApiUrl)
@@ -37,8 +35,12 @@ from ...tests.api_conftest import (user_first, token_first, talent_pool_session_
 
 __author__ = 'basit'
 
+EVENTBRITE_CONFIG = {'skip': True,
+                     'reason': 'In contact with Eventbrite support for increasing hit rate limit'}
+
 # Add new vendor here to run tests for that particular social-network
-VENDORS = [EVENTBRITE.title(), MEETUP.title()]
+VENDORS = [MEETUP.title(),
+           pytest.mark.skipif(EVENTBRITE_CONFIG['skip'], reason=EVENTBRITE_CONFIG['reason'])(EVENTBRITE.title())]
 
 """
 Fixtures related to Meetup
@@ -54,7 +56,7 @@ def meetup():
 
 
 @pytest.fixture(scope="session")
-def meetup_venue(meetup, user_first, token_first):
+def meetup_venue(meetup, user_first, token_first, test_meetup_credentials):
     """
     This fixture returns meetup venue in getTalent database
     """
@@ -85,7 +87,15 @@ def meetup_venue(meetup, user_first, token_first):
     return {'id': venue_id}
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session", params=VENDORS)
+def test_credentials(request):
+    """
+    This fixture creates credentials for vendors present in VENDORS list
+    """
+    return deepcopy(request.getfuncargvalue("test_{}_credentials".format(request.param.lower())))
+
+
+@pytest.fixture(scope="session")
 def test_meetup_credentials(user_first, meetup):
     """
     Create meetup social network credentials for this user so we can create event on Meetup.com
@@ -210,8 +220,8 @@ def eventbrite():
     return {'id': SocialNetwork.get_by_name(EVENTBRITE.title()).id}
 
 
-@pytest.fixture(scope="session", autouse=True)
-def test_eventbrite_credentials(request, user_first, eventbrite):
+@pytest.fixture(scope="session")
+def test_eventbrite_credentials(user_first, eventbrite):
     """
     Create eventbrite social network credentials for this user so
     we can create event on Eventbrite.com
@@ -219,7 +229,7 @@ def test_eventbrite_credentials(request, user_first, eventbrite):
     return add_social_network_credentials(test_app, eventbrite, user_first)
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def test_eventbrite_credentials_same_domain(user_same_domain, eventbrite):
     """
     Create eventbrite social network credentials for this user so
@@ -268,7 +278,7 @@ def organizer_in_db(user_first):
 
 
 @pytest.fixture(scope="session")
-def eventbrite_event(test_eventbrite_credentials, eventbrite, eventbrite_venue, token_first):
+def eventbrite_event(request, test_eventbrite_credentials, user_first, eventbrite, eventbrite_venue, token_first):
     """
     This method create a dictionary data to create event on eventbrite.
     It uses meetup SocialNetwork model object, venue for meetup
@@ -293,6 +303,27 @@ def eventbrite_event(test_eventbrite_credentials, eventbrite, eventbrite_venue, 
     del _event['venue']
     del _event['event_organizer']
 
+    def fin():
+        try:
+            from social_network_service.modules.event.eventbrite import Eventbrite as EventbriteEventBase
+            from social_network_service.modules.social_network.eventbrite import Eventbrite as EventbriteSocialNetwork
+            with test_app.app_context():
+                # Delete events from vendor
+                eventbrite_sn = EventbriteSocialNetwork(user_id=user_first['id'], social_network_id=eventbrite['id'])
+                eventbrite_event_object = EventbriteEventBase(
+                    headers=eventbrite_sn.headers, user_credentials=eventbrite_sn.user_credentials,
+                    social_network=eventbrite_sn.user_credentials.social_network)
+                events = eventbrite_event_object.get_events(status='draft,live')
+                print 'Got %s events on Eventbrite website' % len(events)
+                for vendor_event in events:
+                    try:
+                        eventbrite_event_object.unpublish_event(vendor_event['id'])
+                    except Exception:
+                        logger.exception('Unable to delete event from Eventbrite website')
+        except Exception:
+            logger.exception('Error occurred while deleting events from Eventbrite website')
+
+    request.addfinalizer(fin)
     return _event
 
 
@@ -308,6 +339,15 @@ def event_in_db(request):
     e.g. In case of Eventbrite, it will return fixture named as "eventbrite_event"
     """
     return deepcopy(request.getfuncargvalue("{}_event".format(request.param.lower())))
+
+
+@pytest.fixture(scope="function", params=VENDORS)
+def event_in_db_second(request):
+    """
+    This fixture creates an event on vendor basis and returns it.
+    e.g. In case of Eventbrite, it will return fixture named as "eventbrite_event"
+    """
+    return deepcopy(request.getfuncargvalue("{}_event_second".format(request.param.lower())))
 
 
 """
@@ -346,6 +386,19 @@ def base_campaign_event(base_campaign, event_in_db, token_first):
     """
     response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT % (base_campaign['id'],
                                                                                event_in_db['id']),
+                            token_first)
+    assert response.status_code == codes.CREATED, response.text
+    assert response.json()['id']
+    return response.json()
+
+
+@pytest.fixture()
+def base_campaign_event_second(base_campaign, event_in_db_second, token_first):
+    """
+    This hits the API with valid event and base campaign and link both of them with each other.
+    """
+    response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT % (base_campaign['id'],
+                                                                               event_in_db_second['id']),
                             token_first)
     assert response.status_code == codes.CREATED, response.text
     assert response.json()['id']
@@ -400,3 +453,128 @@ def email_campaign_same_domain(smartlist_same_domain, base_campaign, token_first
                                              blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'],
                                                                                     campaign_blast[0]['id']),
                                              access_token=token_first)
+
+
+@pytest.fixture(scope="function")
+def meetup_venue_second(meetup, user_first, token_first, test_meetup_credentials):
+    """
+    This fixture returns meetup venue in getTalent database
+    """
+    social_network_id = meetup['id']
+    venue = {
+        "social_network_id": social_network_id,
+        "user_id": user_first['id'],
+        "zip_code": "95014",
+        "address_line_2": "",
+        "group_url_name": 'Python-Learning-Meetup',
+        "address_line_1": "Infinite Loop",
+        "latitude": 0,
+        "longitude": 0,
+        "state": "CA",
+        "city": "Cupertino",
+        "country": "us"
+    }
+
+    response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
+
+    data = response_post.json()
+    if response_post.status_code == codes.bad:
+        data = data['error']
+
+    assert response_post.status_code == codes.created or response_post.status_code == codes.bad, response_post.text
+    venue_id = data['id']
+
+    return {'id': venue_id}
+
+
+@pytest.fixture(scope="function")
+def meetup_event_second(test_meetup_credentials, meetup, meetup_venue_second,
+                        token_first, meetup_event_data):
+    """
+    This creates another event for Meetup for user_first
+    """
+
+    response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
+
+    assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
+
+    data = response.json()
+    assert data['id']
+
+    response_get = send_request('get', url=SocialNetworkApiUrl.EVENT % data['id'], access_token=token_first)
+
+    assert response_get.status_code == codes.OK, response_get.text
+
+    _event = response_get.json()['event']
+    _event['venue_id'] = _event['venue']['id']
+    del _event['venue']
+    del _event['event_organizer']
+
+    return _event
+
+
+@pytest.fixture(scope="function")
+def eventbrite_venue_second(test_eventbrite_credentials, user_first, eventbrite, token_first):
+    """
+    This fixture returns eventbrite venue in getTalent database
+    """
+    social_network_id = eventbrite['id']
+    venue = {
+        "social_network_id": social_network_id,
+        "user_id": user_first['id'],
+        "zip_code": "54600",
+        "address_line_2": "H# 163, Block A",
+        "address_line_1": "New Muslim Town",
+        "latitude": 0,
+        "longitude": 0,
+        "state": "Punjab",
+        "city": "Lahore",
+        "country": "Pakistan"
+    }
+
+    response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
+
+    assert response_post.status_code == codes.created, response_post.text
+
+    venue_id = response_post.json()['id']
+
+    return {'id': venue_id}
+
+
+@pytest.fixture(scope="function")
+def eventbrite_event_second(test_eventbrite_credentials, eventbrite, eventbrite_venue_second,
+                            token_first):
+    """
+    This method create a dictionary data to create event on eventbrite.
+    It uses meetup SocialNetwork model object, venue for meetup
+    and an organizer to create event data for
+    """
+    event = EVENT_DATA.copy()
+    event['title'] = 'Eventbrite ' + event['title']
+    event['social_network_id'] = eventbrite['id']
+    event['venue_id'] = eventbrite_venue_second['id']
+    response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=event)
+    assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
+
+    data = response.json()
+    assert data['id']
+
+    response_get = send_request('get', url=SocialNetworkApiUrl.EVENT % data['id'], access_token=token_first)
+
+    assert response_get.status_code == codes.OK, response_get.text
+
+    _event = response_get.json()['event']
+    _event['venue_id'] = _event['venue']['id']
+    del _event['venue']
+    del _event['event_organizer']
+
+    return _event
+
+
+@pytest.fixture(scope="function", params=VENDORS)
+def event_in_db_second(request):
+    """
+    This fixture creates another event on vendor basis and returns it.
+    e.g. In case of Eventbrite, it will return fixture named as "eventbrite_event_second"
+    """
+    return deepcopy(request.getfuncargvalue("{}_event_second".format(request.param.lower())))

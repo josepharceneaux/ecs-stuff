@@ -22,7 +22,9 @@ class Candidate(db.Model):
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
     candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.Id'))
+    # TODO: remove is_web_hidden after all migrations has been completed
     is_web_hidden = db.Column('IsWebHidden', TINYINT, default=False)
+    is_archived = db.Column(TINYINT, default=0)
     is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
     user_id = db.Column('OwnerUserId', BIGINT, db.ForeignKey('user.Id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
@@ -108,6 +110,7 @@ class Candidate(db.Model):
                                    source_id=source_id,
                                    source_product_id=product_id).first()
 
+    # TODO: change function to "set_is_archived_to_true" when is_web_hidden has been removed
     @classmethod
     def set_is_web_hidden_to_true(cls, candidate_id):
         """
@@ -129,7 +132,7 @@ class Candidate(db.Model):
         domain_id = User.get_domain_id(user_id)
         return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
             .filter(and_(User.id == Candidate.user_id, User.domain_id == domain_id)). \
-            filter(CandidateSkill.description.in_(skills)).distinct().count()
+            filter(CandidateSkill.description.in_(skills), Candidate.is_web_hidden == 0).distinct().count()
 
     @staticmethod
     @contract
@@ -140,23 +143,26 @@ class Candidate(db.Model):
         :param string zipcode: Candidate zipcode
         :rtype: int|long
         """
-        assert isinstance(zipcode, basestring) and zipcode, "Invalid zipcode"
-        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
         from .user import User  # This has to be here to avoid circular import
         domain_id = User.get_domain_id(user_id)
         return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
             filter(and_(Candidate.user_id == User.id, User.domain_id == domain_id)). \
-            filter(CandidateAddress.zip_code == zipcode).distinct().count()
+            filter(CandidateAddress.zip_code == zipcode, Candidate.is_web_hidden == 0).distinct().count()
 
     @classmethod
-    def get_all_in_user_domain(cls, domain_id):
+    def get_all_in_user_domain(cls, domain_id, is_hidden=1):
         """
-        This method returns number of candidates from a certain zipcode
+        This method returns number of candidates from a certain zipcode, if is_hidden is 1 it returns hidden candidtes
+        as well if it is 0 it returns only un-hidden candidates
+        :param int is_hidden: Is_hidden integer
         :param int|long domain_id: Domain Id
         """
         assert domain_id, 'domain_id not provided'
         from user import User  # This has to be here to avoid circular import
-        return cls.query.join(User, User.domain_id == domain_id).filter(Candidate.user_id == User.id).all()
+        common_query = cls.query.join(User, User.domain_id == domain_id).filter(Candidate.user_id == User.id)
+        if is_hidden == 0:
+            return common_query.filter(Candidate.is_web_hidden == 0).all()
+        return common_query.all()
 
 
 class CandidateStatus(db.Model):
@@ -1369,6 +1375,7 @@ class CandidateDevice(db.Model):
         query = cls.query.join(Candidate).join(User).join(Domain)
         query = query.filter(cls.one_signal_device_id == one_signal_id)
         query = query.filter(cls.candidate_id == Candidate.id)
+        # TODO: change Candidate.is_web_hidden == 0 to Candidate.is_archived == 0 AFTER is_web_hidden has been removed from Candidate model
         query = query.filter(Candidate.user_id == User.id, Candidate.is_web_hidden == 0)
         query = query.filter(User.domain_id == domain_id)
         return query.first()

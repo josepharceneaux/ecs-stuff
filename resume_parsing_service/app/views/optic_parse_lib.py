@@ -29,7 +29,7 @@ from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
-SPLIT_DESCRIPTION_REGEXP = re.compile(ur"•≅_|≅_| \* |•|➢|→|\n\n\n")
+SPLIT_DESCRIPTION_REGEXP = re.compile(ur"•≅_|≅_| \* |■|•|➢|→|â|˘|\n\n\n")
 
 
 @contract
@@ -107,7 +107,11 @@ def parse_optic_xml(resume_xml_text):
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
-    encoded_soup_text = b64encode(bs4(resume_xml_text, 'lxml').getText().encode('utf8', 'replace'))
+    soup_text = bs4(resume_xml_text, 'lxml').getText().encode('utf8', 'replace')
+    non_ascii_chars = set(re.sub(u'[\x00-\x7f]', '', soup_text))
+    if non_ascii_chars:
+        logger.info('ResumeParsingService::Info::Non-ascii chars in resume: {}'.format(non_ascii_chars))
+    encoded_soup_text = b64encode(soup_text)
     contact_xml_list = bs4(resume_xml_text, 'lxml').findAll('contact')
     experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
@@ -117,6 +121,7 @@ def parse_optic_xml(resume_xml_text):
     emails = parse_candidate_emails(contact_xml_list)
     first_name, last_name = parse_candidate_name(contact_xml_list)
     references = parse_candidate_reference(references_xml)
+    linkedIn_urls = parse_candidate_linkedin_urls(soup_text)
 
     if emails and not first_name:
         first_name = emails[0].get('address')
@@ -133,7 +138,9 @@ def parse_optic_xml(resume_xml_text):
         addresses=parse_candidate_addresses(contact_xml_list),
         talent_pool_ids={'add': None},
         references=references,
-        summary=parse_candidate_summary(summary_xml_list)
+        summary=parse_candidate_summary(summary_xml_list),
+        resume_text=soup_text,
+        social_networks=linkedIn_urls
     )
 
 
@@ -313,8 +320,13 @@ def gen_base_exp_from_exp_tag(experience_xml):
     organization = _tag_text(experience_xml, 'employer')
     # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
     if organization and len(organization) > 5:
-        organization = string.capwords(organization)
+        organization = trunc_text(string.capwords(organization), 100)
     title = _tag_text(experience_xml, 'title')
+    # Truncate the tag text based on the candidate JSON schema
+    # GET-1829
+    if title:
+        title = trunc_text(title, 100)
+
     start_date_str = get_date_from_date_tag(experience_xml, 'start')
 
     if start_date_str:
@@ -515,13 +527,30 @@ def parse_candidate_reference(xml_references_list):
 def parse_candidate_summary(xml_summary_tags):
     """
     :param bs4_ResultSet xml_summary_tags:
-    :rtype: string | None
+    :rtype: string
     """
-    summary = ''
-    for summary_tag in xml_summary_tags:
-        summary += summary_tag.text.strip()
+    # GET-1903. If there is more than one summary tag use the first one.
+    if xml_summary_tags:
+        return xml_summary_tags[0].text.strip()
+    else:
+        return ''
 
-    return summary
+
+def parse_candidate_linkedin_urls(soup_text):
+    output = []
+    URL_PREFIX = 'https://www.'
+    # TODO re.I not working as intended
+    # RegEx for getting text in format: linkedin.com/in/<usernameSlug>
+    LINKEDIN_REGEX = re.compile('linkedin.com/in/+(?:[A-Z][A-Z0-9_]*)', re.I)
+
+    profile_urls = LINKEDIN_REGEX.findall(soup_text)
+    for url in set(profile_urls): #  A user may have linkedin urls in a footer on every page.
+        output.append({
+            'name': 'LinkedIn',
+            'profile_url': URL_PREFIX + url
+        })
+
+    return output
 
 
 ###################################################################################################
@@ -555,8 +584,7 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
                 text = NEWLINES_REGEXP.sub(" ", text)
             if capwords:
                 text = string.capwords(text)
-            text = text.encode('utf-8')
-            return bs4(text, 'lxml').text
+            return text
     return None
 
 
@@ -605,7 +633,8 @@ def scrub_candidate_name(name_unicode):
     http://stackoverflow.com/questions/265960/
 
     :param string name_unicode:
-    :return string:
+    :return name_unicode:
+    :rtype string:
     """
 
     translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)
@@ -630,3 +659,10 @@ def get_country_code_from_address_tag(address):
             return company_country_i3.alpha2
 
     return None
+
+
+def trunc_text(text, length):
+    if len(text) > length:
+        return text[:length - 3] + '...'
+    else:
+        return text

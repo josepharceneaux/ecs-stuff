@@ -8,6 +8,7 @@ It also contains methods to get RSVPs of events.
 import json
 from datetime import datetime
 from datetime import timedelta
+import time
 
 # Application specific
 from social_network_service.common.models.venue import Venue
@@ -137,6 +138,8 @@ class Meetup(EventBase):
             next_url = data['meta']['next'] or None
             while next_url:
                 url = next_url
+                # Sleep for 10 / 30 seconds to avoid throttling
+                time.sleep(0.34)
                 response = http_request('GET', url, headers=self.headers, user_id=self.user.id)
                 if response.ok:
                     data = response.json()
@@ -160,6 +163,8 @@ class Meetup(EventBase):
             if social_network_group_id in self.social_network_group_ids:
                 return True
             url = get_url(self, Urls.GROUPS) + '/?sign=true'
+            # Sleep for 10 / 30 seconds to avoid throttling
+            time.sleep(0.34)
             response = http_request('GET', url,
                                     params={
                                         'group_id': social_network_group_id
@@ -329,6 +334,8 @@ class Meetup(EventBase):
             'state': venue_in_db.state,
             'name': venue_in_db.address_line_1
         }
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         response = http_request('POST', url, params=payload, headers=self.headers, user_id=self.user.id)
         if response.ok:
             venue_id = json.loads(response.text)['id']
@@ -371,6 +378,8 @@ class Meetup(EventBase):
         self.payload.update({'venue_id': venue_id, 'publish_status': 'published'})
         logger.info('Creating event for %s(user id:%s) using url:%s of API of %s.'
                     % (self.user.name, self.user.id, url, self.social_network.name))
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         response = http_request('POST', url, params=self.payload, headers=self.headers, user_id=self.user.id)
         if response.ok:
             event = response.json()
@@ -400,6 +409,8 @@ class Meetup(EventBase):
         venue_id = self.add_location()
         # add venue id in event payload to update event venue on Meetup.com
         self.payload.update({'venue_id': venue_id})
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         response = http_request('POST', url, params=self.payload,
                                 headers=self.headers,
                                 user_id=self.user.id)

@@ -174,6 +174,19 @@ class TestCeleryTasks(object):
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS, campaign_id,
                                                            access_token_first)
 
+    def test_campaign_send_with_archived_candidate(self, access_token_first, user_first,
+                                                   campaign_with_archived_candidate):
+        """
+        We try to send campaign to a smartlist which contains 2 candidates. One of the candidate is archived, So,
+        campaign should only be sent to 1 candidate.
+        """
+        expected_sends = 1
+        campaign_id = campaign_with_archived_candidate['id']
+        response_post = self.send_campaign(campaign_with_archived_candidate, access_token_first)
+        assert_api_send_response(campaign_with_archived_candidate, response_post, codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, expected_sends, campaign_id,
+                                                           access_token_first)
+
 
 class TestCampaignSchedule(object):
     """

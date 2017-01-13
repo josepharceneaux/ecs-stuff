@@ -38,40 +38,9 @@ from sms_campaign_service.common.campaign_services.tests_helpers import (Campaig
 remove_any_user_phone_record_with_twilio_test_number()
 
 
-# TODO: Remove these and use from /common/tests/conftests.py
-@pytest.fixture()
-def headers(access_token_first):
-    """
-    Returns the header containing access token and content-type to make POST/DELETE requests
-    for "user_first".
-    :param access_token_first: fixture to get access token of user
-    """
-    return get_auth_header(access_token_first)
-
-
-@pytest.fixture()
-def headers_same_domain(access_token_same):
-    """
-    Returns the header (for other user of same domain) containing access token and content-type
-    to make POST/DELETE requests.
-    :param access_token_same: fixture to get access token of other user from same domain
-    """
-    return get_auth_header(access_token_same)
-
-
-@pytest.fixture()
-def headers_other(access_token_other):
-    """
-    Returns the header (for user of some other domain) containing access token and content-type
-    to make POST/DELETE requests.
-    :param access_token_other: fixture to get access token of user from some other domain
-    """
-    return get_auth_header(access_token_other)
-
-
 @pytest.fixture(params=['user_first', 'user_same_domain'])
 def data_for_different_users_of_same_domain(request, access_token_first, access_token_same,
-                                            user_first, user_same_domain, headers, headers_same_domain):
+                                            user_first, user_same_domain, headers, headers_same):
     """
     This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
     using their access_tokens. This returns a dict containing access_token, user object and auth headers.
@@ -79,7 +48,7 @@ def data_for_different_users_of_same_domain(request, access_token_first, access_
     if request.param == 'user_first':
         return {'access_token': access_token_first, 'user': user_first, 'headers': headers}
     elif request.param == 'user_same_domain':
-        return {'access_token': access_token_same, 'user': user_same_domain, 'headers': headers_same_domain}
+        return {'access_token': access_token_same, 'user': user_same_domain, 'headers': headers_same}
 
 
 @pytest.fixture()
@@ -187,6 +156,17 @@ def sms_campaign_of_user_first(request, campaign_valid_data, talent_pipeline, he
 
 
 @pytest.fixture()
+def campaign_with_archived_candidate(campaign_valid_data, talent_pipeline, headers,
+                                     smartlist_with_archived_candidate):
+    """
+    This creates an sms-campaign associated to smartlist which has one archived candidate in it.
+    """
+    campaign_valid_data['smartlist_ids'] = [smartlist_with_archived_candidate['id']]
+    sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers, talent_pipeline.user.id)
+    return sms_campaign
+
+
+@pytest.fixture()
 def sms_campaign_with_two_smartlists(request, campaign_valid_data, access_token_first, talent_pipeline, headers):
     """
     This creates the SMS campaign for "user_first"(fixture) using valid data and two smartlists.
@@ -270,7 +250,7 @@ def sms_campaign_with_no_candidate(request, campaign_valid_data, access_token_fi
 
 
 @pytest.fixture()
-def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data, user_same_domain, headers_same_domain,
+def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data, user_same_domain, headers_same,
                                               user_phone_3, smartlist_with_two_candidates):
     """
     This creates the SMS campaign for user_same_domain using valid data, so that we have
@@ -278,7 +258,7 @@ def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data, user
     """
     smartlist_id, _ = smartlist_with_two_candidates
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
-    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers_same_domain, user_same_domain.id)
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers_same, user_same_domain.id)
 
     def fin():
         _delete_campaign(test_sms_campaign, headers)

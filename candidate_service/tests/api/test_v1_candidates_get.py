@@ -2,19 +2,12 @@
 Test cases for CandidateResource/get()
 """
 # Candidate Service app instance
-from candidate_service.candidate_app import app
 
 # Conftest
-from candidate_service.common.tests.conftest import *
-
-# Helper functions
-from candidate_service.common.utils.test_utils import send_request, response_info
-from candidate_service.common.routes import CandidateApiUrl
-
-# Candidate sample data
 from candidate_sample_data import generate_single_candidate_data
-
-# Custom error
+from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.tests.conftest import *
+from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
@@ -153,27 +146,27 @@ class TestGetCandidate(object):
         assert get_resp.status_code == 200
         assert isinstance(resp_dict, dict)
 
-    def test_get_non_existing_candidate(self, access_token_first, user_first, talent_pool):
+    def test_get_non_existing_candidate(self, access_token_first, talent_pool):
         """
         Test: Attempt to retrieve a candidate that doesn't exists or is web-hidden
         """
         # Retrieve non existing candidate
         last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
         non_existing_candidate_id = last_candidate.id * 100
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % non_existing_candidate_id, access_token_first)
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % str(non_existing_candidate_id), access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == 404
         assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_NOT_FOUND
 
-        # Create Candidate and hide it
+        # Create Candidate and archive it
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']
-        hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
-        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, hide_data)
+        archive_data = {'candidates': [{'id': candidate_id, 'archive': True}]}
+        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, archive_data)
 
-        # Retrieve web-hidden candidate
+        # Retrieve archived candidate
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == 404
-        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
+        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_ARCHIVED

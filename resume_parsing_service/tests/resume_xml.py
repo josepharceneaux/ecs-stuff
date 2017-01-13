@@ -5372,3 +5372,272 @@ Joaquín Rodrigo</references>
 <CanonCertification /></DataElementsRollup>
 </ResDoc>
 """
+
+SQUARE_BULLETS = u"""
+<experience end="present" start="730213">Experience
+    <job end="present" id="1" pos="1" sic="481207" sic2="48" span="9" start="732891">
+        <employer>
+            Verizon Wireless</employer>
+        <daterange>
+            <start days="732891" iso8601="2007-08-01">August 2007</start>-
+            <end days="present" iso8601="2016-12-12">
+                Present</end>
+        </daterange>
+        <title>Technical Expert II</title>■
+        <description>
+            100% customer satisfaction and 100% first call resolution for 5 consecutive years based on
+customer surveys.
+■ Troubleshooting for customers experiencing issues with network coverage, smartphones,
+wearable tech, computer applications, modems, and tablets.
+■ Directed customers through the setup of devices with personal/corporate email accounts,
+backup/restoration ofpersonal information, and device preferences.
+■ Sold new devices, accessories, and network features by asking fact finding questions and
+analyzing customer accounts.
+■ Trained new customer service and tech support reps on business systems, applications, sales
+techniques, policies, procedures, and handling escalated situations.
+■ Volunteered as a member of die customer relations team to resolve issues where customers
+were agitated and dissatisfied with the options or resolutions provided.
+■ Multi-tasked different systems and network applications to ensure connection stability and
+network superiority.
+■ Generated and edited hourly reports regarding representative efficiencies.
+■ Provided support for 84 Technical representatives, while management attended meetings and
+conferences.
+* Volunteered at corporate retail locations to assist with hightraffic during the holiday season.</description>
+    </job>
+    <job end="732860" id="2" naics="452111" naics2="45" pos="2" sic="531102" sic2="53" span="4" start="731399">
+        <employer>Wal-Mart</employer>
+        <daterange>
+            <start days="731399" iso8601="2003-07-01">July 2003</start>-
+            <end days="732860" iso8601="2007-07-01">
+                July 2007</end>
+        </daterange>
+        <title>Store AssistantManager/Lead Loss Prevention Agent</title>■
+        <description>
+            Initiated internal investigations based on POS shortages, fraudulent check and credit card
+purchases, and inventory tracking.
+■ Interviewed and interrogated employees regarding merchandise and cash theft.
+■ Collaboration with law enforcement and federal agencies regarding identity theft and credit
+fraud groups.
+■ CCTV and floor surveillance, and apprehension ofinternal and external offenders.
+■ Trained new Assets Protection detectives on the procedures and policies when surveilling and
+apprehending shoplifters.
+* Installation ofdigital CCTV recording systems, visual deterrents, and covert cameras.
+■ Managed cash office operations included daily cash count ($196,000 daily cash average),
+deposits, and shortages/overages.
+■ Managed 8 store departments and 435 associates in a 235,000-square foot location.</description>
+    </job>
+    <job end="731126" id="3" pos="3" sic="6021" sic2="60" span="2" start="730213">
+        <employer>Jamaica Savings Bank</employer>
+        <daterange>
+            <start days="730213" iso8601="2000-04-01">April 2000</start>-
+            <end days="731126" iso8601="2002-10-01">
+                October 2002</end>
+        </daterange>
+        <title>Teller</title>■
+        <description>
+            Processed customer transactions such as deposits and withdrawals, ordering checks, and
+account research.
+■ Recommend additional products such as savings accounts, certificate of deposits, and college
+savings accounts.
+■ Responsible for the accuracy and daily balance ofmy drawer while remaining efficient during
+each transaction.</description>
+    </job>
+</experience>
+"""
+
+BUGS_22 = u"""
+<ResDoc>
+    <resume canonversion="2" dateversion="2" iso8601="2016-12-13" present="736313" xml:space="preserve">
+        <contact>
+            <name>
+                <givenname>Charlene</givenname>
+                <surname>Ray-Abrams</surname>
+            </name>
+            <address lat="38.5538" lon="-121.334" majorcity="SACRAMENTO" state="CA">
+                <street>3,66/ Camellia Mather Drive</street>
+                <city>Sacramento</city>,
+                <state abbrev="CA">
+                    CA</state>
+                <postalcode>95827</postalcode>
+            </address>
+            <phone>(916) 919-0779</phone>
+            <email>charlenemrayabrams@gmail.com</email>
+        </contact>_
+        <summary>
+            Objective:
+
+            <objective>
+                A challenging position as an Office Assistant in an exceptional Government Office.</objective>
+        </summary>
+        <experience end="present" start="730274">Experience:
+
+            <job end="present" id="1" pos="1" sic="9111" sic2="91" span="1" start="735905">
+                <employer>
+                    Jessie A. Hall</employer>
+                <address lat="38.44" lon="-121.28" majorcity="ELK GROVE" state="CA">
+                    <city>Elk Grove</city>,
+                    <state abbrev="CA">
+                        CA</state>
+                </address>
+                <title>Personal Assistant/Assistant Property Manager</title>
+                <daterange>
+                    <start days="735905" iso8601="2015-11-01">11/01/2015</start>to
+                    <end days="present" iso8601="2016-12-13">
+                        Present</end>
+                </daterange>•
+                <description>
+                    Prepared lease and rental agreements for lessees and collected specified rents and impounds
+• Arranged for @aerations, maintenance, upkeep and reconditioning Of property.
+• Employed services of security, maintenance and grounds keeping personnel if. required_
+6 Advised clients relative to financing, purchasing and selling property,
+• Assisted with eviction of tenants.</description>
+            </job>
+            <job end="736118" id="2" pos="2" sic="829999" sic2="82" span="1" start="735691">
+                <employer>ABC Bartending College</employer>
+                <address lat="38.59" lon="-121.49" majorcity="SACRAMENTO" state="CA">
+                    <city>Sacramento</city>,
+                    <state abbrev="CA">
+                        CA</state>
+                </address>
+                <title>Bartender</title>
+                <daterange>
+                    <start days="735691" iso8601="2015-04-01">04/01/2015</start>to
+                    <end days="736118" iso8601="2016-06-01">
+                        06/01/2016</end>
+                </daterange>•
+                <description>
+                    Mixed and served alcoholic and nonalcoholic drinks to patrons of bar, following standard recipes.
+0, Mixed ingredients, such as liquor, soda water, sugar and bitters, to, prepare cocktails and other drinks-.
+• Served wine and draught and bottled beer.
+• Collected money for drinks served.
+• Ordered and requisitioned liquors and supplies.
+• Arranged bottles and glasses to make attractive display.
+• Sliced and pitted fruit for garnishing drinks.
+• Prepared appetizers, such as pickles, cheese and cold meats.
+-• Cleaned and maintainedwork area.</description>
+            </job>
+            <job end="736118" id="3" pos="3" span="16" start="730274">
+                <employer>Acrobat Outsourcing</employer>
+                <address lat="38.79" lon="-121.24" majorcity="ROCKLIN" state="CA">
+                    <city>Rocklin</city>,
+                    <state abbrev="CA">
+                        CA</state>
+                </address>Server:
+                <daterange>
+                    <start days="730274" iso8601="2000-06-01">
+                        06/0</start>.112015to
+                    <end days="736118" iso8601="2016-06-01">
+                        06/01/2016</end>
+                </daterange>•
+                <description>
+                    Greeted and took drink and dinner orders from Patrons.
+• Served beverages and dinners to Patrons.
+• Handled monies regarding Patrons form of payment.
+• Assisted with other employees if they needed assistance.</description>
+            </job>
+            <job end="735905" id="4" pos="4" span="8" start="732860">
+                <employer>Sacramento County IliSS</employer>
+                <address lat="38.59" lon="-121.49" majorcity="SACRAMENTO" state="CA">
+                    <city>Sacramento</city>,
+                    <state abbrev="CA">
+                        CA</state>
+                </address>Personal:
+                <title>
+                    Assistant/Caretaker</title>
+                <daterange>
+                    <start days="732860" iso8601="2007-07-01">07/01/2007</start>to '
+                    <end days="735905" iso8601="2015-11-01">
+                        11/01 /2015</end>
+                </daterange>•
+                <description>
+                    laid-out employer's clothing and assisted employer in dressing.
+• Washed and groomed employer's hair, shaved face, manicured nails, gave body and faCial massages, and
+applied cosmetics.
+• Changed linens and made employer's bed.
+• Cleaned employer's quarters.</description>
+            </job>
+        </experience>
+        <education>Educaton:
+
+            <school id="5">
+                <institution>
+                    ABC Bartending and Casino College</institution>
+                <courses>Bartender Certificate</courses>
+            </school>
+            <school id="6">
+                <institution>C.K. IVICCIatchy High School</institution>
+                <degree level="12">High School Diploma</degree>
+            </school>
+            <school id="7">
+                <institution>California State University</institution>
+                <address lat="29.4274" lon="-99.2371" majorcity="COTULLA" state="TX">
+                    <city>Los Angeles</city>
+                </address>
+            </school>and CSUS</education>
+        <references>Reference:, Avertable- upon :request
+Sacramento, CA
+2015
+Sacramento, CA</references>
+    </resume>
+    <skillrollup version="1">
+        <canonskill end="736313" experience="1" expidrefs="1" idrefs="1" lastused="2016" name="purchasing" start="735905">
+            <variant>purchasing</variant>
+        </canonskill>
+        <canonskill end="736313" experience="1" expidrefs="1" idrefs="1" lastused="2016" name="selling" start="735905">
+            <variant>selling</variant>
+        </canonskill>
+    </skillrollup>
+</ResDoc>
+"""
+
+
+BUGS_63 = u"""
+<ResDoc>
+<resume canonversion="2" dateversion="2" iso8601="2016-12-13" present="736313" xml:space="preserve"><contact><name><givenname>RYAN</givenname> <givenname>E.</givenname> <surname>MCKENNA</surname></name>
+<address lat="38.6836" lon="-121.158" majorcity="FOLSOM" state="CA"><street>153 Lembi Drive</street> <city>Folsom</city>, <state abbrev="CA">CA</state> <postalcode>95630</postalcode></address>
+Cell: <phone type="cell">(949)303-8252</phone>
+<email>ryanemckenna@comcast.net</email></contact>
+<summary>SITIVIIVIA_RY OF QUALIFICATIONS
+• <personalstatements>Effective oral and written communication abilities
+• Excellent problem solving and negotiation skills
+• Proven technical and analytical skills</personalstatements>
+• Proficient with Microsoft Office Suite including Excel and web-based applications
+• Basic Accounting Skills and knowledge of Financial Statements
+• Results driven, exceeding metrics while emphasizing trust, advocacy, and internal and
+external customer satisfaction
+• Recognizes opportunities and provides plans of action for operational improvements
+• Excels in dynamic, fast-changing environments that requires a high degree of multi-tasking
+and attention to detail
+EXPEMENCE/ACCOIVIPLISIEVIENTS
+• Facilitated New Hire Training, System Conversion and Implementation Training, and
+Continuing Education Training
+• Nationally recognized top performer in Customer Service and multiple time recipient of
+employee of the month
+• Proposed and implemented initiative to improve center efficiencies and quality
+• Partnered with leadership to evaluate, analyze, develop and implement plans for performance
+improvement for New Hire Classes and existing employees
+• Project management work related to optimizing efficiencies for National Accounts processes
+• Led team meetings, interviewed prospective employees, and made recommendations for hire
+• Coached, motivated and developed others to achieve maximum perfounance and results</summary>
+<experience end="present" start="730122">EMPLOYMENT IIISTORY
+<job end="present" id="1" pos="1" sic="481207" sic2="48" span="5" start="734505"><employer>Verizon Wireless</employer>
+• Customer Pro, <title>Customer Service</title> <daterange><start days="734505" iso8601="2012-01-01">2012</start> - <end days="present" iso8601="2016-12-13">present</end></daterange></job>
+• <job end="734505" id="2" pos="2" span="6" start="732314"><title>National Account Coordinator</title>, Business &amp; Government Operations <daterange><start days="732314" iso8601="2006-01-01">2006</start> - <end days="734505" iso8601="2012-01-01">2012</end></daterange></job>
+• West Area Financial Services <job end="732314" id="3" pos="3" span="1" start="731949"><title>Trainer</title> <daterange><start days="731949" iso8601="2005-01-01">2005</start> -<end days="732314" iso8601="2006-01-01">2006</end></daterange></job>
+• <job end="731949" id="4" pos="4" span="2" start="731218"><title>Coordinator</title> Financial Services <daterange><start days="731218" iso8601="2003-01-01">2003</start> -<end days="731949" iso8601="2005-01-01">2005</end></daterange></job>
+• <job end="731218" id="5" pos="5" span="2" start="730488"><title>Representative</title>, Customer Service <daterange><start days="730488" iso8601="2001-01-01">2001</start> -<end days="731218" iso8601="2003-01-01">2003</end></daterange></job>
+<job end="730488" id="6" pos="6" span="1" start="730122"><employer>Metrocall Wireless</employer> <title>Senior Account Executive</title> (Sales) <daterange><start days="730122" iso8601="2000-01-01">2000</start> -<end days="730488" iso8601="2001-01-01">2001</end></daterange></job>
+<title>Men's Wearhouse Wardrobe Consultant</title> (Sales)</experience>
+<education>EDUCATION
+<school id="7"><degree level="16">Bachelor Degree</degree> (<honors>Cum Laude</honors>) <major code="4201">Business Administration and Management</major>, <address>Strayer</address>
+<major code="4201">Business Management</major>, <institution>California State University at Fullerton</institution></school>
+<school id="8"><degree level="14">Associate of Arts Degree</degree> <major code="4">General Education</major>, <institution>Saddleback College</institution></school></education>
+<statements>ACTIVITIES
+<activities>Delta Chi Fraternity
+1994 -2000
+University</activities></statements></resume>
+
+<skillrollup version="1">
+</skillrollup>
+</ResDoc>
+"""

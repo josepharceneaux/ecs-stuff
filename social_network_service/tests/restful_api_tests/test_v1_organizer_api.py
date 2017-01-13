@@ -1,6 +1,5 @@
 # Std imports
 import json
-from datetime import datetime
 
 # Third Party
 import pytest
@@ -8,13 +7,15 @@ import requests
 from requests import codes
 
 # App specific imports
-from social_network_service.common.utils.test_utils import missing_keys_test, fake
 from social_network_service.social_network_app import logger
+from social_network_service.tests.conftest import EVENTBRITE_CONFIG
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.models.event_organizer import EventOrganizer
+from social_network_service.common.utils.test_utils import missing_keys_test, fake
 from social_network_service.tests.helper_functions import auth_header, get_headers, match_event_organizer_fields
 
 
+@pytest.mark.skipif(EVENTBRITE_CONFIG['skip'], reason=EVENTBRITE_CONFIG['reason'])
 class TestOrganizers(object):
     def test_get_with_invalid_token(self):
         """
@@ -92,13 +93,18 @@ class TestOrganizers(object):
         assert response.status_code == codes.CREATED, 'Status should be Ok, Resource created (201)'
         assert 'Location' in response.headers
         response = response.json()
-        assert response['id'] > 0
+        event_organizer_id = response['id']
+        assert event_organizer_id > 0
 
         # Now try to create organizer with same name. It will raise 400 (InvalidUsage)
         response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(event_organizer),
                                  headers=get_headers(token_first))
         logger.info(response.text)
         assert response.status_code == codes.BAD, 'Status should be 400, InvalidUsage'
+        EventOrganizer.session.commit()
+        event_organizer = EventOrganizer.get_by_id(event_organizer_id)
+        assert event_organizer, 'Event organizer not found in db'
+        EventOrganizer.delete(event_organizer.id)
 
     def test_post_with_missing_field(self, token_first, user_first):
         """

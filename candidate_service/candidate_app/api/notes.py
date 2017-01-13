@@ -1,29 +1,18 @@
 # Standard library
 import requests
-
-# Flask specific
 from flask import request
 from flask_restful import Resource
 
-# Validators
+from candidate_service.common.error_handling import ForbiddenError
+from candidate_service.common.models.user import Permission
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.json_schema.notes import notes_schema
+from candidate_service.modules.notes import add_notes, get_notes, delete_note, delete_notes
+from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, get_candidate_if_exists, get_json_data_if_validated
 )
-from candidate_service.json_schema.notes import notes_schema
-
-# Decorators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
-
-# Error handling
-from candidate_service.common.error_handling import ForbiddenError
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
-
-# Models
-from candidate_service.common.models.user import Permission
-
-# Modules
-from candidate_service.modules.notes import add_notes, get_notes, delete_note, delete_notes
-from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 
 
 class CandidateNotesResource(Resource):

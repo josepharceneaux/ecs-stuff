@@ -9,7 +9,7 @@ This file contains function used by email-campaign-api.
 import re
 import json
 import getpass
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Third Party
 from celery import chord
@@ -28,7 +28,9 @@ from email_campaign_service.modules.utils import (TRACKING_URL_TYPE, get_candida
 
 # Common Utils
 from email_campaign_service.common.models.db import db
+from email_campaign_service.common.models.event import Event
 from email_campaign_service.common.models.user import Domain, User
+from email_campaign_service.common.models.base_campaign import BaseCampaign
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
@@ -94,10 +96,16 @@ def create_email_campaign(user_id, oauth_token, name, subject, description, _fro
                                    base_campaign_id=base_campaign_id if base_campaign_id else None
                                    )
     EmailCampaign.save(email_campaign)
+    user = User.get_by_id(user_id)
+    campaign_type = CampaignUtils.get_campaign_type_prefix(email_campaign.__tablename__)
+    if base_campaign_id:
+        base_campaign = BaseCampaign.get_by_id(base_campaign_id)
+        if base_campaign.base_campaign_events:
+            campaign_type = CampaignUtils.get_campaign_type_prefix(Event.__tablename__)
 
     # Create activity in a celery task
     celery_create_activity.delay(user_id, Activity.MessageIds.CAMPAIGN_CREATE, email_campaign,
-                                 dict(id=email_campaign.id, name=name),
+                                 dict(id=email_campaign.id, name=name, campaign_type=campaign_type, username=user.name),
                                  'Error occurred while creating activity for email-campaign creation. User(id:%s)'
                                  % user_id)
 
@@ -296,9 +304,9 @@ def post_processing_campaign_sent(celery_result, campaign, new_candidates_only, 
         if not isinstance(email_campaign_blast_id, (int, long)) or email_campaign_blast_id <= 0:
             logger.error('email_campaign_blast_id must be positive int or long')
             return
-        logger.info('celery_result: %s' % celery_result)
-    sends = celery_result.count(True)
-    _update_blast_sends(email_campaign_blast_id, sends, campaign,  new_candidates_only)
+        sends = celery_result.count(True)
+        logger.info('Campaigns sends:%s, celery_result: %s' % (sends, celery_result))
+        _update_blast_sends(email_campaign_blast_id, sends, campaign,  new_candidates_only)
 
 
 @celery_app.task(name='process_campaign_send')
@@ -335,13 +343,16 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
         if not isinstance(new_candidates_only, bool):
             logger.error('new_candidates_only must be bool')
             return
-        logger.info('celery_result: %s' % celery_result)
 
     # gather all candidates from various smartlists
     for candidate_list in celery_result:
         all_candidate_ids.extend(candidate_list)
     all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
+    logger.info('candidates count:%s, email_campaign_id:%s, candidate_ids: %s'
+                % (len(all_candidate_ids), campaign_id, all_candidate_ids))
     campaign = EmailCampaign.get_by_id(campaign_id)
+    # Filter valid candidate ids
+    all_candidate_ids = CampaignBase.filter_existing_candidate_ids(all_candidate_ids, user_id)
     subscribed_candidate_ids, unsubscribed_candidate_ids = get_subscribed_and_unsubscribed_candidate_ids(campaign,
                                                                                                          all_candidate_ids,
                                                                                                          new_candidates_only)
@@ -453,7 +464,6 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
                                                     blast_params=blast_params,
                                                     email_campaign_blast_id=email_campaign_blast_id,
                                                     blast_datetime=blast_datetime)
-    logger.info('send_campaign_emails_to_candidate: Candidate id:%s ' % candidate_id)
     # Only in case of production we should send mails to candidate address else mails will
     # go to test account. To avoid spamming actual email addresses, while testing.
     if not CampaignUtils.IS_DEV:
@@ -467,7 +477,8 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
             to_address = campaign.user.email
         else:
             to_address = app.config[TalentConfigKeys.GT_GMAIL_ID]
-
+    logger.info("sending email-campaign(id:%s) to candidate(id:%s)'s email_address:%s"
+                % (campaign_id, candidate_id, to_address))
     email_client_credentials_id = campaign.email_client_credentials_id
     if email_client_credentials_id:  # In case user wants to send email-campaign via added SMTP server.
         try:
@@ -502,13 +513,14 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
 
         username = getpass.getuser()
         # Save SES message ID & request ID
-        logger.info('''Marketing email sent successfully.
+        logger.info('''Marketing email(id:%s) sent successfully.
                        Recipients    : %s,
                        UserId        : %s,
                        System User Name: %s,
                        Environment   : %s,
                        Email Response: %s
-                    ''', to_address, user_id, username, app.config[TalentConfigKeys.ENV_KEY], email_response)
+                    ''', campaign_id, to_address, user_id, username, app.config[TalentConfigKeys.ENV_KEY],
+                    email_response)
         request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
         message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
         email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
@@ -552,7 +564,6 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
     raise_if_not_instance_of(blast_datetime, datetime)
 
     with app.app_context():
-        logger.info('sending campaign to candidate(id:%s).' % candidate_id)
         try:
             result_sent = send_campaign_emails_to_candidate(
                 user_id=user_id,
@@ -642,14 +653,16 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candi
     #             for campaign_field_name, campaign_field_value in campaign_fields.items():
     #                 campaign[campaign_field_name] = campaign_field_value
     new_html, new_text = campaign.body_html or "", campaign.body_text or ""
-    logger.info('get_new_text_html_subject_and_campaign_send: candidate_id: %s' % candidate.id)
+    logger.info('get_new_text_html_subject_and_campaign_send: campaign_id:%s, candidate_id: %s'
+                % (campaign_id, candidate.id))
 
     # Perform MERGETAG replacements
     [new_html, new_text, subject] = do_mergetag_replacements([new_html, new_text, campaign.subject],
                                                              current_user, requested_object=candidate,
                                                              candidate_address=candidate_address)
     # Perform URL conversions and add in the custom HTML
-    logger.info('get_new_text_html_subject_and_campaign_send: email_campaign_send_id: %s' % email_campaign_send.id)
+    logger.info('get_new_text_html_subject_and_campaign_send: campaign_id:%s, email_campaign_send_id: %s'
+                % (campaign_id, email_campaign_send.id))
     new_text, new_html = create_email_campaign_url_conversions(new_html=new_html,
                                                                new_text=new_text,
                                                                is_track_text_clicks=campaign.is_track_text_clicks,
@@ -689,7 +702,7 @@ def update_hit_count(url_conversion):
         candidate = Candidate.query.get(email_campaign_send.candidate_id)
         is_open = email_campaign_send_url_conversion.type == TRACKING_URL_TYPE
         # If candidate has been deleted, don't make the activity
-        if not candidate or candidate.is_web_hidden:
+        if not candidate or candidate.is_archived:
             logger.info("Tried performing URL redirect for nonexistent candidate: %s. "
                         "email_campaign_send: %s",
                         email_campaign_send.candidate_id, email_campaign_send.id)
@@ -918,6 +931,7 @@ def get_candidates_from_smartlist_for_email_client_id(campaign, list_ids):
                              'EmailCampaign(id:%s) User(id:%s). Reason: %s'
                              % (list_id, campaign.id, campaign.user.id, error.message))
     all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
+    all_candidate_ids = CampaignBase.filter_existing_candidate_ids(all_candidate_ids, campaign.user.id)
     return all_candidate_ids
 
 
@@ -955,12 +969,17 @@ def get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, n
     else:
         # Otherwise, just filter out unsubscribed candidates:
         # their subscription preference's frequencyId is NULL, which means 'Never'
-
         for candidate_id in all_candidate_ids:
-            # Call candidate API to get candidate's subscription preference.
-            subscription_preference = get_candidate_subscription_preference(candidate_id, campaign.user.id)
-            # campaign_subscription_preference = get_subscription_preference(candidate_id)
-            logger.debug("subscription_preference: %s" % subscription_preference)
+            subscription_preference = {}
+            try:
+                # Call candidate API to get candidate's subscription preference.
+                subscription_preference = get_candidate_subscription_preference(candidate_id, campaign.user.id, app=app)
+                # campaign_subscription_preference = get_subscription_preference(candidate_id)
+                logger.info("subscription_preference: %s, candidate_id:%s, email_campaign_id:%s"
+                            % (subscription_preference, candidate_id, campaign.id))
+            except Exception as error:
+                logger.error('Could not get subscription preference for candidate(id:%s). '
+                             'email_campaign(id:%s). Error:%s' % (candidate_id, campaign.id, error.message))
             if subscription_preference and not subscription_preference.get('frequency_id'):
                 unsubscribed_candidate_ids.append(candidate_id)
 
@@ -975,8 +994,9 @@ def get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, n
         # assign it to subscribed_candidate_ids (doing it explicit just to make it clear)
         subscribed_candidate_ids = new_candidate_ids
     # Logging info of unsubscribed candidates.
-    logger.info("Email campaign id is: %s. Number of unsubscribed candidates: %s. Unsubscribed candidate's ids are:"
-                " %s" % (campaign.id, len(unsubscribed_candidate_ids), unsubscribed_candidate_ids))
+    logger.info("Email campaign(id:%s). Subscribed candidates:%s, Unsubscribed candidates:%s. "
+                "Unsubscribed candidate's ids are: %s" % (campaign.id, len(subscribed_candidate_ids),
+                                                          len(unsubscribed_candidate_ids), unsubscribed_candidate_ids))
     return subscribed_candidate_ids, unsubscribed_candidate_ids
 
 
@@ -1002,13 +1022,12 @@ def get_smartlist_candidates_via_celery(user_id, campaign_id, smartlist_ids, new
     campaign_type = campaign.__tablename__
 
     # Get candidates present in each smartlist
-    tasks = [get_candidates_from_smartlist.subtask(
-        (list_id, True, user_id),
-        link_error=celery_error_handler(
-            campaign_type), queue=campaign_type) for list_id in smartlist_ids]
+    tasks = [get_candidates_from_smartlist.subtask((list_id, True, user_id),
+                                                   link_error=celery_error_handler(campaign_type),
+                                                   queue=campaign_type) for list_id in smartlist_ids]
 
     # Register function to be called after all candidates are fetched from smartlists
-    callback = process_campaign_send.subtask((user_id, campaign_id, smartlist_ids, new_candidates_only, ),
+    callback = process_campaign_send.subtask((user_id, campaign_id, smartlist_ids, new_candidates_only,),
                                              queue=campaign_type)
     # This runs all tasks asynchronously and sets callback function to be hit once all
     # tasks in list finish running without raising any error. Otherwise callback

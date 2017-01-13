@@ -4,6 +4,7 @@ This module tests talentbot_service
 # Builtin imports
 import datetime
 from dateutil.relativedelta import relativedelta
+import uuid
 # Common utils
 from talentbot_service.common.constants import OWNED, DOMAIN_SPECIFIC
 from talentbot_service.common.tests.conftest import domain_first, first_group, domain_second, second_group,\
@@ -30,6 +31,7 @@ VALID_RESUME_URL = 'https://s3-us-west-2.amazonaws.com/test-resumes-for-bot/Vish
 RESUME_URL_WITH_TOO_LARGE_CONTENT = 'https://s3-us-west-2.amazonaws.com/test-resumes-for-bot/large.pdf'
 ADD_CANDIDATE_FROM_RESUME_QUESTION = QUESTIONS[ADD_CANDIDATE_FROM_URL]
 INVALID_RESUME_URL = 'https://something.com/test.pdf'
+CANDIDATE_GITHUB_PROFILE = 'http://stackoverflow.com/users/5033773/kamal-hasan'
 
 
 def test_candidate_added(user_first, talent_pool, candidate_first):
@@ -80,7 +82,7 @@ def test_get_candidates_with_skills(user_first, candidate_first, candidate_secon
     """
     This method checks number of candidates against skills in user's domain.
     """
-    (skill_1, skill_2, skill_3, skill_4) = (fake.word() for _ in range(4))
+    (skill_1, skill_2, skill_3, skill_4) = (uuid.uuid4() for _ in range(4))
     candidate_skill = CandidateSkill(candidate_id=candidate_first.id, description=skill_1, resume_id=0)
     candidate_skill.save()
     count = Candidate.get_candidate_count_with_skills([skill_1], user_first.id)
@@ -465,8 +467,12 @@ def test_add_candidate_from_resume_url(user_first, domain_first, talent_pool):
     with app.app_context():
         # Asserting with valid URL
         message_tokens = ('%s %s' % (ADD_CANDIDATE_FROM_RESUME_QUESTION, VALID_RESUME_URL)).split(' ')
-        response_string = QuestionHandler.add_candidate_handler(message_tokens,  user_first.id)
+        response_string = QuestionHandler.add_candidate_handler(message_tokens, user_first.id)
         assert 'Vishay Nihalani' in response_string and talent_pool.name in response_string
+        # Asserting with github profile URL
+        message_tokens = ('%s %s' % (ADD_CANDIDATE_FROM_RESUME_QUESTION, CANDIDATE_GITHUB_PROFILE)).split(' ')
+        response_string = QuestionHandler.add_candidate_handler(message_tokens, user_first.id)
+        assert 'Kamal Haxan' in response_string and talent_pool.name in response_string
         # Asserting with invalid URL
         message_tokens = ('%s %s' % (ADD_CANDIDATE_FROM_RESUME_QUESTION, INVALID_RESUME_URL)).split(' ')
         response_string = QuestionHandler.add_candidate_handler(message_tokens, user_first.id)
@@ -478,4 +484,4 @@ def test_add_candidate_from_resume_url(user_first, domain_first, talent_pool):
         # Asserting with file with content of more than 10 MB
         message_tokens = ('%s %s' % (ADD_CANDIDATE_FROM_RESUME_QUESTION, RESUME_URL_WITH_TOO_LARGE_CONTENT)).split(' ')
         response_string = QuestionHandler.add_candidate_handler(message_tokens, user_first.id)
-        assert TOO_LARGE_RESUME_MSG == response_string
+        assert TOO_LARGE_RESUME_MSG % 14.8 == response_string

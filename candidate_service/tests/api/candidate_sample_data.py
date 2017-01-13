@@ -37,6 +37,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
     :param custom_fields: custom field objects belonging to domain
     :type source_id: int
     :param source_id: the ID of the source where the candidate was found/created
+    :type number_of_candidates: int
     :rtype: dict[list]
     """
     # Format data for areas of interest and custom fields
@@ -297,7 +298,8 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
             'talent_pool_ids': {
                 'add': talent_pool_ids
             },
-            'resume_url': fake.url()
+            'resume_url': fake.url(),
+            'resume_text': fake.text(10000)
         }
 
     return dict(candidates=[_make_data() for _ in xrange(number_of_candidates)])

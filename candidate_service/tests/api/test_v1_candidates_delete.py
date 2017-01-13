@@ -2,26 +2,18 @@
 Test cases for CandidateResource/delete()
 """
 # Candidate Service app instance
-from candidate_service.candidate_app import app
 
 # Models
 from candidate_service.common.models.candidate import CandidateCustomField, CandidateEmail, \
     CandidateTextComment, CandidateReference
 from candidate_service.common.models.tag import CandidateTag
-from candidate_service.common.models.user import Role
+from candidate_service.common.routes import CandidateApiUrl
 
 # Conftest
 from candidate_service.common.tests.conftest import *
-
-# Helper functions
-from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 from candidate_service.common.utils.test_utils import send_request, response_info
-
-# Url
-from candidate_service.common.routes import CandidateApiUrl
-
-# Custom errors
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 
 
 class TestDeleteCandidate(object):
@@ -240,34 +232,34 @@ class TestBulkDelete(object):
         assert get_candidate_second.status_code == requests.codes.OK
 
 
-class TestHideCandidate(object):
+class TestArchiveCandidate(object):
     """
-    Test Cases for hiding candidate(s) via patch v1/candidates
+    Test Cases for archiving candidate(s) via patch v1/candidates
     """
-    def test_hide_candidate_and_retrieve_it(self, access_token_first, talent_pool):
+    def test_archive_candidate_and_retrieve_it(self, access_token_first, talent_pool):
         """
-        Test:   Hide a Candidate and then retrieve it
+        Test:   Archive a Candidate and then retrieve it
         Expect: 404, Not Found error
         """
         # Create Candidate
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
-        # Hide Candidate
+        # Archive Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
-        hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
-        resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, hide_data)
+        archive_data = {'candidates': [{'id': candidate_id, 'archive': True}]}
+        resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, archive_data)
         print response_info(resp)
 
         # Retrieve Candidate
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.NOT_FOUND
-        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
+        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_ARCHIVED
 
-    def test_hide_candidate_via_email(self, access_token_first, talent_pool):
+    def test_archive_candidate_via_email(self, access_token_first, talent_pool):
         """
-        Test:   Hide a Candidate via candidate's email
+        Test:   Archive a Candidate via candidate's email
         Expect: 200
         """
         # Create Candidate
@@ -277,12 +269,12 @@ class TestHideCandidate(object):
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
 
-        # Hide Candidate
-        hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
-        resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, hide_data)
+        # Archive Candidate
+        archive_data = {'candidates': [{'id': candidate_id, 'archive': True}]}
+        resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, archive_data)
         print response_info(resp)
         assert resp.status_code == requests.codes.OK
-        assert resp.json()['hidden_candidate_ids'][0] == candidate_id
+        assert resp.json()['archived_candidates'][0] == candidate_id
 
 
 class TestDeleteCandidateAddress(object):

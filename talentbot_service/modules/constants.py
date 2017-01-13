@@ -26,7 +26,7 @@ HINT = '''>>>I am `%s`. @osman is teaching me new things, right now I can answer
 9- What campaigns in my domain?
 10- Show me more about `[Talent pool name|Campaign name]`?
 11- What are my group `[Campaigns|Pipelines]`?
-12- Add candidate whose resume URL is `http://www.something.com/some-resume.pdf''' % BOT_NAME
+12- Add candidate whose resume URL is http://www.something.com/some-resume.pdf''' % BOT_NAME
 OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_NUMBER = "+12015617985"
 FACEBOOK_MESSAGE_LIMIT = 319
@@ -79,18 +79,26 @@ QUESTION_HANDLER_NUMBERS = {'question_handler_1': 1, 'question_handler_4': 4}
 EMAIL_CAMPAIGN = 'Email Campaign'
 PUSH_CAMPAIGN = 'Push Campaign'
 SMS_CAMPAIGN = 'SMS Campaign'
-SOMETHING_WENT_WRONG = "Something went wrong while adding candidate please contact the developer `osman@gettalent.com`"
-I_AM_PARSING_A_RESUME = "I am parsing a resume, I will notify you as soon as I am done"
+SOMETHING_WENT_WRONG = "Sorry! Something went wrong while adding candidate"
+I_AM_PARSING_A_RESUME = "I am parsing given resume, I will notify you as soon as I am done"
 ZERO = 0
 ADD_CANDIDATE_FROM_URL = 72
 TEN_MB = 1024 * 1024 * 10
 INVALID_RESUME_URL_MSG = "Invalid URL"
 NO_RESUME_URL_FOUND_MSG = "No URL found, URL must start with `http://` or `https://`"
-TOO_LARGE_RESUME_MSG = "Resume file size should be less than 10 MB"
-IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
-                 '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
-DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
+TOO_LARGE_RESUME_MSG = "Resume file size should be less than 10 MB, given resume size is %.1f MB"
 QUEUE_NAME = 'talentbot_queue'
+USER_DISABLED_MSG = "Your account has been suspended. Kindly contact at help@gettalent.com"
+SUPPORTED_SOCIAL_SITES = {"github": 'github.com', "stackoverflow": 'stackoverflow.com',
+                          "linkedin": 'linkedin.com', 'facebook': 'facebook.com', 'twitter': 'twitter.com'}
+GITHUB = "github"
+STACK_OVERFLOW = 'stackoverflow'
+LINKEDIN = 'linkedin'
+FACEBOOK = 'facebook'
+TWITTER = 'twitter'
+# Custom Candidate Service Error Codes
+INVALID_INPUT = 3000
+CANDIDATE_ALREADY_EXISTS = 3013
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
