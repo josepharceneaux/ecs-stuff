@@ -59,7 +59,7 @@ def create_scheduled_email_campaign_data(access_token, talent_pipeline=None, **k
 
 def create_data_for_campaign_creation(access_token, talent_pipeline, subject=fake.name(),
                                       campaign_name=fake.name(), assert_candidates=True, create_smartlist=True,
-                                      smartlist_id=None):
+                                      smartlist_id=None, **kwargs):
     """
     This function returns the required data to create an email campaign
     """
