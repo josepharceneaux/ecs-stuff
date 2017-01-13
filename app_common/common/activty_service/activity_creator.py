@@ -9,14 +9,16 @@ from app_common.common.models.user import User
 
 class TalentActivityManager(object):
 
-    def __init__(self, db, activity_model=Activity):
+    def __init__(self, db, activity_model=Activity, logger=None):
         """
         Allows flask-app/service to set flask-sqlalchemy db and Activity Models.
         :param db:
         :param activity_model:
+        :param logger:
         """
         self.db = db
         self.activity_model = activity_model
+        self.logger = logger
 
     def create_activity(self, params):
         """
@@ -60,7 +62,12 @@ class TalentActivityManager(object):
         required_keys = ACTIVTY_PARAMS[params['activity_type']]
         for item in required_keys:
             if not params['activity_params'].get(item):
-                raise UserWarning('Missing activity param {}'.format(item))
+                if self.logger:
+                    self.logger.error('ActivityCreationError::MissingParam::{}'.format(item))
+                return {
+                    'committed': False,
+                    'error': 'Missing param {}'.format(item)
+                }
 
         activity = self.activity_model(
             user_id=int(params.get('user_id')),

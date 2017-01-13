@@ -60,5 +60,5 @@ def test_basic_create_missing_params():
         'user_id': 1
     }
 
-    with pytest.raises(UserWarning):
-        output = tam.create_activity(params)
+    output = tam.create_activity(params)
+    assert output['committed'] == False
