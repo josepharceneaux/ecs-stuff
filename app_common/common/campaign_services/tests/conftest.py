@@ -21,8 +21,9 @@ from ...constants import (MEETUP, EVENTBRITE)
 from ...models.candidate import SocialNetwork
 from ...models.talent_pools_pipelines import TalentPipeline
 from ...models.email_campaign import EmailCampaign
-from ..tests.modules.email_campaign_helper_functions import CampaignsTestsHelpers, \
-    create_scheduled_email_campaign_data, create_email_campaign_via_api
+from ..tests.modules.email_campaign_helper_functions import create_scheduled_email_campaign_data, \
+    create_email_campaign_via_api
+from ..tests_helpers import CampaignsTestsHelpers
 from ...utils.handy_functions import send_request
 from ...models.event_organizer import EventOrganizer
 from ...talent_config_manager import TalentConfigKeys
@@ -588,10 +589,7 @@ def scheduled_campaign(token_first, talent_pipeline):
     """
     This returns campaign id which was scheduled to be sent after some time.
     """
-    # talent_pipeline is dictionary which contains 'id' attribute only.
-    # Here getting TalentPipeline object on the basis of 'id' to pass into another function.
-    talent_pipeline = TalentPipeline.get(talent_pipeline['id'])
-    campaign_data = create_scheduled_email_campaign_data(token_first, talent_pipeline)
+    campaign_data = create_scheduled_email_campaign_data(token_first, talent_pipeline_id=talent_pipeline['id'])
     response = create_email_campaign_via_api(token_first, campaign_data)
     assert response.status_code == codes.CREATED
     resp_object = response.json()
@@ -605,12 +603,7 @@ def scheduled_email_campaign_with_base_id(base_campaign, token_first, talent_pip
     """
     This returns campaign id which was scheduled and linked with base campaign to be sent after some time.
     """
-    # commiting db session to get new Object of TalentPipeline created through api
-    db.session.commit()
-    # talent_pipeline is dictionary which contains 'id' attribute only.
-    # Here getting TalentPipeline object on the basis of 'id' to pass into another function.
-    talent_pipeline = TalentPipeline.get(talent_pipeline['id'])
-    campaign_data = create_scheduled_email_campaign_data(token_first, talent_pipeline)
+    campaign_data = create_scheduled_email_campaign_data(token_first, talent_pipeline_id=talent_pipeline['id'])
     campaign_data['base_campaign_id'] = base_campaign['id']
     response = create_email_campaign_via_api(token_first, campaign_data)
     assert response.status_code == codes.CREATED

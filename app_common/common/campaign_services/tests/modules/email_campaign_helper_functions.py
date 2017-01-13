@@ -4,7 +4,6 @@ This code contains helper common functions for email campaign service
 # Standard Imports
 import json
 from datetime import (datetime, timedelta)
-
 # Third Party
 import requests
 from requests import codes
@@ -16,6 +15,7 @@ from ....utils.test_utils import (fake)
 from ....routes import (EmailCampaignApiUrl)
 from ...tests_helpers import CampaignsTestsHelpers
 from ....models.email_campaign import EmailCampaign
+from ....models.talent_pools_pipelines import TalentPipeline
 
 
 def create_email_campaign_via_api(access_token, data, is_json=True):
@@ -39,12 +39,16 @@ def create_email_campaign_via_api(access_token, data, is_json=True):
     return response
 
 
-def create_scheduled_email_campaign_data(access_token, talent_pipeline, **kwargs):
+def create_scheduled_email_campaign_data(access_token, talent_pipeline=None, **kwargs):
     """
     This returns data to create an scheduled email-campaign.
     :param access_token: User access token
     :param talent_pipeline: Talent pipeline object
     """
+    if kwargs.get('talent_pipeline_id'):
+        talent_pipeline_id = kwargs.get('talent_pipeline_id')
+        db.session.commit()
+        talent_pipeline = TalentPipeline.get(talent_pipeline_id)
     campaign_data = create_data_for_campaign_creation(access_token, talent_pipeline, **kwargs)
     campaign_data['frequency_id'] = Frequency.ONCE
     campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(weeks=1))

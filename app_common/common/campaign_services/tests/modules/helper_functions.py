@@ -1,11 +1,11 @@
 """
-Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>, Rana Khurram Irshad, QC-Technologies,
+<ranakhurram.qc@gmail.com>
 
 Here we have helper functions to be used in tests
 """
 # Standard Imports
 import re
-
 # Packages
 from requests import codes
 from datetime import datetime, timedelta

@@ -164,8 +164,8 @@ def log(message, app=None, level='info'):
 
     assert isinstance(app, Flask), 'app instance should be flask'
 
+    logger = app.config[TalentConfigKeys.LOGGER]
     with app.app_context():
-        logger = app.config[TalentConfigKeys.LOGGER]
         getattr(logger, level)(message)
 
 
