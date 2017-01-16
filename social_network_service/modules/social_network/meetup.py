@@ -85,7 +85,7 @@ class Meetup(SocialNetworkBase):
             social_network_service/app/restful/social_network.py
         """
         url = get_url(self, SocialNetworkUrls.GROUPS)
-        params = {'member_id': 'self'}
+        params = {'organizer_id': self.user_credentials.member_id}
         # Sleep for 10 / 30 seconds to avoid throttling
         time.sleep(0.34)
         response = http_request('GET', url, params=params, headers=self.headers, user_id=self.user.id)
@@ -103,7 +103,7 @@ class Meetup(SocialNetworkBase):
         This method is to fetch user's meetup groups and save them in gt database.
         """
         url = get_url(self, SocialNetworkUrls.GROUPS)
-        params = {'member_id': 'self'}
+        params = {'organizer_id': self.user_credentials.member_id}
         # Sleep for 10 / 30 seconds to avoid throttling
         time.sleep(0.34)
         response = http_request('GET', url, params=params, headers=self.headers, user_id=self.user.id)

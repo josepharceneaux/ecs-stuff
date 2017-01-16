@@ -11,6 +11,7 @@ from datetime import timedelta
 import time
 
 # Application specific
+from social_network_service.common.models.event import MeetupGroup
 from social_network_service.common.models.venue import Venue
 from social_network_service.modules.constants import MEETUP_VENUE
 from social_network_service.modules.urls import get_url
@@ -122,8 +123,15 @@ class Meetup(EventBase):
         events_url = get_url(self, Urls.EVENTS)
         # we can specify status=upcoming,past,draft,cancelled etc. By default we
         # have status=upcoming, so we are not explicitly specifying in fields.
+        meetup_groups = MeetupGroup.get_by_user_id(self.user.id)
+        if not meetup_groups:
+            logger.warn('''No MeetupGroup is asscoiated with this user subscription for Meetup.
+                           UserId: %s
+                           MemberId: %s
+                           ''' % (self.user.id, self.user_credentials.member_id))
+            return all_events
         params = {
-            'member_id': self.member_id,
+            'group_id': ','.join([str(group.group_id) for group in meetup_groups]),
             'status': "upcoming,proposed,suggested",
             'fields': 'timezone'
         }
