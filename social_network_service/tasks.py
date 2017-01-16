@@ -13,6 +13,7 @@ import time
 import datetime
 
 # 3rd party imports
+import pytest
 import requests
 from redo import retry
 from celery.result import AsyncResult
@@ -26,6 +27,7 @@ from social_network_service.common.models.user import UserSocialNetworkCredentia
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
+from social_network_service.custom_exceptions import HitLimitReached
 from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS, EVENT, MEETUP_EVENT_STREAM_API_URL)
 from social_network_service.modules.event.meetup import Meetup
 from social_network_service.modules.rsvp.meetup import Meetup as MeetupRsvp
@@ -101,7 +103,11 @@ def process_meetup_event(event):
             # event created in database (one by api and other by importer)
             group = MeetupGroup.get_by_group_id(event['group']['id'])
             meetup = SocialNetwork.get_by_name('Meetup')
-            meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
+            try:
+                meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
+            except HitLimitReached:
+                meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id,
+                                                validate_token=False)
             meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials,
                                        social_network=meetup, headers=meetup_sn.headers)
             if event['status'] in [MEETUP_EVENT_STATUS['upcoming'],
@@ -116,9 +122,12 @@ def process_meetup_event(event):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    meetup_event_base.delete_event(event_id, False)
-                    logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
-                                % event_in_db.to_json())
+                    if meetup_event_base.delete_event(event_in_db.id, delete_from_vendor=False):
+                        logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
+                    else:
+                        logger.info('Event could not be marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
                 else:
                     logger.info("Meetup event not found in database. event:`%s`." % event)
 
@@ -266,9 +275,12 @@ def import_eventbrite_event(user_id, event_url, action_type):
                                                                                      event_id
                                                                                      )
                 if event_in_db:
-                    eventbrite_event_base.delete_event(event_id, False)
-                    logger.info('Event has been marked as is_deleted_from_vendor in gt database: %s'
-                                % event_in_db.to_json())
+                    if eventbrite_event_base.delete_event(event_in_db.id, delete_from_vendor=False):
+                        logger.info('Event has been marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
+                    else:
+                        logger.info('Event could not be marked as is_deleted_from_vendor in gt database: %s'
+                                    % event_in_db.to_json())
                 else:
                     logger.info("Event unpublished from Eventbrite but it does not exist, don't worry. Event URL: %s"
                                 % event_url)
@@ -363,3 +375,16 @@ def import_meetup_events():
                 logger.warning('Out of main loop. Cause: %s' % e)
                 time.sleep(5)
                 rollback()
+
+
+@celery.task(name="run_tests")
+def run_tests(args, file_path, output_formats):
+    """
+    This task takes list of args which are actually list of test modules, functions or some search criteria based on
+    which pytest will run tests.
+    :param list args: list of pytest args
+    :param str file_path: html file path
+    :param list output_formats: list of output formats
+    """
+    args.extend(['--{0}={1}.{0}'.format(_type, file_path) for _type in output_formats])
+    pytest.main(args)

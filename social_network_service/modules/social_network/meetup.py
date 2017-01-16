@@ -5,6 +5,7 @@ class. Meetup contains methods like refresh_access_token(), get_groups() etc.
 
 # Standard Library
 import json
+import time
 
 # 3rd party imports
 from requests import codes
@@ -85,6 +86,8 @@ class Meetup(SocialNetworkBase):
         """
         url = get_url(self, SocialNetworkUrls.GROUPS)
         params = {'member_id': 'self'}
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         response = http_request('GET', url, params=params, headers=self.headers, user_id=self.user.id)
         if response.ok:
             # If some error occurs during HTTP call,
@@ -101,6 +104,8 @@ class Meetup(SocialNetworkBase):
         """
         url = get_url(self, SocialNetworkUrls.GROUPS)
         params = {'member_id': 'self'}
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         response = http_request('GET', url, params=params, headers=self.headers, user_id=self.user.id)
         meetup_groups = []
         if response.ok:
@@ -168,7 +173,8 @@ class Meetup(SocialNetworkBase):
                         'client_secret': client_secret,
                         'grant_type': u'refresh_token',
                         'refresh_token': user_refresh_token}
-
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         response = http_request('POST', url=auth_url, data=payload_data,
                                 user_id=self.user.id, app=app)
         if response.ok:
@@ -260,6 +266,8 @@ class Meetup(SocialNetworkBase):
             'state': venue_data['state'],
             'name': venue_data['address_line_1']
         }
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         response = http_request('POST', url, params=payload,
                                 headers=self.headers,
                                 user_id=self.user.id)

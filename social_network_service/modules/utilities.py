@@ -4,9 +4,12 @@ or consumed by various programs.
 """
 
 # Standard Library
+import fnmatch
+import glob
 import imp
 import importlib
 import inspect
+import os
 import random
 import re
 import string
@@ -580,3 +583,73 @@ def is_token_valid(social_network_id, user_id):
     else:
         raise ResourceNotFound("Invalid social network id given")
 
+
+def get_file_matches(file_name, dir_path):
+    """
+    This function given a name of file in given directory path, returns full path of all files matching given name.
+    :param str file_name: file name to search
+    :param str dir_path: directory in which file name will be searched
+    :return: list of file paths
+    :rtype: list
+    """
+    matches = []
+    for root, dirnames, filenames in os.walk(dir_path):
+        for filename in fnmatch.filter(filenames, file_name):
+            matches.append(os.path.join(root, filename))
+    return matches
+
+
+def get_test_info(path):
+    """
+    This functions given a directory path, returns all test modules, classes and functions.
+    :param str path: root test directory path
+    :return: dictionary
+    :rtype: dict
+        :Output:
+            For SocialNetwork Service, here is a partial output:
+            {
+                 "test_v1_graphql_sn_api_tests": {
+                    "functions": [
+                      "test_get_events_pagination",
+                      "test_get_subscribed_social_network",
+                      "test_get_venue"
+                    ]
+                  },
+                "test_v1_importer": {
+                    "classes": {
+                      "Test_Event_Importer": [
+                        "test_eventbrite_rsvp_importer_endpoint"
+                      ]
+                    },
+                    "functions": [
+                      "test_event_import_to_update_existing_event",
+                      "test_event_import_to_create_new_event"
+                    ]
+                  },
+                "test_v1_organizer_api": {
+                    "classes": {
+                      "TestOrganizers": ["test_get_with_valid_token"]
+                    }
+                }
+            }
+    """
+    result = {}
+    files = list()
+    modules = []
+    for f in glob.glob(path + "/*/test_*.py") + glob.glob(path + "/test_*.py"):
+        name = os.path.basename(f)[:-3]
+        files.append(name)
+        module = imp.load_source(name, f)
+        modules.append(module)
+    for module in modules:
+        module_name = module.__name__
+        result[module_name] = {
+            'classes': {},
+            'functions': []
+        }
+        for class_name in filter(lambda x: x.startswith('Test'), dir(module)):
+            klass = getattr(module, class_name)
+            methods = filter(lambda x: x.startswith('test_'), klass.__dict__.keys())
+            result[module_name]['classes'][class_name] = methods
+        result[module_name]['functions'] = filter(lambda x: x.startswith('test_'), module.__dict__.keys())
+    return result

@@ -3,11 +3,15 @@
     We register blueprints for different APIs with this app.
     Error handlers are added at the end of file.
 """
+from datetime import datetime
+
 # 3rd party imports
 from flask import request, redirect, jsonify
+from flask import send_from_directory
 from flask.ext.graphql import GraphQLView
 
 # Application specific imports
+from social_network_service.modules.utilities import get_file_matches, get_test_info
 from ..social_network_app import app, logger
 from restful.v1_data import data_blueprint
 from restful.v1_importer import rsvp_blueprint
@@ -21,12 +25,14 @@ from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.modules.social_network.twitter import Twitter
 from social_network_service.social_network_app.graphql.schema import schema
-from social_network_service.common.error_handling import InternalServerError
+from social_network_service.common.error_handling import InternalServerError, InvalidUsage
 from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
 from social_network_service.common.talent_config_manager import (TalentEnvs, TalentConfigKeys)
+from social_network_service.common.utils.auth_utils import validate_jwt_token
 from social_network_service.tasks import (import_eventbrite_event, process_meetup_event,
-                                          process_meetup_rsvp, process_eventbrite_rsvp)
-from social_network_service.modules.constants import (MEETUP_CODE_LENGTH, ACTIONS, EVENTBRITE_USER_AGENT, EVENT, RSVP)
+                                          process_meetup_rsvp, process_eventbrite_rsvp, run_tests)
+from social_network_service.modules.constants import (MEETUP_CODE_LENGTH, ACTIONS, EVENTBRITE_USER_AGENT, EVENT, RSVP,
+                                                      TEST_DIR, STATIC_DIR)
 
 
 # Register Blueprints for different APIs
@@ -135,3 +141,146 @@ def meetup_importer_endpoint():
         logger.info('Got Meetup RSVP: %s' % rsvp)
         process_meetup_rsvp.delay(rsvp)
     return jsonify(dict(message='Thanks a lot!'))
+
+
+@app.route(SocialNetworkApi.TESTS, methods=['GET', 'POST'])
+def tests():
+    """
+    This view gets user input and runs tests in background using celery task.
+    It returns path / url to html report for given set of tests. You can see output / result of tests using
+    that path in browser.
+
+    You can call this endpoint using GET or POST request.
+    Using `output` query parameter with GET or POST you can tell what is the output format you want. There are two
+    possible formats for now, html and json. You can specify both using comma separated string like `html,json`
+
+    Using GET request, we can specify an input string which will be matched with all tests and those tests will be run
+    that contain given input string in test function name.
+    We can also specify modules names (separated by comma) and then all tests inside those modules will be executed.
+
+    If you want more control over selection of tests and also want to run more test using one api call, you can send
+    a POST request with JSON data of this form
+        {
+            "module_name_without_py_extension": {
+                "classes": {
+                    "TestClass1": ["test_func_1", "test_func_2"],
+                    "TestClass2": ["test_func_3, "test_func_4, "test_func_5"]
+                },
+                "functions": ["module_level_test_func_1", "module_level_test_func_2"]
+            }
+        }
+
+    For SocialNetwork Service, here is a sample:
+        {
+             "test_v1_graphql_sn_api_tests": {
+                "functions": [
+                  "test_get_events_pagination",
+                  "test_get_subscribed_social_network",
+                  "test_get_venue"
+                ]
+              },
+            "test_v1_importer": {
+                "classes": {
+                  "Test_Event_Importer": [
+                    "test_eventbrite_rsvp_importer_endpoint"
+                  ]
+                },
+                "functions": [
+                  "test_event_import_to_update_existing_event",
+                  "test_event_import_to_create_new_event"
+                ]
+              },
+            "test_v1_organizer_api": {
+                "classes": {
+                  "TestOrganizers": ["test_get_with_valid_token"]
+                }
+            }
+        }
+
+        :Response:
+            Response will look like
+            {
+                "html": "http://127.0.0.1:8007/assets/2017-01-12T12:33:00.892360.html",
+                "json": "http://127.0.0.1:8007/assets/2017-01-12T12:33:00.892360.json"
+            }
+    """
+    token = request.args.get('token', '')
+    validate_jwt_token(token)
+    output = request.args.get('output', 'html')
+
+    if isinstance(output, basestring):
+        output = output.split(',')
+        for index, item in enumerate(output):
+            if item not in ('json', 'html'):
+                del output[index]
+    if len(output) == 0:
+        output = ['html']
+    args = []
+    if request.method == 'GET':
+        """In GET request, we can select tests to run using name or module parameter.
+            name will be matched with all test function names and those tests will be run those contain this name
+            string in function name.
+            Using module parameter you can run all tests in given module names. Multiple names are comma separated.
+             /tests?modules=test_v1_organizer_api,test_v1_importer
+        """
+        name = request.args.get('name')
+        modules = request.args.get('modules')
+        if not (name or modules):
+            raise InvalidUsage('You must specify test name or module name to run tests.')
+        if modules:
+            modules = modules.split(',')
+            for module in modules:
+                matches = get_file_matches(module + '.py', TEST_DIR)
+                if len(matches) == 0:
+                    raise InvalidUsage('There is no such test file with name "{}"'.format(module + '.py'))
+                if len(matches) > 1:
+                    raise InvalidUsage('There are multiple files in "tests" directory with name {}'.format(
+                        module + '.py'))
+                args.extend(matches)
+        if name:
+            """ To run test based on matching function name, specify name parameter. """
+            args.extend([TEST_DIR, '-k', name])
+    else:
+        """ POST request """
+        data = request.json
+        for module_name in data:
+            matches = get_file_matches(module_name + '.py', TEST_DIR)
+            classes = data[module_name]['classes']
+            functions = data[module_name]['functions']
+            for class_name in classes:
+                for function_name in classes[class_name]:
+                    for module in matches:
+                        args.append('{}::{}::{}'.format(module, class_name, function_name))
+            for function_name in functions:
+                for module in matches:
+                    args.append('{}::{}'.format(module, function_name))
+
+        if len(args) == 0:
+            raise InvalidUsage('Invalid data. No test is selected to run.')
+
+    assets = STATIC_DIR + '/{}'
+    file_name = datetime.utcnow().isoformat()
+    file_path = assets.format(file_name)
+    run_tests.delay(args, file_path, output)
+    url = SocialNetworkApiUrl.ASSETS % file_name
+    response = {_type: '{}.{}'.format(url, _type) for _type in output}
+    return jsonify(response)
+
+
+@app.route(SocialNetworkApi.ASSETS)
+def static_files(path):
+    """
+    This view simply returns static files from "assets" directory for given path
+    :param str path: path of file relative to assets folder
+    """
+    return send_from_directory(STATIC_DIR, path)
+
+
+@app.route(SocialNetworkApi.TESTS_LIST)
+def tests_info():
+    """
+    This view JOSN response containing all tests information which contains all test modules, classes and functions.
+    """
+    token = request.args.get('token', '')
+    validate_jwt_token(token)
+    return jsonify(get_test_info(TEST_DIR))

@@ -38,7 +38,6 @@ def process_resume(parse_params):
     :rtype: dict
     """
 
-    # None may be explicitly passed so the normal .get('attr', default) doesn't apply here.
     create_candidate = parse_params.get('create_candidate', False)
 
     # We need to obtain/define the file from our params.
@@ -61,6 +60,10 @@ def process_resume(parse_params):
 
     oauth_string = parse_params.get('oauth')
     parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
+
+    product_source_id = parse_params.get('source_id')
+    if product_source_id:
+        parsed_resume['candidate']['source_product_id'] = product_source_id
 
     # Upload resumes we want to create candidates from.
     try:

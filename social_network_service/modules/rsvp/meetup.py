@@ -6,6 +6,7 @@ Meetup contains methods like get_rsvps(), get_attendee() etc.
 # Standard Library
 from datetime import datetime
 from datetime import timedelta
+import time
 
 # Application Specific
 from base import RSVPBase
@@ -111,6 +112,8 @@ class Meetup(RSVPBase):
             # might consolidate it.
             next_url = data['meta']['next'] or None
             while next_url:
+                # Sleep for 10 / 30 seconds to avoid throttling
+                time.sleep(0.34)
                 # attach the key before sending the request
                 response = http_request('GET', next_url, headers=self.headers, user_id=self.user.id)
                 if response.ok:
@@ -273,6 +276,8 @@ class Meetup(RSVPBase):
                                 'User Id: %s' % (social_network_event_id, self.user.id))
 
         member_url = self.api_url + '/member/' + str(rsvp['member']['member_id'])
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         response = http_request('GET', member_url, headers=self.headers, user_id=self.user.id)
         if response.ok:
             data = response.json()

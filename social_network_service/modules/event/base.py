@@ -98,6 +98,7 @@ To add another social network for events management, following are steps:
 import json
 from abc import ABCMeta
 from abc import abstractmethod
+import time
 
 # 3rd party
 from flask import request
@@ -246,9 +247,8 @@ class EventBase(object):
         We then check if it was promoted via email-campaign to getTalent candidates and mark all linked email-campaigns
         as archived.
         :param Event event: Event object
-        :param bool deleted_from_vendor: flag to mark is_delete_from_vendor true or false
+        :param bool deleted_from_vendor: flag to mark 'is_deleted_from_vendor' field true or false
         """
-
         # if deleted_from_vendor is True, it means we are directly deleting event from our api call not from third party
         # social network that's why we need to un-publish
         # event from social network and will also mark is_hidden=1.
@@ -288,6 +288,8 @@ class EventBase(object):
         :return: event model object
         :rtype type(t)
         """
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         response = http_request('get', event_url, headers=self.headers)
         if response.ok:
             event = response.json()
@@ -415,24 +417,24 @@ class EventBase(object):
         # Import RSVPs of events
         self.process_events_rsvps()
 
-    def delete_event(self, event_id, is_delete_from_vendor=True):
+    def delete_event(self, event_id, delete_from_vendor=True):
         """
         Here we pass an event id, picks it from db, and try to delete
         it both from social network and database. If successfully deleted
         from both sources, returns True, otherwise returns False.
         :param event_id: is the 'id' of event present in our db
         :type event_id: int or long
-        :param is_delete_from_vendor: is flag to delete event from third party
-        :type is_delete_from_vendor: bool
+        :param delete_from_vendor: is flag to delete event from third party
+        :type delete_from_vendor: bool
         :return: True if deletion is successful, False otherwise.
         :rtype: bool
         """
         event = Event.get_by_user_and_event_id(self.user.id, event_id)
         if event:
             try:
-                if is_delete_from_vendor:
+                if delete_from_vendor:
                     self.unpublish_event(event.social_network_event_id)
-                self.archive_email_campaigns_for_deleted_event(event, is_delete_from_vendor)
+                self.archive_email_campaigns_for_deleted_event(event, delete_from_vendor)
                 return True
             except Exception:  # some error while removing event
                 logger.exception('delete_event: user_id: %s, event_id: %s, social network: %s(id: %s)'
@@ -477,6 +479,8 @@ class EventBase(object):
         """
         # create url to unpublish event
         url = get_url(self, Urls.EVENT).format(event_id)
+        # Sleep for 10 / 30 seconds to avoid throttling
+        time.sleep(0.34)
         # params are None. Access token is present in self.headers
         response = http_request(method, url, headers=self.headers, user_id=self.user.id)
         if response.ok:

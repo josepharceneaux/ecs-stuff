@@ -24,6 +24,7 @@ def test_valid_json_builder():
             'filename': 'rfn',
             'filepicker_key': 'fpk',
             'resume_file': None,
+            'source_id': None,
             'talent_pools': None
         }
 
@@ -44,6 +45,7 @@ def test_valid_json_builder_no_filename():
             'filename': 'fpk',
             'filepicker_key': 'fpk',
             'resume_file': None,
+            'source_id': None,
             'talent_pools': None
         }
 
@@ -53,6 +55,7 @@ def test_valid_json_builder_tpids():
         'create_candidate': True,
         'resume_file_name': 'rfn',
         'filepicker_key': 'fpk',
+        'source_id': 1337,
         'talent_pool_ids': [1, 2, 3],
     }
 
@@ -65,6 +68,7 @@ def test_valid_json_builder_tpids():
             'filename': 'rfn',
             'filepicker_key': 'fpk',
             'resume_file': None,
+            'source_id': 1337,
             'talent_pools': [1, 2, 3]
         }
 
