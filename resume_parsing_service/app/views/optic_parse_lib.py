@@ -140,7 +140,7 @@ def parse_optic_xml(resume_xml_text):
         talent_pool_ids={'add': None},
         references=references,
         summary=parse_candidate_summary(summary_xml_list),
-        resume_text=soup_text,
+        resume_text=pretty_text,
         social_networks=linkedIn_urls
     )
 
