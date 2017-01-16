@@ -1,7 +1,5 @@
 from datetime import datetime
 
-import pytest
-
 from app_common.common.activty_service.activity_creator import TalentActivityManager
 from app_common.common.models.db import db
 from app_common.common.models.misc import Activity
@@ -24,7 +22,6 @@ def test_basic_create():
     output = tam.create_activity(params)
     assert output['committed'] is True
 
-    # Clean up
     db.session.delete(Activity.get(output['id']))
     db.session.commit()
 
@@ -43,7 +40,6 @@ def test_basic_create_with_params():
     output = tam.create_activity(params)
     assert output['committed'] is True
 
-    # Clean up
     db.session.delete(Activity.get(output['id']))
     db.session.commit()
 
