@@ -424,7 +424,7 @@ class CampaignUtils(object):
     @classmethod
     def get_campaign_type(cls, campaign):
         """
-        Here we get the campaign object and returns type of campaign e.g Email, Push
+        Here we get the campaign object and return type of campaign e.g Email, Push
         :param campaign: Any type of campaign e.g Email campaign, SMS campaign
         """
         cls.raise_if_not_instance_of_campaign_models(campaign)
@@ -439,7 +439,7 @@ class CampaignUtils(object):
     @classmethod
     def get_campaign_activity_type_id(cls, campaign, action='SEND'):
         """
-        Here we get the campaign object and returns message id of activity
+        Here we get the campaign object and return message id of activity
         :param campaign: It may be any type of campaign e.g Email campaign, SMS campaign
         :param action: Action of activity e.g Send, Open, Click
         """
