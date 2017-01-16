@@ -123,7 +123,7 @@ class Meetup(EventBase):
         events_url = get_url(self, Urls.EVENTS)
         # we can specify status=upcoming,past,draft,cancelled etc. By default we
         # have status=upcoming, so we are not explicitly specifying in fields.
-        meetup_groups = MeetupGroup.get_by_user_id(self.user.id)
+        meetup_groups = MeetupGroup.filter_by_keywords(user_id=self.user.id)
         if not meetup_groups:
             logger.warn('''No MeetupGroup is asscoiated with this user subscription for Meetup.
                            UserId: %s
