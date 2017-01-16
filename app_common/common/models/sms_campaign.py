@@ -85,7 +85,7 @@ class SmsCampaign(db.Model):
         query_object = cls.query.join(UserPhone, cls.user_phone_id == UserPhone.id).\
             join(User, UserPhone.user_id == User.id).filter(User.domain_id == domain_id)
         if page_number is None:
-            return query_object.all()
+            return query_object
         return get_paginated_objects(query_object, page_number)
 
     @classmethod
