@@ -193,7 +193,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         If we are requesting scheduler_service to GET a task, we will use this method as
             http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=oauth_header)
     """
-    log('http_request: URL: %s , Datetime: %s' % (url, datetime.utcnow()), app=app, level='info')
+    # log('http_request: URL: %s , Datetime: %s' % (url, datetime.utcnow()), app=app, level='info')
     if app and not isinstance(app, Flask):
         raise InternalServerError(error_message="app instance should be flask")
 
