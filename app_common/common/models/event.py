@@ -238,4 +238,3 @@ class MeetupGroup(db.Model):
         :return: returns a group record
         """
         return cls.query.filter_by(user_id=user_id, group_id=group_id).first()
-

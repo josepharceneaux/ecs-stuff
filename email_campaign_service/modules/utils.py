@@ -116,12 +116,17 @@ def do_mergetag_replacements(texts, current_user, requested_object=None, candida
     merge_tag_replacement_dict = {DEFAULT_FIRST_NAME_MERGETAG: first_name,
                                   DEFAULT_LAST_NAME_MERGETAG: last_name,
                                   DEFAULT_USER_NAME_MERGETAG: current_user.name}
+    logger.info('Replacing merge tags for campaign of user(id:%s, name:%s)' % (current_user.id, current_user.name))
     for text in texts:
         if text:
+            logger.info('Replacing merge tags for string:%s' % text)
             for key, value in merge_tag_replacement_dict.iteritems():
                 if key in text:
                     # Do first_name, last_name and username replacements
+                    logger.info('Merge tag:%s found and replaced with:%s' % (key, value))
                     text = text.replace(key, value)
+                else:
+                    logger.info('Merge tag:%s was not found. Value:%s' % (key, value))
             # Do 'Unsubscribe' link replacements
             if isinstance(requested_object, Candidate) and DEFAULT_PREFERENCES_URL_MERGETAG in text:
                 text = do_prefs_url_replacement(text, requested_object, candidate_address)
@@ -129,7 +134,7 @@ def do_mergetag_replacements(texts, current_user, requested_object=None, candida
                 text = text.replace(DEFAULT_PREFERENCES_URL_MERGETAG, TEST_PREFERENCE_URL)
 
         new_texts.append(text)
-
+    logger.info('Converted body_html, body_text and subject are:%s' % new_texts)
     return new_texts
 
 
