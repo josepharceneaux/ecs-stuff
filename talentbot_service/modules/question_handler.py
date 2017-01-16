@@ -467,8 +467,6 @@ class QuestionHandler(object):
             response = ["Pipelines in your group are following:"]
             if pipelines:
                 response.append("*Pipelines*")
-                # for index, pipeline in enumerate(pipelines):
-                #     response.append("%d: `%s`" % (index + 1, pipeline.name))
                 response = cls.custom_count_appender(1, pipelines, "pipelines", response)
                 state = [{"class": "TalentPipeline", "method": "pipelines_user_group",
                           "params": [user_id, 1],

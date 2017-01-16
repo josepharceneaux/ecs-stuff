@@ -24,7 +24,7 @@ HINT = '''>>>I am `%s`. @osman is teaching me new things, right now I can answer
 6- What is my group?
 7- Which group does `[user name]` belong to?
 8- What are the talent pools in my domain?
-9- What campaigns in my domain?
+9- What are `[all|my|our]` campaigns in `[my|all|talent pool name]` `[domain|talent pools]`?
 10- Show me more about `[Talent pool name|Campaign name]`?
 11- What are my group `[Campaigns|Pipelines]`?
 12- Add candidate whose resume URL is http://www.something.com/some-resume.pdf''' % BOT_NAME

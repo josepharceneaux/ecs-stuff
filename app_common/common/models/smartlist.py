@@ -33,15 +33,14 @@ class Smartlist(db.Model):
         return "%s(%s)" % (self.__class__.__name__, self.id)
 
     @classmethod
+    @contract
     def get_by_ids(cls, smartlist_id, is_hidden=True):
         """
         This method returns candidates against list of Candidate Ids or single Candidate Id
-        :param int|long smartlist_id: Smartlist Id
+        :param positive|list smartlist_id: Smartlist Id
         :param bool is_hidden: if True returns all candidates with hidden if False returns unhidden candidates
-        :rtype: Smartlist|list
+        :rtype: type(x)
         """
-        assert isinstance(smartlist_id, (list, long, int)), "Invalid smartlist id type"
-        assert isinstance(is_hidden, bool), "Invalid page number"
         if isinstance(smartlist_id, list):
             if not is_hidden:
                 return cls.query.filter(cls.id.in_(smartlist_id), cls.is_hidden == 0).all()
@@ -101,6 +100,15 @@ class SmartlistCandidate(db.Model):
         talent_pool_ids = [talent_pool.id for talent_pool in talent_pools]  # Extracting data on 0th index from tuple
         candidate_ids = TalentPoolCandidate.query.with_entities(TalentPoolCandidate.candidate_id). \
             filter(TalentPoolCandidate.talent_pool_id.in_(talent_pool_ids)).distinct().all()
+        """
+        candidate_ids is a list of tuple
+         [(358L,), (1005L,), (1054L,), (1055L,)]
+        when we zip it "zip(*candidate_ids)". It makes pairs of 1st-to-1st and 2nd-to-2nd elements of tuples.
+         Since second element is empty so it gets skipped and candidate_ids changes into
+         [(358L, 1005L, 1054L, 1055L)]
+         And then we use * to extract elements of list of tuple and pass them to list() function and receive
+         [358L, 1005L, 1054L, 1055L]
+        """
         candidate_ids = list(*zip(*candidate_ids))  # Converting tuple to list
         candidates = Candidate.get_by_id(candidate_ids, False)
         candidate_ids = [candidate.id for candidate in candidates]
