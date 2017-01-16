@@ -107,7 +107,9 @@ def parse_optic_xml(resume_xml_text):
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
-    soup_text = bs4(resume_xml_text, 'lxml').getText().encode('utf8', 'replace')
+    resume_soup = bs4(resume_xml_text, 'lxml')
+    soup_text = resume_soup.getText().encode('utf8', 'replace')
+    pretty_text = resume_soup.prettify()
     non_ascii_chars = set(re.sub(u'[\x00-\x7f]', '', soup_text))
     if non_ascii_chars:
         logger.info('ResumeParsingService::Info::Non-ascii chars in resume: {}'.format(non_ascii_chars))
@@ -121,7 +123,7 @@ def parse_optic_xml(resume_xml_text):
     emails = parse_candidate_emails(contact_xml_list)
     first_name, last_name = parse_candidate_name(contact_xml_list)
     references = parse_candidate_reference(references_xml)
-    linkedIn_urls = parse_candidate_linkedin_urls(soup_text)
+    linkedIn_urls = parse_candidate_linkedin_urls(pretty_text)
 
     if emails and not first_name:
         first_name = emails[0].get('address')
