@@ -419,7 +419,7 @@ class QuestionHandler(object):
                 state = [{"class": "TalentPool", "method": "get_talent_pools_in_user_domain",
                          "params": [user_id, 1], "repr": "talent pools"}]
                 redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
-                if talent_pool_number >= 10:
+                if talent_pool_number == 10:
                     header = ["Top 10 talent pools in your domain `%s` are following:\n"
                               " Type `next` to view next 10\n" % domain_name]
             response = cls.custom_count_appender(1, talent_pools, "talent pools", header)
@@ -566,8 +566,8 @@ class QuestionHandler(object):
             ["Your Campaigns are following:"] if not asking_about_all_campaigns and is_asking_for_campaigns_in_pool\
             else ["Campaigns in all Talent pools"] if asking_about_all_pools else ["Campaigns in your Talent pools"] \
             if asking_about_his_pool else ["Campaigns in your group are following:"] if len(response) == 0 else response
-        if via_sms:
-            response[0] = response[0].title().replace("campaigns", "top 10 campaigns").title()
+        # if via_sms:
+        #     response[0] = response[0].lower().replace("campaigns", "top 10 campaigns").title()
         domain_id = User.get_domain_id(user_id) if is_asking_for_campaigns_in_pool else None
         # Getting campaigns
         if is_asking_for_campaigns_in_pool:
@@ -588,27 +588,28 @@ class QuestionHandler(object):
                 cls.save_state(state_array, user_id)
 
         if email_campaigns:  # Appending email campaigns in a representable response list
-            counter = 0
+            counter, _index = 0, len(response)
             response.append("*Top 10 Email Campaigns*" if via_sms else "*Email Campaigns*")
             for index, email_campaign in enumerate(email_campaigns):
                 counter += 1
                 response.append("%d: `%s`" % (index + 1, email_campaign.name))
+            response.insert(_index, "*Top 10 Email Campaigns*" if via_sms and counter == 10 else "*Email Campaigns*")
             if not counter:
                 response.pop()
         if push_campaigns:  # Appending push campaigns in a representable response list
-            response.append("*Top 10 Push Campaigns*" if via_sms else "*Push Campaigns*")
-            counter = 0
+            counter, _index = 0, len(response)
             for index, push_campaign in enumerate(push_campaigns):
                 response.append("%d: `%s`" % (index + 1, push_campaign.name))
                 counter += 1
+            response.insert(_index, "*Top 10 Push Campaigns*" if via_sms and counter == 10 else "*Push Campaigns*")
             if not counter:
                 response.pop()
         if sms_campaigns:  # Appending sms campaigns in a representable response list
-            response.append("*Top 10 SMS Campaigns*" if via_sms else "*SMS Campaigns*")
-            counter = 0
+            counter, _index = 0, len(response)
             for index, sms_campaign in enumerate(sms_campaigns):
                 response.append("%d: `%s`" % (index + 1, sms_campaign.name))
                 counter += 1
+            response.insert(_index, "*Top 10 SMS Campaigns*" if via_sms and counter == 10 else "*SMS Campaigns*")
             if not counter:
                 response.pop()
         return '\n'.join(response) if len(response) > 1 else "No Campaign found"  # Returning string
@@ -672,8 +673,9 @@ class QuestionHandler(object):
             state = [{"class": "TalentPipeline", "method": "get_own_or_domain_pipelines", "params": [user_id, scope, 1],
                      "repr": "pipelines"}]
             redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
-            response[0] = response[0].lower().replace("pipelines", "top 10 pipelines").title()
             pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope, 1)
+            if len(pipelines) == 10:
+                response[0] = response[0].lower().replace("pipelines", "top 10 pipelines").title()
         else:
             pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope)
         return cls.custom_count_appender(1, pipelines, "pipelines", response)
