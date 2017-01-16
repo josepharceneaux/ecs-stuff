@@ -108,12 +108,11 @@ def parse_optic_xml(resume_xml_text):
     :rtype: dict
     """
     resume_soup = bs4(resume_xml_text, 'lxml')
-    soup_text = resume_soup.getText().encode('utf8', 'replace')
-    pretty_text = resume_soup.prettify()
-    non_ascii_chars = set(re.sub(u'[\x00-\x7f]', '', soup_text))
+    pretty_text = resume_soup.prettify().encode('utf8', 'replace')
+    non_ascii_chars = set(re.sub(u'[\x00-\x7f]', '', pretty_text))
     if non_ascii_chars:
         logger.info('ResumeParsingService::Info::Non-ascii chars in resume: {}'.format(non_ascii_chars))
-    encoded_soup_text = b64encode(soup_text)
+    encoded_soup_text = b64encode(pretty_text)
     contact_xml_list = bs4(resume_xml_text, 'lxml').findAll('contact')
     experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
