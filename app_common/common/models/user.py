@@ -91,7 +91,8 @@ class User(db.Model):
         redis_store.setex(secret_key_id, secret_key, expiration)
         s = Serializer(secret_key, expires_in=expiration)
         if current_app:
-            current_app.logger.info('Creating jw token. secret_key_id %s, secret_key: %s', secret_key_id, secret_key)
+            current_app.logger.info('Creating jw token. secret_key_id %s, secret_key: %s. app:%s',
+                                    secret_key_id, secret_key, current_app.name)
         return 'Bearer %s.%s' % (s.dumps({'user_id': user_id}), secret_key_id)
 
     @staticmethod
