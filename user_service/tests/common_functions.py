@@ -124,6 +124,10 @@ def domain_api(access_token, domain_id='', data='', action='GET'):
         response = requests.put(url=UserServiceApiUrl.DOMAIN % domain_id, headers=headers,
                                 data=json.dumps(data))
         return response.json(), response.status_code
+    elif action == 'PATCH':
+        headers['content-type'] = 'application/json'
+        response = requests.patch(url=UserServiceApiUrl.DOMAIN % domain_id, headers=headers, data=json.dumps(data))
+        return response.json(), response.status_code
     elif action == 'POST':
         headers['content-type'] = 'application/json'
         response = requests.post(url=UserServiceApiUrl.DOMAINS, headers=headers, data=json.dumps(data))
