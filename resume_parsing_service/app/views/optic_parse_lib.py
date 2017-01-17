@@ -107,11 +107,12 @@ def parse_optic_xml(resume_xml_text):
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
-    soup_text = bs4(resume_xml_text, 'lxml').getText().encode('utf8', 'replace')
-    non_ascii_chars = set(re.sub(u'[\x00-\x7f]', '', soup_text))
+    resume_soup = bs4(resume_xml_text, 'lxml')
+    pretty_text = resume_soup.prettify().encode('utf8', 'replace')
+    non_ascii_chars = set(re.sub(u'[\x00-\x7f]', '', pretty_text))
     if non_ascii_chars:
         logger.info('ResumeParsingService::Info::Non-ascii chars in resume: {}'.format(non_ascii_chars))
-    encoded_soup_text = b64encode(soup_text)
+    encoded_soup_text = b64encode(pretty_text)
     contact_xml_list = bs4(resume_xml_text, 'lxml').findAll('contact')
     experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
@@ -121,7 +122,7 @@ def parse_optic_xml(resume_xml_text):
     emails = parse_candidate_emails(contact_xml_list)
     first_name, last_name = parse_candidate_name(contact_xml_list)
     references = parse_candidate_reference(references_xml)
-    linkedIn_urls = parse_candidate_linkedin_urls(soup_text)
+    linkedIn_urls = parse_candidate_linkedin_urls(pretty_text)
 
     if emails and not first_name:
         first_name = emails[0].get('address')
@@ -139,7 +140,7 @@ def parse_optic_xml(resume_xml_text):
         talent_pool_ids={'add': None},
         references=references,
         summary=parse_candidate_summary(summary_xml_list),
-        resume_text=soup_text,
+        resume_text=pretty_text,
         social_networks=linkedIn_urls
     )
 

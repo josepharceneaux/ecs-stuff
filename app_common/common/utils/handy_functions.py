@@ -9,6 +9,7 @@ import re
 import string
 import time
 from functools import wraps
+from datetime import datetime
 
 # Third Party
 import requests
@@ -192,7 +193,6 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         If we are requesting scheduler_service to GET a task, we will use this method as
             http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=oauth_header)
     """
-
     if app and not isinstance(app, Flask):
         raise InternalServerError(error_message="app instance should be flask")
 
@@ -237,7 +237,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     if wait_until:
                         time.sleep(int(wait_until) + 1)
                     else:
-                        time.sleep(10)
+                        time.sleep(30)
                     return http_request(method_type, url, params=params, headers=headers, data=data, user_id=user_id,
                                         app=app, throttled=True)
 

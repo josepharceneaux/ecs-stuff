@@ -7,6 +7,7 @@ Author:
     This file contains pyTest fixtures for tests of social-network-service.
 """
 # Standard Library
+import os
 from copy import deepcopy
 import json
 
@@ -16,6 +17,7 @@ import requests
 from requests import codes
 
 # Common conftests
+from social_network_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from social_network_service.common.tests.conftest import user_auth
 from social_network_service.common.tests.api_conftest import (user_first, token_first, talent_pool_session_scope,
                                                               user_same_domain, token_same_domain, user_second,
@@ -50,6 +52,18 @@ from social_network_service.social_network_app import app
 from social_network_service.common.constants import FACEBOOK, MEETUP
 from social_network_service.social_network_app import logger
 from social_network_service.tests.helper_functions import get_headers
+
+ENVIRONMENT = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
+
+
+@pytest.fixture(autouse=True)
+def _environment(request):
+    request.config._environment.append(('Environment', ENVIRONMENT))
+
+
+@pytest.fixture(scope='session', autouse=True)
+def extra_json_environment(request):
+    request.config._json_environment.append(('Environment', ENVIRONMENT))
 
 
 @pytest.fixture(scope='session')
