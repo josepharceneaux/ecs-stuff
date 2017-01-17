@@ -9,6 +9,7 @@ These methods are called by run_job method asynchronously
 """
 # Builtin imports
 import json
+import os
 import time
 import datetime
 
@@ -17,6 +18,7 @@ import pytest
 import requests
 from redo import retry
 from celery.result import AsyncResult
+from boto.s3.connection import S3Connection
 
 # Application imports
 from social_network_service.common.models.db import db
@@ -24,7 +26,7 @@ from social_network_service.common.constants import MEETUP, EVENTBRITE
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import MeetupGroup, Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
-from social_network_service.common.talent_config_manager import TalentConfigKeys
+from social_network_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
 from social_network_service.custom_exceptions import HitLimitReached
@@ -378,13 +380,43 @@ def import_meetup_events():
 
 
 @celery.task(name="run_tests")
-def run_tests(args, file_path, output_formats):
+def run_tests(args, file_path, user_id):
     """
     This task takes list of args which are actually list of test modules, functions or some search criteria based on
     which pytest will run tests.
     :param list args: list of pytest args
     :param str file_path: html file path
-    :param list output_formats: list of output formats
+    :param int | long user_id: user id
     """
-    args.extend(['--{0}={1}.{0}'.format(_type, file_path) for _type in output_formats])
-    pytest.main(args)
+    with app.app_context():
+        output_formats = ['json', 'html']
+        content_types = ['application/json', 'text/html']
+        logger = app.config[TalentConfigKeys.LOGGER]
+        aws_access_key_id = app.config[TalentConfigKeys.AWS_KEY]
+        aws_secret_access_key = app.config[TalentConfigKeys.AWS_SECRET]
+        env = app.config[TalentConfigKeys.ENV_KEY]
+        log_message = '''%s:
+                         Environment: %s,
+                         UserId: %s
+                         args: %s
+                         %s: %s
+                         '''
+        try:
+            args.extend(['--{0}={1}.{0}'.format(_type, file_path) for _type in output_formats])
+            pytest.main(args)
+            with open(file_path + '.json') as f:
+                output = f.read()
+            logger.info(log_message % ('Tests Pass:', env, user_id, args, 'Output', output))
+            if env in [TalentEnvs.QA, TalentEnvs.PROD]:
+                s3_connection = S3Connection(aws_access_key_id, aws_secret_access_key)
+                bucket_obj = s3_connection.get_bucket('api-test-results')
+                for ext, mime in zip(output_formats, content_types):
+                    key_name = '%s/%s.%s' % (env, file_path.split('/')[-1], ext)
+                    filename = '%s.%s' % (file_path, ext)
+                    key = bucket_obj.new_key(key_name=key_name)
+                    key.set_metadata('Content-Type', mime)
+                    key.set_contents_from_filename(filename)
+                    os.unlink(filename)
+                    logger.info('Output files uploaded on S3 Key: %s%s' % ('api-test-results', key_name))
+        except Exception as e:
+            logger.error(log_message % ('Failed to run tests:', env, user_id, args, 'Error', e))

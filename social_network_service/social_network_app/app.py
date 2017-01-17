@@ -151,8 +151,7 @@ def tests():
     that path in browser.
 
     You can call this endpoint using GET or POST request.
-    Using `output` query parameter with GET or POST you can tell what is the output format you want. There are two
-    possible formats for now, html and json. You can specify both using comma separated string like `html,json`
+    Using `output` query parameter with GET or POST. There are two output formats for now, html and json.
 
     Using GET request, we can specify an input string which will be matched with all tests and those tests will be run
     that contain given input string in test function name.
@@ -206,15 +205,8 @@ def tests():
     """
     token = request.args.get('token', '')
     validate_jwt_token(token)
-    output = request.args.get('output', 'html')
-
-    if isinstance(output, basestring):
-        output = output.split(',')
-        for index, item in enumerate(output):
-            if item not in ('json', 'html'):
-                del output[index]
-    if len(output) == 0:
-        output = ['html']
+    user = request.user
+    output = ('json', 'html')
     args = []
     if request.method == 'GET':
         """In GET request, we can select tests to run using name or module parameter.
@@ -261,9 +253,14 @@ def tests():
     assets = STATIC_DIR + '/{}'
     file_name = datetime.utcnow().isoformat()
     file_path = assets.format(file_name)
-    run_tests.delay(args, file_path, output)
-    url = SocialNetworkApiUrl.ASSETS % file_name
-    response = {_type: '{}.{}'.format(url, _type) for _type in output}
+    run_tests.delay(args, file_path, user.id)
+    env = app.config[TalentConfigKeys.ENV_KEY]
+    if env in [TalentEnvs.QA, TalentEnvs.PROD]:
+        key_name = '%s/%s.%s' % (env, file_name, '%s')
+        url = 'https://s3.amazonaws.com/api-test-results/%s' % key_name
+    else:
+        url = SocialNetworkApiUrl.ASSETS % file_name + '.%s'
+    response = {_type: url % _type for _type in output}
     return jsonify(response)
 
 
