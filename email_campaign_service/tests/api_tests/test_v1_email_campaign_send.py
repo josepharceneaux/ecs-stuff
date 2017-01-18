@@ -8,6 +8,7 @@ In this module, we have tests for following endpoints
     - GET /v1/redirect
 """
 # Packages
+import json
 import re
 
 # Third Party
@@ -15,17 +16,18 @@ import requests
 
 # Application Specific
 from email_campaign_service.common.models.db import db
-from email_campaign_service.tests.conftest import fake
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.tests.conftest import fake, Role
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.misc import UrlConversion, Activity
 from email_campaign_service.common.models.candidate import Candidate
 from email_campaign_service.modules.utils import do_mergetag_replacements
-from email_campaign_service.common.routes import EmailCampaignApiUrl
+from email_campaign_service.common.routes import EmailCampaignApiUrl, UserServiceApiUrl
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailCampaignSmartlist)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign_smartlists,
-                                                                  send_campaign_with_client_id)
+                                                                  send_campaign_with_client_id, assert_and_delete_email)
 from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
     assert_campaign_send
 
@@ -384,3 +386,19 @@ class TestSendCampaign(object):
             CampaignsTestsHelpers.assert_for_activity(sent_campaign.user_id, Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
                                                       sent_campaign.sends[0].id)
 
+    def test_campaign_send_in_test_domain(self, headers, domain_first, user_first, campaign_with_two_candidates):
+        """
+        Here we set user's email address to be test email account used in tests.
+        We then set domain of user as test domain and send an email campaign to candidates. It should be
+        received in user's inbox.
+        """
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+        data = {'is_test_domain': 1}
+        response = requests.patch(url=UserServiceApiUrl.DOMAIN % domain_first.id, headers=headers,
+                                  data=json.dumps(data))
+        assert response.ok, response.text
+        user_first.update(email=app.config[TalentConfigKeys.GT_GMAIL_ID])
+        response = requests.post(self.URL % campaign_with_two_candidates.id, headers=headers)
+        assert_campaign_send(response, campaign_with_two_candidates, user_first.id, 2)
+        assert_and_delete_email(campaign_with_two_candidates.subject)
