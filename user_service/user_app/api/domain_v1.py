@@ -1,9 +1,11 @@
-from user_service.user_app import logger
+"""
+    Here we have API endpoints for Domains of gettalent users.
+"""
 
-__author__ = 'ufarooqi'
+from flask import Blueprint
 from dateutil import parser
 from flask_restful import Resource
-from flask import request, Blueprint
+from user_service.user_app import logger
 from user_service.common.error_handling import *
 from user_service.common.models.misc import Culture
 from user_service.common.talent_api import TalentApi
@@ -11,6 +13,8 @@ from user_service.common.routes import UserServiceApi
 from user_service.common.models.user import User, Domain, db, Permission
 from user_service.user_app.user_service_utilties import get_or_create_domain
 from user_service.common.utils.auth_utils import require_oauth, require_all_permissions, is_number
+
+__author__ = 'ufarooqi'
 
 
 class DomainApi(Resource):
