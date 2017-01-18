@@ -1,0 +1,31 @@
+import json
+from activity_service.common.models.misc import Activity
+from activity_service.common.models.email_campaign import EmailCampaign
+from activity_service.common.campaign_services.campaign_utils import CampaignUtils
+"""
+There was no 'campaign_type' in Campaign Send activity message due to which it was difficult for user to guess,
+from which campaign type this activity belongs. So we have added 'campaign_type' in activity message. This migration is
+written to update previous messages data which does not include 'campaign_type'.
+Old message was: "Campaign <campaign_name> was sent to <num_of_candidates> candidates"
+Now it will be like: "<campaign_type> Campaign <campaign_name> was sent to <num_of_candidates> candidates"
+e.g  "Email Campaign <campaign_name> was sent to <num_of_candidates> candidates"
+     "Push Campaign <campaign_name> was sent to <num_of_candidates> candidates"
+"""
+all_activities = Activity.query.filter_by(type=6).all()
+print "Total activities having Type==6 are: %s" %(len(all_activities))
+updated_rows = []
+for activity in all_activities:
+    if not json.loads(activity.params).get("campaign_type"):
+        source_table = activity.source_table
+        source_table_prefix = CampaignUtils.get_campaign_type_prefix(source_table)
+        campaign_type = source_table_prefix.title()
+        if source_table_prefix == "email":
+            email_campaign = EmailCampaign.get(activity.source_id)
+            campaign_type = CampaignUtils.get_campaign_type(email_campaign)
+        updated_rows.append(campaign_type)
+        campaign_type = campaign_type.title()
+        params = json.loads(activity.params)
+        params["campaign_type"] = campaign_type
+        params = json.dumps(params)
+        activity.update(params=params)
+print "Total rows updated are: %s" %len(updated_rows)

@@ -363,24 +363,3 @@ class TestSendCampaign(object):
         campaign = campaign_with_archived_candidate
         response = requests.post(self.URL % campaign['id'], headers=headers)
         assert_campaign_send(response, campaign, user_first.id)
-
-    def test_activity_send_email_campaign(self, access_token_first, sent_campaign):
-        """
-        This gets a sent email campaign object with client id and without client id and test
-        :param access_token_first: access token of user first
-        :param sent_campaign: Object of sent campaign
-        """
-        expected_sends = 2
-        expected_blasts = 1
-        CampaignsTestsHelpers.assert_campaign_blasts(sent_campaign, expected_blasts, access_token=access_token_first,
-                                                     timeout=100)
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_sends)
-        response = requests.get(EmailCampaignApiUrl.SENDS % sent_campaign.id,
-                                headers=dict(Authorization='Bearer %s' % access_token_first))
-        json_resp = response.json()['sends'][0]
-        assert json_resp['campaign_id'] == sent_campaign.id
-        assert json_resp['candidate_id'] == sent_campaign.sends[0].candidate_id
-        if not sent_campaign.email_client_id:
-            CampaignsTestsHelpers.assert_for_activity(sent_campaign.user_id, Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
-                                                      sent_campaign.sends[0].id)
-

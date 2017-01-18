@@ -215,7 +215,7 @@ class TalentActivityManager(object):
             "<b>%(username)s</b> deleted %(count)s campaign(s)",
             "campaign.png"),
         Activity.MessageIds.CAMPAIGN_SEND: (
-            "Campaign <b>%(name)s</b> was sent to <b>%(num_candidates)s</b> candidate(s)",
+            "%(campaign_type)s Campaign <b>%(name)s</b> was sent to <b>%(num_candidates)s</b> candidate(s)",
             "%(count)s campaign(s) sent",
             "campaign.png"),
         Activity.MessageIds.CAMPAIGN_EXPIRE: (
@@ -483,7 +483,7 @@ class TalentActivityManager(object):
             if not params.get(param):
                 params[param] = 'unknown'
             if param == 'campaign_type' and params[param].lower() not in CampaignUtils.WITH_ARTICLE_AN:
-                format_string = format_string.replace("an", "a")
+                format_string = format_string.replace(" an ", " a ")
 
         formatted_string = format_string % params
 
