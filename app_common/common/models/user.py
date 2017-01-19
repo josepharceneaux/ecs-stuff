@@ -298,6 +298,7 @@ class Domain(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     dice_company_id = db.Column('DiceCompanyId', db.Integer, index=True)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
+    is_test_domain = db.Column(TINYINT, default='0', nullable=False)
 
     # Relationships
     users = relationship('User', backref='domain')

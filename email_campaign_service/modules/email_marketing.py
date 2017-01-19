@@ -465,19 +465,23 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
                                                     blast_params=blast_params,
                                                     email_campaign_blast_id=email_campaign_blast_id,
                                                     blast_datetime=blast_datetime)
+    domain = Domain.get_by_id(campaign.user.domain_id)
+    is_prod = not CampaignUtils.IS_DEV
     # Only in case of production we should send mails to candidate address else mails will
     # go to test account. To avoid spamming actual email addresses, while testing.
-    if not CampaignUtils.IS_DEV:
-        to_address = candidate_address
-    else:
-        # In dev/staging, only send emails to getTalent users, in case we're
-        #  impersonating a customer.
-        domain = Domain.get_by_id(campaign.user.domain_id)
-        domain_name = domain.name.lower()
-        if 'gettalent' in domain_name or 'bluth' in domain_name or 'dice' in domain_name:
+    to_address = app.config[TalentConfigKeys.GT_GMAIL_ID]
+    if is_prod:
+        # In case environment is Production and domain is test domain, send campaign to user's email address.
+        if domain.is_test_domain:
             to_address = campaign.user.email
+        # In case environment is Production and domain is not test domain, only then send campaign to candidates.
         else:
-            to_address = app.config[TalentConfigKeys.GT_GMAIL_ID]
+            to_address = candidate_address
+    else:
+        # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
+        domain_name = domain.name.lower()
+        if domain.is_test_domain or any([name in domain_name for name in ['gettalent', 'bluth', 'dice']]):
+            to_address = campaign.user.email
     logger.info("sending email-campaign(id:%s) to candidate(id:%s)'s email_address:%s"
                 % (campaign_id, candidate_id, to_address))
     email_client_credentials_id = campaign.email_client_credentials_id

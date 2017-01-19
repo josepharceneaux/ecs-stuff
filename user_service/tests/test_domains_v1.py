@@ -209,3 +209,49 @@ def test_domain_service_post(access_token_first, user_first, domain_first):
     # Remove these temporary domains from domain table
     first_domain_object.delete()
     second_domain_object.delete()
+
+
+# Test POST operation of domain API
+def test_domain_service_patch(access_token_first, user_first, domain_first, domain_second):
+    assert not domain_first.is_test_domain
+    data = {'is_test_domain': 1}
+    # Logged-in user trying to add new domains without having required role.
+    response, status_code = domain_api(access_token_first, domain_id=domain_first.id, data=data, action='PATCH')
+    assert status_code == codes.UNAUTHORIZED, response
+
+    # Logged-in user trying to add new domains with required role.
+    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
+
+    response, status_code = domain_api(access_token_first, domain_id=domain_first.id, data=data, action='PATCH')
+    assert status_code == codes.OK, response
+
+    db.session.commit()
+    assert domain_first.is_test_domain
+
+    # Mark is_test_domain as 0
+    data = {'is_test_domain': 0}
+    response, status_code = domain_api(access_token_first, domain_id=domain_first.id, data=data, action='PATCH')
+    assert status_code == codes.OK, response
+    db.session.commit()
+    assert not domain_first.is_test_domain
+
+    # Test with invalid value
+    data = {'is_test_domain': gen_salt(6)}
+    response, status_code = domain_api(access_token_first, domain_id=domain_first.id, data=data, action='PATCH')
+    assert status_code == codes.BAD, response
+
+    # Test updating domain of some other user without appropriate role
+    data = {'is_test_domain': 1}
+    response, status_code = domain_api(access_token_first, domain_id=domain_second.id, data=data, action='PATCH')
+    assert status_code == codes.UNAUTHORIZED, response
+
+    # Test updating domain of some other user with valid role
+    assert not domain_second.is_test_domain
+    user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
+    db.session.commit()
+    data = {'is_test_domain': True}
+    response, status_code = domain_api(access_token_first, domain_id=domain_second.id, data=data, action='PATCH')
+    assert status_code == codes.OK, response
+    db.session.commit()
+    assert domain_second.is_test_domain
