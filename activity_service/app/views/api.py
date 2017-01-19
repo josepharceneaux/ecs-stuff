@@ -166,7 +166,7 @@ class TalentActivityManager(object):
     MESSAGES = {
         Activity.MessageIds.RSVP_EVENT: (
             "<b>%(firstName)s %(lastName)s</b> responded %(response)s on <b>%(creator)s's</b> "
-            "event: <b>'%(eventTitle)s'</b> %(img)s",
+            "event: <b>'%(eventTitle)s'</b>",
             "<b>%(firstName)s %(lastName)s<b> responded %(response)s on event: "
             "'<b>%(eventTitle)s</b>'",
             "candidate.png"),
