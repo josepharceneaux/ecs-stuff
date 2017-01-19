@@ -317,7 +317,7 @@ class CandidatesResource(Resource):
             else:
                 resp_dict = create_or_update_candidate_from_params(**candidate_data)
                 created_candidate_ids.append(resp_dict['candidate_id'])
-                tam = TalentActivityManager(db, logger=logger)
+                tam = TalentActivityManager(db, activity_model=Activity,logger=logger)
                 tam.create_activity({
                     'activity_params': {'username': authed_user.first_name,
                                         'formatted_name': candidate_data.get('formatted_name') or 'Unknown'},
