@@ -1,7 +1,11 @@
-__author__ = 'ufarooqi'
+"""
+    Here we have API endpoints for Domains of gettalent users.
+"""
+
+from flask import Blueprint
 from dateutil import parser
 from flask_restful import Resource
-from flask import request, Blueprint
+from user_service.user_app import logger
 from user_service.common.error_handling import *
 from user_service.common.models.misc import Culture
 from user_service.common.talent_api import TalentApi
@@ -9,6 +13,8 @@ from user_service.common.routes import UserServiceApi
 from user_service.common.models.user import User, Domain, db, Permission
 from user_service.user_app.user_service_utilties import get_or_create_domain
 from user_service.common.utils.auth_utils import require_oauth, require_all_permissions, is_number
+
+__author__ = 'ufarooqi'
 
 
 class DomainApi(Resource):
@@ -215,6 +221,33 @@ class DomainApi(Resource):
 
         return {'updated_domain': {'id': requested_domain_id}}
 
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
+    def patch(self, **kwargs):
+        """
+        PATCH /domains/<id>
+
+         This endpoint will update field `is_test_domain` of requested domain object.
+        :rtype:  dict
+        """
+        requested_domain_id = kwargs.get('id')
+        requested_domain = Domain.query.get(requested_domain_id) if requested_domain_id else None
+        if not requested_domain:
+            raise NotFoundError("Either domain_id is not provided or domain doesn't exist")
+
+        posted_data = request.get_json(silent=True)
+        if not posted_data:
+            raise InvalidUsage("Request body is empty or not provided")
+
+        if request.user.role.name != 'TALENT_ADMIN' and requested_domain_id != request.user.domain_id:
+            raise UnauthorizedError("Logged-in user doesn't have appropriate permissions for this operation")
+
+        is_test_domain = posted_data.get('is_test_domain', 0)
+        if is_test_domain not in (True, False, 1, 0):
+            raise InvalidUsage("is_test_domain field should be a boolean, given: %s" % is_test_domain)
+
+        requested_domain.update(is_test_domain=is_test_domain)
+        logger.info("Domain(id:%s) has been marked as test domain" % requested_domain_id)
+        return {'updated_domain': {'id': requested_domain_id}}
 
 domain_blueprint = Blueprint('domain_api', __name__)
 api = TalentApi(domain_blueprint)
