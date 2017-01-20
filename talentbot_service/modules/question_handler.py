@@ -19,11 +19,13 @@ import urllib
 import urllib2
 from datetime import datetime
 from os.path import splitext
+from random import randint
+from time import sleep
 from urlparse import urlparse
 from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
-from talentbot_service.common.constants import OWNED, DOMAIN_SPECIFIC
+from talentbot_service.common.utils.talentbot_utils import DOMAIN_SPECIFIC, OWNED
 from talentbot_service.common.error_handling import NotFoundError, InvalidUsage, InternalServerError
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
@@ -36,14 +38,17 @@ from talentbot_service.common.routes import ResumeApiUrl, CandidateApiUrl
 from talentbot_service.common.utils.handy_functions import send_request
 from talentbot_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
 from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, delete_from_filepicker_s3
+from talentbot_service.common.redis_cache import redis_store
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
     SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, TOO_LARGE_RESUME_MSG, \
-    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN, INVALID_INPUT, CANDIDATE_ALREADY_EXISTS, TWITTER, FACEBOOK
+    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN, INVALID_INPUT, CANDIDATE_ALREADY_EXISTS, TWITTER, FACEBOOK, \
+    CLASSES, USER_CLIENTS
 from talentbot_service import logger, app
 # 3rd party imports
 from flask import json
+from requests import codes
 import requests
 
 
@@ -83,9 +88,10 @@ class QuestionHandler(object):
         return ' '.join(_list)
 
     @classmethod
-    def question_0_handler(cls, message_tokens, user_id):
+    def question_0_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'how many users are there in my domain'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :return: Response message
@@ -105,9 +111,10 @@ class QuestionHandler(object):
         return "Users in domain `%s` : %d" % (domain_name, len(users))
 
     @classmethod
-    def question_1_handler(cls, message_tokens, user_id):
+    def question_1_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'how many candidates are there with skills [x,y and z]'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :rtype: str
@@ -135,9 +142,10 @@ class QuestionHandler(object):
         return response_message.replace(', and,', ' and').replace('and,', 'and')
 
     @classmethod
-    def question_2_handler(cls, message_tokens, user_id):
+    def question_2_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'how many candidates are there from zipcode [x]'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :rtype: str
@@ -155,9 +163,10 @@ class QuestionHandler(object):
         response_message = "Number of candidates from zipcode `%s` : `%d`" % (message_tokens[zip_index + 1], count)
         return response_message
 
-    def question_3_handler(self, message_tokens, user_id):
+    def question_3_handler(self, message_tokens, user_id, user_client=None):
         """
         Handles question 'what's the top performing [campaign name] campaign from [year]'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :rtype: str
@@ -249,10 +258,11 @@ class QuestionHandler(object):
             response_message = 'No valid time duration found\n %s' % response_message
         return response_message.replace("None", "all the times").replace('from from', 'from')
 
-    def question_4_handler(self, message_tokens, user_id):
+    def question_4_handler(self, message_tokens, user_id, user_client=None):
         """
         Handles question 'how many candidate leads did [user name] import into the
         [talent pool name] in last n months'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :rtype: str
@@ -388,33 +398,41 @@ class QuestionHandler(object):
             return "My name is `%s`" % BOT_NAME
 
     @classmethod
-    def question_6_handler(cls, message_tokens, user_id):
+    def question_6_handler(cls, message_tokens, user_id, user_client=None):
         """
         This method handles question what are the talent pools in my domain
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :rtype: str
         """
-        talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
+        via_sms = True if user_client == USER_CLIENTS["SMS"] else False
+        talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id, 1 if via_sms else None)
         _, domain_name = User.get_domain_name_and_its_users(user_id)
         if talent_pools:
-            talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
-            talent_pool_names = cls.create_ordered_list(talent_pool_names)
             talent_pool_number = len(talent_pools)
             is_or_are = 'is' if talent_pool_number == 1 else 'are'
             plural = '' if talent_pool_number == 1 else 's'
             header = ["There %s %d talent pool%s in your domain `%s`\n" % (is_or_are, talent_pool_number, plural,
                                                                            domain_name)]
-            response = '%s%s' % (header[0], talent_pool_names[::])
+            if via_sms:
+                state = [{"class": "TalentPool", "method": "get_talent_pools_in_user_domain",
+                         "params": [user_id, 1], "repr": "talent pools"}]
+                redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
+                if talent_pool_number == 10:
+                    header = ["Top 10 talent pools in your domain `%s` are following:\n"
+                              " Type `next` to view next 10\n" % domain_name]
+            response = cls.custom_count_appender(1, talent_pools, "talent pools", header)
             return response.replace('`None`', '')
         response = "Seems like there is no talent pool in your domain `%s`" % domain_name
         return response.replace('`None`', '')
 
     @classmethod
-    def question_7_handler(cls, message_tokens, user_id):
+    def question_7_handler(cls, message_tokens, user_id, user_client=None):
         """
         This method handles question What is my group, what group a user belongs to and what are my group
         campaigns|pipelines
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param message_tokens:
         :param int user_id: User Id
         :rtype: str
@@ -444,16 +462,17 @@ class QuestionHandler(object):
                     response.append("%d: `%s`" % (index + 1, sms_campaign.name))
             return '\n'.join(response) if len(response) > 1 else 'No campaigns exist in your group'
         if group_pipelines:
-            try:
-                pipelines = TalentPipeline.pipelines_user_group(user_id)
-            except NotFoundError:
-                return "Something went wrong"
+            via_sms = True if user_client == USER_CLIENTS["SMS"] else False
+            pipelines = TalentPipeline.pipelines_user_group(user_id, 1 if via_sms else None)
             response = ["Pipelines in your group are following:"]
             if pipelines:
                 response.append("*Pipelines*")
-                for index, pipeline in enumerate(pipelines):
-                    response.append("%d: `%s`" % (index + 1, pipeline.name))
-            return '\n'.join(response) if len(response) > 1 else 'No pipelines exist in your group'
+                response = cls.custom_count_appender(1, pipelines, "pipelines", response)
+                state = [{"class": "TalentPipeline", "method": "pipelines_user_group",
+                          "params": [user_id, 1],
+                          "repr": "pipelines"}]
+                redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
+            return response
         belong_index = cls.find_optional_word(message_tokens, ['belong', 'part'])
         is_user_asking_about_himself = cls.find_word_in_message('i', message_tokens, exact_word=True)
         if belong_index is not None and is_user_asking_about_himself is None:
@@ -477,13 +496,15 @@ class QuestionHandler(object):
 
     @classmethod
     @contract
-    def question_8_handler(cls, message_tokens, user_id):
+    def question_8_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'What are my campaigns, What are my campaigns in <x> talent pool'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param list message_tokens: Tokens of User message
         :param positive user_id:
         :rtype: string
         """
+        via_sms = True if user_client == USER_CLIENTS["SMS"] else False
         is_group_campaigns = True if cls.find_word_in_message('group', message_tokens, True) is not None else False
         if is_group_campaigns:  # If user's asking for campaigns in his group we already have handler for that
             return cls.question_7_handler(message_tokens, user_id)
@@ -499,95 +520,106 @@ class QuestionHandler(object):
                                       not asking_about_his_pool and talent_pool_index is not None)
         email_campaigns, sms_campaigns, push_campaigns = (None, None, None)
         response = []
-        if asking_about_specific_pool:  # If user has specified some talent pool's name
-            campaign_index = cls.find_word_in_message('camp', message_tokens)  # Extracting Talentpool names
-            if campaign_index is not None and talent_pool_index is not None:
-                if len(message_tokens) > campaign_index:
-                    if message_tokens[campaign_index + 1].lower() == 'in':
-                        campaign_index += 1
-                talent_pool_names = message_tokens[campaign_index + 1:talent_pool_index:]
-                talent_pool_names_list = cls.create_list_of_talent_pools('\\'.join(talent_pool_names))
-                response.append("Campaigns in %s talent pools" %
-                                (' ,'.join(["`%s`" % talent_pool_name for talent_pool_name in talent_pool_names_list])
-                                 if talent_pool_names_list else "all"))
-                email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, OWNED, talent_pool_names_list)\
-                    if not asking_about_all_campaigns else\
-                    EmailCampaign.email_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, talent_pool_names_list)
-                push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, OWNED, talent_pool_names_list) \
-                    if not asking_about_all_campaigns else \
-                    PushCampaign.push_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, talent_pool_names_list)
-                sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, OWNED, talent_pool_names_list) \
-                    if not asking_about_all_campaigns else \
-                    SmsCampaign.sms_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, talent_pool_names_list)
-        if asking_about_all_pools:  # If user's asking about all talent pools in his/her domain
-            email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, OWNED) if not\
-                asking_about_all_campaigns else EmailCampaign.email_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC)
-            push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, OWNED) \
-                if not asking_about_all_campaigns else \
-                PushCampaign.push_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC)
-            sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, OWNED) \
-                if not asking_about_all_campaigns else \
-                SmsCampaign.sms_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC)
-        if asking_about_his_pool:  # If user's asking about his talent pools
-            user_talent_pool_names = TalentPool.get_talent_pool_owned_by_user(user_id)
-            user_talent_pool_names = [pool_name[0] for pool_name in user_talent_pool_names]
-            email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, OWNED, user_talent_pool_names) \
-                if not asking_about_all_campaigns else \
-                EmailCampaign.email_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, user_talent_pool_names)
-            push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, OWNED, user_talent_pool_names) \
-                if not asking_about_all_campaigns else \
-                PushCampaign.push_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, user_talent_pool_names)
-            sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, OWNED, user_talent_pool_names) \
-                if not asking_about_all_campaigns else \
-                SmsCampaign.sms_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, user_talent_pool_names)
+        scope = OWNED if not asking_about_all_campaigns else DOMAIN_SPECIFIC
+        page_number = 1 if via_sms else None
+        if asking_about_all_pools or asking_about_his_pool or asking_about_specific_pool:
+            user_talent_pool_names = None
+            if asking_about_his_pool:  # If user's asking about his talent pools
+                user_talent_pool_names = TalentPool.get_talent_pool_owned_by_user(user_id)
+                user_talent_pool_names = [pool_name[0] for pool_name in user_talent_pool_names]
+            if asking_about_specific_pool:  # If user has specified some talent pool's name
+                campaign_index = cls.find_word_in_message('camp', message_tokens)  # Extracting Talentpool names
+                if campaign_index is not None and talent_pool_index is not None:
+                    if len(message_tokens) > campaign_index:
+                        if message_tokens[campaign_index + 1].lower() == 'in':
+                            campaign_index += 1
+                    talent_pool_names = message_tokens[campaign_index + 1:talent_pool_index:]
+                    user_talent_pool_names = cls.create_list_of_talent_pools('\\'.join(talent_pool_names))
+                    response.append("Campaigns in %s talent pools" %
+                                    (' ,'.join(
+                                        ["`%s`" % talent_pool_name for talent_pool_name in user_talent_pool_names])
+                                     if user_talent_pool_names else "all"))
+            state_array = []  # To store multiple methods as a single state e.g Email, Push and SMS Campaigns
+            email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names,
+                                                                           page_number)
+            push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names,
+                                                                        page_number)
+            sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, scope, user_talent_pool_names,
+                                                                     page_number)
+            if via_sms:
+                # Generating State object and appending it in state_array
+                state_array.append(cls.create_state_object("PushCampaign", "push_campaigns_in_talent_pool",
+                                                           [user_id, scope, user_talent_pool_names, 1],
+                                                           "Push Campaigns"))
+                state_array.append(cls.create_state_object("EmailCampaign", "email_campaigns_in_talent_pool",
+                                                           [user_id, scope, user_talent_pool_names, 1],
+                                                           "Email Campaigns"))
+                state_array.append(cls.create_state_object("SmsCampaign", "sms_campaigns_in_talent_pool",
+                                                           [user_id, scope, user_talent_pool_names, 1],
+                                                           "SMS Campaigns"))
+                cls.save_state(state_array, user_id)
         is_asking_for_campaigns_in_pool = not asking_about_specific_pool and not \
             asking_about_all_pools and not asking_about_his_pool
         # Appending suitable response header
-        response = ["All campaigns in your domain are following:"] if (is_asking_for_campaigns_in_pool
+        response = ["Campaigns in your domain are following:"] if (is_asking_for_campaigns_in_pool
                                                                        and asking_about_all_campaigns) else \
             ["Your Campaigns are following:"] if not asking_about_all_campaigns and is_asking_for_campaigns_in_pool\
             else ["Campaigns in all Talent pools"] if asking_about_all_pools else ["Campaigns in your Talent pools"] \
             if asking_about_his_pool else ["Campaigns in your group are following:"] if len(response) == 0 else response
+        # if via_sms:
+        #     response[0] = response[0].lower().replace("campaigns", "top 10 campaigns").title()
         domain_id = User.get_domain_id(user_id) if is_asking_for_campaigns_in_pool else None
         # Getting campaigns
         if is_asking_for_campaigns_in_pool:
-            email_campaigns = EmailCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
-                EmailCampaign.get_by_user_id(user_id)
-            push_campaigns = PushCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
-                PushCampaign.get_by_user_id(user_id)
-            sms_campaigns = SmsCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
-                SmsCampaign.get_by_user_id(user_id)
+            state_array = []
+            email_campaigns = EmailCampaign.get_by_domain_id(domain_id, page_number) if asking_about_all_campaigns else\
+                EmailCampaign.get_by_user_id(user_id, page_number)
+            push_campaigns = PushCampaign.get_by_domain_id(domain_id, page_number) if asking_about_all_campaigns else\
+                PushCampaign.get_by_user_id(user_id, page_number)
+            sms_campaigns = SmsCampaign.get_by_domain_id(domain_id, page_number) if asking_about_all_campaigns else\
+                SmsCampaign.get_by_user_id(user_id, page_number)
+            if via_sms:
+                # Generating State object and appending it in state_array
+                method_name = "get_by_domain_id" if asking_about_all_campaigns else "get_by_user_id"
+                parameters = [domain_id, 1] if asking_about_all_campaigns else [user_id, 1]
+                state_array.append(cls.create_state_object("SmsCampaign", method_name, parameters, "Sms Campaigns"))
+                state_array.append(cls.create_state_object("PushCampaign", method_name, parameters, "Push Campaigns"))
+                state_array.append(cls.create_state_object("EmailCampaign", method_name, parameters, "Email Campaigns"))
+                cls.save_state(state_array, user_id)
+
         if email_campaigns:  # Appending email campaigns in a representable response list
-            counter = 0
-            response.append("*Email Campaigns*")
+            counter, _index = 0, len(response)
+            response.append("*Top 10 Email Campaigns*" if via_sms else "*Email Campaigns*")
             for index, email_campaign in enumerate(email_campaigns):
                 counter += 1
                 response.append("%d: `%s`" % (index + 1, email_campaign.name))
+            response.insert(_index, "*Top 10 Email Campaigns*" if via_sms and counter == 10 else "*Email Campaigns*")
             if not counter:
                 response.pop()
         if push_campaigns:  # Appending push campaigns in a representable response list
-            response.append("*Push Campaigns*")
-            counter = 0
+            counter, _index = 0, len(response)
             for index, push_campaign in enumerate(push_campaigns):
                 response.append("%d: `%s`" % (index + 1, push_campaign.name))
                 counter += 1
+            response.insert(_index, "*Top 10 Push Campaigns*" if via_sms and counter == 10 else "*Push Campaigns*")
             if not counter:
                 response.pop()
         if sms_campaigns:  # Appending sms campaigns in a representable response list
-            response.append("*SMS Campaigns*")
-            counter = 0
+            counter, _index = 0, len(response)
             for index, sms_campaign in enumerate(sms_campaigns):
                 response.append("%d: `%s`" % (index + 1, sms_campaign.name))
                 counter += 1
+            response.insert(_index, "*Top 10 SMS Campaigns*" if via_sms and counter == 10 else "*SMS Campaigns*")
             if not counter:
                 response.pop()
         return '\n'.join(response) if len(response) > 1 else "No Campaign found"  # Returning string
 
     @classmethod
     @contract
-    def question_9_handler(cls, message_tokens, user_id):
+    def question_9_handler(cls, message_tokens, user_id, user_client=None):
         """
         This method handles question 'show me <x>'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param list message_tokens:
         :param positive user_id:
         :rtype: string
@@ -623,26 +655,49 @@ class QuestionHandler(object):
 
     @classmethod
     @contract
-    def question_10_handler(cls, message_tokens, user_id):
+    def question_10_handler(cls, message_tokens, user_id, user_client=None):
         """
         Handles question 'What are my|all pipelines'
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param list message_tokens: Tokens of User message
         :param positive user_id:
         :rtype: string
         """
-        # Checking weather user's asking about all pipelines or his/her pipelines
+        # Checking whether user's asking about all pipelines or his/her pipelines
+        via_sms = user_client == USER_CLIENTS["SMS"]
         asking_about_all_pipelines = not bool(re.search(r'my pipe*|my all pipe*', ' '.join(message_tokens).lower()))
         response = ["Your pipelines are following:"] if not asking_about_all_pipelines else\
             ["Pipelines in your domain are following:"]
-        pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, DOMAIN_SPECIFIC if
-                                                               asking_about_all_pipelines else OWNED)
-        for index, pipeline in enumerate(pipelines):
-            response.append("%d- `%s`" % (index + 1, pipeline.name))
-        return '\n'.join(response) if len(response) > 1 else "No pipeline found"
+        scope = DOMAIN_SPECIFIC if asking_about_all_pipelines else OWNED
+        if via_sms:  # Saving state for pagination
+            state = [{"class": "TalentPipeline", "method": "get_own_or_domain_pipelines", "params": [user_id, scope, 1],
+                     "repr": "pipelines"}]
+            redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
+            pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope, 1)
+            if len(pipelines) == 10:
+                response[0] = response[0].lower().replace("pipelines", "top 10 pipelines").title()
+        else:
+            pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, scope)
+        return cls.custom_count_appender(1, pipelines, "pipelines", response)
+
+    @staticmethod
+    @contract
+    def custom_count_appender(start, _list, representative, response):
+        """
+
+        :param list response:
+        :param positive start:
+        :param list _list:
+        :param string representative:
+        :rtype: string
+        """
+        for index, item in enumerate(_list):
+            response.append("%d- `%s`" % (start + index, item.name))
+        return '\n'.join(response) if len(response) > 1 else "No %s found" % representative
 
     @classmethod
     @contract
-    def add_candidate_handler(cls, message_tokens, user_id):
+    def add_candidate_handler(cls, message_tokens, user_id, user_client=None):
         """
         Adds candidate from a resume url mentioned in message by user
         :param list message_tokens: Tokens of User message
@@ -652,48 +707,47 @@ class QuestionHandler(object):
         try:
             resume_url = re.search("(?P<url>((https?)|(ftps?))://[^\s]+)", ' '.join(message_tokens)).group("url")
             resume_url = resume_url.strip('>')
-        except AttributeError:  # If url doesn't start with http:// or https://
-            return NO_RESUME_URL_FOUND_MSG
-        try:
             extension, hostname, resume_size_in_bytes = cls.parse_resume_url(resume_url)
-        except (urllib2.HTTPError, urllib2.URLError):
-            return INVALID_RESUME_URL_MSG
-        # Supported social sites' array
-        supported_social_sites_array = [SUPPORTED_SOCIAL_SITES[GITHUB], SUPPORTED_SOCIAL_SITES[TWITTER],
-                                        SUPPORTED_SOCIAL_SITES[STACK_OVERFLOW]]
-        is_hostname_in_supported_social_sites = hostname in supported_social_sites_array \
+            # Supported social sites' array
+            supported_social_sites_array = [SUPPORTED_SOCIAL_SITES[GITHUB], SUPPORTED_SOCIAL_SITES[TWITTER],
+                                            SUPPORTED_SOCIAL_SITES[STACK_OVERFLOW]]
+            is_hostname_in_supported_social_sites = hostname in supported_social_sites_array \
                                                 or SUPPORTED_SOCIAL_SITES[LINKEDIN] in hostname \
                                                 or SUPPORTED_SOCIAL_SITES[FACEBOOK] in hostname
-        # If it is social profile link it wont have an extension
-        if not extension and is_hostname_in_supported_social_sites:
-            response_message = cls.get_candidate_from_openweb_and_add(user_id, resume_url)
-            if response_message:
-                return response_message
-            else:
-                return "Sorry, I couldn't find information on %s" % resume_url
-        elif int(resume_size_in_bytes) >= TEN_MB:
-            resume_size_in_mbs = float(resume_size_in_bytes)/(1024*1024)
-            return TOO_LARGE_RESUME_MSG % resume_size_in_mbs
-        try:
+            # If it is social profile link it wont have an extension
+            if not extension and is_hostname_in_supported_social_sites:
+                response_message = cls.get_candidate_from_openweb_and_add(user_id, resume_url)
+                if response_message:
+                    return response_message
+                else:
+                    return "Sorry, I couldn't find information on %s" % resume_url
+            elif int(resume_size_in_bytes) >= TEN_MB:
+                resume_size_in_mbs = float(resume_size_in_bytes)/(1024*1024)
+                return TOO_LARGE_RESUME_MSG % resume_size_in_mbs
             '''
             create_bucket() method checks if resume bucket exists on S3 if it does create_bucket() returns bucket
             object if it does not exist create_bucket() creates the bucket with a predefined name (stored in cfg file).
             If some error occurs while creating bucket create_bucket() raises InternalServerError
             '''
             create_bucket()
-        except InternalServerError as error:
-            logger.error(error.message)
-            return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
-        try:
             # saving resume in S3 bucket
             filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id, extension)
             return cls.parse_resume_and_add_candidate(user_id, filepicker_key)
+        except AttributeError as error:
+            logger.error(error.message)
+            return NO_RESUME_URL_FOUND_MSG
+        except (urllib2.HTTPError, urllib2.URLError):
+            return INVALID_RESUME_URL_MSG
+        except InternalServerError as error:
+            logger.error(error.message)
+            return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
         except InvalidUsage as error:
             return error.message
-        except urllib.ContentTooShortError:
+        except urllib.ContentTooShortError as error:
+            logger.error("Error occurred downloading resume and saving in bucket: %s" % error.message)
             return "File size too small"
         except Exception as error:
-            logger.error("Error occurred downloading resume and saving in bucket: %s" % error.message)
+            logger.error(error.message)
             return SOMETHING_WENT_WRONG
 
     @classmethod
@@ -739,21 +793,20 @@ class QuestionHandler(object):
             {'filepicker_key': filepicker_key, 'talent_pools': [], 'create_candidate': True}))
         try:
             delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
-        except Exception as error:
-            logger.warning("Error occurred while deleting S3 bucket: %s" % error.message)
-        if response.status_code == requests.codes.OK:
-            candidate = response.json()
-            try:
+            if response.status_code == codes.OK:
+                candidate = response.json()
                 first_name = candidate["candidate"]["first_name"]
                 talent_pool_name = TalentPool.get_by_id(candidate["candidate"]["talent_pool_ids"]).name
                 last_name = candidate["candidate"]["last_name"]
-            except KeyError as error:
-                logger.error("Error occurred while getting candidate from RPS: %s" % error.message)
-                return SOMETHING_WENT_WRONG  # Replying user with a response message for KeyError error
-            return ("Your candidate `%s %s` has been added to `%s` talent pool"
-                    % (first_name, last_name, talent_pool_name)) \
-                .replace('None', '').replace(' ` `', '')  # If candidate name does not exists remove the None
-        return SOMETHING_WENT_WRONG  # Replying with a response message if response code from RPS is other than OK
+                return ("Your candidate `%s %s` has been added to `%s` talent pool"
+                        % (first_name, last_name, talent_pool_name)) \
+                    .replace('None', '').replace(' ` `', '')  # If candidate name does not exists remove the None
+        except KeyError as error:
+            logger.error("Error occurred while getting candidate from RPS: %s" % error.message)
+            return SOMETHING_WENT_WRONG  # Replying user with a response message for KeyError error
+        except Exception as error:
+            logger.warning("Error occurred while deleting S3 bucket: %s" % error.message)
+            return SOMETHING_WENT_WRONG  # Replying with a response message if response code from RPS is other than OK
 
     @classmethod
     def add_openweb_candidate(cls, token, openweb_candidate):
@@ -772,6 +825,11 @@ class QuestionHandler(object):
         candidate = openweb_candidate["candidate"]
         if "dice_profile_id" in candidate:
             candidate.pop("dice_profile_id")
+        # Adding candidate in first talent pool
+        if candidate["talent_pool_ids"].get("add"):
+            candidate["talent_pool_ids"]["add"] = candidate["talent_pool_ids"]["add"][0:1]
+        else:
+            raise InvalidUsage("Candidate already exists")
         candidates = {"candidates": [candidate]}
         response = send_request('post', CandidateApiUrl.CANDIDATES, token, candidates)
         if response.ok:
@@ -991,3 +1049,96 @@ class QuestionHandler(object):
                             % (campaign_type.title(), name, total_sends, 'candidate' if total_sends == 1 else
                                'candidates', interaction_type, interaction_rate))
         return response
+
+    @classmethod
+    @contract
+    def handle_pagination(cls, user_id, number):
+        """
+        This method handles pagination, if user says next it gets method from state and add 1 in page number
+        and returns next records
+        :param int number: Add this in page number
+        :param positive user_id: User Id
+        :rtype: None|string
+        """
+        # Requesting Lock
+        lock = cls.request_lock(user_id)
+        while lock:
+            sleep(randint(1, 2))
+            lock = cls.request_lock(user_id)
+        # Acquiring lock
+        redis_store.set("%dredis_lock" % user_id, True)
+        states = redis_store.get("bot-pg-%d" % user_id)
+        try:
+            if states:
+                states = json.loads(states)
+                # Getting state data from redis
+                response = []
+                new_states = []
+                for state in states:
+                    representative, _class, params = state["repr"], CLASSES[state["class"]], state["params"]
+                    method = getattr(_class, state["method"])
+                    page_number = params[-1] or 1
+                    if number < 0 and page_number > 1:
+                        # Decreasing page number
+                        page_number += number
+                    elif number > 0:
+                        page_number += number
+                    else:
+                        # Releasing lock
+                        redis_store.set("%dredis_lock" % user_id, False)
+                        return None
+                    params[-1] = page_number
+                    _list = method(*tuple(params))
+                    if _list:
+                        state.update({"page_number": page_number})
+                        new_states.append(state)
+                        start = 1 if page_number == 1 else page_number * 10 - 9
+                        response.append(cls.custom_count_appender(start, _list, representative, []))
+                        redis_store.set("bot-pg-%d" % user_id, json.dumps(new_states))
+                # Releasing lock
+                redis_store.set("%dredis_lock" % user_id, False)
+                return '\n'.join(response)
+            redis_store.delete("bot-pg-%d" % user_id)
+        except Exception as error:
+            logger.info("No state found: %s" % error.message)
+            # Releasing lock
+            redis_store.set("%dredis_lock" % user_id, False)
+            return None
+        return None
+
+    @staticmethod
+    @contract
+    def request_lock(user_id):
+        """
+        Returns user specific lock from redis
+        :param positive user_id: User Id
+        :rtype: None|bool
+        """
+        lock = redis_store.get("%dredis_lock" % user_id)
+        if lock is not None:
+            lock = eval(lock)
+        return lock
+
+    @staticmethod
+    @contract
+    def create_state_object(_class, method, params, representative):
+        """
+        This methods takes required parameters for pagination state and save them in redis as state
+        :param string _class:
+        :param string method:
+        :param list params:
+        :param string representative:
+        :rtype: dict
+        """
+        state = {"class": _class, "method": method, "params": params, "repr": representative}
+        return state
+
+    @staticmethod
+    @contract
+    def save_state(state, user_id):
+        """
+        This method saves state dict in redis
+        :param positive user_id: User Id
+        :param dict|list state: dict or list of dicts of required objects for state maintenance
+        """
+        redis_store.set("bot-pg-%d" % user_id, json.dumps(state))
