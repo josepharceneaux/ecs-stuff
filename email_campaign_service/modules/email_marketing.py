@@ -97,15 +97,10 @@ def create_email_campaign(user_id, oauth_token, name, subject, description, _fro
                                    )
     EmailCampaign.save(email_campaign)
     user = User.get_by_id(user_id)
-    campaign_type = CampaignUtils.get_campaign_type_prefix(email_campaign.__tablename__)
-    if base_campaign_id:
-        base_campaign = BaseCampaign.get_by_id(base_campaign_id)
-        if base_campaign.base_campaign_events:
-            campaign_type = CampaignUtils.get_campaign_type_prefix(Event.__tablename__)
-
     # Create activity in a celery task
     celery_create_activity.delay(user_id, Activity.MessageIds.CAMPAIGN_CREATE, email_campaign,
-                                 dict(id=email_campaign.id, name=name, campaign_type=campaign_type, username=user.name),
+                                 dict(id=email_campaign.id, name=name, campaign_type=CampaignUtils.get_campaign_type(email_campaign),
+                                      username=user.name),
                                  'Error occurred while creating activity for email-campaign creation. User(id:%s)'
                                  % user_id)
 
@@ -470,19 +465,23 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
                                                     blast_params=blast_params,
                                                     email_campaign_blast_id=email_campaign_blast_id,
                                                     blast_datetime=blast_datetime)
+    domain = Domain.get_by_id(campaign.user.domain_id)
+    is_prod = not CampaignUtils.IS_DEV
     # Only in case of production we should send mails to candidate address else mails will
     # go to test account. To avoid spamming actual email addresses, while testing.
-    if not CampaignUtils.IS_DEV:
-        to_address = candidate_address
-    else:
-        # In dev/staging, only send emails to getTalent users, in case we're
-        #  impersonating a customer.
-        domain = Domain.get_by_id(campaign.user.domain_id)
-        domain_name = domain.name.lower()
-        if 'gettalent' in domain_name or 'bluth' in domain_name or 'dice' in domain_name:
+    to_address = app.config[TalentConfigKeys.GT_GMAIL_ID]
+    if is_prod:
+        # In case environment is Production and domain is test domain, send campaign to user's email address.
+        if domain.is_test_domain:
             to_address = campaign.user.email
+        # In case environment is Production and domain is not test domain, only then send campaign to candidates.
         else:
-            to_address = app.config[TalentConfigKeys.GT_GMAIL_ID]
+            to_address = candidate_address
+    else:
+        # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
+        domain_name = domain.name.lower()
+        if domain.is_test_domain or any([name in domain_name for name in ['gettalent', 'bluth', 'dice']]):
+            to_address = campaign.user.email
     logger.info("sending email-campaign(id:%s) to candidate(id:%s)'s email_address:%s"
                 % (campaign_id, candidate_id, to_address))
     email_client_credentials_id = campaign.email_client_credentials_id
@@ -532,8 +531,10 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
         email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
 
     # Create activity in a celery task
+    activity_message_id = CampaignUtils.get_campaign_activity_type_id(campaign, 'SEND')
+
     celery_create_activity.delay(campaign.user.id,
-                                 Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
+                                 activity_message_id,
                                  email_campaign_send,
                                  dict(campaign_name=campaign.name, candidate_name=candidate.name),
                                  'Could not add `campaign send activity` for email-campaign(id:%s) and User(id:%s)' %
@@ -714,9 +715,13 @@ def update_hit_count(url_conversion):
                         email_campaign_send.candidate_id, email_campaign_send.id)
         else:
             # Create activity in a celery task
+            activity_open_message_id = CampaignUtils.get_campaign_activity_type_id(email_campaign_send.email_campaign,
+                                                                                   'OPEN')
+            activity_click_message_id = CampaignUtils.get_campaign_activity_type_id(email_campaign_send.email_campaign,
+                                                                                    'CLICK')
             celery_create_activity.delay(candidate.user_id,
-                                         Activity.MessageIds.CAMPAIGN_EMAIL_OPEN if is_open
-                                         else Activity.MessageIds.CAMPAIGN_EMAIL_CLICK,
+                                         activity_open_message_id if is_open
+                                         else activity_click_message_id,
                                          email_campaign_send,
                                          dict(candidateId=candidate.id,
                                               campaign_name=email_campaign_send.email_campaign.name,

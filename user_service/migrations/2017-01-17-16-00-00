@@ -1,0 +1,14 @@
+"""
+This script adds new field `is_test_domain` in table `Domain` to mark some domain as test domain.
+Default value for this field will be zero. If it is marked as 1, it will treat that domain as test domain
+so that email-campaigns (Or some other functionality) won't send out to candidates rather it send to user's email
+address in production environment.
+"""
+from user_service.common.models.user import db
+from sqlalchemy import text
+
+db.session.execute(
+    text("ALTER TABLE `domain` ADD is_test_domain TINYINT(1) NOT NULL DEFAULT 0;")
+)
+
+db.session.commit()

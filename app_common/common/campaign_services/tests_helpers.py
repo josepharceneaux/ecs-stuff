@@ -2,8 +2,6 @@
 This module contains tests code that is common across campaign-services. e.g SMS and Push campaign.
 """
 
-__author__ = 'basit'
-
 # Standard Imports
 import sys
 import time
@@ -35,6 +33,8 @@ from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
 from ..inter_service_calls.candidate_pool_service_calls import (create_smartlist_from_api,
                                                                 assert_smartlist_candidates)
 from ..inter_service_calls.candidate_service_calls import create_candidates_from_candidate_api
+
+__author__ = 'basit'
 
 
 class CampaignsTestsHelpers(object):
