@@ -11,7 +11,7 @@ from db import db
 from ..error_handling import InternalServerError, NotFoundError
 from ..utils.datetime_utils import DatetimeUtils
 from ..custom_contracts import define_custom_contracts
-from ..constants import OWNED
+from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE, get_paginated_objects
 
 define_custom_contracts()
 
@@ -71,9 +71,10 @@ class SmsCampaign(db.Model):
         return cls.query.filter(cls.user_phone_id == user_phone_id).all()
 
     @classmethod
-    def get_by_domain_id(cls, domain_id):
+    def get_by_domain_id(cls, domain_id, page_number=None):
         """
         This returns all the sms-campaigns for given domain id
+        :param positive|None page_number: Page number for pagination purpose
         :param (int, long) domain_id: Id of user's domain
         :return: Query to get all sms-campaigns for given domain_id
         :rtype: sqlalchemy.orm.query.Query
@@ -81,14 +82,18 @@ class SmsCampaign(db.Model):
         if not isinstance(domain_id, (int, long)):
             raise InternalServerError('Invalid domain_id given. Valid value should be int greater than 0')
         from user import User, UserPhone  # This has to be here to avoid circular import
-        return cls.query.join(UserPhone, cls.user_phone_id == UserPhone.id).\
+        query_object = cls.query.join(UserPhone, cls.user_phone_id == UserPhone.id).\
             join(User, UserPhone.user_id == User.id).filter(User.domain_id == domain_id)
+        if page_number is None:
+            return query_object
+        return get_paginated_objects(query_object, page_number)
 
     @classmethod
     @contract
-    def get_by_user_id(cls, user_id):
+    def get_by_user_id(cls, user_id, page_number=None):
         """
         Returns SmsCampaign list against a User Id
+        :param positive|None page_number: Page number for pagination purpose
         :param positive user_id: User Id
         :rtype: list|None
         """
@@ -96,7 +101,10 @@ class SmsCampaign(db.Model):
         user_phones = UserPhone.get_by_user_id(user_id)
         if user_phones:
             user_phone_ids = [user_phone.id for user_phone in user_phones]
-            return cls.query.filter(cls.user_phone_id.in_(user_phone_ids)).all()
+            query_object = cls.query.filter(cls.user_phone_id.in_(user_phone_ids))
+            if page_number is None:
+                return query_object.all()
+            return get_paginated_objects(query_object, page_number)
         return None
 
     @classmethod
@@ -128,11 +136,12 @@ class SmsCampaign(db.Model):
 
     @classmethod
     @contract
-    def sms_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
+    def sms_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None, page_number=None):
         """
         Returns SmsCampaigns in talent pool
+        :param positive|None page_number: Page number for pagination purpose
         :param int scope: Number which determines weather user asking about all domain campaigns or only his campaigns
-        :param positive user_id:
+        :param positive user_id: User Id
         :param list|None talentpool_names:
         :rtype: list
         """
@@ -145,7 +154,9 @@ class SmsCampaign(db.Model):
         scope_dependant_filter = cls.query.join(UserPhone, User).filter(cls.id.in_(sms_campaign_ids),
                                                                         User.id == user_id)\
             if scope == OWNED else cls.query.filter(cls.id.in_(sms_campaign_ids))
-        return scope_dependant_filter.all()
+        if page_number is None:
+            return scope_dependant_filter.all()
+        return get_paginated_objects(scope_dependant_filter, page_number)
 
 
 class SmsCampaignBlast(db.Model):

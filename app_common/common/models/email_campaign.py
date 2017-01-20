@@ -9,7 +9,7 @@ from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
 from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage, NotFoundError)
-from ..constants import OWNED
+from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE, get_paginated_objects
 
 from sqlalchemy.dialects.mysql import LONGTEXT
 
@@ -99,10 +99,19 @@ class EmailCampaign(db.Model):
         return unicode(self.id)
 
     @classmethod
-    def get_by_domain_id(cls, domain_id):
+    def get_by_domain_id(cls, domain_id, page_number=None):
+        """
+        This methods returns list of email campaigns in a user's domain
+        :param long|int domain_id: Domain Id
+        :param None|long|int page_number: Page number for pagination purpose
+        :rtype: list|flask_sqlalchemy.BaseQuery
+        """
         assert domain_id, 'domain_id not given'
         from user import User  # This has to be here to avoid circular import
-        return cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
+        common_query = cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
+        if page_number is None:
+            return common_query
+        return get_paginated_objects(common_query, page_number)
 
     @classmethod
     def search_by_id_in_domain(cls, email_campaign_id, domain_id):
@@ -141,13 +150,17 @@ class EmailCampaign(db.Model):
 
     @classmethod
     @contract
-    def get_by_user_id(cls, user_id):
+    def get_by_user_id(cls, user_id, page_number=None):
         """
         Returns EmailCampaigns against a User Id
         :param positive user_id: User Id
+        :param positive|None page_number: Page number for returning limited number of records
         :rtype: list
         """
-        return cls.query.filter(cls.user_id == user_id, cls.is_hidden == 0).all()
+        query_object = cls.query.filter(cls.user_id == user_id, cls.is_hidden == 0)
+        if page_number is None:
+            return query_object.all()
+        return get_paginated_objects(query_object, page_number)
 
     @classmethod
     @contract
@@ -181,9 +194,10 @@ class EmailCampaign(db.Model):
 
     @classmethod
     @contract
-    def email_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
+    def email_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None, page_number=None):
         """
         Returns EmailCampaigns in talent pool
+        :param positive|None page_number: Page number for returning limited number of records
         :param int scope: Number which determines weather user asking about all domain campaigns or only his campaigns
         :param positive user_id: User Id
         :param list|None talentpool_names: list of Talentpool names or None
@@ -198,7 +212,9 @@ class EmailCampaign(db.Model):
         scope_dependant_filter = cls.query.join(User).filter(cls.id.in_(email_campaign_ids), cls.is_hidden == 0,
                                                              cls.user_id == user_id)\
             if scope == OWNED else cls.query.filter(cls.id.in_(email_campaign_ids), cls.is_hidden == 0)
-        return scope_dependant_filter.all()
+        if page_number is None:
+            return scope_dependant_filter.all()
+        return get_paginated_objects(scope_dependant_filter, page_number)
 
 
 class EmailCampaignSmartlist(db.Model):

@@ -196,9 +196,10 @@ class TalentBot(object):
         cleaned_message = ' '.join([message.strip() for message in split_message])
         return cleaned_message
 
-    def parse_message(self, message, user_id=None):
+    def parse_message(self, message, user_id=None, user_client=None):
         """
         Checks which is the appropriate message handler for this message and calls that handler
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param int user_id: User Id
         :param str message: User's message
         :rtype str
@@ -213,6 +214,9 @@ class TalentBot(object):
         is_hint_question = self.check_for_hint(message)
         if is_hint_question:
             return is_hint_question
+        is_paginator, number = self.is_paginator(message)
+        if is_paginator:
+            return QuestionHandler.handle_pagination(user_id, number)
         if len(message.split()) < MIN_WORDS_IN_QUESTION:
             return random.choice(self.error_messages)
         message_tokens = self.tokenize_message(message)
@@ -228,7 +232,7 @@ class TalentBot(object):
                 if match_ratio >= BEST_QUESTION_MATCH_RATIO:
                     break
         if message_handler:
-            return message_handler(message_tokens, user_id)
+            return message_handler(message_tokens, user_id, user_client)
         return random.choice(self.error_messages)
 
     @staticmethod
@@ -328,3 +332,18 @@ class TalentBot(object):
                 logger.info("Responding before processing")
                 return True
         return False
+
+    @contract
+    def is_paginator(self, user_message):
+        """
+        This method checks if user's asking about next or previous page
+        :param string user_message: User message
+        :rtype: tuple(bool,int)
+        """
+        matched_ratio = self.match_question(user_message.lower(), "next")
+        if matched_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
+            return True, 1
+        matched_ratio = self.match_question(user_message.lower(), "previous")
+        if matched_ratio >= AVERAGE_QUESTION_MATCH_RATIO:
+            return True, -1
+        return False, 0

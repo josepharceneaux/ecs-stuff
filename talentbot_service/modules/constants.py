@@ -1,9 +1,10 @@
 """
 This script contains Talentbot constants
 """
-from talentbot_service.common.models.sms_campaign import SmsCampaignBlast
-from talentbot_service.common.models.email_campaign import EmailCampaignBlast
-from talentbot_service.common.models.push_campaign import PushCampaignBlast
+from talentbot_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool
+from talentbot_service.common.models.sms_campaign import SmsCampaignBlast,  SmsCampaign
+from talentbot_service.common.models.email_campaign import EmailCampaignBlast, EmailCampaign
+from talentbot_service.common.models.push_campaign import PushCampaignBlast,  PushCampaign
 
 BOT_NAME = "gtbot"
 AT_BOT = ""
@@ -23,7 +24,7 @@ HINT = '''>>>I am `%s`. @osman is teaching me new things, right now I can answer
 6- What is my group?
 7- Which group does `[user name]` belong to?
 8- What are the talent pools in my domain?
-9- What campaigns in my domain?
+9- What are `[all|my|our]` campaigns in `[my|all|talent pool name]` `[domain|talent pools]`?
 10- Show me more about `[Talent pool name|Campaign name]`?
 11- What are my group `[Campaigns|Pipelines]`?
 12- Add candidate whose resume URL is http://www.something.com/some-resume.pdf''' % BOT_NAME
@@ -99,6 +100,9 @@ TWITTER = 'twitter'
 # Custom Candidate Service Error Codes
 INVALID_INPUT = 3000
 CANDIDATE_ALREADY_EXISTS = 3013
+USER_CLIENTS = {'SMS': 1, 'FACEBOOK': 2, 'EMAIL': 3, 'SLACK': 4}
+CLASSES = {"TalentPipeline": TalentPipeline, "TalentPool": TalentPool, "EmailCampaign": EmailCampaign,
+           "SmsCampaign": SmsCampaign, "PushCampaign": PushCampaign}
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
