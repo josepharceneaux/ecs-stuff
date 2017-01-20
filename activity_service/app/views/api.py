@@ -63,6 +63,7 @@ def get_activities(page):
     if aggregate_limit:
         try:
             aggregate_limit = int(aggregate_limit)
+            aggregate_limit = 5 if aggregate_limit > 5 else aggregate_limit
         except ValueError:
             return jsonify(
                 {'error': {

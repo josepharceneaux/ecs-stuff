@@ -1,0 +1,32 @@
+The following activity types have had there parameters renamed to be more explicit.
+This increases general readability in the code and in raw database entries.
+
+"CAMPAIGN_CREATE": name -> campaign_name,
+"CAMPAIGN_DELETE": name -> campaign_name,
+"CAMPAIGN_EXPIRE": name -> campaign_name,
+"CAMPAIGN_PAUSE": name -> campaign_name,
+"CAMPAIGN_RESUME": name -> campaign_name,
+"CAMPAIGN_SMS_CLICK": name -> campaign_name,
+
+"CANDIDATE_CREATE_CSV": formattedName -> formatted_name,
+"CANDIDATE_CREATE_MOBILE": formattedName -> formatted_name,
+"CANDIDATE_CREATE_WEB": formattedName -> formatted_name,
+"CANDIDATE_CREATE_WIDGET": formattedName -> formatted_name,
+"CANDIDATE_DELETE": formattedName -> formatted_name,
+"CANDIDATE_UPDATE": formattedName -> formatted_name,
+
+"DUMBLIST_CREATE": name -> dumblist_name,
+"DUMBLIST_DELETE": name -> dumblist_name,
+
+"PIPELINE_CREATE": name -> pipeline_name,
+"PIPELINE_DELETE": name -> pipeline_name,
+
+"RSVP_EVENT": firstName -> first_name, lastName -> last_name,
+
+"SMARTLIST_ADD_CANDIDATE": formattedName -> formatted_name, name -> smartlist_name,
+"SMARTLIST_CREATE": name -> smartlist_name,
+"SMARTLIST_DELETE": name -> smartlist_name,
+"SMARTLIST_REMOVE_CANDIDATE": formattedName -> formatted_name, name -> smartlist_name,
+
+"TALENT_POOL_CREATE": name -> talent_pool_name,
+"TALENT_POOL_DELETE": name -> talent_pool_name,
