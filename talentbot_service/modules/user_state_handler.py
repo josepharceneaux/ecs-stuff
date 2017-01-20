@@ -11,6 +11,7 @@ from talentbot_service.common.models.user import UserPhone, TalentbotAuth
 from talentbot_service import logger
 
 
+# TODO: Create a task which checks and deletes user states after a specific time period
 class UserStateHandler(object):
     def __init__(self):
         pass
