@@ -278,11 +278,14 @@ class TalentActivityManager(object):
             filters.append(Activity.added_time<=end)
 
         activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc()).limit(200)
+        activities_count = activities.count()
+
         logger.info("{} fetched {} activities in {} seconds".format(
-            self.activity_params.api_call, activities.count(), time() - start_time)
+            self.activity_params.api_call, activities_count, time() - start_time)
         )
 
         aggregated_activities = []
+        aggregated_activities_count = 0
         current_activity_count = 0
         aggregate_start, aggregate_end = datetime.today(), EPOCH
 
@@ -298,7 +301,7 @@ class TalentActivityManager(object):
                 logger.error('Given Campaign Type (%s) not found.' % current_activity_type)
                 continue
             next_activity_type = activities[i + 1].type if (
-                i < activities.count() - 1) else None  # None means last activity
+                i < activities_count - 1) else None  # None means last activity
 
             if current_activity_type != next_activity_type:  # next activity is new, or the very last one, so aggregate these ones
                 activity_aggregate = {}
@@ -312,7 +315,8 @@ class TalentActivityManager(object):
 
                 aggregate_start, aggregate_end = datetime.today(), EPOCH
                 aggregated_activities.append(activity_aggregate)
-                if len(aggregated_activities) == limit:  # if we've got enough activity groups, quit
+                aggregated_activities_count += 1
+                if aggregated_activities_count == limit:  # if we've got enough activity groups, quit
                     break
 
                 current_activity_count = 0
