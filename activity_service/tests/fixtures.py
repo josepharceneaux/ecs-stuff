@@ -67,7 +67,6 @@ def activities_fixture(user_fixture, candidate_source_fixture, request):
                          'candidate_name': 'Candidate {}'.format(i)})
                      )
         )
-    # Create 25 CAMPAIGN_SMS_SEND
     db.session.bulk_save_objects(activities)
 
     @require_integrity(database_object=db)

@@ -85,6 +85,18 @@ def test_recent_readable(token_fixture):
     assert response_content['activities'][0]['readable_text'] == '4 users have joined'
 
 
+def test_recent_readable_with_limit(token_fixture):
+    test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1&aggregate_limit=3'
+    response = requests.get(test_url,
+                            headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
+    assert response.status_code == requests.codes.ok
+    response_content = json.loads(response.content)
+    assert len(response_content['activities']) == 3
+    assert response_content['activities'][0]['count'] == 4
+    assert response_content['activities'][0]['image'] == 'notification.png'
+    assert response_content['activities'][0]['readable_text'] == '4 users have joined'
+
+
 def test_recent_readable_with_dates(token_fixture):
     TEST_URL = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
     HEADERS = {'Authorization': 'Bearer {}'.format(token_fixture.access_token)}
