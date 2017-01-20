@@ -296,22 +296,22 @@ class TalentActivityManager(object):
                 aggregate_end = activity.added_time
 
             current_activity_count += 1
-            current_activity_type = activity.type
-            if current_activity_type not in self.MESSAGES:
-                logger.error('Given Campaign Type (%s) not found.' % current_activity_type)
+            if activity.type not in self.MESSAGES:
+                logger.error('Given Campaign Type (%s) not found.' % activity.type)
                 continue
-            next_activity_type = activities[i + 1].type if (
-                i < activities_count - 1) else None  # None means last activity
+            next_activity_type = activities[i + 1].type if (i < activities_count - 1) else None
 
-            if current_activity_type != next_activity_type:  # next activity is new, or the very last one, so aggregate these ones
-                activity_aggregate = {}
-                activity_aggregate['count'] = current_activity_count
+            # next activity is new, or the very last one, so aggregate these ones
+            if activity.type != next_activity_type:
+                activity_aggregate = {
+                    'count': current_activity_count,
+                    'image': self.MESSAGES[activity.type][2],
+                    'start': aggregate_start.strftime(DATE_FORMAT),
+                    'end': aggregate_end.strftime(DATE_FORMAT)
+                }
                 activity_aggregate['readable_text'] = self.activity_text(activity,
                                                                          activity_aggregate['count'],
                                                                          current_user)
-                activity_aggregate['image'] = self.MESSAGES[activity.type][2]
-                activity_aggregate['start'] = aggregate_start.strftime(DATE_FORMAT)
-                activity_aggregate['end'] = aggregate_end.strftime(DATE_FORMAT)
 
                 aggregate_start, aggregate_end = datetime.today(), EPOCH
                 aggregated_activities.append(activity_aggregate)
