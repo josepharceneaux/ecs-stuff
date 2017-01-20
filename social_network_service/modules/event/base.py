@@ -105,6 +105,7 @@ from flask import request
 
 # Application Specific
 from social_network_service.common.constants import HttpMethods
+from social_network_service.common.error_handling import ResourceNotFound
 from social_network_service.common.models.db import db
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
@@ -122,7 +123,7 @@ from social_network_service.custom_exceptions import NoUserFound, VenueNotFound
 from social_network_service.custom_exceptions import EventNotSaveInDb
 from social_network_service.custom_exceptions import EventNotUnpublished
 from social_network_service.custom_exceptions import UserCredentialsNotFound
-from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
+from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls, SocialNetworkUrls
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 
 
@@ -280,6 +281,22 @@ class EventBase(object):
         """
         pass
 
+    def fetch_event(self, event_id):
+        """
+        This method creates api url to fetch an event and then sends a GET request to fetch that event.
+        :param str | int | long event_id: social network event id
+        :return: event dict or None
+        """
+        event_url = get_url(self, SocialNetworkUrls.EVENT).format(event_id)
+        try:
+            response = http_request('get', event_url, headers=self.headers)
+
+            if response.ok:
+                return response.json()
+        except ResourceNotFound:
+            logger.info('Event not found for url: %s' % event_url)
+            return None
+
     def get_event(self, event_url):
         """
         This method takes event resource uri, sends a GET call to respective social network API and then saves
@@ -306,6 +323,7 @@ class EventBase(object):
                                                                        self.social_network.id,
                                                                        event_data['social_network_event_id'])
         event_data['is_deleted_from_vendor'] = 0
+        event_data['is_hidden'] = 0
         if event:
             event.update(**event_data)
             logger.info('Event updated successfully : %s' % event.to_json())
@@ -405,7 +423,7 @@ class EventBase(object):
                                         SocialNetworkId: %s
                                         Event: %s
                                      ''' % (self.user.id, self.social_network.id, event))
-
+        self.mark_vendor_deleted(events)
         if events:
             self.post_process_events()
 
@@ -416,6 +434,14 @@ class EventBase(object):
         """
         # Import RSVPs of events
         self.process_events_rsvps()
+
+    def mark_vendor_deleted(self, events):
+        """
+        There can be some events in db those exist in getTalent databse but not in vendor db. So we need to mark such
+        events as `is_deleted_from_vendor = True`
+        :param list events: list of events (dict) retrieved from Meetup / Eventbrite
+        """
+        pass
 
     def delete_event(self, event_id, delete_from_vendor=True):
         """

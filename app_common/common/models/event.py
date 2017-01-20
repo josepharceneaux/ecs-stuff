@@ -151,6 +151,18 @@ class Event(db.Model):
         return events_count
 
     @classmethod
+    def mark_vendor_deleted(cls, ids):
+        """
+        Mark events as deleted from vendor for given event ids
+        :param list ids: list of event ids
+        :return: number of updated records
+        """
+        updated_count = cls.query.filter(cls.id.in_(ids)).update({'is_deleted_from_vendor': 1},
+                                                                 synchronize_session=False)
+        db.session.commit()
+        return updated_count
+
+    @classmethod
     def get_events_query(cls, user, search=None, social_network_id=None, sort_by='start_datetime',
                          sort_type='desc', user_id=None, is_hidden=False, is_deleted_from_vendor=0):
 
