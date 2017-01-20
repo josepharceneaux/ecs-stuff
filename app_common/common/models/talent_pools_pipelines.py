@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from user import Domain, UserGroup, User
 from candidate import Candidate
 from ..error_handling import NotFoundError
-from ..constants import OWNED
+from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE, get_paginated_objects
 # 3rd party imports
 from sqlalchemy import or_, and_, extract
 from sqlalchemy.dialects.mysql import TINYINT
@@ -40,14 +40,18 @@ class TalentPool(db.Model):
 
     @classmethod
     @contract
-    def get_talent_pools_in_user_domain(cls, user_id):
+    def get_talent_pools_in_user_domain(cls, user_id, page_number=None):
         """
-        This method returns talent pools in a user's domain
+        This method returns whether all talent pools or 10 talent pools according to page number in a user's domain
+        :param None|positive page_number: Page number for returning limited number of records
         :param int|long user_id: User Id
         :rtype: list
         """
         domain_id = User.get_domain_id(user_id)
-        return cls.query.filter(cls.domain_id == domain_id).all()
+        query_object = cls.query.filter(cls.domain_id == domain_id)
+        if page_number is None:
+            return query_object.all()
+        return get_paginated_objects(query_object, page_number)
 
     @classmethod
     @contract
@@ -204,18 +208,22 @@ class TalentPipeline(db.Model):
 
     @classmethod
     @contract
-    def get_own_or_domain_pipelines(cls, user_id, scope):
+    def get_own_or_domain_pipelines(cls, user_id, scope, page_number=None):
         """
         This returns list of Pipelines owned by a specific user or all in domain
+        :param positive|None page_number: Page number for limiting number of rows returned
         :param positive user_id: User Id
         :param int scope: Weather owned or domain specific
         :rtype: list
         """
         if scope == OWNED:
-            return cls.query.join(User).filter(User.id == user_id, cls.is_hidden == 0).all()
+            query_object = cls.query.join(User).filter(User.id == user_id, cls.is_hidden == 0)
         else:
             domain_id = User.get_domain_id(user_id)
-            return cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0).all()
+            query_object = cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
+        if page_number is None:
+            return query_object.all()
+        return get_paginated_objects(query_object, page_number)
 
     @classmethod
     def get_by_user_id_in_desc_order(cls, user_id):
@@ -302,15 +310,16 @@ class TalentPipeline(db.Model):
 
     @classmethod
     @contract
-    def pipelines_user_group(cls, user_id):
+    def pipelines_user_group(cls, user_id, page_number=None):
         """
         This returns list of Pipelines in user's group
         :param positive user_id: User Id
+        :param positive|None page_number: Page number for limiting number of rows returned
         :rtype: list
         """
         from user import User    # To avoid circular dependency this has to be here
         user = User.query.filter(User.id == user_id).first()
-        if user:
-            if user.user_group_id:
-                return cls.query.join(User).filter(User.user_group_id == user.user_group_id, cls.is_hidden == 0).all()
-        raise NotFoundError
+        query_object = cls.query.join(User).filter(User.user_group_id == user.user_group_id, cls.is_hidden == 0)
+        if page_number is None:
+            return query_object.all()
+        return get_paginated_objects(query_object, page_number)

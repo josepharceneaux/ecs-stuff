@@ -12,7 +12,7 @@ import random
 from talentbot_service.common.models.user import TalentbotAuth, UserPhone, User
 # App specific imports
 from talentbot_service.modules.constants import TEXT_MESSAGE_MAX_LENGTH, AUTHENTICATION_FAILURE_MSG,\
-    I_AM_PARSING_A_RESUME, USER_DISABLED_MSG
+    I_AM_PARSING_A_RESUME, USER_DISABLED_MSG, USER_CLIENTS
 from twilio.rest import TwilioRestClient
 from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger
@@ -89,7 +89,7 @@ class SmsBot(TalentBot):
                 if self.is_response_time_more_than_usual(message):
                     self.reply(I_AM_PARSING_A_RESUME, recipient)
                 try:
-                    response_generated = self.parse_message(message, user_id)
+                    response_generated = self.parse_message(message, user_id, USER_CLIENTS["SMS"])
                     if response_generated:
                         response_generated = self.clean_response_message(response_generated)
                         self.reply(response_generated, recipient)
