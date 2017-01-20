@@ -25,7 +25,7 @@ from jsonschema import validate, FormatChecker, ValidationError
 from redo import retry
 
 # Activity Creation
-from candidate_service.common.activty_service.activity_creator import TalentActivityManager
+from candidate_service.common.activity_service.activity_creator import TalentActivityManager
 from candidate_service.common.models.misc import Activity
 
 from candidate_service.candidate_app import logger
