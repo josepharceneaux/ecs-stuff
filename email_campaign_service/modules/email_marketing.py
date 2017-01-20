@@ -22,6 +22,7 @@ from email_campaign_service.modules import aws_constants as aws
 from email_campaign_service.json_schema.test_email import TEST_EMAIL_SCHEMA
 from email_campaign_service.modules.validations import get_or_set_valid_value
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
+
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE, get_candidates_from_smartlist,
                                                   do_mergetag_replacements, create_email_campaign_url_conversions,
                                                   decrypt_password, get_priority_emails)
@@ -31,6 +32,7 @@ from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.event import Event
 from email_campaign_service.common.models.user import Domain, User
 from email_campaign_service.common.models.base_campaign import BaseCampaign
+from email_campaign_service.common.utils.dynamo_utils import EmailMarketing
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
@@ -266,7 +268,6 @@ def send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_params,
     campaign_type = campaign.__tablename__
     callback = post_processing_campaign_sent.subtask((campaign, new_candidates_only, email_campaign_blast_id,),
                                                      queue=campaign_type)
-
     # Here we create list of all tasks.
     tasks = [send_email_campaign_to_candidate.subtask((user_id, campaign, candidate_id, candidate_address,
              blast_params, email_campaign_blast_id, blast_datetime), link_error=celery_error_handler(
@@ -354,6 +355,14 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     campaign = EmailCampaign.get_by_id(campaign_id)
     # Filter valid candidate ids
     all_candidate_ids = CampaignBase.filter_existing_candidate_ids(all_candidate_ids, user_id)
+    blast_datetime = datetime.utcnow()
+    email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id, sent_datetime=blast_datetime)
+    EmailCampaignBlast.save(email_campaign_blast)
+
+    # Add data in Dynamo DB
+    dynamo_data = dict(blast_id=email_campaign_blast.id, candidate_ids=all_candidate_ids)
+    EmailMarketing.add_blast_id_and_candidate_ids(dynamo_data)
+
     subscribed_candidate_ids, unsubscribed_candidate_ids = get_subscribed_and_unsubscribed_candidate_ids(campaign,
                                                                                                          all_candidate_ids,
                                                                                                          new_candidates_only)
