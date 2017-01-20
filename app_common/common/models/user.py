@@ -280,6 +280,16 @@ class UserPhone(db.Model):
             raise InvalidUsage("phone_value is invalid")
         return cls.query.filter_by(value=phone_value).all()
 
+    @classmethod
+    def get_user_ids_by_phone_ids(cls, phone_ids):
+        """
+        Returns list of user_ids against phone ids
+        :param list phone_ids: User Phone Ids
+        :rtype: list
+        """
+        assert isinstance(phone_ids, list), "phone ids should be list"
+        return cls.query.with_entities(cls.user_id).filter(cls.id.in_(phone_ids)).distinct().all()
+
 
 class Domain(db.Model):
     __tablename__ = 'domain'
@@ -298,6 +308,7 @@ class Domain(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     dice_company_id = db.Column('DiceCompanyId', db.Integer, index=True)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
+    is_test_domain = db.Column(TINYINT, default='0', nullable=False)
 
     # Relationships
     users = relationship('User', backref='domain')
@@ -861,8 +872,6 @@ class UserSocialNetworkCredential(db.Model):
         return cls.query.join(User).filter(User.domain_id == request.user.domain_id).join(SocialNetwork).group_by(SocialNetwork.id).all()
 
 
-
-
 class TalentbotAuth(db.Model):
     __tablename__ = 'talentbot_auth'
     id = db.Column('Id', db.Integer, primary_key=True, unique=True, nullable=False)
@@ -906,3 +915,11 @@ class TalentbotAuth(db.Model):
             return None
         tb_auth = TalentbotAuth.query.filter(getattr(TalentbotAuth, key[0]) == kwargs.get(key[0])).first()
         return tb_auth
+
+    @classmethod
+    def get_all_user_phone_ids(cls):
+        """
+        Thi method returns all registered user_phone_ids
+        :rtype: list
+        """
+        return cls.query.with_entities(cls.user_phone_id).distinct().all()

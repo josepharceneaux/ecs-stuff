@@ -14,7 +14,7 @@ from user_service.common.routes import get_web_app_url
 from user_service.common.utils.validators import is_number
 from user_service.common.models.candidate import Candidate
 from user_service.common.utils.amazon_ses import send_email
-from user_service.common.models.email_campaign import EmailCampaign
+from user_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend
 from user_service.common.models.talent_pools_pipelines import TalentPipeline
 from user_service.common.error_handling import InvalidUsage, NotFoundError, UnauthorizedError
 from user_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
@@ -259,6 +259,7 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False, include_
         user_data_dict['searches_per_month'] = 0
         user_data_dict['campaigns_count'] = 0
         user_data_dict['pipelines_count'] = 0
+        user_data_dict['emails_count'] = 0
     else:
         for user_id, user_data in user_data_dict.iteritems():
             user_data['candidates_count'] = 0
@@ -266,6 +267,7 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False, include_
             user_data['searches_per_month'] = 0
             user_data['campaigns_count'] = 0
             user_data['pipelines_count'] = 0
+            user_data['emails_count'] = 0
 
     request_origin = request.environ.get('HTTP_ORIGIN', '')
     logger.info('Request Origin for users GET request is: %s', request_origin)
@@ -319,6 +321,9 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False, include_
         user_data_dict['pipelines_count'] = TalentPipeline.query.filter_by(user_id=user_data_dict['id']).count()
         user_data_dict['campaigns_count'] = EmailCampaign.query.filter_by(user_id=user_data_dict['id']).count()
         user_data_dict['candidates_count'] = Candidate.query.filter_by(user_id=user_data_dict['id']).count()
+        user_data_dict['emails_count'] = EmailCampaignSend.query.join(
+                EmailCampaign).filter(EmailCampaign.user_id == user_data_dict['id']).count()
+
     else:
         users_candidate_count = db.session.query(Candidate.user_id,
                                                  func.count(Candidate.user_id)).group_by(Candidate.user_id).all()
@@ -326,6 +331,9 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False, include_
                                                  func.count(TalentPipeline.user_id)).group_by(TalentPipeline.user_id).all()
         users_campaigns_count = db.session.query(EmailCampaign.user_id,
                                                  func.count(EmailCampaign.user_id)).group_by(EmailCampaign.user_id).all()
+        users_emails_count = EmailCampaignSend.query.join(EmailCampaign).with_entities(
+                EmailCampaign.user_id, func.count(EmailCampaignSend.id)).group_by(
+                EmailCampaign.user_id).all()
 
         for user_id, count in users_candidate_count:
             if user_id in user_data_dict:
@@ -338,6 +346,10 @@ def get_users_stats_from_mixpanel(user_data_dict, is_single_user=False, include_
         for user_id, count in users_campaigns_count:
             if user_id in user_data_dict:
                 user_data_dict[user_id]['campaigns_count'] = count
+
+        for user_id, count in users_emails_count:
+            if user_id in user_data_dict:
+                user_data_dict[user_id]['emails_count'] = count
 
     return user_data_dict
 
