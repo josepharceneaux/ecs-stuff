@@ -37,7 +37,14 @@ class Activity(db.Model):
         #   LEGACY CODES - DO NOT ADD NEW CODES HERE
         #########################################################################################
 
-        # params=dict(formattedName)
+        # app_common/common/activity_service/activity_constants is the authority on NEW params
+        # old params are mentioned in here and should be included until this notice is removed.
+        # see app_common/common/activity_service/TRANSITION for old -> new mappings.
+        # The below is considered a guideline/helper. The activity service will log an ERROR if the
+        # required new params are not included.
+
+        # Params:
+        # formattedName (old), formatted_name (new), username (except in CANDIDATE_CREATE_WIDGET)
         CANDIDATE_CREATE_WEB = 1
         CANDIDATE_UPDATE = 2
         CANDIDATE_DELETE = 3
@@ -45,32 +52,35 @@ class Activity(db.Model):
         CANDIDATE_CREATE_WIDGET = 19
         CANDIDATE_CREATE_MOBILE = 20  # TODO add in
 
-        # params=dict(id, username, campaign_name, campaign_type, candidate_name, num_candidates)
-        # All Campaigns
+        # Params may include/require:
+        # id, username, name (old), campaign_name (new), campaign_type, candidate_name,
+        # num_candidates
         CAMPAIGN_CREATE = 4
         CAMPAIGN_DELETE = 5
-        CAMPAIGN_SEND = 6  # also has num_candidates
+        CAMPAIGN_SEND = 6
         CAMPAIGN_EXPIRE = 7  # recurring campaigns only # TODO implement
         CAMPAIGN_PAUSE = 21
         CAMPAIGN_RESUME = 22
         CAMPAIGN_SCHEDULE = 27
 
-        # params=dict(name, is_smartlist=0/1)
+        # Params may include:
+        # name (old), smartlist_name (new), formattedName (old), formatted_name (new)
         SMARTLIST_CREATE = 8
         SMARTLIST_DELETE = 9
-        SMARTLIST_ADD_CANDIDATE = 10  # also has formattedName (of candidate) and candidateId
-        SMARTLIST_REMOVE_CANDIDATE = 11  # also has formattedName and candidateId
+        SMARTLIST_ADD_CANDIDATE = 10
+        SMARTLIST_REMOVE_CANDIDATE = 11
 
-        # params=dict(firstName, lastName)
+        # Params
+        # firstName (old), first_name (new), lastName(old), last_name (new)
         USER_CREATE = 12
 
-        # params=dict(client_ip)
         WIDGET_VISIT = 13
 
         # TODO implement frontend + backend
         NOTIFICATION_CREATE = 14  # when we want to show the users a message
 
-        # params=dict(candidateId, campaign_name, candidate_name)
+        # Params
+        # candidateId, campaign_name, candidate_name)
         # Email campaign
         CAMPAIGN_EMAIL_SEND = 15
         CAMPAIGN_EMAIL_OPEN = 16
@@ -89,12 +99,11 @@ class Activity(db.Model):
 
         # TODO Change ID's as commented below (SMS_CAMPAIGN_SERVICE 1000-1099)
         # SMS campaign
+        # Params
+        # campaign_name, candidate_name, reply_text
         CAMPAIGN_SMS_SEND = 24
         CAMPAIGN_SMS_CLICK = 25
         CAMPAIGN_SMS_REPLY = 26
-
-        # Dumblists
-        # TODO
 
     ####################################################################################################
     #   V2.0+ Codes
@@ -109,12 +118,16 @@ class Activity(db.Model):
 
         # CANDIDATE_POOL_SERVICE = 600-699
 
-        # params = dict(name)
+        # Params
+        # name (old), pipeline_name (new)
         PIPELINE_CREATE = 600
         PIPELINE_DELETE = 601
-        # params = dict(name)
+
+        # Params
+        # name (old), talent_pool_name (new)
         TALENT_POOL_CREATE = 602
         TALENT_POOL_DELETE = 603
+
         # params = dict(name)
         DUMBLIST_CREATE = 604
         DUMBLIST_DELETE = 605
