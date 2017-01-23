@@ -536,7 +536,8 @@ class Meetup(EventBase):
         events as `is_deleted_from_vendor = True`
         :param list events: list of events (dict) retrieved from Meetup / Eventbrite
         """
-        events_in_db = Event.filter_by_keywords(user_id=self.user.id, social_network_id=self.social_network.id)
+        events_in_db = Event.filter_by_keywords(user_id=self.user.id, social_network_id=self.social_network.id,
+                                                is_deleted_from_vendor=0)
         social_network_event_ids = [event['id'] for event in events]
         missing_events = [event for event in events_in_db
                           if event.social_network_event_id not in social_network_event_ids]
@@ -546,7 +547,7 @@ class Meetup(EventBase):
                 event = self.fetch_event(event_obj.social_network_event_id)
             except Exception as e:
                 event = None
-            if not event or (event and event.get('status') == MEETUP_EVENT_STATUS['cancelled']):
+            if not event or (event and event.get('status') in ['cancelled', 'past']):
                 deleted_event_ids.append(event_obj.id)
         num_of_deleted_events = Event.mark_vendor_deleted(deleted_event_ids)
         logger.info('%s events have been marked as vendor deleted. SocialNetwork: %s, UserId: %s'
