@@ -589,7 +589,6 @@ class QuestionHandler(object):
 
         if email_campaigns:  # Appending email campaigns in a representable response list
             counter, _index = 0, len(response)
-            response.append("*Top 10 Email Campaigns*" if via_sms else "*Email Campaigns*")
             for index, email_campaign in enumerate(email_campaigns):
                 counter += 1
                 response.append("%d: `%s`" % (index + 1, email_campaign.name))
