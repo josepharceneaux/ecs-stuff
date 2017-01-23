@@ -117,7 +117,7 @@ def process_meetup_event(event):
                                    MEETUP_EVENT_STATUS['proposed']]:
                 event_url = get_url(meetup_sn, SocialNetworkUrls.EVENT).format(event['id'])
                 meetup_event_base.get_event(event_url)
-            elif event['status'] in [MEETUP_EVENT_STATUS['canceled'], MEETUP_EVENT_STATUS['deleted']]:
+            elif event['status'] in ['canceled', MEETUP_EVENT_STATUS['deleted']]:
                 event_id = event['id']
                 event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(group.user.id,
                                                                                      meetup.id,

@@ -107,6 +107,7 @@ class Meetup(EventBase):
         self.end_date = kwargs.get('end_date') or (datetime.utcnow() + timedelta(days=5))
         self.start_time_since_epoch = milliseconds_since_epoch_local_time(self.start_date)
         self.end_time_since_epoch = milliseconds_since_epoch_local_time(self.end_date)
+        self.cancelled_status = ('cancelled', 'past')
 
     def get_events(self):
         """
