@@ -304,7 +304,7 @@ class TestSendCampaign(object):
         opens_count_before = email_campaign_blast.opens
         hit_count_before = url_conversion.hit_count
         response = requests.get(redirect_url)
-        assert response.status_code == requests.codes.OK
+        assert response.status_code == requests.codes.OK, response.text
         db.session.commit()
         opens_count_after = email_campaign_blast.opens
         hit_count_after = url_conversion.hit_count
