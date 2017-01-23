@@ -225,6 +225,7 @@ class EventBase(object):
             'Content-Type': 'application/json',
             'Authorization': access_token
         }
+        self.cancelled_status = ('cancelled',)
 
     def _get_user_credentials(self):
         """
@@ -441,7 +442,23 @@ class EventBase(object):
         events as `is_deleted_from_vendor = True`
         :param list events: list of events (dict) retrieved from Meetup / Eventbrite
         """
-        pass
+        events_in_db = Event.filter_by_keywords(user_id=self.user.id, social_network_id=self.social_network.id,
+                                                is_deleted_from_vendor=0)
+        social_network_event_ids = [event['id'] for event in events]
+        deleted_event_ids = [event.id for event in events_in_db
+                             if event.social_network_event_id not in social_network_event_ids]
+        # TODO: This commented code will be required for a future feature. Entirely delete unused events from db
+        # deleted_event_ids = []
+        # for event_obj in missing_events:
+        #     try:
+        #         event = self.fetch_event(event_obj.social_network_event_id)
+        #     except Exception as e:
+        #         event = None
+        #     if not event or (event and event.get('status') in self.cancelled_status):
+        #         deleted_event_ids.append(event_obj.id)
+        num_of_deleted_events = Event.mark_vendor_deleted(deleted_event_ids)
+        logger.info('%s events have been marked as vendor deleted. SocialNetwork: %s, UserId: %s'
+                    % (num_of_deleted_events, self.social_network.name, self.user.id))
 
     def delete_event(self, event_id, delete_from_vendor=True):
         """
@@ -606,4 +623,3 @@ class EventBase(object):
                                 error.message))
             raise EventNotSaveInDb('Error occurred while saving event in database')
         return event.id
-

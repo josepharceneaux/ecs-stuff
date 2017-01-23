@@ -11,9 +11,9 @@ from datetime import timedelta
 import time
 
 # Application specific
-from social_network_service.common.models.event import MeetupGroup, Event
+from social_network_service.common.models.event import MeetupGroup
 from social_network_service.common.models.venue import Venue
-from social_network_service.modules.constants import MEETUP_VENUE, MEETUP_EVENT_STATUS
+from social_network_service.modules.constants import MEETUP_VENUE
 from social_network_service.modules.urls import get_url
 from social_network_service.social_network_app import logger
 from social_network_service.modules.utilities import log_error
@@ -107,6 +107,7 @@ class Meetup(EventBase):
         self.end_date = kwargs.get('end_date') or (datetime.utcnow() + timedelta(days=5))
         self.start_time_since_epoch = milliseconds_since_epoch_local_time(self.start_date)
         self.end_time_since_epoch = milliseconds_since_epoch_local_time(self.end_date)
+        self.cancelled_status = ('cancelled', 'past')
 
     def get_events(self):
         """
@@ -529,26 +530,3 @@ class Meetup(EventBase):
             log_error({'user_id': self.user.id,
                        'error': error_message})
         self.social_network_event_id = data.get('social_network_event_id')
-
-    def mark_vendor_deleted(self, events):
-        """
-        There can be some events in db those exist in getTalent databse but not in vendor db. So we need to mark such
-        events as `is_deleted_from_vendor = True`
-        :param list events: list of events (dict) retrieved from Meetup / Eventbrite
-        """
-        events_in_db = Event.filter_by_keywords(user_id=self.user.id, social_network_id=self.social_network.id,
-                                                is_deleted_from_vendor=0)
-        social_network_event_ids = [event['id'] for event in events]
-        missing_events = [event for event in events_in_db
-                          if event.social_network_event_id not in social_network_event_ids]
-        deleted_event_ids = []
-        for event_obj in missing_events:
-            try:
-                event = self.fetch_event(event_obj.social_network_event_id)
-            except Exception as e:
-                event = None
-            if not event or (event and event.get('status') in ['cancelled', 'past']):
-                deleted_event_ids.append(event_obj.id)
-        num_of_deleted_events = Event.mark_vendor_deleted(deleted_event_ids)
-        logger.info('%s events have been marked as vendor deleted. SocialNetwork: %s, UserId: %s'
-                    % (num_of_deleted_events, self.social_network.name, self.user.id))

@@ -12,7 +12,6 @@ import requests
 from requests import codes
 
 # Application Specific
-from social_network_service.common.models.db import db
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.validators import raise_if_not_positive_int_or_long
