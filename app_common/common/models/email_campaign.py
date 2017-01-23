@@ -255,7 +255,7 @@ class EmailCampaignBlast(db.Model):
     bounces = db.Column('Bounces', db.Integer, default=0)
     complaints = db.Column('Complaints', db.Integer, default=0)
     unsubscribed_candidates = db.Column('UnsubscribedCandidates', db.Integer, default=0)
-    sent_datetime = db.Column('SentTime', db.DateTime)
+    sent_datetime = db.Column('SentTime', db.DateTime, default=datetime.utcnow)
     updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -332,7 +332,7 @@ class EmailCampaignSend(db.Model):
     campaign_id = db.Column('EmailCampaignId', db.Integer, db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     blast_id = db.Column('EmailCampaignBlastId', db.Integer, db.ForeignKey('email_campaign_blast.id', ondelete='CASCADE'))
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
-    sent_datetime = db.Column('SentTime', db.DateTime)
+    sent_datetime = db.Column('SentTime', db.DateTime, default=datetime.utcnow)
     ses_message_id = db.Column('sesMessageId', db.String(63))
     ses_request_id = db.Column('sesRequestId', db.String(63))
     is_ses_bounce = db.Column('isSesBounce', db.Boolean, default=False)

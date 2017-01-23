@@ -29,9 +29,7 @@ from email_campaign_service.modules.utils import (TRACKING_URL_TYPE, get_candida
 
 # Common Utils
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.models.event import Event
 from email_campaign_service.common.models.user import Domain, User
-from email_campaign_service.common.models.base_campaign import BaseCampaign
 from email_campaign_service.common.utils.dynamo_utils import EmailMarketing
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
@@ -64,7 +62,6 @@ def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
     :param smartlist_ids:
     :type smartlist_ids: list[int | long]
     :param email_campaign_id: id of email campaign to which smart lists will be associated.
-
     """
     if type(smartlist_ids) in (int, long):
         smartlist_ids = [smartlist_ids]
@@ -191,26 +188,27 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
     validate_smartlist_ids(smartlist_ids, current_user)
 
     if campaign.email_client_id:  # gt plugin code starts here.
-        candidate_ids_and_emails, unsubscribed_candidate_ids = get_email_campaign_candidate_ids_and_emails(campaign,
-                                                                                                        smartlist_ids,
-                                                                                                        new_candidates_only=new_candidates_only)
+
+        candidate_ids_and_emails, unsubscribed_candidate_ids = \
+            get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids,
+                                                        new_candidates_only=new_candidates_only)
 
         # Check if the smartlist has more than 0 candidates
         if not candidate_ids_and_emails:
             raise InvalidUsage('No candidates with emails found for email_campaign(id:%s).' % campaign.id,
                                error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
         else:
-            email_campaign_blast_id, blast_params, blast_datetime = \
-                notify_and_get_blast_params(campaign, new_candidates_only, candidate_ids_and_emails)
-            _update_blast_unsubscribed_candidates(email_campaign_blast_id, len(unsubscribed_candidate_ids))
+            notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
+            # Create blast for email-campaign
+            email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id)
+            EmailCampaignBlast.save(email_campaign_blast)
+            _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
             list_of_new_email_html_or_text = []
             # Do not send mail if email_client_id is provided
             # Loop through each candidate and get new_html and new_text
             for candidate_id, candidate_address in candidate_ids_and_emails:
                 new_text, new_html = get_new_text_html_subject_and_campaign_send(
-                    campaign.id, candidate_id, candidate_address, current_user, blast_params=blast_params,
-                    email_campaign_blast_id=email_campaign_blast_id,
-                    blast_datetime=blast_datetime)[:2]
+                    campaign.id, candidate_id, candidate_address, current_user, email_campaign_blast.id)[:2]
                 logger.info("Marketing email added through client %s", campaign.email_client_id)
                 resp_dict = dict()
                 resp_dict['new_html'] = new_html
@@ -224,8 +222,7 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
             #                                    new_candidates_only, campaign,
             #                                    len(list_of_new_email_html_or_text))
             # Update campaign blast with number of sends
-            _update_blast_sends(email_campaign_blast_id, len(candidate_ids_and_emails),
-                                campaign, new_candidates_only)
+            _update_blast_sends(email_campaign_blast.id, len(candidate_ids_and_emails), campaign, new_candidates_only)
             # Create activity in a celery task
             celery_create_activity.delay(campaign.user.id, Activity.MessageIds.CAMPAIGN_SEND, campaign,
                                          dict(id=campaign.id, name=campaign.name,
@@ -237,23 +234,18 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
     get_smartlist_candidates_via_celery(current_user.id, campaign_id, smartlist_ids, new_candidates_only)
 
 
-def send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_params, email_campaign_blast_id,
-                                blast_datetime, campaign,
+def send_campaign_to_candidates(user_id, candidate_ids_and_emails, email_campaign_blast_id, campaign,
                                 new_candidates_only):
     """
     This creates one Celery task per candidate to send campaign emails asynchronously.
     :param user_id: ID of user
     :param candidate_ids_and_emails: list of tuples containing candidate_ids and email addresses
-    :param blast_params: email blast params
     :param email_campaign_blast_id: id of email campaign blast object
-    :param blast_datetime: email campaign blast datetime
     :param campaign: EmailCampaign object
     :param new_candidates_only: Identifier if candidates are new
     :type user_id: int | long
     :type candidate_ids_and_emails: list
-    :type blast_params: dict
     :type email_campaign_blast_id: int | long
-    :type blast_datetime: datetime.datetime
     :type campaign: EmailCampaign
     :type new_candidates_only: bool
     """
@@ -261,8 +253,6 @@ def send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_params,
         raise InternalServerError(error_message='Must provide valid EmailCampaign object.')
     if not candidate_ids_and_emails:
         raise InternalServerError(error_message='No candidate data provided.')
-    if not blast_params:
-        raise InternalServerError(error_message='Blast Params must be provided.')
     if not email_campaign_blast_id:
         raise InternalServerError(error_message='email_campaign_blast_id must be provided.')
     campaign_type = campaign.__tablename__
@@ -270,7 +260,7 @@ def send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_params,
                                                      queue=campaign_type)
     # Here we create list of all tasks.
     tasks = [send_email_campaign_to_candidate.subtask((user_id, campaign, candidate_id, candidate_address,
-             blast_params, email_campaign_blast_id, blast_datetime), link_error=celery_error_handler(
+             email_campaign_blast_id), link_error=celery_error_handler(
              campaign_type), queue=campaign_type) for candidate_id, candidate_address in candidate_ids_and_emails]
     # This runs all tasks asynchronously and sets callback function to be hit once all
     # tasks in list finish running without raising any error. Otherwise callback
@@ -355,28 +345,30 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     campaign = EmailCampaign.get_by_id(campaign_id)
     # Filter valid candidate ids
     all_candidate_ids = CampaignBase.filter_existing_candidate_ids(all_candidate_ids, user_id)
-    blast_datetime = datetime.utcnow()
-    email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id, sent_datetime=blast_datetime)
+
+    # Create blast for email-campaign
+    email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id)
     EmailCampaignBlast.save(email_campaign_blast)
 
     # Add data in Dynamo DB
-    dynamo_data = dict(blast_id=email_campaign_blast.id, candidate_ids=all_candidate_ids)
-    EmailMarketing.add_blast_id_and_candidate_ids(dynamo_data)
-
-    subscribed_candidate_ids, unsubscribed_candidate_ids = get_subscribed_and_unsubscribed_candidate_ids(campaign,
-                                                                                                         all_candidate_ids,
-                                                                                                         new_candidates_only)
+    try:
+        dynamo_data = dict(blast_id=email_campaign_blast.id, candidate_ids=all_candidate_ids)
+        EmailMarketing.add_blast_id_and_candidate_ids(dynamo_data)
+    except Exception as e:
+        logger.error("\nUnable to put item(email-campaign-id:%s, candidate_ids:%s in DynamoDB table:{}. "
+                     "Error: {}".format(campaign.id, all_candidate_ids, EmailMarketing.dynamo_table_name, e.message))
+    
+    # Get subscribed and un-subscribed candidate ids
+    subscribed_candidate_ids, unsubscribed_candidate_ids = \
+        get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
     candidate_ids_and_emails = get_priority_emails(campaign.user, subscribed_candidate_ids)
     if candidate_ids_and_emails:
-        email_campaign_blast_id, blast_params, blast_datetime = notify_and_get_blast_params(campaign,
-                                                                                            new_candidates_only,
-                                                                                            candidate_ids_and_emails)
-        _update_blast_unsubscribed_candidates(email_campaign_blast_id, len(unsubscribed_candidate_ids))
+        notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
+        _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
         with app.app_context():
             logger.info('Emails for email campaign (id:%d) are being sent using Celery. Blast ID is %d' %
-                        (campaign.id, email_campaign_blast_id))
-        send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_params, email_campaign_blast_id,
-                                    blast_datetime, campaign,
+                        (campaign.id, email_campaign_blast.id))
+        send_campaign_to_candidates(user_id, candidate_ids_and_emails, email_campaign_blast.id, campaign,
                                     new_candidates_only)
 
 # This will be used in later version
@@ -429,8 +421,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids, new_can
     return get_priority_emails(campaign.user, subscribed_candidate_ids), unsubscribed_candidate_ids
 
 
-def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candidate_address, blast_params=None,
-                                      email_campaign_blast_id=None, blast_datetime=None):
+def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candidate_address, email_campaign_blast_id):
     """
     This function sends the email to candidate. If working environment is prod, it sends the
     email campaigns to candidates' email addresses, otherwise it sends the email campaign to
@@ -439,41 +430,26 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
     :param campaign_id: email campaign id
     :param candidate_id: candidate id
     :param candidate_address: candidate email address
-    :param blast_params: parameters of email campaign blast
     :param email_campaign_blast_id: id of email campaign blast object
-    :param blast_datetime: email campaign blast datetime
     :type user_id: int | long
     :type campaign_id: int | long
     :type candidate_id: int | long
     :type candidate_address: str
-    :type blast_params: dict | None
-    :type email_campaign_blast_id: int | long | None
-    :type blast_datetime: datetime | None
+    :type email_campaign_blast_id: int|long
     """
     raise_if_not_positive_int_or_long(user_id)
     raise_if_not_positive_int_or_long(campaign_id)
     raise_if_not_positive_int_or_long(candidate_id)
-
-    if email_campaign_blast_id:
-        raise_if_not_positive_int_or_long(email_campaign_blast_id)
-
+    raise_if_not_positive_int_or_long(email_campaign_blast_id)
     raise_if_not_instance_of(candidate_address, basestring)
-
-    if blast_datetime:
-        raise_if_not_instance_of(blast_datetime, datetime)
-
-    if blast_params:
-        raise_if_not_instance_of(blast_params, dict)
 
     campaign = EmailCampaign.get_by_id(campaign_id)
     candidate = Candidate.get_by_id(candidate_id)
     current_user = User.get_by_id(user_id)
-    new_text, new_html, subject, email_campaign_send, blast_params, _ = \
+    new_text, new_html, subject, email_campaign_send = \
         get_new_text_html_subject_and_campaign_send(campaign.id, candidate_id, candidate_address,
                                                     current_user,
-                                                    blast_params=blast_params,
-                                                    email_campaign_blast_id=email_campaign_blast_id,
-                                                    blast_datetime=blast_datetime)
+                                                    email_campaign_blast_id=email_campaign_blast_id)
     domain = Domain.get_by_id(campaign.user.domain_id)
     is_prod = not CampaignUtils.IS_DEV
     # Only in case of production we should send mails to candidate address else mails will
@@ -519,10 +495,9 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
                                         # BOTO doesn't seem to work with an array as to_addresses
                                         body=None,
                                         email_format='html' if campaign.body_html else 'text')
-        except Exception as e:
+        except Exception as error:
             # Mark email as bounced
-            _handle_email_sending_error(email_campaign_send, candidate.id, to_address, blast_params,
-                                        email_campaign_blast_id, e)
+            _handle_email_sending_error(email_campaign_send, candidate.id, to_address, error)
             return False
 
         username = getpass.getuser()
@@ -552,32 +527,25 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
 
 
 @celery_app.task(name='send_email_campaign_to_candidate')
-def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_address,
-                                     blast_params, email_campaign_blast_id, blast_datetime):
+def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_address, email_campaign_blast_id):
     """
     For each candidate, this function is called to send email campaign to candidate.
     :param user_id: Id of user
     :param campaign: EmailCampaign object
     :param candidate_id: candidate id
     :param candidate_address: candidate email address
-    :param blast_params: parameters of email campaign blast
     :param email_campaign_blast_id: email campaign blast object id.
-    :param blast_datetime: email campaign blast datetime
     :type campaign: EmailCampaign
     :type candidate_id: int | long
     :type candidate_address: str
-    :type blast_params: dict
     :type email_campaign_blast_id: int|long
-    :type blast_datetime: datetime
     :rtype bool
     """
     raise_if_not_positive_int_or_long(user_id)
     raise_if_not_instance_of(campaign, EmailCampaign)
     raise_if_not_positive_int_or_long(candidate_id)
     raise_if_not_instance_of(candidate_address, basestring)
-    raise_if_not_instance_of(blast_params, dict)
     raise_if_not_positive_int_or_long(email_campaign_blast_id)
-    raise_if_not_instance_of(blast_datetime, datetime)
 
     with app.app_context():
         try:
@@ -587,9 +555,7 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
                 candidate_id=candidate_id,
                 # candidates.find(lambda row: row.id == candidate_id).first(),
                 candidate_address=candidate_address,
-                blast_params=blast_params,
                 email_campaign_blast_id=email_campaign_blast_id,
-                blast_datetime=blast_datetime
             )
             return result_sent
         except Exception as error:
@@ -600,35 +566,26 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
 
 
 def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candidate_address, current_user,
-                                                blast_params=None, email_campaign_blast_id=None,
-                                                blast_datetime=None):
+                                                email_campaign_blast_id=None):
     """
     This gets new_html and new_text by URL conversion method and returns
-    new_html, new_text, subject, email_campaign_send, blast_params, candidate.
+        new_html, new_text, subject, email_campaign_send.
     :param campaign_id: EmailCampaign object id
     :param candidate_id: id of candidate
     :param candidate_address: Address of Candidate
     :param current_user: User object
-    :param blast_params: email_campaign blast params
     :param email_campaign_blast_id:  email campaign blast id
-    :param blast_datetime: email campaign blast datetime
     :type campaign_id: int | long
     :type candidate_id: int | long
     :type candidate_address: basestring
     :type current_user: User
-    :type blast_params: dict | None
     :type email_campaign_blast_id: int | long | None
-    :type blast_datetime: datetime.datetime | None
     """
     raise_if_not_positive_int_or_long(campaign_id)
     raise_if_not_positive_int_or_long(candidate_id)
 
-    if blast_params:
-        raise_if_not_instance_of(blast_params, dict)
     if email_campaign_blast_id:
         raise_if_not_positive_int_or_long(email_campaign_blast_id)
-    if blast_datetime:
-        raise_if_not_instance_of(blast_datetime, datetime)
 
     # TODO: We should solve that detached instance issue more gracefully.
     candidate = Candidate.get_by_id(candidate_id)
@@ -644,16 +601,8 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candi
                                       'User(id:%s).' % (campaign.id, campaign.user_id),
                                       error_code=CampaignException.NO_CAMPAIGN_BLAST_FOUND)
         email_campaign_blast_id = email_campaign_blast.id
-        blast_datetime = email_campaign_blast.sent_datetime
-    if not blast_datetime:
-        blast_datetime = datetime.utcnow()
-    if not blast_params:
-        email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
-        blast_params = dict(sends=email_campaign_blast.sends, bounces=email_campaign_blast.bounces)
     EmailCampaign.session.commit()
-    email_campaign_send = EmailCampaignSend(campaign_id=campaign_id,
-                                            candidate_id=candidate.id,
-                                            sent_datetime=blast_datetime,
+    email_campaign_send = EmailCampaignSend(campaign_id=campaign_id, candidate_id=candidate.id,
                                             blast_id=email_campaign_blast_id)
     EmailCampaignSend.save(email_campaign_send)
     # If the campaign is a subscription campaign, its body & subject are
@@ -687,22 +636,23 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candi
                                                                is_email_open_tracking=campaign.is_email_open_tracking,
                                                                custom_html=campaign.custom_html,
                                                                email_campaign_send_id=email_campaign_send.id)
-    return new_text, new_html, subject, email_campaign_send, blast_params, candidate
+    return new_text, new_html, subject, email_campaign_send
 
 
-def _handle_email_sending_error(email_campaign_send, candidate_id, to_addresses, blast_params,
-                                email_campaign_blast_id, exception):
-    """ If failed to send email; Mark email bounced.
+def _handle_email_sending_error(email_campaign_send, candidate_id, to_addresses, exception):
+    """
+        If failed to send email; set the ses-request-id extracted from SES exception in email-campaign-send.
     """
     # If failed to send email, still try to get request id from XML response.
     # Unfortunately XML response is malformed so must manually parse out request id
-    request_id_search = re.search('<RequestId>(.*)</RequestId>', exception.__str__(), re.IGNORECASE)
-    request_id = request_id_search.group(1) if request_id_search else None
-    email_campaign_send.ses_request_id = request_id
-    db.session.commit()
-    # Send failure message to email marketing admin, just to notify for verification
-    logger.exception("Failed to send marketing email to candidate_id=%s, to_addresses=%s"
-                     % (candidate_id, to_addresses))
+    try:
+        request_id_search = re.search('<RequestId>(.*)</RequestId>', exception.__str__(), re.IGNORECASE)
+        request_id = request_id_search.group(1) if request_id_search else None
+        email_campaign_send.update(ses_request_id=request_id)
+    except Exception:
+        # Log thee exception message
+        logger.exception("Failed to send marketing email to candidate_id=%s, to_addresses=%s"
+                         % (candidate_id, to_addresses))
 
 
 def update_hit_count(url_conversion):
@@ -1061,7 +1011,7 @@ def get_smartlist_candidates_via_celery(user_id, campaign_id, smartlist_ids, new
     chord(tasks)(callback)
 
 
-def notify_and_get_blast_params(campaign, new_candidates_only, candidate_ids_and_emails):
+def notify_admins(campaign, new_candidates_only, candidate_ids_and_emails):
     """
     Notifies admins that email campaign is about to be sent shortly. Also returns blast params
     for the intended campaign.
@@ -1089,13 +1039,6 @@ def notify_and_get_blast_params(campaign, new_candidates_only, candidate_ids_and
                     "new_candidates_only=%s, address list size=%s"
                     % (campaign.name, campaign.id, campaign.user.email, new_candidates_only,
                         len(candidate_ids_and_emails)))
-    # Create the email_campaign_blast for this blast
-    blast_datetime = datetime.utcnow()
-    email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id,
-                                              sent_datetime=blast_datetime)
-    EmailCampaignBlast.save(email_campaign_blast)
-    blast_params = dict(sends=0, bounces=0)
-    return email_campaign_blast.id, blast_params, blast_datetime
 
 
 @celery_app.task(name='celery_error_handler')
