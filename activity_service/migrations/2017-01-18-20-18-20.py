@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from activity_service.common.models.misc import Activity
 from activity_service.app import db
 from activity_service.common.models.email_campaign import EmailCampaign
@@ -12,6 +13,7 @@ Now it will be like: "<campaign_type> Campaign <campaign_name> was sent to <num_
 e.g  "Email Campaign <campaign_name> was sent to <num_of_candidates> candidates"
      "Push Campaign <campaign_name> was sent to <num_of_candidates> candidates"
 """
+startTime = datetime.now()
 all_activities = Activity.query.filter_by(type=6).all()
 print "Total activities having Type==6 are: %s" %(len(all_activities))
 updated_rows = []
@@ -23,7 +25,10 @@ for activity in all_activities:
             campaign_type = source_table_prefix.title()
             if source_table_prefix == "email":
                 email_campaign = EmailCampaign.get(activity.source_id)
-                campaign_type = CampaignUtils.get_campaign_type(email_campaign)
+                if not email_campaign:
+                    campaign_type = 'Email'
+                else:
+                    campaign_type = CampaignUtils.get_campaign_type(email_campaign)
             campaign_type = campaign_type.title()
             params = json.loads(activity.params)
             params["campaign_type"] = campaign_type
@@ -34,3 +39,4 @@ for activity in all_activities:
         db.session.rollback()
         print "Exception during updating record for activity id: %s, %s" %(activity.id,str(e))
 print "Total rows updated are: %s" %len(updated_rows)
+print "Time taken by script is: %s" %(datetime.now() - startTime)
