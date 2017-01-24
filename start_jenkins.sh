@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Debugging new Jenkins
+echo "***** DIRECTORY"
+echo `pwd`
+echo "***** DIRECTORY"
+
 # Upgrade pip if needed
 pip install --upgrade pip
 
