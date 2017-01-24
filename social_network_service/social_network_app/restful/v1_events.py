@@ -390,7 +390,12 @@ class EventUpdater(Resource):
 
     def post(self):
         """
-        This endpoint triggers an event updater(Celery task) against a valid post request
+        This endpoint triggers an event updater(Celery task) against a post request with valid data
+        Example:
+        {
+            "user_id": 1,
+            "social_network_id": 1
+        }
         :return:
             {
                 "message": "Your events are being updated
