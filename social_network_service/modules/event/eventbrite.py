@@ -24,8 +24,7 @@ from social_network_service.custom_exceptions import EventInputMissing
 from social_network_service.custom_exceptions import EventLocationNotCreated
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.common.utils.handy_functions import http_request
-from social_network_service.common.models.event_organizer import EventOrganizer
-from social_network_service.custom_exceptions import VenueNotFound, EventOrganizerNotFound
+from social_network_service.custom_exceptions import VenueNotFound
 from social_network_service.social_network_app import app
 
 
@@ -115,6 +114,7 @@ class Eventbrite(EventBase):
         self.end_date_in_utc =\
             kwargs.get('date_range_end') \
             or datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        self.cancelled_status = ('deleted', 'canceled', 'ended')
 
     def get_events(self, status='live', order_by='start_asc'):
         """
@@ -669,4 +669,3 @@ class Eventbrite(EventBase):
                 'ticket_class.free': True,
             }
         self.social_network_event_id = data.get('social_network_event_id')
-
