@@ -15,11 +15,12 @@ e.g  "Email Campaign <campaign_name> was sent to <num_of_candidates> candidates"
 """
 startTime = datetime.now()
 all_activities = Activity.query.filter_by(type=6).all()
-print "Total activities having Type==6 are: %s" %(len(all_activities))
-updated_rows = []
+logger.info("Total activities having Type==6 are: %s" %(len(all_activities)))
+updated_rows = 0
 for activity in all_activities:
     try:
-        if not json.loads(activity.params).get("campaign_type"):
+        params = json.loads(activity.params)
+        if not params.get("campaign_type"):
             source_table = activity.source_table
             source_table_prefix = CampaignUtils.get_campaign_type_prefix(source_table)
             campaign_type = source_table_prefix.title()
@@ -30,13 +31,11 @@ for activity in all_activities:
                 else:
                     campaign_type = CampaignUtils.get_campaign_type(email_campaign)
             campaign_type = campaign_type.title()
-            params = json.loads(activity.params)
             params["campaign_type"] = campaign_type
             params = json.dumps(params)
-            activity.update(params=params)
-            updated_rows.append(campaign_type)
+            activity.params = params
+            updated_rows+=1
     except Exception as e:
         db.session.rollback()
-        print "Exception during updating record for activity id: %s, %s" %(activity.id,str(e))
-print "Total rows updated are: %s" %len(updated_rows)
-print "Time taken by script is: %s" %(datetime.now() - startTime)
+db.session.commit()
+logger.info("Total rows updated are: %s" % updated_rows)
