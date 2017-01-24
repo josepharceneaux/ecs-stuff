@@ -646,6 +646,7 @@ class SocialNetworkApi(object):
     """
     VERSION = 'v1'
     # URLs, in case of API
+    UPDATE_EVENTS = '/' + VERSION + '/update-events'
     EVENTS = '/' + VERSION + '/events'
     EVENT = '/' + VERSION + '/events/<int:event_id>'
     SOCIAL_NETWORKS = '/' + VERSION + '/social-networks'

@@ -12,16 +12,18 @@ from flask.ext.restful import Resource
 from social_network_service.common.error_handling import *
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import Event
-from social_network_service.common.models.user import User
+from social_network_service.common.models.user import User, UserSocialNetworkCredential
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.routes import SocialNetworkApi
 from social_network_service.modules.constants import SORT_TYPES
+from social_network_service.modules.social_network.base import SocialNetworkBase
 from social_network_service.modules.utilities import add_organizer_venue_data
 from social_network_service.common.utils.auth_utils import require_oauth, is_number
 from social_network_service.modules.utilities import process_event, delete_events
 from social_network_service.common.utils.handy_functions import get_valid_json_data
 from social_network_service.common.utils.api_utils import api_route, ApiResponse, generate_pagination_headers, \
     get_pagination_params
+from social_network_service.tasks import import_events
 
 events_blueprint = Blueprint('events_api', __name__)
 api = TalentApi()
@@ -381,3 +383,25 @@ class EventById(Resource):
         if len(deleted) == 1:
             return dict(message='Event deleted successfully')
         raise ForbiddenError('Forbidden: Unable to delete event')
+
+
+@api.route(SocialNetworkApi.UPDATE_EVENTS)
+class EventUpdater(Resource):
+
+    def post(self):
+        """
+        This endpoint triggers an event updater(Celery task) against a valid post request
+        :return:
+            {
+                "message": "Your events are being updated
+            }
+        """
+        data = get_valid_json_data(request)
+        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(data['user_id'],
+                                                                                         data['social_network_id'])
+        if user_credentials:
+            social_network_base = SocialNetworkBase(user_id=user_credentials.user_id,
+                                                    social_network_id=user_credentials.social_network_id)
+            import_events.delay(social_network_base)
+            return ApiResponse({'message': 'Your events are being updated'})
+        raise ResourceNotFound("Resource not found")
