@@ -23,14 +23,17 @@ for activity in all_activities:
         if not params.get("campaign_type"):
             source_table = activity.source_table
             source_table_prefix = CampaignUtils.get_campaign_type_prefix(source_table)
-            campaign_type = source_table_prefix.title()
+            if source_table_prefix == "sms":
+                campaign_type = source_table_prefix.upper()
+            else:
+                campaign_type = source_table_prefix.title()
             if source_table_prefix == "email":
                 email_campaign = EmailCampaign.get(activity.source_id)
                 if not email_campaign:
                     campaign_type = 'Email'
                 else:
                     campaign_type = CampaignUtils.get_campaign_type(email_campaign)
-            campaign_type = campaign_type.title()
+                    campaign_type = campaign_type.title()
             params["campaign_type"] = campaign_type
             params = json.dumps(params)
             activity.params = params
