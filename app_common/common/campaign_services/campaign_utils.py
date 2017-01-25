@@ -82,7 +82,7 @@ class CampaignUtils(object):
     NAMES = (SMS, EMAIL, PUSH, EVENT)
     # This contains campaign types for which we need to append 'an' in activity message.
     # e.g. 'John' created an SMS campaign
-    WITH_ARTICLE_AN = [_get_campaign_type_prefix(item).lower() for item in [SMS, EMAIL, PUSH, EVENT]]
+    WITH_ARTICLE_AN = [_get_campaign_type_prefix(item).lower() for item in [SMS, EMAIL, EVENT]]
     # This variable is used for sms_campaign_service. In case of 'dev', 'jenkins' or 'qa', our
     # Twilio's account should not be charged while purchasing a number or sending SMS to candidates.
     # This is set to False in case of 'prod'.
@@ -430,10 +430,11 @@ class CampaignUtils(object):
         cls.raise_if_not_instance_of_campaign_models(campaign)
         campaign_type_prefix = CampaignUtils.get_campaign_type_prefix(campaign.__tablename__)
         # TODO: Currently 'base_campaign_id' is only implemented in email campaign
-        if campaign.base_campaign_id:
-            base_campaign = BaseCampaign.get_by_id(campaign.base_campaign_id)
-            if base_campaign.base_campaign_events.all():
-                campaign_type_prefix = CampaignUtils.get_campaign_type_prefix(Event.__tablename__)
+        if isinstance(campaign, EmailCampaign):
+            if campaign.base_campaign_id:
+                base_campaign = BaseCampaign.get_by_id(campaign.base_campaign_id)
+                if base_campaign.base_campaign_events.all():
+                    campaign_type_prefix = CampaignUtils.get_campaign_type_prefix(Event.__tablename__)
         return campaign_type_prefix
 
     @classmethod

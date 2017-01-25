@@ -166,3 +166,4 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
     except Exception:
         # TODO logging
         return json.dumps({'error': 'There was an error saving your log entry'}), STATUS_CODES.internal_server_error
+

@@ -224,12 +224,6 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
             # Update campaign blast with number of sends
             _update_blast_sends(email_campaign_blast_id, len(candidate_ids_and_emails),
                                 campaign, new_candidates_only)
-            # Create activity in a celery task
-            celery_create_activity.delay(campaign.user.id, Activity.MessageIds.CAMPAIGN_SEND, campaign,
-                                         dict(id=campaign.id, name=campaign.name,
-                                              num_candidates=len(candidate_ids_and_emails)),
-                                         'Error occurred while creating activity for email-campaign(id:%s) batch send.'
-                                         % campaign.id)
             return list_of_new_email_html_or_text
     # For each candidate, create URL conversions and send the email via Celery task
     get_smartlist_candidates_via_celery(current_user.id, campaign_id, smartlist_ids, new_candidates_only)
@@ -838,9 +832,12 @@ def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only):
                 "campaign_name=%s, campaign_id=%s, user=%s, new_candidates_only=%s",
                 new_sends, campaign.name, campaign.id, campaign.user.email, new_candidates_only)
     # Create activity in a celery task
+    campaign_type = CampaignUtils.get_campaign_type(campaign)
+    # Converting campaign type string to Title case string
+    campaign_type = campaign_type.title()
     celery_create_activity.delay(campaign.user.id, Activity.MessageIds.CAMPAIGN_SEND, campaign,
                                  dict(id=campaign.id, name=campaign.name,
-                                      num_candidates=blast_obj.sends),
+                                      num_candidates=blast_obj.sends, campaign_type=campaign_type),
                                  'Error occurred while creating activity for email-campaign(id:%s) batch send.'
                                  % campaign.id)
 

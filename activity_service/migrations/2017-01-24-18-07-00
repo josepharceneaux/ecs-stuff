@@ -1,0 +1,44 @@
+import json
+from datetime import datetime
+from activity_service.common.models.misc import Activity
+from activity_service.app import db
+from activity_service.common.models.email_campaign import EmailCampaign
+from activity_service.common.campaign_services.campaign_utils import CampaignUtils
+"""
+There was no 'campaign_type' in Campaign Send activity message due to which it was difficult for user to guess,
+from which campaign type this activity belongs. So we have added 'campaign_type' in activity message. This migration is
+written to update previous messages data which does not include 'campaign_type'.
+Old message was: "Campaign <campaign_name> was sent to <num_of_candidates> candidates"
+Now it will be like: "<campaign_type> Campaign <campaign_name> was sent to <num_of_candidates> candidates"
+e.g  "Email Campaign <campaign_name> was sent to <num_of_candidates> candidates"
+     "Push Campaign <campaign_name> was sent to <num_of_candidates> candidates"
+"""
+startTime = datetime.now()
+all_activities = Activity.query.filter_by(type=6).all()
+logger.info("Total activities having Type==6 are: %s" %(len(all_activities)))
+updated_rows = 0
+for activity in all_activities:
+    try:
+        params = json.loads(activity.params)
+        if not params.get("campaign_type"):
+            source_table = activity.source_table
+            source_table_prefix = CampaignUtils.get_campaign_type_prefix(source_table)
+            if source_table_prefix == "sms":
+                campaign_type = source_table_prefix.upper()
+            else:
+                campaign_type = source_table_prefix.title()
+            if source_table_prefix == "email":
+                email_campaign = EmailCampaign.get(activity.source_id)
+                if not email_campaign:
+                    campaign_type = 'Email'
+                else:
+                    campaign_type = CampaignUtils.get_campaign_type(email_campaign)
+                    campaign_type = campaign_type.title()
+            params["campaign_type"] = campaign_type
+            params = json.dumps(params)
+            activity.params = params
+            updated_rows+=1
+    except Exception as e:
+        db.session.rollback()
+db.session.commit()
+logger.info("Total rows updated are: %s" % updated_rows)

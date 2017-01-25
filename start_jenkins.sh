@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Debugging new Jenkins
+echo "***** DIRECTORY"
+echo `pwd`
+echo "***** DIRECTORY"
+
 # Upgrade pip if needed
 pip install --upgrade pip
 
@@ -8,7 +13,10 @@ pip install -r requirements.txt
 
 # Build Docker Images
 sudo service docker restart
-sudo service mysql restart
+# New Jenkins uses Aurora
+if [ `hostname` != "aws-jenkins" ]; then
+    sudo service mysql restart
+fi
 sudo usermod -aG docker jenkins
 
 # Stopping all containers and removing all dangling images from Jenkins container
