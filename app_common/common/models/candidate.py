@@ -255,6 +255,7 @@ class CandidateSource(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     description = db.Column('Description', db.String(100))
     notes = db.Column('Notes', db.String(500))
+    details = db.Column(db.String(255))
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)

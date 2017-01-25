@@ -93,8 +93,14 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'email':                         dict(IndexFieldType='text-array'),
     'user_id':                       dict(IndexFieldType='int'),
     'domain_id':                     dict(IndexFieldType='int',             IntOptions={'ReturnEnabled': False}),
+
+    # Sources
     'source_id':                     dict(IndexFieldType='int'),
+    'source_details':                dict(IndexFieldType='text'),
+
     'source_product_id':             dict(IndexFieldType='int'),
+
+
     'status_id':                     dict(IndexFieldType='int'),
     'objective':                     dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY}),
     'text_comment':                  dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
