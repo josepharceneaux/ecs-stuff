@@ -571,23 +571,36 @@ class SocialNetworkBase(object):
         if not records_in_db:  # No record found in database
             return self.save_user_credentials_in_db(user_credentials_dict)
 
-        if len(records_in_db) > 1:
-            error_message = '%s account for member_id:%s is associated with multiple users.'  \
-                            % (self.social_network.name.title(), member_id)
-            logger.error(error_message)
-            raise InternalServerError(error_message)
+        if len(records_in_db) >= 1:
+            for record in records_in_db:
+                if record.user.id == self.user.id:
+                    logger.info('User(id:%s) is already connected with account on %s.'
+                                % (self.user.id, self.social_network.name.title()))
+                    return self.save_user_credentials_in_db(user_credentials_dict)
+                elif record.user.domain_id == self.user.domain_id:
+                    error_message = 'Some other user is already using this account. user_id:%s, social_network:%s , ' \
+                                    'member_id:%s.' % (self.user.id, self.social_network.name.title(), member_id)
+                    logger.error(error_message)
+                    raise InvalidUsage(error_message)
 
-        if len(records_in_db) == 1:
-            record_in_db = records_in_db[0]
-            if record_in_db.user.id == self.user.id:
-                logger.info('User(id:%s) is already connected with account on %s.'
-                            % (self.user.id, self.social_network.name.title()))
-                return self.save_user_credentials_in_db(user_credentials_dict)
-            else:
-                error_message = 'Some other user is already using this account. user_id:%s, social_network:%s , ' \
-                                'member_id:%s.' % (self.user.id, self.social_network.name.title(), member_id)
-                logger.error(error_message)
-                raise InvalidUsage(error_message)
+
+        # if len(records_in_db) > 1:
+        #     error_message = '%s account for member_id:%s is associated with multiple users.'  \
+        #                     % (self.social_network.name.title(), member_id)
+        #     logger.error(error_message)
+        #     raise InternalServerError(error_message)
+        #
+        # if len(records_in_db) == 1:
+        #     record_in_db = records_in_db[0]
+        #     if record_in_db.user.id == self.user.id:
+        #         logger.info('User(id:%s) is already connected with account on %s.'
+        #                     % (self.user.id, self.social_network.name.title()))
+        #         return self.save_user_credentials_in_db(user_credentials_dict)
+        #     else:
+        #         error_message = 'Some other user is already using this account. user_id:%s, social_network:%s , ' \
+        #                         'member_id:%s.' % (self.user.id, self.social_network.name.title(), member_id)
+        #         logger.error(error_message)
+        #         raise InvalidUsage(error_message)
 
     @classmethod
     def disconnect(cls, user_id, social_network):
