@@ -387,7 +387,9 @@ class EventById(Resource):
 
 @api.route(SocialNetworkApi.UPDATE_EVENTS)
 class EventUpdater(Resource):
-
+    """
+    This resource handles event importer
+    """
     def post(self):
         """
         This endpoint triggers an event updater(Celery task) against a post request with valid data
@@ -409,4 +411,5 @@ class EventUpdater(Resource):
                                                     social_network_id=user_credentials.social_network_id)
             import_events.delay(social_network_base)
             return ApiResponse({'message': 'Your events are being updated'})
-        raise ResourceNotFound("Resource not found")
+        raise ResourceNotFound("User credentials not found for user_id: %d and social_network_id: %d" %
+                               (data['user_id'], data['social_network_id']))
