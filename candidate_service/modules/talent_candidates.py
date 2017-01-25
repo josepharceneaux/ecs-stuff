@@ -2383,7 +2383,7 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
 
             # CandidateSocialNetwork must belong to Candidate
             if can_sn_obj.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthorized candidate social network',
+                raise ForbiddenError(error_message='Unauthorized candidate social network: %s' % can_sn_obj.social_profile_url,
                                      error_code=custom_error.SOCIAL_NETWORK_FORBIDDEN)
 
             # Track all changes
