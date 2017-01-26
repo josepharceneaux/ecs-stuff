@@ -8,7 +8,6 @@ Notes:
 import datetime
 import json
 
-import re
 import requests
 import logging
 import os
