@@ -46,6 +46,7 @@ def get_activities(page):
     rargs = request.args
     start_datetime, end_datetime = None, None
     valid_user_id = request.user.id
+    logger.info("ActivityRequestUser: {}".format(request.user))
     aggregate = rargs.get('aggregate') == '1'  # TODO see if int arg can be used
     aggregate_limit = rargs.get('aggregate_limit', '5')
     post_qty = rargs.get('post_qty') if rargs.get('post_qty') else POSTS_PER_PAGE
