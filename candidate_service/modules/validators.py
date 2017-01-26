@@ -298,6 +298,8 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "area_of_interest_ids": 'id_list',
     "status_ids": 'id_list',
     "source_ids": 'id_list',
+    "source_names": 'string_list',
+    "source_details": 'string_list',
     "minimum_years_experience": 'number',
     "maximum_years_experience": 'number',
     "skills": 'string_list',

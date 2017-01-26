@@ -296,7 +296,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate_address.coordinates AS `coordinates`,
                 GROUP_CONCAT(DISTINCT candidate_email.address SEPARATOR :sep) AS `email`,
 
-                # Candidat Phone Numbers
+                # Candidate Phone Numbers
                 GROUP_CONCAT(DISTINCT candidate_phone.Value SEPARATOR :sep) AS `phone`,
 
                 # Talent Pools
@@ -425,6 +425,14 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 tags = session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
                 field_name_to_sql_value['tags'] = group_concat_separator.join([tag.name for tag in tags])
 
+            # Source
+            candidate_source = None
+            source_id = field_name_to_sql_value.get('source_id')
+            if source_id:
+                candidate_source = session.query(CandidateSource).get(source_id)
+                field_name_to_sql_value['source_name'] = candidate_source.description
+                field_name_to_sql_value['source_details'] = candidate_source.details
+
             # Massage 'field_name_to_sql_value' values into the types they are supposed to be
             resume_text = ''
             for field_name in field_name_to_sql_value.keys():
@@ -447,7 +455,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                     continue
 
                 if field_name == 'source_id':
-                    candidate_source = CandidateSource.query.get(sql_value)
                     resume_text += (' ' + candidate_source.description) if candidate_source else ''
 
                 index_field_type = index_field_options['IndexFieldType']
@@ -801,7 +808,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     logger.info("Filter Query: %s, Search Query: %s" % (filter_query, search_query))
 
     # Adding facet fields parameters
-
     if not count_only:
         params['facet'] = "{area_of_interest_id:{size:500},source_id:{size:50},total_months_experience:{size:50}," \
                           "user_id:{size:50},status_id:{size:50},skill_description:{size:500}," \
@@ -1402,12 +1408,30 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     elif request_vars.get('status_ids'):
         filter_queries.append("(term field=status_id %s)" % request_vars.get('status_ids'))
 
-    if isinstance(request_vars.get('source_ids'), list):
+    # Source IDs
+    source_ids = request_vars.get('source_ids')
+    if isinstance(source_ids, list):
         # search for exact values in facets
-        source_facets = [ "source_id:%s" % source_facet for source_facet in request_vars.get('source_ids')]
+        source_facets = ["source_id:%s" % source_facet for source_facet in source_ids]
         filter_queries.append("(or %s)" % ' '.join(source_facets))
-    elif request_vars.get('source_ids'):
-        filter_queries.append("(term field=source_id %s)" % request_vars.get('source_ids'))
+    elif source_ids:
+        filter_queries.append("(term field=source_id %s)" % source_ids)
+
+    # Source names
+    source_names = request_vars.get('source_names')
+    if isinstance(source_names, list):
+        source_name_facet = ["source_name:'%s'" % source_facet for source_facet in source_names]
+        filter_queries.append("(or %s)" % ' '.join(source_name_facet))
+    elif source_names:
+        filter_queries.append("(term field=source_name '%s')" % source_names)
+
+    # Source details
+    source_details = request_vars.get('source_details')
+    if isinstance(source_details, list):
+        source_details_facet = ["source_details:'%s'" % source_facet for source_facet in source_details]
+        filter_queries.append("(or %s)" % ' '.join(source_details_facet))
+    elif source_details:
+        filter_queries.append("(term field=source_details '%s')" % source_details)
 
     # Set filter range for years experience, if given
     if request_vars.get('minimum_years_experience') or request_vars.get('maximum_years_experience'):
