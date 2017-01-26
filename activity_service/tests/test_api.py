@@ -32,7 +32,7 @@ def test_call_requires_auth(token_fixture):
     assert response.status_code == requests.codes.ok
     #this should become its own test
     response = requests.get(test_url, headers={'Authorization': 'Bearer bad_token'})
-    print 'Activity Test Response'.format(response.content)
+    print 'Activity Test Response {}'.format(response.content)
     assert response.status_code == requests.codes.unauthorized
 
 
@@ -40,7 +40,7 @@ def test_response_is_user_filtered(token_fixture):
     test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1'
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
-    print 'Activity Test Response'.format(response.content)
+    print 'Activity Test Response {}'.format(response.content)
     assert json.loads(response.content)['total_count'] == 32
 
 
@@ -48,7 +48,7 @@ def test_response_can_exclude_user(token_fixture):
     test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1' + '?exclude_current_user=1'
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
-    print 'Activity Test Response'.format(response.content)
+    print 'Activity Test Response {}'.format(response.content)
     assert json.loads(response.content)['total_count'] == 0
 
 
@@ -57,7 +57,7 @@ def test_response_can_be_time_filtered(token_fixture):
     test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?start_datetime={}'.format(today)
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
-    print 'Activity Test Response'.format(response.content)
+    print 'Activity Test Response {}'.format(response.content)
     assert json.loads(response.content)['total_count'] == 3
 
 
@@ -74,7 +74,7 @@ def test_basic_post(user_fixture, token_fixture):
                                  source_id='1337',
                                  params={'lastName': random_word(6), 'firstName': random_word(8)}
                              )))
-    print 'Activity Test Response'.format(response.content)
+    print 'Activity Test Response {}'.format(response.content)
     assert response.status_code == requests.codes.created
 
 
@@ -82,7 +82,7 @@ def test_recent_readable(token_fixture):
     test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
     response = requests.get(test_url,
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
-    print 'Activity Test Response'.format(response.content)
+    print 'Activity Test Response {}'.format(response.content)
     assert response.status_code == requests.codes.ok
     response_content = json.loads(response.content)
     assert len(response_content['activities']) == 5
@@ -95,7 +95,7 @@ def test_recent_readable_with_limit(token_fixture):
     test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1&aggregate_limit=3'
     response = requests.get(test_url,
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
-    print 'Activity Test Response'.format(response.content)
+    print 'Activity Test Response {}'.format(response.content)
     assert response.status_code == requests.codes.ok
     response_content = json.loads(response.content)
     assert len(response_content['activities']) == 3
@@ -109,7 +109,7 @@ def test_recent_readable_with_dates(token_fixture):
     HEADERS = {'Authorization': 'Bearer {}'.format(token_fixture.access_token)}
 
     response = requests.get(TEST_URL, headers=HEADERS)
-    print 'Activity Test Response'.format(response.content)
+    print 'Activity Test Response {}'.format(response.content)
     response_content = json.loads(response.content)
     activities = response_content['activities']
     assert response.status_code == requests.codes.ok
@@ -152,7 +152,7 @@ def test_bulk_create_and_read(user_fixture, token_fixture):
             )
         )
         response = requests.post(CREATE_URL, headers=HEADERS, data=payload)
-        print 'Activity Test Response'.format(response.content)
+        print 'Activity Test Response {}'.format(response.content)
         assert response.status_code == requests.codes.created
 
     # Test `bulk` async read
@@ -181,7 +181,7 @@ def test_pipeline_create_and_read(user_fixture, token_fixture):
     aggregate_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
     aggregate_response = requests.get(aggregate_url,
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
-    print 'Activity Test Response'.format(aggregate_response.content)
+    print 'Activity Test Response {}'.format(aggregate_response.content)
     assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
     assert any(activity['readable_text'] == u'<b>You</b> created a pipeline: <b>test_PL1</b>.' for activity in
@@ -206,7 +206,7 @@ def test_talentPool_create_and_read(user_fixture, token_fixture):
     aggregate_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
     aggregate_response = requests.get(aggregate_url,
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
-    print 'Activity Test Response'.format(aggregate_response.content)
+    print 'Activity Test Response {}'.format(aggregate_response.content)
     assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
     assert any(activity['readable_text'] == u'<b>You</b> created a Talent Pool: <b>test_pool1</b>.' for activity in activities['activities'])
@@ -231,7 +231,7 @@ def test_dumblist_create_and_read(user_fixture, token_fixture):
     aggregate_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
     aggregate_response = requests.get(aggregate_url,
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
-    print 'Activity Test Response'.format(aggregate_response.content)
+    print 'Activity Test Response {}'.format(aggregate_response.content)
     assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
     assert any(activity['readable_text'] == u'<b>You</b> created a list: <b>dumblist1</b>.' for activity in activities['activities'])
