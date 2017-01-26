@@ -1432,10 +1432,10 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     # Notes
     source_notes = request_vars.get('source_notes')
     if isinstance(source_notes, list):
-        source_name_facet = ["source_note:'%s'" % source_facet for source_facet in source_notes]
+        source_name_facet = ["source_notes:'%s'" % source_facet for source_facet in source_notes]
         filter_queries.append("(or %s)" % ' '.join(source_name_facet))
     elif source_notes:
-        filter_queries.append("(term field=source_note '%s')" % source_notes)
+        filter_queries.append("(term field=source_notes '%s')" % source_notes)
 
     # Details
     source_details = request_vars.get('source_details')
