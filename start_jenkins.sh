@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Debugging new Jenkins
-echo "***** DIRECTORY"
-echo `pwd`
-echo "***** DIRECTORY"
-
 # Upgrade pip if needed
 pip install --upgrade pip
 
@@ -14,7 +9,7 @@ pip install -r requirements.txt
 # Build Docker Images
 sudo service docker restart
 # New Jenkins uses Aurora
-if [ `hostname` != "aws-jenkins" ]; then
+if [ `hostname` != "aws-jenkins.gettalent.com" ]; then
     sudo service mysql restart
 fi
 sudo usermod -aG docker jenkins
