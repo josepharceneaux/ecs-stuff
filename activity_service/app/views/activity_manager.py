@@ -9,7 +9,7 @@ from sqlalchemy import not_
 from activity_service.app import logger
 
 
-EXCLUSIONS = (15, 16, 17)
+EXCLUSIONS = (15, 16, 17, 1201, 1202, 1203)
 EPOCH = datetime(year=1970, month=1, day=1)
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
