@@ -431,6 +431,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             if source_id:
                 candidate_source = session.query(CandidateSource).get(source_id)
                 field_name_to_sql_value['source_name'] = candidate_source.description
+                field_name_to_sql_value['source_notes'] = candidate_source.notes
                 field_name_to_sql_value['source_details'] = candidate_source.details
 
             # Massage 'field_name_to_sql_value' values into the types they are supposed to be
@@ -454,8 +455,10 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 if not sql_value:
                     continue
 
-                if field_name == 'source_id':
-                    resume_text += (' ' + candidate_source.description) if candidate_source else ''
+                if field_name == 'source_id' and candidate_source:
+                    resume_text += (' ' + candidate_source.description)
+                    resume_text += (' ' + candidate_source.notes or '')
+                    resume_text += (' ' + candidate_source.details or '')
 
                 index_field_type = index_field_options['IndexFieldType']
                 if 'array' in index_field_type:
@@ -1408,7 +1411,8 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     elif request_vars.get('status_ids'):
         filter_queries.append("(term field=status_id %s)" % request_vars.get('status_ids'))
 
-    # Source IDs
+    # ***** SOURCES *****
+    # IDs
     source_ids = request_vars.get('source_ids')
     if isinstance(source_ids, list):
         # search for exact values in facets
@@ -1417,7 +1421,7 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     elif source_ids:
         filter_queries.append("(term field=source_id %s)" % source_ids)
 
-    # Source names
+    # Names
     source_names = request_vars.get('source_names')
     if isinstance(source_names, list):
         source_name_facet = ["source_name:'%s'" % source_facet for source_facet in source_names]
@@ -1425,13 +1429,26 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     elif source_names:
         filter_queries.append("(term field=source_name '%s')" % source_names)
 
-    # Source details
+    # Notes
+    source_notes = request_vars.get('source_notes')
+    if isinstance(source_notes, list):
+        source_name_facet = ["source_note:'%s'" % source_facet for source_facet in source_notes]
+        filter_queries.append("(or %s)" % ' '.join(source_name_facet))
+    elif source_notes:
+        filter_queries.append("(term field=source_note '%s')" % source_notes)
+
+    # Details
     source_details = request_vars.get('source_details')
     if isinstance(source_details, list):
         source_details_facet = ["source_details:'%s'" % source_facet for source_facet in source_details]
         filter_queries.append("(or %s)" % ' '.join(source_details_facet))
     elif source_details:
         filter_queries.append("(term field=source_details '%s')" % source_details)
+
+    # Added data
+    source_added_date = request_vars.get('source_added_date')
+    if source_added_date:
+        filter_queries.append("(term field=source_added_date %s" % source_added_date)
 
     # Set filter range for years experience, if given
     if request_vars.get('minimum_years_experience') or request_vars.get('maximum_years_experience'):
@@ -1501,7 +1518,7 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     if isinstance(request_vars.get('military_branch'), list):
         # search for exact values in facets
         branch_facets = ["military_branch:'%s'" % branch_facet for branch_facet in request_vars.get('military_branch')]
-        filter_queries.append("(or %s)" % " ".join( branch_facets ))
+        filter_queries.append("(or %s)" % " ".join(branch_facets))
     elif request_vars.get('military_branch'):
         filter_queries.append("(term field=military_branch '%s' )" % request_vars.get('military_branch'))
 

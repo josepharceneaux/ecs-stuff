@@ -297,9 +297,14 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "radius": 'number',
     "area_of_interest_ids": 'id_list',
     "status_ids": 'id_list',
+
+    # Sources
     "source_ids": 'id_list',
     "source_names": 'string_list',
     "source_details": 'string_list',
+    "source_notes": 'string_list',
+    "source_added_date": "date",
+
     "minimum_years_experience": 'number',
     "maximum_years_experience": 'number',
     "skills": 'string_list',
