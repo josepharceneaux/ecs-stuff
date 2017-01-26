@@ -7,7 +7,6 @@ Notes:
 # Standard libraries
 import datetime
 import json
-
 import requests
 import logging
 import os
