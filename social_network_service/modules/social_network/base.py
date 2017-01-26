@@ -573,15 +573,21 @@ class SocialNetworkBase(object):
 
         if len(records_in_db) >= 1:
             for record in records_in_db:
-                if record.user.id == self.user.id:
-                    logger.info('User(id:%s) is already connected with account on %s.'
-                                % (self.user.id, self.social_network.name.title()))
-                    return self.save_user_credentials_in_db(user_credentials_dict)
-                elif record.user.domain_id == self.user.domain_id:
+                # if record.user.id == self.user.id:
+                #     logger.info('User(id:%s) is already connected with account on %s.'
+                #                 % (self.user.id, self.social_network.name.title()))
+                #     self.save_user_credentials_in_db(user_credentials_dict)
+
+                if record.user.domain_id == self.user.domain_id:
                     error_message = 'Some other user is already using this account. user_id:%s, social_network:%s , ' \
                                     'member_id:%s.' % (self.user.id, self.social_network.name.title(), member_id)
                     logger.error(error_message)
                     raise InvalidUsage(error_message)
+                else:
+                    record.access_token = access_token
+                    record.refresh_token = refresh_token
+                    self.save_user_credentials_in_db(record)
+            self.save_user_credentials_in_db(user_credentials_dict)
 
 
         # if len(records_in_db) > 1:

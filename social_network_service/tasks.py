@@ -30,7 +30,8 @@ from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
 from social_network_service.custom_exceptions import HitLimitReached
-from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS, EVENT, MEETUP_EVENT_STREAM_API_URL)
+from social_network_service.modules.constants import (ACTIONS, MEETUP_EVENT_STATUS, EVENT, MEETUP_EVENT_STREAM_API_URL,
+                                                      MEETUP_RSVPS_STREAM_API_URL)
 from social_network_service.modules.event.meetup import Meetup
 from social_network_service.modules.rsvp.meetup import Meetup as MeetupRsvp
 from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
@@ -105,6 +106,7 @@ def process_meetup_event(event):
             # event created in database (one by api and other by importer)
             group = MeetupGroup.get_by_group_id(event['group']['id'])
             meetup = SocialNetwork.get_by_name('Meetup')
+            # have to change in try catch as well
             try:
                 meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
             except HitLimitReached:
@@ -115,23 +117,32 @@ def process_meetup_event(event):
             if event['status'] in [MEETUP_EVENT_STATUS['upcoming'],
                                    MEETUP_EVENT_STATUS['suggested'],
                                    MEETUP_EVENT_STATUS['proposed']]:
-                event_url = get_url(meetup_sn, SocialNetworkUrls.EVENT).format(event['id'])
-                meetup_event_base.get_event(event_url)
+                event_data = meetup_event_base.fetch_event(event['id'])
+                gt_event_data, gt_venue_data = meetup_event_base.event_sn_to_gt_mapping(event_data)
+                for group_user in group:
+                    if gt_venue_data:
+                        meetup_event_base.user = group_user.user
+                        gt_venue_data['user_id'] = group_user.user_id
+                        venue_in_db = meetup_event_base.save_or_update_venue(gt_venue_data)
+                        event_data['venue_id'] = venue_in_db.id
+                    event_data['user_id'] = group_user.user_id
+                    event_in_db = meetup_event_base.save_or_update_event(event_data)
+
             elif event['status'] in ['canceled', MEETUP_EVENT_STATUS['deleted']]:
                 event_id = event['id']
-                event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(group.user.id,
-                                                                                     meetup.id,
-                                                                                     event_id
-                                                                                     )
-                if event_in_db:
-                    if meetup_event_base.delete_event(event_in_db.id, delete_from_vendor=False):
-                        logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
-                                    % event_in_db.to_json())
+                for group_user in group:
+                    event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(group_user.user_id,
+                                                                                         meetup.id, event_id)
+                    if event_in_db:
+                        meetup_event_base.user = group_user.user
+                        if meetup_event_base.delete_event(event_in_db.id, delete_from_vendor=False):
+                            logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
+                                        % event_in_db.to_json())
+                        else:
+                            logger.info('Event could not be marked as is_deleted_from_vendor in gt database: %s'
+                                        % event_in_db.to_json())
                     else:
-                        logger.info('Event could not be marked as is_deleted_from_vendor in gt database: %s'
-                                    % event_in_db.to_json())
-                else:
-                    logger.info("Meetup event not found in database. event:`%s`." % event)
+                        logger.info("Meetup event not found in database. event:`%s`." % event)
 
         except Exception:
             logger.exception('Failed to save event: %s' % event)
@@ -195,24 +206,25 @@ def process_meetup_rsvp(rsvp):
             group = MeetupGroup.get_by_group_id(rsvp['group']['group_id'])
             meetup = SocialNetwork.get_by_name(MEETUP)
             social_network_event_id = rsvp['event']['event_id']
-            # Retry for 20 seconds in case we have RSVP for newly created event.
-            retry(_get_event, args=(group.user_id, meetup.id, social_network_event_id),
-                  sleeptime=5, attempts=6, sleepscale=1, retry_exceptions=(EventNotFound,))
-            meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
-            meetup_rsvp_object = MeetupRsvp(user_credentials=meetup_sn.user_credentials, social_network=meetup,
-                                            headers=meetup_sn.headers)
-            meetup_rsvp_object.rsvp_via_importer = False
-            attendee = meetup_rsvp_object.post_process_rsvp(rsvp)
-            if attendee and attendee.rsvp_id:
-                logger.info('RSVP imported successfully. rsvp:%s' % rsvp)
-            elif attendee:
-                logger.info('RSVP already present in database. rsvp:%s' % rsvp)
+            for group_user in group:
+                # Retry for 20 seconds in case we have RSVP for newly created event.
+                retry(_get_event, args=(group_user.user_id, meetup.id, social_network_event_id),
+                      sleeptime=5, attempts=6, sleepscale=1, retry_exceptions=(EventNotFound,))
+                meetup_sn = MeetupSocialNetwork(user_id=group_user.user.id, social_network_id=meetup.id)
+                meetup_rsvp_object = MeetupRsvp(user_credentials=meetup_sn.user_credentials, social_network=meetup,
+                                                headers=meetup_sn.headers)
+                meetup_rsvp_object.rsvp_via_importer = False
+                attendee = meetup_rsvp_object.post_process_rsvp(rsvp)
+                if attendee and attendee.rsvp_id:
+                    logger.info('RSVP imported successfully. rsvp:%s' % rsvp)
+                elif attendee:
+                    logger.info('RSVP already present in database. rsvp:%s' % rsvp)
         except Exception:
             logger.exception('Failed to save rsvp: %s' % rsvp)
             rollback()
 
 
-@celery.task(name="process_eventbrite_rsvp")
+@celery.task(name="process_eveite_rsvp")
 def process_eventbrite_rsvp(rsvp):
     """
     This celery task is for an individual RSVP received from Eventbrite to be processed.
@@ -377,6 +389,39 @@ def import_meetup_events():
                 logger.warning('Out of main loop. Cause: %s' % e)
                 time.sleep(5)
                 rollback()
+
+
+@celery.task(name="import_meetup_rsvps")
+def import_meetup_rsvps():
+    with app.app_context():
+        logger = app.config[TalentConfigKeys.LOGGER]
+        logger.info('Meetup Rsvp Importer started at UTC: %s' % datetime.datetime.utcnow())
+
+    while True:
+        try:
+            url = MEETUP_RSVPS_STREAM_API_URL
+            response = requests.get(url, stream=True, timeout=30)
+            logger.info('Meetup Stream Response Status: %s' % response.status_code)
+            for raw_rsvp in response.iter_lines():
+                if raw_rsvp:
+                    try:
+                        rsvp = json.loads(raw_rsvp)
+                        group_id = rsvp['group']['group_id']
+                        MeetupGroup.session.commit()
+                        group = MeetupGroup.get_by_group_id(group_id)
+                        if group:
+                            logger.info('Going to save rsvp: %s' % rsvp)
+                            process_meetup_rsvp.delay(rsvp)
+                    except ValueError:
+                        pass
+                    except Exception as e:
+                        logger.exception('Error occurred while parsing rsvp data, Error: %s\nRsvp: %s' %
+                                         (e, raw_rsvp))
+                        raise
+        except Exception as e:
+            logger.warning('Out of main loop. Cause: %s' % e)
+            time.sleep(5)
+            rollback()
 
 
 @celery.task(name="run_tests")

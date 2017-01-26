@@ -114,12 +114,11 @@ class Meetup(SocialNetworkBase):
                 meetup_group = MeetupGroup.get_by_group_id(group['id'])
 
                 if meetup_group:
-                    if meetup_group.user_id != self.user.id:
-                        raise ForbiddenError('This Meetup account is already associated with user (id: %s). '
-                                             'User (id: %s) tried to connect' % (meetup_group.user_id, self.user.id),
-                                             error_code=MEETUP_ACCOUNT_ALREADY_EXISTS)
-                    meetup_groups.append(meetup_group.to_json())
-                    continue
+                    if meetup_group.user_id == self.user.id:
+                        # raise ForbiddenError('This Meetup account is already associated with user (id: %s). '
+                        #                      'User (id: %s) tried to connect' % (meetup_group.user_id, self.user.id),
+                        #                      error_code=MEETUP_ACCOUNT_ALREADY_EXISTS)
+                        meetup_groups.append(meetup_group.to_json())
                 meetup_group = MeetupGroup(
                     group_id=group['id'],
                     user_id=self.user.id,
@@ -184,14 +183,24 @@ class Meetup(SocialNetworkBase):
                 self.access_token = response.json().get('access_token')
                 self.headers.update({'Authorization': 'Bearer ' + self.access_token})
                 refresh_token = response.json().get('refresh_token')
-                user_credentials_dict = dict(
-                    user_id=self.user_credentials.user_id,
-                    social_network_id=self.user_credentials.social_network_id,
-                    access_token=self.access_token,
-                    refresh_token=refresh_token,
-                    member_id=self.user_credentials.member_id)
-                status = SocialNetworkBase.save_user_credentials_in_db(user_credentials_dict)
-                logger.info("Access token has been refreshed for %s(UserId:%s)." % (self.user.name, self.user.id))
+                records_in_db = UserSocialNetworkCredential.filter_by_keywords(social_network_id=self.social_network.id,
+                                                                               member_id=
+                                                                               self.user_credentials.member_id)
+                for record in records_in_db:
+                    # user_credentials_dict = dict(
+                    #     user_id=self.user_credentials.user_id,
+                    #     social_network_id=self.user_credentials.social_network_id,
+                    #     access_token=self.access_token,
+                    #     refresh_token=refresh_token,
+                    #     member_id=self.user_credentials.member_id)
+                    user_credentials_dict = dict(
+                        user_id=record.user_credentials.user_id,
+                        social_network_id=record.user_credentials.social_network_id,
+                        access_token=record.access_token,
+                        refresh_token=refresh_token,
+                        member_id=record.user_credentials.member_id)
+                    status = SocialNetworkBase.save_user_credentials_in_db(user_credentials_dict)
+                    logger.info("Access token has been refreshed for %s(UserId:%s)." % (record.user.name, record.user.id))
             except Exception:
                 logger.exception('refresh_access_token: user_id: %s' % self.user.id)
         else:
