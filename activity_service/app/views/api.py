@@ -45,8 +45,6 @@ def get_activities(page):
     logger.info("Call to activity service with id: {}".format(api_id))
     rargs = request.args
     start_datetime, end_datetime = None, None
-    logger.info("ActivityRequestUser: {}".format(request.user))
-    logger.info("ActivityRequestUserVars: {}".format(vars(request.user)))
     valid_user_id = request.user.id
     aggregate = rargs.get('aggregate') == '1'  # TODO see if int arg can be used
     aggregate_limit = rargs.get('aggregate_limit', '5')
