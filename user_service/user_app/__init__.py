@@ -6,6 +6,7 @@ from user_service.common.models.db import db
 from user_service.common.talent_api import TalentApi
 from user_service.common.routes import UserServiceApi
 from user_service.user_app.api.source import DomainSourceResource
+from user_service.user_app.api.source_product import SourceProductResource
 
 app, logger = init_talent_app(__name__)
 
@@ -25,6 +26,10 @@ try:
     # Register & add resource for Domain Source API
     api.add_resource(DomainSourceResource, UserServiceApi.DOMAIN_SOURCES, endpoint='domain_sources')
     api.add_resource(DomainSourceResource, UserServiceApi.DOMAIN_SOURCE, endpoint='domain_source')
+
+    # Register & add resource for Source Product
+    api.add_resource(SourceProductResource, UserServiceApi.SOURCE_PRODUCTS, endpoint='source_products')
+    api.add_resource(SourceProductResource, UserServiceApi.SOURCE_PRODUCT, endpoint='source_product')
 
     # Domain area(s) of interest
     api.add_resource(DomainAreaOfInterestResource, UserServiceApi.DOMAIN_AOIS, endpoint='domain_aois')
