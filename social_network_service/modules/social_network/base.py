@@ -13,6 +13,7 @@ from requests import codes
 
 # Application Specific
 from social_network_service.common.models.venue import Venue
+from social_network_service.common.models.db import db
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.validators import raise_if_not_positive_int_or_long
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
@@ -586,8 +587,9 @@ class SocialNetworkBase(object):
                 else:
                     record.access_token = access_token
                     record.refresh_token = refresh_token
-                    self.save_user_credentials_in_db(record)
-            self.save_user_credentials_in_db(user_credentials_dict)
+                    # commit after loop
+                db.session.commit()
+            return self.save_user_credentials_in_db(user_credentials_dict)
 
 
         # if len(records_in_db) > 1:

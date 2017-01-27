@@ -540,6 +540,27 @@ class EventBase(object):
         """
         pass
 
+    def update_event_associated_with_other_users(self, event_data):
+        """
+        This method takes an event an update it for all users associated with it.
+        :param event_data: Event dict
+        """
+        member_users = UserSocialNetworkCredential.query.filter_by(member_id=self.member_id,
+                                                                   social_network_id=event_data['social_network_id'])
+        events = Event.query.filter_by(social_network_id=event_data['social_network_id'],
+                                       social_network_event_id=event_data['social_network_event_id'])
+        user_ids = [event.user_id for event in events]
+        member_user_ids = [member.user_id for member in member_users]
+        missing_event_users = set(member_user_ids) - set(user_ids)
+        Event.query.filter_by(social_network_id=event_data['social_network_id'],
+                              social_network_event_id=event_data['social_network_event_id']).\
+            update(event_data, synchronize_session=False)
+
+        for member_user_id in missing_event_users:
+            event = Event(user_id=member_user_id, **event_data)
+            db.session.add(event)
+        db.session.commit()
+
     def import_event(self, event):
         """
         This method takes json event data from social network. It then maps that data to getTalent event
@@ -553,6 +574,10 @@ class EventBase(object):
         if venue_data:
             venue_in_db = self.save_or_update_venue(venue_data)
             event_data['venue_id'] = venue_in_db.id
+        user_id = event_data['user_id']
+        del event_data['user_id']
+        self.update_event_associated_with_other_users(event_data)
+        event_data['user_id'] = user_id
         return self.save_or_update_event(event_data)
 
     def get_events_from_db(self, start_date=None):

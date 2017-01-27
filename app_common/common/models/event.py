@@ -132,7 +132,8 @@ class Event(db.Model):
         :return: count of updated events
         :rtype: int | long
         """
-        events_count = cls.query.filter_by(user_id=user_id, social_network_id=social_network_id).update({'is_hidden': False})
+        events_count = cls.query.filter_by(user_id=user_id, social_network_id=social_network_id).\
+            update({'is_hidden': False})
         cls.session.commit()
         return events_count
 
@@ -240,6 +241,14 @@ class MeetupGroup(db.Model):
         :return: first matching group record
         """
         return cls.query.filter_by(group_id=group_id).first()
+
+    @classmethod
+    def get_all_records_by_group_id(cls, group_id):
+        """
+        :param string | int group_id: group unique id
+        :return: all matching group record
+        """
+        return cls.query.filter_by(group_id=group_id).all()
 
     @classmethod
     def get_by_user_id_and_group_id(cls, user_id, group_id):

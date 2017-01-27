@@ -12,6 +12,7 @@ from requests import codes
 
 # Application Specific
 from social_network_service.common.models.event import MeetupGroup
+from social_network_service.common.models.db import db
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
@@ -180,27 +181,19 @@ class Meetup(SocialNetworkBase):
             try:
                 # access token has been refreshed successfully, need to update
                 # self.access_token and self.headers
-                self.access_token = response.json().get('access_token')
+                response = response.json()
+                self.access_token = response.get('access_token')
                 self.headers.update({'Authorization': 'Bearer ' + self.access_token})
-                refresh_token = response.json().get('refresh_token')
+                refresh_token = response.get('refresh_token')
                 records_in_db = UserSocialNetworkCredential.filter_by_keywords(social_network_id=self.social_network.id,
                                                                                member_id=
                                                                                self.user_credentials.member_id)
+                # It will also update self object
                 for record in records_in_db:
-                    # user_credentials_dict = dict(
-                    #     user_id=self.user_credentials.user_id,
-                    #     social_network_id=self.user_credentials.social_network_id,
-                    #     access_token=self.access_token,
-                    #     refresh_token=refresh_token,
-                    #     member_id=self.user_credentials.member_id)
-                    user_credentials_dict = dict(
-                        user_id=record.user_credentials.user_id,
-                        social_network_id=record.user_credentials.social_network_id,
-                        access_token=record.access_token,
-                        refresh_token=refresh_token,
-                        member_id=record.user_credentials.member_id)
-                    status = SocialNetworkBase.save_user_credentials_in_db(user_credentials_dict)
-                    logger.info("Access token has been refreshed for %s(UserId:%s)." % (record.user.name, record.user.id))
+                    record.access_token = self.access_token
+                    record.refresh_token = refresh_token
+                db.session.commit()
+                logger.info("Access token has been refreshed.")
             except Exception:
                 logger.exception('refresh_access_token: user_id: %s' % self.user.id)
         else:

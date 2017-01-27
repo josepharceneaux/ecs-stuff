@@ -104,13 +104,13 @@ def process_meetup_event(event):
         try:
             time.sleep(5)  # wait for event creation api to save event in database otherwise there can be duplicate
             # event created in database (one by api and other by importer)
-            group = MeetupGroup.get_by_group_id(event['group']['id'])
+            groups = MeetupGroup.get_all_records_by_group_id(event['group']['id'])
             meetup = SocialNetwork.get_by_name('Meetup')
             # have to change in try catch as well
             try:
-                meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
+                meetup_sn = MeetupSocialNetwork(user_id=groups[0].user.id, social_network_id=meetup.id)
             except HitLimitReached:
-                meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id,
+                meetup_sn = MeetupSocialNetwork(user_id=groups[0].user.id, social_network_id=meetup.id,
                                                 validate_token=False)
             meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials,
                                        social_network=meetup, headers=meetup_sn.headers)
@@ -119,7 +119,7 @@ def process_meetup_event(event):
                                    MEETUP_EVENT_STATUS['proposed']]:
                 event_data = meetup_event_base.fetch_event(event['id'])
                 gt_event_data, gt_venue_data = meetup_event_base.event_sn_to_gt_mapping(event_data)
-                for group_user in group:
+                for group_user in groups:
                     if gt_venue_data:
                         meetup_event_base.user = group_user.user
                         gt_venue_data['user_id'] = group_user.user_id
@@ -130,7 +130,7 @@ def process_meetup_event(event):
 
             elif event['status'] in ['canceled', MEETUP_EVENT_STATUS['deleted']]:
                 event_id = event['id']
-                for group_user in group:
+                for group_user in groups:
                     event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(group_user.user_id,
                                                                                          meetup.id, event_id)
                     if event_in_db:
@@ -203,7 +203,7 @@ def process_meetup_rsvp(rsvp):
         logger = app.config[TalentConfigKeys.LOGGER]
         logger.info('Going to process Meetup RSVP: %s' % rsvp)
         try:
-            group = MeetupGroup.get_by_group_id(rsvp['group']['group_id'])
+            group = MeetupGroup.get_all_records_by_group_id(rsvp['group']['group_id'])
             meetup = SocialNetwork.get_by_name(MEETUP)
             social_network_event_id = rsvp['event']['event_id']
             for group_user in group:
