@@ -30,7 +30,7 @@ def build_params_from_json(request):
         params[k] = request_json.get(k)
 
     params['create_candidate'] = request_json.get('create_candidate', False)
-    params['resume_file_name'] = request_json.get('resume_file_name', params.get('filepicker_key'))
+    params['filename'] = request_json.get('resume_file_name', params.get('filepicker_key'))
 
 
     return params
@@ -67,5 +67,5 @@ def build_params_from_form(request):
         'filename': resume_file_name,
         'filepicker_key': filepicker_key,
         'resume_file': resume_file,
-        'talent_pools': talent_pool_ids
+        'talent_pool_ids': talent_pool_ids
     }
