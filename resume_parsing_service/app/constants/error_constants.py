@@ -127,6 +127,16 @@ GOOGLE_OCR_ERROR_IN_RESPONSE = {
     'message': GENERIC_ERROR_MSG
 }
 
+OCR_SPACE_UNAVAILABLE = {
+    'code': 3113,
+    'message': GENERIC_ERROR_MSG
+}
+
+OCR_SPACE_ERROR = {
+    'code': 3114,
+    'message': GENERIC_ERROR_MSG
+}
+
 
 # Issues with internal services
 CANDIDATE_POST_CONNECTION = {

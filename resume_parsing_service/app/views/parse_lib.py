@@ -14,7 +14,7 @@ from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
-from resume_parsing_service.app.views.ocr_lib import abbyy_ocr_image
+from resume_parsing_service.app.views.ocr_lib import ocr_image
 from resume_parsing_service.app.views.pdf_utils import (convert_pdf_to_text, decrypt_pdf)
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
@@ -46,7 +46,7 @@ def parse_resume(file_obj, filename_str, cache_key):
     # If file is an image, OCR it
     if is_image:
         start_time = time()
-        doc_content = abbyy_ocr_image(file_obj)
+        doc_content = ocr_image(file_obj)
         logger.info(
             "Benchmark: Abby OCR for {}: took {}s to process".format(
                 filename_str, time() - start_time)
