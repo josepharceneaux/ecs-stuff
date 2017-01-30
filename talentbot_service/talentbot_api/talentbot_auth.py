@@ -1,7 +1,7 @@
 # Standard imports
 import types
 # App specific imports
-from talentbot_service.modules.validations import validate_and_format_request_data_for_sms
+from talentbot_service.modules.validations import validate_and_format_request_data_for_sms, validate_user_id
 # Common modules
 from talentbot_service.common.utils.api_utils import api_route, ApiResponse
 from talentbot_service.common.talent_api import TalentApi
@@ -30,6 +30,7 @@ class TalentbotAuthApi(Resource):
 
     def post(self):
         data = request.get_json()
+        validate_user_id(data)
         formatted_data = validate_and_format_request_data_for_sms(data)
         user_id = formatted_data['user_id']
         user_phone = formatted_data.get('user_phone')
@@ -61,9 +62,7 @@ class TalentbotAuthById(Resource):
 
     def put(self, **kwargs):
         _id = kwargs.get('id')
-        requested_auth_object = TalentbotAuth.get_by_id(_id) if id else None
-        if not requested_auth_object:
-            raise NotFoundError("Either talentbot_auth_id is not provided or doesn't exist")
+        check_if_auth_exists(_id)
         data = request.get_json()
         user_id = data.get('user_id')  # Required
         requested_user = User.query.get(user_id) if user_id else None
@@ -82,13 +81,24 @@ class TalentbotAuthById(Resource):
 
     def get(self, **kwargs):
         _id = kwargs.get('id')
-        requested_auth_object = TalentbotAuth.get_by_id(_id) if id else None
-        if not requested_auth_object:
-            raise NotFoundError("Either talentbot_auth_id is not provided or doesn't exist")
+        requested_auth_object = check_if_auth_exists(_id)
         return ApiResponse(requested_auth_object.__str__())
+
+    def delete(self, **kwargs):
+        _id = kwargs.get('id')
+        requested_auth_object = check_if_auth_exists(_id)
+        TalentbotAuth.remove(requested_auth_object)
+        return ApiResponse({"talentbot_auth_id": requested_auth_object.id})
 
 
 def save_talentbot_auth(phone_id, user_id):
     auth = TalentbotAuth(user_phone_id=phone_id, user_id=user_id)
     auth.save()
     return ApiResponse({"user_id": auth.user_id, "user_phone_id": phone_id})
+
+
+def check_if_auth_exists(_id):
+    requested_auth_object = TalentbotAuth.get_by_id(_id) if id else None
+    if not requested_auth_object:
+        raise NotFoundError("Either talentbot_auth_id is not provided or doesn't exist")
+    return requested_auth_object

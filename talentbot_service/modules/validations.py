@@ -1,21 +1,15 @@
 from talentbot_service.common.error_handling import InvalidUsage, InternalServerError
-from talentbot_service.common.models.user import UserPhone
+from talentbot_service.common.models.user import UserPhone, TalentbotAuth
 
 
 def validate_and_format_request_data_for_sms(data):
     """
-    Validates and formats request data
+    Validates and formats request data related to SMS
     :param dict data: Request data
     :return: dictionary of formatted data
     :rtype: dict
     """
     user_id = data.get('user_id')  # Required
-    if not user_id:
-        raise InvalidUsage("user_id is a required field")
-    elif user_id:
-        pass
-        if not isinstance(user_id, (int, long)):
-            raise InvalidUsage("Invalid user_id type")
     user_phone_id = data.get('user_phone_id')
     user_phone = data.get('user_phone')
     if bool(user_phone) == bool(user_phone_id):  # Only one field must exist
@@ -31,3 +25,65 @@ def validate_and_format_request_data_for_sms(data):
     }
     formatted_dict.update({"user_phone": user_phone.strip()} if user_phone else {"user_phone_id": user_phone_id})
     return formatted_dict
+
+
+def validate_and_format_request_data_for_facebook(data):
+    """
+    Validates and formats request data related to Facebook
+    :param data:
+    :return:
+    """
+    user_id = data.get('user_id')  # Required
+    facebook_user_id = data.get('facebook_user_id')
+    if not facebook_user_id:
+        raise InvalidUsage("No facebook_user_id provided")
+    return {
+        "user_id": user_id,
+        "facebook_user_id": facebook_user_id.strip()
+    }
+
+
+def validate_and_format_data_for_slack(data):
+    access_token = data.get('access_token')  # Required
+    team_id = data.get('team_id')  # Required
+    team_name = data.get('team_name')  # Required
+    slack_user_id = data.get('user_id')  # Required
+    bot_id = data.get('bot').get('bot_user_id') if data.get('bot') else None  # Required
+    bot_token = data.get('bot').get('bot_access_token') if data.get('bot') else None  # Required
+
+    dict_of_request_data = {
+        "access_token": access_token,
+        "team_id": team_id,
+        "team_name": team_name,
+        "slack_user_id": slack_user_id,
+        "bot_id": bot_id,
+        "bot_token": bot_token
+    }
+
+    auth_entry = TalentbotAuth.query.filter_by(slack_user_id=slack_user_id).first()
+
+    if auth_entry:
+        raise InvalidUsage("Slack_user_id already exists")
+    if not (access_token and team_id and team_name and bot_id and slack_user_id and bot_token):
+        raise InvalidUsage("Please provide these required fields %s" % [key for key in dict_of_request_data if
+                                                                        dict_of_request_data[key] is None])
+    for key in dict_of_request_data:
+        dict_of_request_data[key] = dict_of_request_data[key].strip()
+    return dict_of_request_data
+
+
+def validate_and_format_data_for_email(data):
+    email = data.get("email")
+    if not email:
+        raise InvalidUsage("No email specified")
+    return {
+        "email": email.strip()
+    }
+
+
+def validate_user_id(data):
+    user_id = data.get('user_id')
+    if not user_id:
+        raise InvalidUsage("user_id is a required field")
+    if not isinstance(user_id, (int, long)):
+        raise InvalidUsage("Invalid user_id type")

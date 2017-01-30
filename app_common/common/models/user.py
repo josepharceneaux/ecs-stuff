@@ -934,3 +934,7 @@ class TalentbotAuth(db.Model):
             "slack_user_id": self.slack_user_id,
             "slack_team_name": self.slack_team_name
         }
+
+    def remove(self):
+        db.session.delete(self)
+        db.session.commit()
