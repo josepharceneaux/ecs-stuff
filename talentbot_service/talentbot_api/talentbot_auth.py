@@ -7,7 +7,7 @@ from talentbot_service.common.utils.api_utils import api_route
 from talentbot_service.common.talent_api import TalentApi
 from talentbot_service.common.routes import TalentBotApi, UserServiceApiUrl
 from talentbot_service.common.utils.auth_utils import require_oauth, InternalServerError
-from talentbot_service.common.utils.handy_functions import http_request
+from talentbot_service.common.utils.handy_functions import send_request
 from talentbot_service.common.models.user import UserPhone, db, TalentbotAuth
 # Third party imports
 from flask_restful import Resource
@@ -33,7 +33,7 @@ class TalentbotAuthApi(Resource):
         user_phone = formatted_data.get('user_phone')
         user_phone_id = formatted_data.get('user_phone_id')
         if user_phone:
-            response = http_request('put', UserServiceApiUrl.USER % user_id, headers=request.headers,
+            response = send_request('put', UserServiceApiUrl.USER % user_id, request.headers.get('AUTHORIZATION'),
                                     data={"phone": user_phone})
             if not response.ok:
                 raise InternalServerError("Something went wrong while adding user_phone")
