@@ -34,6 +34,7 @@ class Candidate(db.Model):
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
     source_id = db.Column('SourceId', db.Integer, db.ForeignKey('candidate_source.Id'))
+    source_detail = db.Column(db.VARCHAR(100), nullable=True)
     source_product_id = db.Column('SourceProductId', db.Integer, db.ForeignKey('product.Id'),
                                   nullable=True, default=2)  # Web = 2
     filename = db.Column('Filename', db.String(100))
@@ -255,7 +256,6 @@ class CandidateSource(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     description = db.Column('Description', db.String(100))
     notes = db.Column('Notes', db.String(500))
-    details = db.Column(db.String(255))
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
@@ -300,6 +300,18 @@ class CandidateSource(db.Model):
         :rtype:  CandidateSource | None
         """
         return cls.query.filter_by(id=source_id, domain_id=domain_id).first()
+
+
+class CandidateSourceDetail(db.Model):
+    __tablename__ = 'candidate_source_detail'
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), primary_key=True)
+    candidate_source_id = db.Column('CandidateSourceId', db.INT, db.ForeignKey('candidate_source.Id'), primary_key=True)
+    additional_notes = db.Column(db.VARCHAR(100))
+    added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    def __repr__(self):
+        return "<CandidateSourceDetail (candidate_id='%r')>" % self.candidate_id
 
 
 class PublicCandidateSharing(db.Model):

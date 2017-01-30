@@ -116,6 +116,45 @@ class TestCandidateSourceId(object):
         assert get_resp.json()['candidate']['source_id'] is None
 
 
+class TestCandidateSource(object):
+    def test_add_source_to_candidate(self, user_first, access_token_first, talent_pool):
+        """
+        Test: Add user defined source and source details to candidate
+        """
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
+        # Add source to candidate's domain
+        source_data = {
+            "source": {
+                "description": "testing_{}".format(str(uuid.uuid4())[:5])
+            }
+        }
+        resp = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_first, source_data)
+        print response_info(resp)
+
+        source_id = resp.json()['source']['id']
+
+        # Create candidate
+        data = {'candidates': [
+            {
+                'talent_pool_ids': {'add': [talent_pool.id]},
+                'source_id': source_id,
+                'source_detail': 'www.linkedin.com',
+                'source_product_id': 2
+            }
+        ]}
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == http_status_codes.CREATED
+
+        candidate_id = create_resp.json()['candidates'][0]['id']
+
+        # Retrieve candidate
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
+
+
 class TestUpdateCandidateName(object):
     URL = CandidateApiUrl.CANDIDATES
 

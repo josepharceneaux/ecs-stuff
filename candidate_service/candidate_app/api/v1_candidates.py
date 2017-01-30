@@ -182,9 +182,7 @@ class CandidatesResource(Resource):
                 # Provided source ID must be recognized & belong to candidate's domain
                 source_id = candidate_dict_.get('source_id')
                 if source_id:
-
                     candidate_source = CandidateSource.get(source_id)
-
                     if not candidate_source:
                         raise NotFoundError("Source ID ({}) not recognized", custom_error.SOURCE_NOT_FOUND)
 
@@ -297,6 +295,7 @@ class CandidatesResource(Resource):
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id'),
+                source_detail=(candidate_dict.get('source_detail') or '').strip(),
                 source_product_id=candidate_dict.get('source_product_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
@@ -546,6 +545,7 @@ class CandidatesResource(Resource):
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id', ''),
+                source_detail=(candidate_dict.get('source_detail') or '').strip(),
                 source_product_id=candidate_dict.get('source_product_id'),
                 objective=candidate_dict.get('objective', ''),
                 summary=candidate_dict.get('summary', ''),

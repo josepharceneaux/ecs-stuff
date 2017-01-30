@@ -1,7 +1,0 @@
-"""
-This script will add source_details column to candidateSource table
-"""
-from candidate_service.common.models.db import db
-
-
-db.session.execute("ALTER TABLE candidate_source ADD COLUMN details VARCHAR(255);")

@@ -51,6 +51,11 @@ candidates_resource_schema_post = {
                         "minimum": 1,
                         "maximum": MAX_INT
                     },
+                    "source_detail": {
+                        "type": ["string", "null"],
+                        "minLength": 1,
+                        "maxLength": 100
+                    },
                     "source_product_id": {
                         "type": ["integer", "null"],
                         "minimum": 1
@@ -635,6 +640,11 @@ candidates_resource_schema_patch = {
                         "type": ["integer", "null"],
                         "minimum": 1,
                         "maximum": MAX_INT
+                    },
+                    "source_detail": {
+                        "type": ["string", "null"],
+                        "minLength": 1,
+                        "maxLength": 100
                     },
                     "source_product_id": {
                         "type": ["integer", "null"],

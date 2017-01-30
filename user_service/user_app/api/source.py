@@ -53,7 +53,6 @@ class DomainSourceResource(Resource):
         source = body_dict['source']
         description = source['description'].encode('utf-8').strip().lower()
         notes = (source.get('notes') or '').strip().lower()
-        details = source.get('details' or '').strip()
 
         # In case description is just a whitespace
         if not description:
@@ -68,7 +67,6 @@ class DomainSourceResource(Resource):
         new_source = CandidateSource(
             description=description,
             notes=notes,
-            details=details,
             domain_id=domain_id,
             added_datetime=datetime.datetime.utcnow()
         )
@@ -113,7 +111,6 @@ class DomainSourceResource(Resource):
                 'id': source.id,
                 'description': source.description,
                 'notes': source.notes,
-                'details': source.details,
                 'domain_id': source.domain_id,
                 'added_datetime': DatetimeUtils.utc_isoformat(source.added_datetime) if source.added_datetime else None
             }}
@@ -124,7 +121,6 @@ class DomainSourceResource(Resource):
                 'id': source.id,
                 'description': source.description,
                 'notes': source.notes,
-                'details': source.details,
                 'domain_id': source.domain_id,
                 'added_datetime': DatetimeUtils.utc_isoformat(source.added_datetime) if source.added_datetime else None
             } for source in CandidateSource.domain_sources(domain_id=domain_id)]}
