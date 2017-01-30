@@ -996,7 +996,8 @@ class TalentBotApi(object):
     SLACK_AUTH = '/' + VERSION + '/slack-auth'
     SLACK_BOT_STATUS = '/' + VERSION + '/slackbot-status'
     HOME = '/' + VERSION + '/index'
-    TALENTBOT_AUTH = '/' + VERSION + '/auth'
+    TALENTBOT_AUTHS = '/' + VERSION + '/auth'
+    TALENTBOT_AUTH = '/' + VERSION + '/auth' + '/<int:id>'
 
 
 class TalentBotApiUrl(object):

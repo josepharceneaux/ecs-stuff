@@ -5,7 +5,6 @@ from talentbot_service.common.models.user import UserPhone
 def validate_and_format_request_data_for_sms(data):
     """
     Validates and formats request data
-    :param dict headers: Auth headers
     :param dict data: Request data
     :return: dictionary of formatted data
     :rtype: dict
@@ -15,8 +14,8 @@ def validate_and_format_request_data_for_sms(data):
         raise InvalidUsage("user_id is a required field")
     elif user_id:
         pass
-        # if not isinstance(user_id, (int, long)):
-        #     raise InvalidUsage("Invalid user_id type")
+        if not isinstance(user_id, (int, long)):
+            raise InvalidUsage("Invalid user_id type")
     user_phone_id = data.get('user_phone_id')
     user_phone = data.get('user_phone')
     if bool(user_phone) == bool(user_phone_id):  # Only one field must exist
