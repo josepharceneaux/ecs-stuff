@@ -11,7 +11,9 @@ from datetime import timedelta
 import time
 
 # Application specific
-from social_network_service.common.models.event import MeetupGroup
+from social_network_service.common.models.event import MeetupGroup, Event
+from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.models.db import db
 from social_network_service.common.models.venue import Venue
 from social_network_service.modules.constants import MEETUP_VENUE
 from social_network_service.modules.urls import get_url
@@ -530,3 +532,24 @@ class Meetup(EventBase):
             log_error({'user_id': self.user.id,
                        'error': error_message})
         self.social_network_event_id = data.get('social_network_event_id')
+
+    def update_event_associated_with_other_users(self, event_data):
+        """
+        This method takes an event an update it for all users associated with it.
+        :param event_data: Event dict
+        """
+        member_users = UserSocialNetworkCredential.query.filter_by(member_id=self.member_id,
+                                                                   social_network_id=event_data['social_network_id'])
+        events = Event.query.filter_by(social_network_id=event_data['social_network_id'],
+                                       social_network_event_id=event_data['social_network_event_id'])
+        user_ids = [event.user_id for event in events]
+        member_user_ids = [member.user_id for member in member_users]
+        missing_event_users = set(member_user_ids) - set(user_ids)
+        Event.query.filter_by(social_network_id=event_data['social_network_id'],
+                              social_network_event_id=event_data['social_network_event_id']). \
+            update(event_data, synchronize_session=False)
+
+        for member_user_id in missing_event_users:
+            event = Event(user_id=member_user_id, **event_data)
+            db.session.add(event)
+        db.session.commit()

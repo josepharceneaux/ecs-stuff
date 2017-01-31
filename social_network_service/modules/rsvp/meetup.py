@@ -9,9 +9,9 @@ from datetime import timedelta
 import time
 
 # Application Specific
-from base import RSVPBase
+from base import RSVPBase, logger, db
 from social_network_service.modules.urls import get_url
-from social_network_service.common.models.event import Event
+from social_network_service.common.models.event import Event, MeetupGroup
 from social_network_service.custom_exceptions import EventNotFound
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import Attendee, milliseconds_since_epoch_to_dt
@@ -308,3 +308,46 @@ class Meetup(RSVPBase):
             attendee.added_time = dt
             attendee.event = event
             return attendee
+
+    def process_rsvps(self, rsvps):
+        """
+        :param rsvps: rsvps contains rsvps of all events of a particular
+                      user.
+        :type rsvps: list
+
+        - This method picks an rsvp from "rsvps" and pass it to
+            post_process_rsvp()
+
+        - This method is called from process_events_rsvps() defined in
+            EventBase class inside social_network_service/event/base.py.
+
+        - We use this method while importing RSVPs via social network manager.
+
+        :Example:
+            - sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
+                            headers=self.headers,
+                            user_credentials=user_credentials)
+            - self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)
+            - sn_rsvp_obj.process_rsvps(self.rsvps)
+
+        **See Also**
+        .. seealso:: process_events_rsvps() method in EventBase class social_network_service/event/base.py
+        """
+        processed_rsvps = []
+        total_rsvps_count = len(rsvps)
+        for rsvp in rsvps:
+            # Here we pick one RSVP from rsvps and start doing processing on it. If we get an error while processing
+            # an RSVP, we simply log the error and move to process next RSVP.
+            groups = MeetupGroup.get_all_records_by_group_id(rsvp['group']['id'])
+            for group_user in groups:
+                self.user = db.session.merge(group_user.user)
+                processed_rsvps.append(self.post_process_rsvp(rsvp))
+        saved_rsvps_count = len(filter(None, processed_rsvps))
+        failed_rsvps_count = total_rsvps_count - saved_rsvps_count
+        if total_rsvps_count:
+            logger.info('''
+                        process_rsvps: RSVPs for events of %s(UserId:%s) have been processed.
+                        Successfully saved:%d, Failed:%d. Social network:%s
+                        '''
+                        % (self.user.name, self.user.id, saved_rsvps_count, failed_rsvps_count,
+                           self.social_network.name))
