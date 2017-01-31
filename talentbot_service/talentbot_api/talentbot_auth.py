@@ -30,9 +30,11 @@ class TalentbotAuthApi(Resource):
 
     def post(self):
         data = request.get_json()
+        validate_user_id(data)
+        user_id = data['user_id']
         is_facebook, is_slack, is_sms, is_email = data.get("facebook"), data.get("slack"), data.get("sms"),\
                                                   data.get("email")
-        formatted_data = {}
+        formatted_data = {"user_id": user_id}
         if is_sms:
             formatted_data.update(validate_and_format_request_data_for_sms(data['sms']))
         if is_facebook:
@@ -41,7 +43,6 @@ class TalentbotAuthApi(Resource):
             formatted_data.update(validate_and_format_data_for_email(data['email']))
         if is_slack:
             formatted_data.update(validate_and_format_data_for_slack(data['slack']))
-        user_id = formatted_data['user_id']
         user_phone = formatted_data.get('user_phone')
         user_phone_id = formatted_data.get('user_phone_id')
         if user_phone:
