@@ -81,6 +81,8 @@ class TalentActivityManager(object):
         try:
             self.db.session.add(activity)
             self.db.session.commit()
+            if self.logger:
+                self.logger.info('Activity Created')
             return {
                 'committed': True,
                 'id': activity.id
