@@ -1236,13 +1236,19 @@ class CandidateSocialNetworkResource(Resource):
         """
         auth_user = request.user
         social_network_url = request.args.get('url')
+        social_network_canonicals = [social_network_url]
+        url_protocol = 'https://' if 'https://' in social_network_url else 'http://'
+        social_network_canonicals.append(social_network_url.replace(url_protocol, ''))
+        social_network_canonicals.append(social_network_url.replace(url_protocol, 'https://' if url_protocol == 'http://' else 'http://'))
+
         if social_network_url:
             users_in_domain = [user.id for user in User.all_users_of_domain(domain_id=auth_user.domain_id)]
 
             candidate_query = db.session.query(Candidate).join(CandidateSocialNetwork)\
-                .filter(CandidateSocialNetwork.social_profile_url == social_network_url,
+                .filter(CandidateSocialNetwork.social_profile_url.in_(social_network_canonicals),
                         Candidate.user_id.in_(users_in_domain))\
                 .first()
+
             if candidate_query:
                 return {"candidate_id": candidate_query.id}
             else:
