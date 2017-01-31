@@ -62,7 +62,7 @@ def process_resume(parse_params):
     parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
 
     parsed_resume['candidate']['source_id'] = parse_params.get('source_id')
-    parsed_resume['candidate']['product_source_id'] = parse_params.get('product_source_id')
+    parsed_resume['candidate']['source_product_id'] = parse_params.get('source_product_id')
 
     # Upload resumes we want to create candidates from.
     try:
