@@ -30,7 +30,7 @@ def ocr_image(img_file_obj, filename_str):
                 logger.error("Could not reach OCRSpace.")
                 raise InternalServerError(
                     error_message=error_constants.OCR_SPACE_UNAVAILABLE['message'],
-                    error_code=error_constants.OCR_SPACE_UNAVAILABLE['code'],
+                    error_code=error_constants.OCR_SPACE_UNAVAILABLE['code']
                 )
 
     decoded_ocr_response = ocr_response.content.decode('utf8')
@@ -43,7 +43,7 @@ def ocr_image(img_file_obj, filename_str):
         logger.error('ResumeParsingService::Error::Error in OCR Response')
         raise InternalServerError(
             error_message=error_constants.OCR_SPACE_ERROR['message'],
-            error_code=error_constants.OCR_SPACE_ERROR['code'],
+            error_code=error_constants.OCR_SPACE_ERROR['code']
         )
 
     else:
