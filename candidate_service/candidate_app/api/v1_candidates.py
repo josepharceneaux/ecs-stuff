@@ -25,7 +25,7 @@ from jsonschema import validate, FormatChecker, ValidationError
 from redo import retry
 
 # Activity Creation
-# from candidate_service.common.activity_service.activity_creator import TalentActivityManager
+from candidate_service.common.activity_service.activity_creator import TalentActivityManager
 from candidate_service.common.models.misc import Activity
 
 from candidate_service.candidate_app import logger
@@ -317,16 +317,16 @@ class CandidatesResource(Resource):
             else:
                 resp_dict = create_or_update_candidate_from_params(**candidate_data)
                 created_candidate_ids.append(resp_dict['candidate_id'])
-                # tam = TalentActivityManager(db, activity_model=Activity,logger=logger)
-                # tam.create_activity({
-                #     'activity_params': {'username': authed_user.first_name,
-                #                         'formatted_name': candidate_data.get('formatted_name') or 'Unknown'},
-                #     'activity_type': 'CANDIDATE_CREATE_WEB',
-                #     'activity_type_id': Activity.MessageIds.CANDIDATE_CREATE_WEB,
-                #     'source_id': resp_dict['candidate_id'],
-                #     'source_table': 'candidate',
-                #     'user_id': user_id
-                # })
+                tam = TalentActivityManager(db, activity_model=Activity,logger=logger)
+                tam.create_activity({
+                    'activity_params': {'username': authed_user.first_name,
+                                        'formatted_name': candidate_data.get('formatted_name') or 'Unknown'},
+                    'activity_type': 'CANDIDATE_CREATE_WEB',
+                    'activity_type_id': Activity.MessageIds.CANDIDATE_CREATE_WEB,
+                    'source_id': resp_dict['candidate_id'],
+                    'source_table': 'candidate',
+                    'user_id': user_id
+                })
 
         # Add candidates to cloud search
         upload_candidate_documents.delay(created_candidate_ids)
