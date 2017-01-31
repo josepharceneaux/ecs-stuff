@@ -15,6 +15,7 @@ create_candidate_schema = {
         'filename': {'type': ['string', 'null']},
         'filepicker_key': {'type': 'string'},
         'source_id': {'type': 'integer'},
+        'source_product_id': {'type': 'integer'},
         'talent_pools': {'type': ['array', 'null']}
     },
     'required': ['filepicker_key']
