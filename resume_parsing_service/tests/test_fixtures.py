@@ -8,6 +8,7 @@ import pytest
 from resume_parsing_service.app import db
 from resume_parsing_service.common.models.candidate import EmailLabel
 from resume_parsing_service.common.models.candidate import PhoneLabel
+from resume_parsing_service.common.models.candidate import CandidateSource
 from resume_parsing_service.common.models.misc import Country
 from resume_parsing_service.common.models.misc import Culture
 from resume_parsing_service.common.models.misc import Organization
@@ -76,6 +77,16 @@ def domain_fixture(culture_fixture, org_fixture, request):
        db.session.commit()
     request.addfinalizer(fin)
     return domain
+
+
+@pytest.fixture(autouse=True)
+def source_fixture(domain_fixture, request):
+    source = CandidateSource(
+        description='potato', domain_id=domain_fixture.id
+    )
+    db.session.add(source)
+    db.session.commit()
+    return source
 
 
 @pytest.fixture(autouse=True)

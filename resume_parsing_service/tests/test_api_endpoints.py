@@ -18,6 +18,7 @@ from resume_parsing_service.tests.test_fixtures import email_label_fixture
 from resume_parsing_service.tests.test_fixtures import org_fixture
 from resume_parsing_service.tests.test_fixtures import phone_label_fixture
 from resume_parsing_service.tests.test_fixtures import product_fixture
+from resume_parsing_service.tests.test_fixtures import source_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_group_fixture
 from resume_parsing_service.tests.test_fixtures import token_fixture
@@ -46,14 +47,14 @@ def test_health_check():
 ####################################################################################################
 # Test Invalid Inputs
 ####################################################################################################
-def test_invalid_fp_key(token_fixture, user_fixture):
-    content, status = fetch_resume_fp_key_response(token_fixture, "MichaelKane/AlfredFromBatman.doc")
+def test_invalid_fp_key(token_fixture, user_fixture, source_fixture):
+    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, "MichaelKane/AlfredFromBatman.doc")
     assert 'error' in content
     assert status == requests.codes.bad_request
 
 
-def test_none_fp_key(token_fixture, user_fixture):
-    content, status = fetch_resume_fp_key_response(token_fixture, None)
+def test_none_fp_key(token_fixture, user_fixture, source_fixture):
+    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, None)
     assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
     assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
     assert status == requests.codes.bad_request
@@ -140,8 +141,8 @@ def test_bad_header(token_fixture, user_fixture):
     assert invalid_post.status_code == requests.codes.bad_request
 
 
-def test_blank_file(token_fixture, user_fixture):
-    content, status = fetch_resume_fp_key_response(token_fixture, 'blank.txt')
+def test_blank_file(token_fixture, user_fixture, source_fixture):
+    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'blank.txt')
     assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error if no text can be extracted."
     assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
 
@@ -242,39 +243,39 @@ def test_bad_tpool_inputs(token_fixture):
 ####################################################################################################
 # Test FilePicker Key Parsing without create option
 ####################################################################################################
-def test_doc_from_fp_key(token_fixture, user_fixture):
+def test_doc_from_fp_key(token_fixture, user_fixture, source_fixture):
     """Test that .doc files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, DOC_FP_KEY)
+    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, DOC_FP_KEY)
     assert_non_create_content_and_status(content, status)
 
 
-def test_v15_pdf_from_fp_key(token_fixture, user_fixture):
+def test_v15_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
     """Test that v1.5 pdf files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, PDF15_FP_KEY)
+    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, PDF15_FP_KEY)
     assert_non_create_content_and_status(content, status)
 
 
-def test_v14_pdf_from_fp_key(token_fixture, user_fixture):
+def test_v14_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
     """Test that v1.4 pdf files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, 'test_bin_14.pdf')
+    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'test_bin_14.pdf')
     assert_non_create_content_and_status(content, status)
 
 
-def test_v13_pdf_from_fp_key(token_fixture, user_fixture):
+def test_v13_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
     """Test that v1.3 pdf files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, 'test_bin_13.pdf')
+    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'test_bin_13.pdf')
     assert_non_create_content_and_status(content, status)
 
 
-def test_jpg_from_fp_key(token_fixture, user_fixture):
+def test_jpg_from_fp_key(token_fixture, user_fixture, source_fixture):
     """Test that jpg files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, 'test_bin.jpg')
+    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'test_bin.jpg')
     assert_non_create_content_and_status(content, status)
 
 
-def test_doc_with_texthtml_mime(token_fixture, user_fixture):
+def test_doc_with_texthtml_mime(token_fixture, user_fixture, source_fixture):
     """Test that jpg files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, 'Breland.Bobby.doc')
+    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'Breland.Bobby.doc')
     assert_non_create_content_and_status(content, status)
 
 
@@ -406,10 +407,10 @@ def test_doc_FP_with_create(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_985_from_fp_key(token_fixture, user_fixture):
+def test_985_from_fp_key(token_fixture, user_fixture, source_fixture):
     """Test that .doc files from S3 can be parsed."""
 
-    content, status = fetch_resume_fp_key_response(token_fixture, "Bruncak.Daren.doc", create_mode=True)
+    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, "Bruncak.Daren.doc", create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
@@ -521,7 +522,7 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=False):
     return content, status_code
 
 
-def fetch_resume_fp_key_response(token_fixture, fp_key, create_mode=False):
+def fetch_resume_fp_key_response(token_fixture, source, fp_key, create_mode=False):
     """Posts FilePicker key to local test auth server for json formatted resumes."""
     test_response = requests.post(ResumeApiUrl.PARSE,
                                   headers={
@@ -534,7 +535,7 @@ def fetch_resume_fp_key_response(token_fixture, fp_key, create_mode=False):
                                        # 'Local Test Upload' prefix.
                                        'resume_file_name': 'LTU_{}'.format(fp_key),
                                        'create_candidate': create_mode,
-                                       'source_id': 2
+                                       'source_id': source.id
                                       }
                                   )
                                  )
