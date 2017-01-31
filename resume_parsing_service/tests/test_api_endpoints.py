@@ -401,9 +401,9 @@ def test_v15_pdf_by_post_with_create(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_doc_FP_with_create(token_fixture, user_fixture):
+def test_doc_FP_with_create(token_fixture, user_fixture, source_fixture):
 
-    content, status = fetch_resume_fp_key_response(token_fixture, DOC_890, create_mode=True)
+    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, DOC_890, create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
