@@ -319,13 +319,13 @@ class CandidatesResource(Resource):
                 created_candidate_ids.append(resp_dict['candidate_id'])
                 tam = TalentActivityManager(db, activity_model=Activity,logger=logger)
                 tam.create_activity({
-                    'activity_params': {'username': authed_user.first_name,
+                    'activity_params': {'username': authed_user.first_name or 'A User',
                                         'formatted_name': candidate_data.get('formatted_name') or 'Unknown'},
                     'activity_type': 'CANDIDATE_CREATE_WEB',
                     'activity_type_id': Activity.MessageIds.CANDIDATE_CREATE_WEB,
                     'source_id': resp_dict['candidate_id'],
                     'source_table': 'candidate',
-                    'user_id': user_id
+                    'user_id': user_id,
                 })
 
         # Add candidates to cloud search
