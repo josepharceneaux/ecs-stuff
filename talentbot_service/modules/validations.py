@@ -1,3 +1,4 @@
+from talentbot_service import logger
 from talentbot_service.common.error_handling import InvalidUsage, InternalServerError
 from talentbot_service.common.models.user import UserPhone, TalentbotAuth
 
@@ -20,6 +21,9 @@ def validate_and_format_request_data_for_sms(data):
         phone = UserPhone.get_by_id(user_phone_id)
         if not phone:
             raise InvalidUsage("No resource found against specified user_phone_id")
+        tb_auth = TalentbotAuth.get_talentbot_auth(user_phone_id=user_phone_id)
+        if tb_auth:
+            raise InvalidUsage("user_phone_id is already being used")
     formatted_dict = {
         "user_id": user_id
     }
@@ -60,7 +64,7 @@ def validate_and_format_data_for_slack(data):
         "bot_token": bot_token
     }
 
-    auth_entry = TalentbotAuth.query.filter_by(slack_user_id=slack_user_id).first()
+    auth_entry = TalentbotAuth.query.filter_by(slack_user_id=slack_user_id).first() if slack_user_id else None
 
     if auth_entry:
         raise InvalidUsage("Slack_user_id already exists")
@@ -87,3 +91,37 @@ def validate_user_id(data):
         raise InvalidUsage("user_id is a required field")
     if not isinstance(user_id, (int, long)):
         raise InvalidUsage("Invalid user_id type")
+
+
+def validate_and_prepare_post_data(data):
+    post_data = {}
+    at_least_1_endpoint_data_available = False
+    validate_user_id(data)
+    post_data.update({"user_id": data['user_id']})
+    try:
+        post_data.update(validate_and_format_request_data_for_sms(data))
+        at_least_1_endpoint_data_available = True
+    except Exception as  error:
+        logger.info("SMS data doesn't exist")
+
+    try:
+        post_data.update(validate_and_format_request_data_for_facebook(data))
+        at_least_1_endpoint_data_available = True
+    except Exception as  error:
+        logger.info("Facebook data doesn't exist")
+
+    try:
+        post_data.update(validate_and_format_data_for_email(data))
+        at_least_1_endpoint_data_available = True
+    except Exception as  error:
+        logger.info("Email data doesn't exist")
+
+    try:
+        post_data.update(validate_and_format_data_for_slack(data))
+        at_least_1_endpoint_data_available = True
+    except Exception as  error:
+        logger.info("Slack data doesn't exist")
+
+    if at_least_1_endpoint_data_available:
+        return post_data
+    raise InvalidUsage("No valid data found, make sure the types are correct and data doesn't already exist")

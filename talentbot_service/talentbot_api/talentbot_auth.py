@@ -1,7 +1,7 @@
 # Standard imports
 import types
 # App specific imports
-from talentbot_service.modules.validations import validate_and_format_request_data_for_sms, validate_user_id
+from talentbot_service.modules.validations import validate_user_id, validate_and_format_request_data_for_sms, validate_and_format_data_for_slack, validate_and_format_request_data_for_facebook, validate_and_format_data_for_email
 # Common modules
 from talentbot_service.common.utils.api_utils import api_route, ApiResponse
 from talentbot_service.common.talent_api import TalentApi
@@ -30,8 +30,17 @@ class TalentbotAuthApi(Resource):
 
     def post(self):
         data = request.get_json()
-        validate_user_id(data)
-        formatted_data = validate_and_format_request_data_for_sms(data)
+        is_facebook, is_slack, is_sms, is_email = data.get("facebook"), data.get("slack"), data.get("sms"),\
+                                                  data.get("email")
+        formatted_data = {}
+        if is_sms:
+            formatted_data.update(validate_and_format_request_data_for_sms(data['sms']))
+        if is_facebook:
+            formatted_data.update(validate_and_format_request_data_for_facebook(data['facebook']))
+        if is_email:
+            formatted_data.update(validate_and_format_data_for_email(data['email']))
+        if is_slack:
+            formatted_data.update(validate_and_format_data_for_slack(data['slack']))
         user_id = formatted_data['user_id']
         user_phone = formatted_data.get('user_phone')
         user_phone_id = formatted_data.get('user_phone_id')
@@ -46,12 +55,12 @@ class TalentbotAuthApi(Resource):
             phone_object = UserPhone(user_id=user_id, value=user_phone, phone_label_id=6)
             phone_object.save()
             if phone_object:
-                return save_talentbot_auth(phone_object.id, user_id)
+                return save_talentbot_auth(formatted_data)
         elif user_phone_id:
             requested_phone = UserPhone.get_by_id(user_phone_id) if user_phone_id else None
             if not requested_phone:
                 raise NotFoundError("Either user_phone_id is not provided or user_phone doesn't exist")
-            return save_talentbot_auth(user_phone_id, user_id)
+            return save_talentbot_auth(formatted_data)
         raise InternalServerError("Something went wrong while adding talentbot auth")
 
 
@@ -91,10 +100,10 @@ class TalentbotAuthById(Resource):
         return ApiResponse({"talentbot_auth_id": requested_auth_object.id})
 
 
-def save_talentbot_auth(phone_id, user_id):
-    auth = TalentbotAuth(user_phone_id=phone_id, user_id=user_id)
+def save_talentbot_auth(kwargs):
+    auth = TalentbotAuth(**kwargs)
     auth.save()
-    return ApiResponse({"user_id": auth.user_id, "user_phone_id": phone_id})
+    return ApiResponse(kwargs)
 
 
 def check_if_auth_exists(_id):
