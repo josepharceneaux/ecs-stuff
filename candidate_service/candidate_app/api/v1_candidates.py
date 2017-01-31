@@ -1239,7 +1239,7 @@ class CandidateSocialNetworkResource(Resource):
         social_network_canonicals = [social_network_url]
         url_protocol = 'https://' if 'https://' in social_network_url else 'http://'
         social_network_canonicals.append(social_network_url.replace(url_protocol, ''))
-        social_network_canonicals.append(social_network_url.replace(url_protocol, 'https://' if url_protocol is 'http://' else 'http://'))
+        social_network_canonicals.append(social_network_url.replace(url_protocol, 'https://' if url_protocol == 'http://' else 'http://'))
 
         if social_network_url:
             users_in_domain = [user.id for user in User.all_users_of_domain(domain_id=auth_user.domain_id)]
