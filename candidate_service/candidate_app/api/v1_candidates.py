@@ -319,7 +319,7 @@ class CandidatesResource(Resource):
                 created_candidate_ids.append(resp_dict['candidate_id'])
                 tam = TalentActivityManager(db, activity_model=Activity,logger=logger)
                 tam.create_activity({
-                    'activity_params': {'username': authed_user.first_name or 'A User',
+                    'activity_params': {'username': authed_user.email,
                                         'formatted_name': candidate_data.get('formatted_name') or 'Unknown'},
                     'activity_type': 'CANDIDATE_CREATE_WEB',
                     'activity_type_id': Activity.MessageIds.CANDIDATE_CREATE_WEB,
