@@ -97,7 +97,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'source_product_id':             dict(IndexFieldType='int'),
     'status_id':                     dict(IndexFieldType='int'),
     'objective':                     dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY}),
-    'title':                         dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY}),
+    'title':                         dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY, 'ReturnEnabled': True}),
     'text_comment':                  dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'resume_text':                   dict(IndexFieldType='text',            TextOptions={'ReturnEnabled': False}),
     'unidentified_description':      dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
@@ -1503,8 +1503,13 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     if isinstance(tags, list):
         tag_name_facets = ["tags:'{}'".format(tag_facet) for tag_facet in tags]
         filter_queries.append("(and {} )".format(" ".join(tag_name_facets)))
-    elif request_vars.get('tags'):
+    elif tags:
         filter_queries.append("(term field=tags '{}')".format(tags))
+
+    # Title
+    title = request_vars.get('title')
+    if title:
+        filter_queries.append("(term field=title '{}' )".format(title))
 
     # Custom fields
     custom_fields = request_vars.get('custom_fields')
