@@ -8,16 +8,21 @@ from flask import current_app
 from ..talent_config_manager import TalentConfigKeys, TalentEnvs
 from ..campaign_services.campaign_utils import CampaignUtils
 
+LOCAL_DYNAMO_URL = 'http://localhost:8000'
 
-def _get_dynamo_connection(attribute='resource', connect_to_local_db=True):
+
+def _get_dynamo_connection(attribute='resource'):
     """
     This connects with DynamoDB depending upon environment.
     """
     boto_service = getattr(boto3, attribute)
-    if connect_to_local_db:
-        connection = boto_service('dynamodb', endpoint_url='http://localhost:8000', region_name='us-west-2')
-    else:
-        connection = boto_service('dynamodb')
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
+    endpoint_url = LOCAL_DYNAMO_URL
+    region_name = 'us-west-1'
+    if env in [TalentEnvs.QA, TalentEnvs.PROD]:
+        endpoint_url = 'https://dynamodb.us-east-1.amazonaws.com'  # TODO: Probably add in config file
+        region_name = 'us-east-1'
+    connection = boto_service('dynamodb', endpoint_url=endpoint_url, region_name=region_name)
     return connection
 
 
@@ -26,7 +31,7 @@ def create_dynamo_tables(table_name, primary_key=None):
     Function will create the candidates table in DynamoDB
     Docs: http://boto3.readthedocs.io/en/latest/reference/services/dynamodb.html?dynamo#DynamoDB.Client.create_table
     """
-    connection = _get_dynamo_connection(attribute='client', connect_to_local_db=DynamoDB.connect_to_local_db)
+    connection = _get_dynamo_connection(attribute='client')
     table_created = False
 
     if table_name not in connection.list_tables().get('TableNames'):
@@ -52,7 +57,7 @@ def create_dynamo_tables(table_name, primary_key=None):
             }
         )
 
-        # Wait until the table is exists
+        # Wait until the table exists
         connection.get_waiter('table_exists').wait(TableName=table_name)
         table_created = True
 
@@ -77,10 +82,7 @@ class DynamoDB(object):
         For running Dynamo DB locally, kindly follow the instructions at
             http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html
     """
-    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
-    # Mark this True if need to connect to local Dynamo DB.
-    connect_to_local_db = True if env in [TalentEnvs.DEV, TalentEnvs.JENKINS] else False
-    connection = _get_dynamo_connection(connect_to_local_db=connect_to_local_db)
+    connection = _get_dynamo_connection()
 
 
 class EmailMarketing(DynamoDB):
