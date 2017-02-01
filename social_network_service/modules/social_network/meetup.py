@@ -120,6 +120,7 @@ class Meetup(SocialNetworkBase):
                         #                      'User (id: %s) tried to connect' % (meetup_group.user_id, self.user.id),
                         #                      error_code=MEETUP_ACCOUNT_ALREADY_EXISTS)
                         meetup_groups.append(meetup_group.to_json())
+                        continue
                 meetup_group = MeetupGroup(
                     group_id=group['id'],
                     user_id=self.user.id,

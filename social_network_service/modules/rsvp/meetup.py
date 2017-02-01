@@ -312,7 +312,7 @@ class Meetup(RSVPBase):
     def process_rsvps(self, rsvps):
         """
         :param rsvps: rsvps contains rsvps of all events of a particular
-                      user.
+                      meetup account
         :type rsvps: list
 
         - This method picks an rsvp from "rsvps" and pass it to
@@ -334,7 +334,6 @@ class Meetup(RSVPBase):
         .. seealso:: process_events_rsvps() method in EventBase class social_network_service/event/base.py
         """
         processed_rsvps = []
-        total_rsvps_count = len(rsvps)
         for rsvp in rsvps:
             # Here we pick one RSVP from rsvps and start doing processing on it. If we get an error while processing
             # an RSVP, we simply log the error and move to process next RSVP.
@@ -343,6 +342,7 @@ class Meetup(RSVPBase):
                 self.user = db.session.merge(group_user.user)
                 processed_rsvps.append(self.post_process_rsvp(rsvp))
         saved_rsvps_count = len(filter(None, processed_rsvps))
+        total_rsvps_count = len(rsvps) * len(groups)
         failed_rsvps_count = total_rsvps_count - saved_rsvps_count
         if total_rsvps_count:
             logger.info('''

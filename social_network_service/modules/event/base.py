@@ -442,10 +442,15 @@ class EventBase(object):
         events as `is_deleted_from_vendor = True`
         :param list events: list of events (dict) retrieved from Meetup / Eventbrite
         """
-        events_in_db = Event.filter_by_keywords(user_id=self.user.id, social_network_id=self.social_network.id,
-                                                is_deleted_from_vendor=0)
+        member_users = UserSocialNetworkCredential.filter_by_keywords(member_id=self.member_id,
+                                                                      social_network_id=self.social_network.id)
+        members_events = []
+        for user in member_users:
+            events_in_db = Event.filter_by_keywords(user_id=user.user_id, social_network_id=self.social_network.id,
+                                                    is_deleted_from_vendor=0)
+            members_events.extend(events_in_db)
         social_network_event_ids = [event['id'] for event in events]
-        deleted_event_ids = [event.id for event in events_in_db
+        deleted_event_ids = [event.id for event in members_events
                              if event.social_network_event_id not in social_network_event_ids]
         # TODO: This commented code will be required for a future feature. Entirely delete unused events from db
         # deleted_event_ids = []

@@ -223,7 +223,7 @@ class Eventbrite(SocialNetworkBase):
     @classmethod
     def delete_webhooks(cls, user_credentials):
         """
-        This method deletes all webhooks for current user from eventbrite
+        This method deletes webhook for current user from eventbrite
         :param type(t) user_credentials: user credentials for eventbrite for this user
         """
         url = user_credentials.social_network.api_url + "/webhooks/" + user_credentials.webhook

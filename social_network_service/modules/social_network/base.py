@@ -552,8 +552,8 @@ class SocialNetworkBase(object):
     def connect(self, code):
         """
         This connects user with social-network's account. e.g. on Meetup or Eventbrite etc.
-        This gets access token and refresh tokens for user. It also gets member_id of getTalent user on requested
-        social-network website.
+        This gets access token and refresh tokens for user and it also updates these tokens for previously connected
+        users. It also gets member_id of getTalent user on requested social-network website.
         :param string code: code to exchange for access token and refresh token.
         """
         access_token, refresh_token = self.get_access_and_refresh_token(self.user.id, self.social_network,
@@ -574,41 +574,18 @@ class SocialNetworkBase(object):
 
         if len(records_in_db) >= 1:
             for record in records_in_db:
-                # if record.user.id == self.user.id:
-                #     logger.info('User(id:%s) is already connected with account on %s.'
-                #                 % (self.user.id, self.social_network.name.title()))
-                #     self.save_user_credentials_in_db(user_credentials_dict)
-
                 if record.user.domain_id == self.user.domain_id:
                     error_message = 'Some other user is already using this account. user_id:%s, social_network:%s , ' \
                                     'member_id:%s.' % (self.user.id, self.social_network.name.title(), member_id)
                     logger.error(error_message)
                     raise InvalidUsage(error_message)
                 else:
+                    # updating new  access and refresh tokens for all user connected with same meetup account.
                     record.access_token = access_token
                     record.refresh_token = refresh_token
-                    # commit after loop
-                db.session.commit()
+
+            db.session.commit()
             return self.save_user_credentials_in_db(user_credentials_dict)
-
-
-        # if len(records_in_db) > 1:
-        #     error_message = '%s account for member_id:%s is associated with multiple users.'  \
-        #                     % (self.social_network.name.title(), member_id)
-        #     logger.error(error_message)
-        #     raise InternalServerError(error_message)
-        #
-        # if len(records_in_db) == 1:
-        #     record_in_db = records_in_db[0]
-        #     if record_in_db.user.id == self.user.id:
-        #         logger.info('User(id:%s) is already connected with account on %s.'
-        #                     % (self.user.id, self.social_network.name.title()))
-        #         return self.save_user_credentials_in_db(user_credentials_dict)
-        #     else:
-        #         error_message = 'Some other user is already using this account. user_id:%s, social_network:%s , ' \
-        #                         'member_id:%s.' % (self.user.id, self.social_network.name.title(), member_id)
-        #         logger.error(error_message)
-        #         raise InvalidUsage(error_message)
 
     @classmethod
     def disconnect(cls, user_id, social_network):
