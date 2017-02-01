@@ -1460,7 +1460,9 @@ class CampaignBase(object):
         """
         CampaignUtils.raise_if_not_instance_of_campaign_models(source)
         raise_if_not_instance_of(num_candidates, (int, long))
-        params = {'name': source.name, 'num_candidates': num_candidates}
+        campaign_type = CampaignUtils.get_campaign_type(source)
+        campaign_type = campaign_type.title()
+        params = {'name': source.name, 'num_candidates': num_candidates, 'campaign_type': campaign_type}
         cls.create_activity(user_id,
                             _type=Activity.MessageIds.CAMPAIGN_SEND,
                             source=source,
