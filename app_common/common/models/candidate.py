@@ -42,6 +42,7 @@ class Candidate(db.Model):
     total_months_experience = db.Column('TotalMonthsExperience', db.Integer)
     resume_text = db.Column('ResumeText', db.Text)
     culture_id = db.Column('CultureId', db.Integer, db.ForeignKey('culture.Id'), default=1)
+    title = db.Column(db.String(100))
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     is_dirty = db.Column('IsDirty', db.SmallInteger, default=0)
