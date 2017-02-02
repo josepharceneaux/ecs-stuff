@@ -232,7 +232,7 @@ class Eventbrite(SocialNetworkBase):
                                 user_id=user_credentials.user.id)
         if response.ok:
             webhook = response.json()
-            # Deleting all existing webhooks for this user because we don't know about their action types.
+            # Deleting existing webhook for this user because we don't know about their action types.
             # Need to register a webhook with `event.published` and `event.unpublished` actions and correct callback url
             http_request('DELETE', webhook['resource_uri'], headers=headers, user_id=user_credentials.user.id)
 
