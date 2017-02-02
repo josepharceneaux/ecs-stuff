@@ -302,18 +302,6 @@ class CandidateSource(db.Model):
         return cls.query.filter_by(id=source_id, domain_id=domain_id).first()
 
 
-class CandidateSourceDetail(db.Model):
-    __tablename__ = 'candidate_source_detail'
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), primary_key=True)
-    candidate_source_id = db.Column('CandidateSourceId', db.INT, db.ForeignKey('candidate_source.Id'), primary_key=True)
-    additional_notes = db.Column(db.VARCHAR(100))
-    added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
-    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
-
-    def __repr__(self):
-        return "<CandidateSourceDetail (candidate_id='%r')>" % self.candidate_id
-
-
 class PublicCandidateSharing(db.Model):
     __tablename__ = 'public_candidate_sharing'
     id = db.Column('Id', db.BIGINT, primary_key=True)
