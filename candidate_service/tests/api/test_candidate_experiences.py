@@ -3,18 +3,16 @@ Test cases for adding, retrieving, updating, and deleting candidate work experie
 """
 import pycountry
 
-from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.tests.api.candidate_sample_data import GenerateCandidateData, generate_single_candidate_data
-
-# Custom errors
 
 
 class TestUpdateCandidateExperienceSuccessfully(object):
     """
     Class contains functional tests that will update facets of candidate's work experiences
     """
+
     def test_update_start_and_end_dates(self, test_candidate_1, access_token_first):
         """
         Test: will update the start date & end date of one of candidate's work experience

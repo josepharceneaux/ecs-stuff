@@ -1,11 +1,8 @@
 """
 Test cases for CandidatePreferenceResource
 """
-# Candidate Service app instance
-
 # Conftest
 from candidate_sample_data import generate_single_candidate_data
-from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
@@ -41,7 +38,7 @@ class TestCreateSubscriptionPreference(object):
         assert resp.status_code == 200
         assert resp.json()['candidate']['subscription_preference']['frequency_id'] == 1
 
-    def test_add_multiple_subscription_preference(self, access_token_first, user_first, candidate_first):
+    def test_add_multiple_subscription_preference(self, access_token_first, candidate_first):
         """
         Test: Attempt to create multiple subscription preferences for candidate
         Expect: 400, only one subscription preference per candidate is permitted
@@ -56,7 +53,7 @@ class TestCreateSubscriptionPreference(object):
         assert resp.status_code == 400
         assert resp.json()['error']['code'] == custom_error.PREFERENCE_EXISTS
 
-    def test_access_endpoint_using_non_json_data(self, access_token_first, user_first, candidate_first):
+    def test_access_endpoint_using_non_json_data(self, access_token_first, candidate_first):
         """
         Test: Attempt to send non json data
         Expect: 400
@@ -75,11 +72,11 @@ class TestGetSubscriptionPreference(object):
         Test: Access endpoint without auth token
         Expect: 401
         """
-        resp = send_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % 5, None)
+        resp = send_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % "5", None)
         print response_info(resp)
         assert resp.status_code == 401 and resp.json()['error']['code'] == 11
 
-    def test_get_non_existing_candidate_preference(self, access_token_first, user_first, talent_pool):
+    def test_get_non_existing_candidate_preference(self, access_token_first, talent_pool):
         """
         Test: Retrieve candidate's preferences that don't exist in the database
         Expect:  200, should just get an empty dict for subscription_preference
@@ -102,11 +99,11 @@ class TestUpdateSubscriptionPreference(object):
         Test: Access endpoint without auth token
         Expect: 401
         """
-        resp = send_request('put', CandidateApiUrl.CANDIDATE_PREFERENCE % 5, None)
+        resp = send_request('put', CandidateApiUrl.CANDIDATE_PREFERENCE % "5", None)
         print response_info(resp)
         assert resp.status_code == 401 and resp.json()['error']['code'] == 11
 
-    def test_update_non_existing_candidate_preference(self, access_token_first, user_first, talent_pool):
+    def test_update_non_existing_candidate_preference(self, access_token_first, talent_pool):
         """
         Test: Attempt to update a non existing candidate subs preference
         Expect: 400, although it's "not found" it is however a misuse of the resource
@@ -123,7 +120,7 @@ class TestUpdateSubscriptionPreference(object):
         assert resp.status_code == 400
         assert resp.json()['error']['code'] == custom_error.NO_PREFERENCES
 
-    def test_update_candidate_pref_without_providing_adequate_data(self, access_token_first, user_first, talent_pool):
+    def test_update_candidate_pref_without_providing_adequate_data(self, access_token_first, talent_pool):
         """
         Test: Attempt to update candidate's subs pref with missing data
         Expect: 400
@@ -152,7 +149,7 @@ class TestUpdateSubscriptionPreference(object):
         """
         # Update candidate's subs preference
         last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
-        non_existing_candidate_id = last_candidate.id * 100
+        non_existing_candidate_id = str(last_candidate.id * 100)
         data = {'frequency_id': 1}
         resp = send_request('put', CandidateApiUrl.CANDIDATE_PREFERENCE % non_existing_candidate_id,
                             access_token_first, data)
@@ -160,7 +157,7 @@ class TestUpdateSubscriptionPreference(object):
         assert resp.status_code == 404
         assert resp.json()['error']['code'] == custom_error.CANDIDATE_NOT_FOUND
 
-    def test_update_subs_pref_of_candidate(self, access_token_first, user_first, talent_pool):
+    def test_update_subs_pref_of_candidate(self, access_token_first, talent_pool):
         """
         Test: Update candidate's subscription preference
         Expect: 200
@@ -191,11 +188,11 @@ class TestDeleteSubscriptionPreference(object):
         Test: Access endpoint without auth token
         Expect: 401
         """
-        resp = send_request('delete', CandidateApiUrl.CANDIDATE_PREFERENCE % 5, None)
+        resp = send_request('delete', CandidateApiUrl.CANDIDATE_PREFERENCE % "5", None)
         print response_info(resp)
         assert resp.status_code == 401 and resp.json()['error']['code'] == 11
 
-    def test_delete_candidate_preference(self, access_token_first, user_first, talent_pool):
+    def test_delete_candidate_preference(self, access_token_first, talent_pool):
         """
         Test: Delete candidate's subscription preference
         Expect: 200, should just get an empty dict for subscription_preference

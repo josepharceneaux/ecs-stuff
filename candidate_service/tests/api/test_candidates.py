@@ -4,10 +4,7 @@ Test cases for candidate CRUD operations
 # Candidate Service app instance
 
 import sys
-
 from requests.status_codes import codes as http_status_codes
-
-from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_errors
@@ -122,7 +119,7 @@ class TestCandidateSourceId(object):
 class TestUpdateCandidateName(object):
     URL = CandidateApiUrl.CANDIDATES
 
-    def test_update_first_name(self, user_first, access_token_first, talent_pool):
+    def test_update_first_name(self, access_token_first, talent_pool):
         """
         Test:  Update candidate's first name
         Expect: 200, candidate's full name should also be updated
@@ -147,7 +144,7 @@ class TestUpdateCandidateName(object):
         assert updated_full_name != candidate_full_name
         assert updated_full_name.startswith(data['candidates'][0]['first_name'])
 
-    def test_update_middle_name(self, user_first, access_token_first, talent_pool):
+    def test_update_middle_name(self, access_token_first, talent_pool):
         """
         Test:  Update candidate's middle name
         Expect: 200, candidate's full name should also be updated
@@ -172,7 +169,7 @@ class TestUpdateCandidateName(object):
         assert updated_full_name != candidate_full_name
         assert data['candidates'][0]['middle_name'] in updated_full_name
 
-    def test_update_last_name(self, user_first, access_token_first, talent_pool):
+    def test_update_last_name(self, access_token_first, talent_pool):
         """
         Test:  Update candidate's last name
         Expect: 200, candidate's full name should also be updated

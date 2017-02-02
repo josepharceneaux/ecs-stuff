@@ -97,6 +97,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'source_product_id':             dict(IndexFieldType='int'),
     'status_id':                     dict(IndexFieldType='int'),
     'objective':                     dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY}),
+    'title':                         dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY, 'ReturnEnabled': True}),
     'text_comment':                  dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'resume_text':                   dict(IndexFieldType='text',            TextOptions={'ReturnEnabled': False}),
     'unidentified_description':      dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
@@ -280,7 +281,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.id AS `id`, candidate.firstName AS `first_name`, candidate.lastName AS `last_name`,
                 candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, :date_format) AS `added_time`,
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
-                candidate.is_archived AS `is_archived`,
+                candidate.is_archived AS `is_archived`, candidate.title AS `title`,
                 HOUR(candidate.addedTime) AS `added_time_hour`, candidate.sourceId AS `source_id`,
                 candidate.sourceProductId AS `source_product_id`, candidate.totalMonthsExperience AS
                 `total_months_experience`, candidate.isWebHidden AS `is_web_hidden`,
@@ -1502,8 +1503,13 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     if isinstance(tags, list):
         tag_name_facets = ["tags:'{}'".format(tag_facet) for tag_facet in tags]
         filter_queries.append("(and {} )".format(" ".join(tag_name_facets)))
-    elif request_vars.get('tags'):
+    elif tags:
         filter_queries.append("(term field=tags '{}')".format(tags))
+
+    # Title
+    title = request_vars.get('title')
+    if title:
+        filter_queries.append("(term field=title '{}' )".format(title))
 
     # Custom fields
     custom_fields = request_vars.get('custom_fields')

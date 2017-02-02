@@ -1,13 +1,10 @@
 """
 Test cases for CandidateResource/delete()
 """
-# Candidate Service app instance
-
 # Models
 from candidate_service.common.models.candidate import CandidateCustomField, CandidateEmail, \
     CandidateTextComment, CandidateReference
 from candidate_service.common.models.tag import CandidateTag
-from candidate_service.common.routes import CandidateApiUrl
 
 # Conftest
 from candidate_service.common.tests.conftest import *
@@ -20,7 +17,8 @@ class TestDeleteCandidate(object):
     """
     Test cases for deleting candidate(s) via Delete v1/candidates
     """
-    def test_delete_candidate_with_full_profile(self, access_token_first, user_first, talent_pool, domain_aois, domain_custom_fields):
+    def test_delete_candidate_with_full_profile(self, access_token_first, user_first, talent_pool, domain_aois,
+                                                domain_custom_fields):
         """
         Test: Create a candidate with all fields and delete it
         """
@@ -304,8 +302,8 @@ class TestDeleteCandidateAddress(object):
         print response_info(resp)
         assert resp.status_code == 404
 
-    def test_delete_address_of_a_candidate_belonging_to_a_diff_user(
-            self, access_token_first, user_first,talent_pool, user_same_domain, access_token_same):
+    def test_delete_address_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, talent_pool,
+                                                                    access_token_same):
         """
         Test:   Delete the address of a Candidate that belongs to a different user in the same domain
         Expect: 204
@@ -322,7 +320,7 @@ class TestDeleteCandidateAddress(object):
         print response_info(updated_resp)
         assert updated_resp.status_code == 204
 
-    def test_delete_address_of_a_diff_candidate(self, access_token_first, user_first, talent_pool):
+    def test_delete_address_of_a_diff_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete the address of a different Candidate
         Expect: 403
@@ -347,7 +345,7 @@ class TestDeleteCandidateAddress(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.ADDRESS_FORBIDDEN
 
-    def test_delete_can_address(self, access_token_first, user_first, talent_pool):
+    def test_delete_can_address(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's address from db
         Expect: 204, Candidate's addresses must be less 1
@@ -376,7 +374,7 @@ class TestDeleteCandidateAddress(object):
         assert updated_resp.status_code == 204
         assert len(can_dict_after_update['addresses']) == can_addresses_count - 1
 
-    def test_delete_all_of_candidates_addresses(self, access_token_first, user_first, talent_pool):
+    def test_delete_all_of_candidates_addresses(self, access_token_first, talent_pool):
         """
         Test:   Remove all of candidate's addresses from db
         Expect: 204, Candidate should not have any addresses left
@@ -415,8 +413,8 @@ class TestDeleteCandidateAOI(object):
         print response_info(resp)
         assert resp.status_code == 404
 
-    def test_delete_can_aoi_of_a_candidate_belonging_to_a_diff_user(
-            self, access_token_first, user_first, talent_pool, user_second, access_token_second):
+    def test_delete_can_aoi_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, talent_pool,
+                                                                    access_token_second):
         """
         Test:   Attempt to delete the aois of a Candidate that belongs to a user in a diff domain
         Expect: 204
@@ -433,7 +431,7 @@ class TestDeleteCandidateAOI(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_all_of_candidates_areas_of_interest(self, access_token_first, user_first, talent_pool, domain_aois):
+    def test_delete_all_of_candidates_areas_of_interest(self, access_token_first, talent_pool, domain_aois):
         """
         Test:   Remove all of candidate's aois from db
         Expect: 204, Candidate should not have any aois left
@@ -461,7 +459,7 @@ class TestDeleteCandidateAOI(object):
         assert AreaOfInterest.query.get(can_aois[0]['id']) # AreaOfInterest should still be in db
         assert AreaOfInterest.query.get(can_aois[1]['id']) # AreaOfInterest should still be in db
 
-    def test_delete_can_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aois):
+    def test_delete_can_area_of_interest(self, access_token_first, talent_pool, domain_aois):
         """
         Test:   Remove Candidate's area of interest from db
         Expect: 204, Candidate's aois must be less 1 AND no AreaOfInterest should be deleted
@@ -510,8 +508,8 @@ class TestDeleteCandidateCustomField(object):
         print response_info(resp)
         assert resp.status_code == 404
 
-    def test_delete_custom_fields_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, user_first,
-                                                                          talent_pool, user_second, access_token_second,
+    def test_delete_custom_fields_of_a_candidate_belonging_to_a_diff_user(self, access_token_first,
+                                                                          talent_pool, access_token_second,
                                                                           domain_custom_fields):
         """
         Test:   Delete custom fields of a Candidate that belongs to a user in a different domain
@@ -532,7 +530,7 @@ class TestDeleteCandidateCustomField(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_candidates_custom_fields(self, access_token_first, user_first, talent_pool, domain_custom_fields):
+    def test_delete_candidates_custom_fields(self, access_token_first, talent_pool, domain_custom_fields):
         """
         Test:   Remove all of candidate's custom fields from db
         Expect: 204, Candidate should not have any custom fields left AND no CustomField should be deleted
@@ -562,7 +560,7 @@ class TestDeleteCandidateCustomField(object):
         assert CustomField.query.get(custom_field_id_1) # CustomField should still be in db
         assert CustomField.query.get(custom_field_id_2) # CustomField should still be in db
 
-    def test_delete_can_custom_field(self, access_token_first, user_first, talent_pool, domain_custom_fields):
+    def test_delete_can_custom_field(self, access_token_first, talent_pool, domain_custom_fields):
         """
         Test:   Remove Candidate's custom field from db
         Expect: 204, Candidate's custom fields must be less 1 AND no CustomField should be deleted

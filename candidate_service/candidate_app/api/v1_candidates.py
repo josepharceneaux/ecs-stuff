@@ -302,7 +302,8 @@ class CandidatesResource(Resource):
                 summary=candidate_dict.get('summary'),
                 talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url'),
-                resume_text=candidate_dict.get('resume_text')
+                resume_text=candidate_dict.get('resume_text'),
+                title=candidate_dict.get('title')
             )
 
             if multiple_candidates:
@@ -550,7 +551,8 @@ class CandidatesResource(Resource):
                 summary=candidate_dict.get('summary', ''),
                 talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url', ''),
-                resume_text=candidate_dict.get('resume_text', '')
+                resume_text=candidate_dict.get('resume_text', ''),
+                title=candidate_dict.get('title')
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 

@@ -326,7 +326,8 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     # candidate id: to check if candidate is present in smartlist.
     "id": 'digit',
     # is_archived: to check if candidate is activated or archived
-    "status": "string"
+    "status": "string",
+    "title": "string"
 }
 
 
