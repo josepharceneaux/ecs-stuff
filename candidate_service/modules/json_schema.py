@@ -579,6 +579,24 @@ candidates_resource_schema_post = {
                     },
                     "image_url": {
                         "type": ["string", "null"]
+                    },
+                    "tags": {
+                        "type": ["array"],
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "required": ["name"],
+                            "properties": {
+                                "id": {
+                                    "type": ["integer", "null"]
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 50
+                                }
+                            }
+                        }
                     }
                 }
             }
