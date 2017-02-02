@@ -1,16 +1,14 @@
 """
 Test cases for CandidateWorkExperienceResource
 """
-# Candidate Service app instance
-
 # Conftest
 from candidate_sample_data import (GenerateCandidateData, generate_single_candidate_data)
-from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.tests.api.helpers import get_country_code_from_name
 from helpers import order_work_experiences
+from datetime import datetime
 
 
 class TestDeleteWorkExperience(object):
@@ -25,7 +23,7 @@ class TestDeleteWorkExperience(object):
     EXPERIENCE_URL = CandidateApiUrl.EXPERIENCE
     EXPERIENCES_URL = CandidateApiUrl.EXPERIENCES
 
-    def test_delete_experience_and_check_total_months_experience(self, access_token_first, user_first, talent_pool):
+    def test_delete_experience_and_check_total_months_experience(self, access_token_first, talent_pool):
         """
         Test:  Delete one of candidate's work experiences
         Expect:  Candidate.total_months_experience to be updated accordingly
@@ -34,8 +32,8 @@ class TestDeleteWorkExperience(object):
             {
                 'talent_pool_ids': {'add': [talent_pool.id]},
                 'work_experiences': [
-                    {'start_year': 2005, 'end_year': 2007},  # 12*2 = 24 months of experience
-                    {'start_year': 2011, 'end_year': None}  # 12*5 = 60 months of experience
+                    {'start_year': 2005, 'end_year': 2007},  # 12 * 2 = 24 months of experience
+                    {'start_year': 2011, 'end_year': None}   # 12 * (Year Now - 2011) = x months of experience
                 ]
             }
         ]}
@@ -47,7 +45,13 @@ class TestDeleteWorkExperience(object):
         candidate_id = create_resp.json()['candidates'][0]['id']
         db.session.commit()
         candidate = Candidate.get_by_id(candidate_id)
-        assert candidate.total_months_experience == 84  # 24 + 60
+
+        st_year1 = data['candidates'][0]['work_experiences'][0]['start_year']
+        end_year1 = data['candidates'][0]['work_experiences'][0]['end_year']
+        st_year2 = data['candidates'][0]['work_experiences'][1]['start_year']
+        now_year = datetime.utcnow().year
+        expected_months_of_experience = ((end_year1 - st_year1) * 12) + ((now_year - st_year2) * 12)
+        assert candidate.total_months_experience == expected_months_of_experience
 
         # Retrieve candidate
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
@@ -57,7 +61,7 @@ class TestDeleteWorkExperience(object):
         del_resp = send_request('delete', self.EXPERIENCE_URL % (candidate_id, experience_id), access_token_first)
         print response_info(del_resp)
         db.session.commit()
-        assert candidate.total_months_experience == 24  # (84 - 60)
+        assert candidate.total_months_experience == 24
 
     def test_non_logged_in_user_delete_can_experience(self):
         """
@@ -65,7 +69,7 @@ class TestDeleteWorkExperience(object):
         Expect: 401
         """
         # Delete Candidate's experiences
-        resp = send_request('delete', self.EXPERIENCES_URL % 5, None)
+        resp = send_request('delete', self.EXPERIENCES_URL % str(5), None)
         print response_info(resp)
         assert resp.status_code == self.UNAUTHORIZED
 
@@ -84,8 +88,7 @@ class TestDeleteWorkExperience(object):
         print response_info(resp)
         assert resp.status_code == self.NOT_FOUND
 
-    def test_delete_experience_of_a_candidate_belonging_to_a_diff_user(self, user_first, access_token_first,
-                                                                       talent_pool, user_second,
+    def test_delete_experience_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, talent_pool,
                                                                        access_token_second):
         """
         Test:   Attempt to delete the experience of a Candidate that belongs
@@ -104,7 +107,7 @@ class TestDeleteWorkExperience(object):
         print response_info(updated_resp)
         assert updated_resp.status_code == self.FORBIDDEN
 
-    def test_delete_experience_of_a_different_candidate(self, user_first, access_token_first, talent_pool):
+    def test_delete_experience_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete the experience of a different Candidate
         Expect: 403
@@ -128,7 +131,7 @@ class TestDeleteWorkExperience(object):
         assert updated_resp.status_code == self.FORBIDDEN
         assert updated_resp.json()['error']['code'] == custom_error.EXPERIENCE_FORBIDDEN
 
-    def test_delete_candidate_experiences(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_experiences(self, access_token_first, talent_pool):
         """
         Test:   Remove all of candidate's experiences from db
         Expect: 204; Candidate should not have any experience left
@@ -148,7 +151,7 @@ class TestDeleteWorkExperience(object):
         assert updated_resp.status_code == self.DELETED
         assert len(can_dict_after_update['work_experiences']) == 0
 
-    def test_delete_candidate_experience(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_experience(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's experience from db
         Expect: 204, Candidate's experience must be less 1.
@@ -206,8 +209,7 @@ class TestDeleteWorkExperienceBullet(object):
         print response_info(resp)
         assert resp.status_code == self.NOT_FOUND
 
-    def test_delete_exp_bullets_of_a_candidate_belonging_to_a_diff_user(self, user_first, access_token_first,
-                                                                        talent_pool, user_second,
+    def test_delete_exp_bullets_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, talent_pool,
                                                                         access_token_second):
         """
         Test:   Attempt to delete exp-bullets of a Candidate that belongs
@@ -231,7 +233,7 @@ class TestDeleteWorkExperienceBullet(object):
         print response_info(updated_resp)
         assert updated_resp.status_code == self.FORBIDDEN
 
-    def test_delete_exp_bullets_of_a_different_candidate(self, user_first, access_token_first, talent_pool):
+    def test_delete_exp_bullets_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete the exp-bullets of a different Candidate
         Expect: 403
@@ -285,7 +287,7 @@ class TestDeleteWorkExperienceBullet(object):
         assert len(can_dict_after_update['work_experiences'][0]['bullets']) == 0
         assert len(can_dict_after_update['work_experiences']) == experience_count_before_deleting_bullets
 
-    def test_delete_candidates_experience_bullet(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidates_experience_bullet(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's experience-bullet from db
         Expect: 204, Candidate's experience-bullet must be less 1; no experiences must be removed
@@ -305,7 +307,7 @@ class TestDeleteWorkExperienceBullet(object):
 
         # Remove all of Candidate's experiences
         url = self.BULLET_URL % (candidate_id, can_experiences[0]['id'],
-                                                   can_experiences[0]['bullets'][0]['id'])
+                                 can_experiences[0]['bullets'][0]['id'])
         updated_resp = send_request('delete', url, access_token_first)
         print response_info(updated_resp)
 
@@ -324,7 +326,7 @@ class TestCreateWorkExperience(object):
     CANDIDATES_URL = CandidateApiUrl.CANDIDATES
     CANDIDATE_URL = CandidateApiUrl.CANDIDATE
 
-    def test_create_work_experience_successfully(self, access_token_first, user_first, talent_pool):
+    def test_create_work_experience_successfully(self, access_token_first, talent_pool):
         """
         Test:  Create candidate + work experience
         Expect: 201
@@ -367,7 +369,7 @@ class TestCreateWorkExperience(object):
         db.session.commit()
         assert Candidate.get_by_id(candidate_id).total_months_experience == 96  # 24 + 12 + 60
 
-    def test_create_candidate_experience(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_experience(self, access_token_first, talent_pool):
         """
         Test:   Create CandidateExperience for Candidate
         Expect: 201
@@ -400,7 +402,7 @@ class TestCreateWorkExperience(object):
         assert isinstance(can_exp_bullets, list)
         assert can_exp_bullets[0]['description'] == can_exp_data['bullets'][0]['description']
 
-    def test_create_candidate_experiences_with_no_bullets(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_experiences_with_no_bullets(self, access_token_first, talent_pool):
         """
         Test:   Create CandidateEducation for Candidate
         Expect: 201

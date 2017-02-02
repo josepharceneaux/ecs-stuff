@@ -29,7 +29,7 @@ class TestGetCandidateLanguages(object):
         ]}
         return data
 
-    def test_create_and_retrieve_candidates_languages(self, user_first, access_token_first, candidate_first):
+    def test_create_and_retrieve_candidates_languages(self, access_token_first, candidate_first):
         """
         Test:  Make a POST and a GET request to CandidateLanguageResource
         """
@@ -44,7 +44,7 @@ class TestGetCandidateLanguages(object):
         assert get_resp.status_code == 200
         assert len(get_resp.json()['candidate_languages']) == 2
 
-    def test_update_candidate_languages(self, user_first, access_token_first, candidate_first):
+    def test_update_candidate_languages(self, access_token_first, candidate_first):
         """
         Test:  Update candidate's language
         """
@@ -71,7 +71,7 @@ class TestGetCandidateLanguages(object):
         assert get_resp.json()['candidate_languages'][0]['language_code'] == 'ar'
         assert get_resp.json()['candidate_languages'][0]['language_name'] == 'Arabic'
 
-    def test_delete_candidate_language(self, user_first, access_token_first, candidate_first):
+    def test_delete_candidate_language(self, access_token_first, candidate_first):
         """
         Test:  Delete one of candidate's languages
         """

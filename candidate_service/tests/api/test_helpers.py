@@ -16,7 +16,7 @@ from candidate_service.common.utils.test_utils import send_request, response_inf
 from candidate_service.common.routes import CandidateApiUrl
 
 
-def test_check_for_id(access_token_first, user_first, talent_pool):
+def test_check_for_id(access_token_first, talent_pool):
     """
     Test:   Send candidate-dicts to check_for_id to ensure the function is behaving as expected
     Expect: False if candidate-dict has missing id-key(s)
@@ -76,7 +76,7 @@ def test_check_for_id(access_token_first, user_first, talent_pool):
     assert r is False
 
 
-def test_remove_id_key(access_token_first, user_first, talent_pool):
+def test_remove_id_key(access_token_first, talent_pool):
     """
     Test:   Send candidate-dict with IDs to remove_id_key() to help remove all the id-keys
             from candidate-dict

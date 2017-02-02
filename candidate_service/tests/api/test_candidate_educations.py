@@ -1,18 +1,15 @@
-# Candidate Service app instance
-
 # Conftest
+from candidate_service.common.tests.conftest import *
 import pycountry
 
 from candidate_sample_data import GenerateCandidateData, generate_single_candidate_data
-from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 from helpers import get_country_code_from_name
 
 
 class TestCreateCandidateEducation(object):
-    def test_create_successfully(self, access_token_first, user_first, talent_pool):
+    def test_create_successfully(self, access_token_first, talent_pool):
         """
         Test: Create candidate + education
         Expect: 201
@@ -31,7 +28,7 @@ class TestCreateCandidateEducation(object):
         assert get_resp.status_code == 200
         assert get_country_code_from_name(get_resp.json()['candidate']['educations'][0]['country']) == country_code
 
-    def test_create_education_with_empty_values(self, access_token_first, user_first, talent_pool):
+    def test_create_education_with_empty_values(self, access_token_first, talent_pool):
         """
         Test:  Create candidate education with some or all empty values and some with whitespaces
         Expect:  201; all-empty data should not be inserted into db & whitespaces must be stripped
@@ -67,7 +64,7 @@ class TestCreateCandidateEducation(object):
         assert candidate_educations[0]['school_name'] == data['candidates'][0]['educations'][0]['school_name'].strip()
         assert candidate_educations[0]['school_type'] == data['candidates'][0]['educations'][0]['school_type'].strip()
 
-    def test_add_education_with_faulty_start_date(self, access_token_first, user_first, talent_pool):
+    def test_add_education_with_faulty_start_date(self, access_token_first, talent_pool):
         """
         Test:  Start date must be a valid date and must not be later than end date of education
         """
@@ -89,7 +86,7 @@ class TestCreateCandidateEducation(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_USAGE
 
-    def test_create_candidate_educations_with_no_degrees(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_educations_with_no_degrees(self, access_token_first, talent_pool):
         """
         Test:   Create CandidateEducation for Candidate
         Expect: 201
@@ -116,7 +113,7 @@ class TestCreateCandidateEducation(object):
 
 
 class TestUpdateCandidateEducation(object):
-    def test_add_new_education(self, access_token_first, user_first, talent_pool):
+    def test_add_new_education(self, access_token_first, talent_pool):
         """
         Test:   Add a new CandidateEducation. Candidate's CandidateEducation count should
                 increase by 1.
@@ -158,7 +155,7 @@ class TestUpdateCandidateEducation(object):
             alpha2=can_ed_from_data['country_code']).name
         assert len(updated_educations) == can_educations_count + 1
 
-    def test_update_education_of_a_diff_candidate(self, access_token_first, user_first, talent_pool):
+    def test_update_education_of_a_diff_candidate(self, access_token_first, talent_pool):
         """
         Test:   Update education information of a different Candidate
         Expect: 403
@@ -184,7 +181,7 @@ class TestUpdateCandidateEducation(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.EDUCATION_FORBIDDEN
 
-    def test_update_education_primary_info(self, access_token_first, user_first, talent_pool):
+    def test_update_education_primary_info(self, access_token_first, talent_pool):
         """
         Test:   Updates candidate's education's city, school_name, and state
                 Since this is an update only, total number of candidate's education
@@ -220,7 +217,7 @@ class TestUpdateCandidateEducation(object):
         assert education_dict['country'] == pycountry.countries.get(alpha2=can_ed_from_data['country_code']).name
         assert len(updated_resp.json()['candidate']['educations']) == candidate_education_count
 
-    def test_add_education_degree(self, access_token_first, user_first, talent_pool):
+    def test_add_education_degree(self, access_token_first, talent_pool):
         """
         Test:   Add CandidateEducationDegree to an existing candidate's education.
                 The number of CandidateEducationDegree must increase by 1 for this candidate.
@@ -259,7 +256,7 @@ class TestUpdateCandidateEducation(object):
         assert education_dict['degrees'][-1]['title'] == 'associate'
         assert education_dict['degrees'][-1]['bullets'][-1]['major'] == 'mathematics'
 
-    def test_update_start_year_with_incorrect_value(self, user_first, access_token_first, talent_pool):
+    def test_update_start_year_with_incorrect_value(self, access_token_first, talent_pool):
         """
         Test: Update candidate's education start year to a year that is greater than its end year
         """
@@ -288,7 +285,7 @@ class TestUpdateCandidateEducation(object):
         print response_info(update_resp)
         assert update_resp.status_code == requests.codes.BAD
 
-    def test_update_end_year_with_incorrect_value(self, user_first, access_token_first, talent_pool):
+    def test_update_end_year_with_incorrect_value(self, access_token_first, talent_pool):
         """
         Test: Update candidate's education end year to a year that is less than its start year
         """
@@ -319,7 +316,7 @@ class TestUpdateCandidateEducation(object):
 
 
 class TestCreateCandidateEducationDegree(object):
-    def test_with_empty_values(self, access_token_first, user_first, talent_pool):
+    def test_with_empty_values(self, access_token_first, talent_pool):
         """
         Test:  Create candidate education degree with some whitespaces and empty values
         Expect: 201
@@ -336,8 +333,6 @@ class TestCreateCandidateEducationDegree(object):
 
         # Retrieve candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
-        print "\ncandidate_id: {}".format(candidate_id)
-        print "\ndomain_id: {}".format(user_first.domain_id)
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         print response_info(get_resp)
         candidate_educations = get_resp.json()['candidate']['educations']
@@ -396,7 +391,7 @@ class TestDeleteCandidateEducation(object):
         print response_info(resp)
         assert resp.status_code == 404
 
-    def test_delete_education_of_a_candidate_in_same_domain(self, access_token_first, user_first, talent_pool,
+    def test_delete_education_of_a_candidate_in_same_domain(self, access_token_first, talent_pool,
                                                             user_second, access_token_second):
         """
         Test:   Attempt to delete the education of a Candidate that belongs to a user in a different domain
@@ -416,7 +411,7 @@ class TestDeleteCandidateEducation(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_education_of_a_different_candidate(self, access_token_first, user_first, talent_pool):
+    def test_delete_education_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete the education of a different Candidate in the same domain
         Expect: 403
@@ -440,7 +435,7 @@ class TestDeleteCandidateEducation(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.EDUCATION_FORBIDDEN
 
-    def test_delete_candidate_educations(self, access_token_first, user_first, talent_pool):
+    def test_delete_candidate_educations(self, access_token_first, talent_pool):
         """
         Test:   Remove all of candidate's educations from db
         Expect: 204, Candidate should not have any educations left
@@ -460,7 +455,7 @@ class TestDeleteCandidateEducation(object):
         assert updated_resp.status_code == 204
         assert len(can_dict_after_update['educations']) == 0
 
-    def test_delete_candidates_education(self, access_token_first, user_first, talent_pool):
+    def test_delete_candidates_education(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's education from db
         Expect: 204, Candidate's education must be less 1
@@ -517,8 +512,7 @@ class TestDeleteCandidateEducationDegree(object):
         print response_info(resp)
         assert resp.status_code == 404
 
-    def test_delete_edu_degree_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, user_first,
-                                                                       talent_pool, user_second,
+    def test_delete_edu_degree_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, talent_pool,
                                                                        access_token_second):
         """
         Test:   Attempt to delete the education-degrees of a Candidate that belongs to user from a diff domain
@@ -541,7 +535,7 @@ class TestDeleteCandidateEducationDegree(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_education_degree_of_a_different_candidate(self, access_token_first, user_first, talent_pool):
+    def test_delete_education_degree_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete the education-degrees of a different Candidate
         Expect: 403
@@ -565,7 +559,7 @@ class TestDeleteCandidateEducationDegree(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.EDUCATION_FORBIDDEN
 
-    def test_delete_candidate_education_degrees(self, access_token_first, user_first, talent_pool):
+    def test_delete_candidate_education_degrees(self, access_token_first, talent_pool):
         """
         Test:   Remove all of candidate's degrees from db
         Expect: 204; Candidate should not have any degrees left; Candidate's Education should not be removed
@@ -594,7 +588,7 @@ class TestDeleteCandidateEducationDegree(object):
         assert len(can_dict_after_update['educations'][0]['degrees']) == 0
         assert len(can_dict_after_update['educations'][0]) == count_of_edu_degrees_before_deleting
 
-    def test_delete_candidates_education_degree(self, access_token_first, user_first, talent_pool):
+    def test_delete_candidates_education_degree(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's education from db
         Expect: 204, Candidate's education must be less 1
@@ -652,8 +646,8 @@ class TestDeleteCandidateEducationDegreeBullet(object):
         print response_info(resp)
         assert resp.status_code == 404
 
-    def test_delete_degree_bullets_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, user_first,
-                                                                           talent_pool, user_second,
+    def test_delete_degree_bullets_of_a_candidate_belonging_to_a_diff_user(self, access_token_first,
+                                                                           talent_pool,
                                                                            access_token_second):
         """
         Test:   Attempt to delete degree-bullets of a Candidate that belongs to a user from a diff domain
@@ -677,7 +671,7 @@ class TestDeleteCandidateEducationDegreeBullet(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_can_edu_degree_bullets_of_a_different_candidate(self, access_token_first, user_first, talent_pool):
+    def test_delete_can_edu_degree_bullets_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete degree-bullets of a different Candidate
         Expect: 403
@@ -704,7 +698,7 @@ class TestDeleteCandidateEducationDegreeBullet(object):
         assert updated_resp.status_code == 404
         assert updated_resp.json()['error']['code'] == custom_error.DEGREE_NOT_FOUND
 
-    def test_delete_candidate_education_degree_bullets(self, access_token_first, user_first, talent_pool):
+    def test_delete_candidate_education_degree_bullets(self, access_token_first, talent_pool):
         """
         Test:   Remove all of candidate's degree_bullets from db
         Expect: 204; Candidate should not have any degrees left; Candidate's
@@ -737,7 +731,7 @@ class TestDeleteCandidateEducationDegreeBullet(object):
         assert len(can_dict_after_update['educations'][0]) == count_of_educations_before_deleting
         assert len(can_dict_after_update['educations'][0]['degrees']) == count_of_edu_degrees_before_deleting
 
-    def test_delete_candidates_education_degree_bullet(self, access_token_first, user_first, talent_pool):
+    def test_delete_candidates_education_degree_bullet(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's degree_bullet from db
         Expect: 204, Candidate's degree_bullet must be less 1. Candidate's education and degrees
