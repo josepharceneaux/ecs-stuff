@@ -420,7 +420,7 @@ class CandidatesResource(Resource):
                 candidate.is_archived = 1
                 archived_candidate_ids.append(candidate_id)
                 skip = True
-            else:  # json-schema will only allow True or False
+            elif archive_candidate is False:
                 if not is_user_permitted_to_archive_candidate(authed_user, candidate):
                     raise ForbiddenError(error_message="Only admins and candidate's owner may archive the candidate",
                                          error_code=custom_error.CANDIDATE_FORBIDDEN)
