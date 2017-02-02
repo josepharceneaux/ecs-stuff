@@ -218,7 +218,7 @@ class SmsCampaignSend(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     blast_id = db.Column(db.Integer,  db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
     candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id'))
-    sent_datetime = db.Column(db.DateTime)
+    sent_datetime = db.Column(db.DateTime, default=datetime.utcnow)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     # Relationships

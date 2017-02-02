@@ -19,26 +19,21 @@ def build_params_from_json(request):
     :return: Parsing parameters extracted from the requests JSON.
     :rtype: dict
     """
+    NON_DEFAULT_JSON_KEYS = ('filepicker_key', 'source_id', 'talent_pool_ids', 'source_product_id')
     request_json = get_json_data_if_validated(request, create_candidate_schema,
                                               custom_msg=error_constants.JSON_SCHEMA_ERROR['message'],
                                               custom_error_code=error_constants.JSON_SCHEMA_ERROR['code'])
     logger.info('Beginning parsing with JSON params: {}'.format(request_json))
 
-    create_candidate = request_json.get('create_candidate', False)
-    filepicker_key = request_json['filepicker_key']
-    resume_file = None
-    resume_file_name = request_json.get('resume_file_name', filepicker_key)
-    source_id = request_json.get('source_id')
-    talent_pool_ids = request_json.get('talent_pool_ids')
+    params = {'resume_file': None}
+    for k in NON_DEFAULT_JSON_KEYS:
+        params[k] = request_json.get(k)
 
-    return {
-        'create_candidate': create_candidate,
-        'filename': resume_file_name,
-        'filepicker_key': filepicker_key,
-        'resume_file': resume_file,
-        'source_id': source_id,
-        'talent_pools': talent_pool_ids
-    }
+    params['create_candidate'] = request_json.get('create_candidate', False)
+    params['filename'] = request_json.get('resume_file_name', params.get('filepicker_key'))
+
+
+    return params
 
 
 @contract
@@ -72,5 +67,5 @@ def build_params_from_form(request):
         'filename': resume_file_name,
         'filepicker_key': filepicker_key,
         'resume_file': resume_file,
-        'talent_pools': talent_pool_ids
+        'talent_pool_ids': talent_pool_ids
     }

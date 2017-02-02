@@ -31,7 +31,7 @@ from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
     EmailCampaignSendUrlConversion
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.misc import AreaOfInterest, UrlConversion
+from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.user import User, Permission
@@ -150,6 +150,13 @@ def fetch_candidate_info(candidate, fields=None):
     if (get_all_fields or 'resume_url' in fields) and candidate.filename:
         resume_url = get_s3_url(folder_path="OriginalFiles", name=candidate.filename)
 
+    # Get candidate's source product information
+    source_product_info = None
+    source_product_id = candidate.source_product_id
+    if source_product_id:
+        source_product = Product.get(source_product_id)
+        source_product_info = source_product.to_json()
+
     return {
         'id': candidate_id,
         'owner_id': candidate.user_id,
@@ -178,7 +185,8 @@ def fetch_candidate_info(candidate, fields=None):
         'talent_pool_ids': talent_pool_ids,
         'resume_url': resume_url,
         'source_id': candidate.source_id,
-        'source_product_id': candidate.source_product_id,
+        'source_product_id': source_product_id,
+        'source_product_info': source_product_info,
         'summary': candidate.summary,
         'objective': candidate.objective
     }
@@ -2383,7 +2391,7 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
 
             # CandidateSocialNetwork must belong to Candidate
             if can_sn_obj.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthorized candidate social network',
+                raise ForbiddenError(error_message='Unauthorized candidate social network: %s' % can_sn_obj.social_profile_url,
                                      error_code=custom_error.SOCIAL_NETWORK_FORBIDDEN)
 
             # Track all changes

@@ -174,6 +174,33 @@ aoi_schema = {
     ]
 }
 
+source_product_schema = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "source_products": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "notes": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            }
+        }
+    },
+    "required": [
+        "source_products"
+    ]
+}
+
 """
 This script adds the simple hash column which is used by the emailed resume to candidate code.
 """

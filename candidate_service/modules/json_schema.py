@@ -6,7 +6,6 @@ from datetime import datetime
 
 MAX_INT = sys.maxint
 CURRENT_YEAR = datetime.utcnow().year
-MAX_SOURCE_PRODUCT_ID = 6
 
 candidates_resource_schema_post = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -50,8 +49,7 @@ candidates_resource_schema_post = {
                     },
                     "source_product_id": {
                         "type": ["integer", "null"],
-                        "minimum": 1,
-                        "maximum": MAX_SOURCE_PRODUCT_ID
+                        "minimum": 1
                     },
                     "objective": {
                         "type": ["string", "null"]
@@ -632,8 +630,7 @@ candidates_resource_schema_patch = {
                     },
                     "source_product_id": {
                         "type": ["integer", "null"],
-                        "minimum": 1,
-                        "maximum": MAX_SOURCE_PRODUCT_ID
+                        "minimum": 1
                     },
                     "objective": {
                         "type": ["string", "null"]

@@ -2,6 +2,7 @@
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
+from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext
 from time import time
@@ -9,12 +10,13 @@ import base64
 # Third Party/Framework Specific.
 from contracts import contract
 from flask import current_app
+from PIL import Image
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
-from resume_parsing_service.app.views.ocr_lib import abbyy_ocr_image
+from resume_parsing_service.app.views.ocr_lib import ocr_image
 from resume_parsing_service.app.views.pdf_utils import (convert_pdf_to_text, decrypt_pdf)
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
@@ -46,9 +48,17 @@ def parse_resume(file_obj, filename_str, cache_key):
     # If file is an image, OCR it
     if is_image:
         start_time = time()
-        doc_content = abbyy_ocr_image(file_obj)
+        if file_ext != '.pdf':
+            with Image.open(file_obj) as im:
+                width, height = im.size
+                if width > 2500 or height > 2500:
+                    file_obj = StringIO()
+                    im.thumbnail((2500, 2500), Image.ANTIALIAS)
+                    im.save(file_obj, format='PNG')
+
+        doc_content = ocr_image(file_obj, filename_str)
         logger.info(
-            "Benchmark: Abby OCR for {}: took {}s to process".format(
+            "ResumeParsingService::Benchmark: OCR for {}: took {}s to process".format(
                 filename_str, time() - start_time)
         )
 

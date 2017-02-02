@@ -9,7 +9,7 @@ from sqlalchemy import not_
 from activity_service.app import logger
 
 
-EXCLUSIONS = (15, 16, 17)
+EXCLUSIONS = (15, 16, 17, 1201, 1202, 1203)
 EPOCH = datetime(year=1970, month=1, day=1)
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
@@ -72,7 +72,7 @@ class TalentActivityManager(object):
             "<b>%(username)s</b> deleted %(count)s campaign(s)",
             "campaign.png"),
         Activity.MessageIds.CAMPAIGN_SEND: (
-            "Campaign <b>%(name)s</b> was sent to <b>%(num_candidates)s</b> candidate(s)",
+            "%(campaign_type)s campaign <b>%(name)s</b> was sent to <b>%(num_candidates)s</b> candidate(s)",
             "%(count)s campaign(s) sent",
             "campaign.png"),
         Activity.MessageIds.CAMPAIGN_EXPIRE: (
@@ -352,7 +352,7 @@ class TalentActivityManager(object):
             if not params.get(param):
                 params[param] = 'unknown'
             if param == 'campaign_type' and params[param].lower() not in CampaignUtils.WITH_ARTICLE_AN:
-                format_string = format_string.replace("an", "a")
+                format_string = format_string.replace(" an ", " a ")
 
         formatted_string = format_string % params
 

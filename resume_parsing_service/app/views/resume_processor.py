@@ -50,7 +50,7 @@ def process_resume(parse_params):
     if not create_candidate:
         return parsed_resume
 
-    talent_pools = parse_params.get('talent_pools')
+    talent_pools = parse_params.get('talent_pool_ids')
     # Talent pools are the ONLY thing required to create a candidate.
     if create_candidate and not talent_pools:
         raise InvalidUsage(
@@ -61,9 +61,8 @@ def process_resume(parse_params):
     oauth_string = parse_params.get('oauth')
     parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
 
-    product_source_id = parse_params.get('source_id')
-    if product_source_id:
-        parsed_resume['candidate']['source_product_id'] = product_source_id
+    parsed_resume['candidate']['source_id'] = parse_params.get('source_id')
+    parsed_resume['candidate']['source_product_id'] = parse_params.get('source_product_id')
 
     # Upload resumes we want to create candidates from.
     try:

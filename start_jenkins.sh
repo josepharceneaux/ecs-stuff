@@ -8,7 +8,10 @@ pip install -r requirements.txt
 
 # Build Docker Images
 sudo service docker restart
-sudo service mysql restart
+# New Jenkins uses Aurora
+if [ `hostname` != "aws-jenkins.gettalent.com" ]; then
+    sudo service mysql restart
+fi
 sudo usermod -aG docker jenkins
 
 # Stopping all containers and removing all dangling images from Jenkins container
@@ -72,7 +75,9 @@ sleep 10
 
 echo "Beginning tests."
 
-py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests email_campaign_service/tests sms_campaign_service/tests candidate_pool_service/tests spreadsheet_import_service/tests app_common/common/tests social_network_service/tests app_common/common/campaign_services/tests talentbot_service/tests
+py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests email_campaign_service/tests sms_campaign_service/tests candidate_pool_service/tests spreadsheet_import_service/tests app_common/common/tests social_network_service/tests app_common/common/campaign_services/tests talentbot_service/tests
+#py.test -n 48 auth_service/tests # TODO: For faster deployment - basit
+
 
 if [ $? -ne 0 ] ; then
     exit 1
