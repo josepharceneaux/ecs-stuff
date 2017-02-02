@@ -8,6 +8,7 @@ import requests
 
 # Application Specific
 from base import SocialNetworkBase
+from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.modules.constants import ACTIONS
 from social_network_service.modules.urls import get_url
@@ -65,7 +66,11 @@ class Eventbrite(SocialNetworkBase):
         """
         user_credentials_in_db = super(Eventbrite,
                                        Eventbrite).save_user_credentials_in_db(user_credentials)
-        Eventbrite.create_webhook(user_credentials_in_db)
+        try:
+            Eventbrite.create_webhook(user_credentials_in_db)
+        except Exception:
+            UserSocialNetworkCredential.delete(user_credentials_in_db)
+            raise
         return user_credentials_in_db
 
     @classmethod

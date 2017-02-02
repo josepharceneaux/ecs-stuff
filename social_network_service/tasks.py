@@ -224,7 +224,7 @@ def process_meetup_rsvp(rsvp):
             rollback()
 
 
-@celery.task(name="process_eveite_rsvp")
+@celery.task(name="process_eventbrite_rsvp")
 def process_eventbrite_rsvp(rsvp):
     """
     This celery task is for an individual RSVP received from Eventbrite to be processed.

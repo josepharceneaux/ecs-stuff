@@ -541,17 +541,15 @@ class Meetup(EventBase):
         # getting all users associated with a specific meetup account
         member_users = UserSocialNetworkCredential.query.filter_by(member_id=self.member_id,
                                                                    social_network_id=event_data['social_network_id'])
-        events = Event.query.filter_by(social_network_id=event_data['social_network_id'],
-                                       social_network_event_id=event_data['social_network_event_id'])
+        events_in_db = Event.query.filter_by(social_network_id=event_data['social_network_id'],
+                                             social_network_event_id=event_data['social_network_event_id'])
         # making list of 'user_id' of users associated with a specific event
-        user_ids = [event.user_id for event in events]
+        user_ids = [event.user_id for event in events_in_db]
         member_user_ids = [member.user_id for member in member_users]
         # getting list of users for whom event 'event_data' is not saved in db.
         missing_event_users = set(member_user_ids) - set(user_ids)
         event_data['is_deleted_from_vendor'] = 0
-        Event.query.filter_by(social_network_id=event_data['social_network_id'],
-                              social_network_event_id=event_data['social_network_event_id']). \
-            update(event_data, synchronize_session=False)
+        events_in_db.update(event_data, synchronize_session=False)
         # saving event 'event_data' in db for those users which are connected with same meetup account in
         # other domain but event was not saved for them.
         for member_user_id in missing_event_users:

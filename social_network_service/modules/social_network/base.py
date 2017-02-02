@@ -553,7 +553,7 @@ class SocialNetworkBase(object):
         """
         This connects user with social-network's account. e.g. on Meetup or Eventbrite etc.
         This gets access token and refresh tokens for user and it also updates these tokens for previously connected
-        users. It also gets member_id of getTalent user on requested social-network website.
+        users. It also gets member_id of getTalent user for requested social-network website.
         :param string code: code to exchange for access token and refresh token.
         """
         access_token, refresh_token = self.get_access_and_refresh_token(self.user.id, self.social_network,
@@ -577,6 +577,10 @@ class SocialNetworkBase(object):
                 if record.user.domain_id == self.user.domain_id:
                     error_message = 'Some other user is already using this account. user_id:%s, social_network:%s , ' \
                                     'member_id:%s.' % (self.user.id, self.social_network.name.title(), member_id)
+                    logger.error(error_message)
+                    raise InvalidUsage(error_message)
+                elif record.user.id == self.user.id:
+                    error_message = 'You are already connected to this account.'
                     logger.error(error_message)
                     raise InvalidUsage(error_message)
                 else:

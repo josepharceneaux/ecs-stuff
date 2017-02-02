@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import TINYINT
 from ..utils.validators import is_number
+from contracts import contract
 from ..error_handling import InvalidUsage, ForbiddenError
 
 
@@ -243,6 +244,7 @@ class MeetupGroup(db.Model):
         return cls.query.filter_by(group_id=group_id).first()
 
     @classmethod
+    @contract
     def get_all_records_by_group_id(cls, group_id):
         """
         :param string | int group_id: group unique id
