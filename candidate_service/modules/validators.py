@@ -301,9 +301,7 @@ SEARCH_INPUT_AND_VALIDATIONS = {
 
     # Sources
     "source_ids": 'id_list',
-    "source_names": 'string_list',
     "source_details": 'string_list',
-    "source_notes": 'string_list',
     "source_added_date": "date",
 
     "minimum_years_experience": 'number',

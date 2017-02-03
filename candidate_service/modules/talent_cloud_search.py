@@ -1421,22 +1421,6 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     elif source_ids:
         filter_queries.append("(term field=source_id %s)" % source_ids)
 
-    # Names
-    source_names = request_vars.get('source_names')
-    if isinstance(source_names, list):
-        source_name_facet = ["source_name:'%s'" % source_facet for source_facet in source_names]
-        filter_queries.append("(or %s)" % ' '.join(source_name_facet))
-    elif source_names:
-        filter_queries.append("(term field=source_name '%s')" % source_names)
-
-    # Notes
-    source_notes = request_vars.get('source_notes')
-    if isinstance(source_notes, list):
-        source_name_facet = ["source_notes:'%s'" % source_facet for source_facet in source_notes]
-        filter_queries.append("(or %s)" % ' '.join(source_name_facet))
-    elif source_notes:
-        filter_queries.append("(term field=source_notes '%s')" % source_notes)
-
     # Details
     source_details = request_vars.get('source_details')
     if isinstance(source_details, list):
