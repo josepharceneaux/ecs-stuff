@@ -120,13 +120,16 @@ def process_meetup_event(event):
                 event_data = meetup_event_base.fetch_event(event['id'])
                 gt_event_data, gt_venue_data = meetup_event_base.event_sn_to_gt_mapping(event_data)
                 for group_user in groups:
-                    if gt_venue_data:
+                    try:
                         meetup_event_base.user = group_user.user
-                        gt_venue_data['user_id'] = group_user.user_id
-                        venue_in_db = meetup_event_base.save_or_update_venue(gt_venue_data)
-                        event_data['venue_id'] = venue_in_db.id
-                    event_data['user_id'] = group_user.user_id
-                    event_in_db = meetup_event_base.save_or_update_event(event_data)
+                        if gt_venue_data:
+                            gt_venue_data['user_id'] = group_user.user_id
+                            venue_in_db = meetup_event_base.save_or_update_venue(gt_venue_data)
+                            gt_event_data['venue_id'] = venue_in_db.id
+                        gt_event_data['user_id'] = group_user.user_id
+                        meetup_event_base.save_or_update_event(gt_event_data)
+                    except Exception as e:
+                        logger.error(e)
 
             elif event['status'] in ['canceled', MEETUP_EVENT_STATUS['deleted']]:
                 event_id = event['id']
