@@ -93,8 +93,14 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'email':                         dict(IndexFieldType='text-array'),
     'user_id':                       dict(IndexFieldType='int'),
     'domain_id':                     dict(IndexFieldType='int',             IntOptions={'ReturnEnabled': False}),
+
+    # Sources
     'source_id':                     dict(IndexFieldType='int'),
+    'source_details':                dict(IndexFieldType='literal-array'),
+
     'source_product_id':             dict(IndexFieldType='int'),
+
+
     'status_id':                     dict(IndexFieldType='int'),
     'objective':                     dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY}),
     'text_comment':                  dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
@@ -268,6 +274,8 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
     """
     Returns dicts like: {type="add", id="{candidate_id}", fields={dict of fields to values}}
 
+    Note: Candidate fields must be exactly as they are defined in Cloud Search Index Field Names.
+     Ex: candidate.firstName AS `first_name`
     """
     if not candidate_ids:
         logger.warn("Attempted to build candidate documents when candidate_ids=%s", candidate_ids)
@@ -280,7 +288,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.id AS `id`, candidate.firstName AS `first_name`, candidate.lastName AS `last_name`,
                 candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, :date_format) AS `added_time`,
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
-                candidate.is_archived AS `is_archived`,
+                candidate.is_archived AS `is_archived`, candidate.source_detail AS `source_details`,
                 HOUR(candidate.addedTime) AS `added_time_hour`, candidate.sourceId AS `source_id`,
                 candidate.sourceProductId AS `source_product_id`, candidate.totalMonthsExperience AS
                 `total_months_experience`, candidate.isWebHidden AS `is_web_hidden`,
@@ -290,7 +298,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate_address.coordinates AS `coordinates`,
                 GROUP_CONCAT(DISTINCT candidate_email.address SEPARATOR :sep) AS `email`,
 
-                # Candidat Phone Numbers
+                # Candidate Phone Numbers
                 GROUP_CONCAT(DISTINCT candidate_phone.Value SEPARATOR :sep) AS `phone`,
 
                 # Talent Pools
@@ -419,6 +427,14 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 tags = session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
                 field_name_to_sql_value['tags'] = group_concat_separator.join([tag.name for tag in tags])
 
+            # Source
+            candidate_source = None
+            source_id = field_name_to_sql_value.get('source_id')
+            if source_id:
+                candidate_source = session.query(CandidateSource).get(source_id)
+                field_name_to_sql_value['source_name'] = candidate_source.description
+                field_name_to_sql_value['source_notes'] = candidate_source.notes
+
             # Massage 'field_name_to_sql_value' values into the types they are supposed to be
             resume_text = ''
             for field_name in field_name_to_sql_value.keys():
@@ -440,9 +456,9 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 if not sql_value:
                     continue
 
-                if field_name == 'source_id':
-                    candidate_source = CandidateSource.query.get(sql_value)
-                    resume_text += (' ' + candidate_source.description) if candidate_source else ''
+                if field_name == 'source_id' and candidate_source:
+                    resume_text += (' ' + candidate_source.description)
+                    resume_text += (' ' + candidate_source.notes or '')
 
                 index_field_type = index_field_options['IndexFieldType']
                 if 'array' in index_field_type:
@@ -795,7 +811,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     logger.info("Filter Query: %s, Search Query: %s" % (filter_query, search_query))
 
     # Adding facet fields parameters
-
     if not count_only:
         params['facet'] = "{area_of_interest_id:{size:500},source_id:{size:50},total_months_experience:{size:50}," \
                           "user_id:{size:50},status_id:{size:50},skill_description:{size:500}," \
@@ -1396,12 +1411,28 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     elif request_vars.get('status_ids'):
         filter_queries.append("(term field=status_id %s)" % request_vars.get('status_ids'))
 
-    if isinstance(request_vars.get('source_ids'), list):
+    # ***** SOURCES *****
+    # IDs
+    source_ids = request_vars.get('source_ids')
+    if isinstance(source_ids, list):
         # search for exact values in facets
-        source_facets = [ "source_id:%s" % source_facet for source_facet in request_vars.get('source_ids')]
+        source_facets = ["source_id:%s" % source_facet for source_facet in source_ids]
         filter_queries.append("(or %s)" % ' '.join(source_facets))
-    elif request_vars.get('source_ids'):
-        filter_queries.append("(term field=source_id %s)" % request_vars.get('source_ids'))
+    elif source_ids:
+        filter_queries.append("(term field=source_id %s)" % source_ids)
+
+    # Details
+    source_details = request_vars.get('source_details')
+    if isinstance(source_details, list):
+        source_details_facet = ["source_details:'%s'" % source_facet for source_facet in source_details]
+        filter_queries.append("(or %s)" % ' '.join(source_details_facet))
+    elif source_details:
+        filter_queries.append("(term field=source_details '%s')" % source_details)
+
+    # Added data
+    source_added_date = request_vars.get('source_added_date')
+    if source_added_date:
+        filter_queries.append("(term field=source_added_date %s" % source_added_date)
 
     # Set filter range for years experience, if given
     if request_vars.get('minimum_years_experience') or request_vars.get('maximum_years_experience'):
@@ -1471,7 +1502,7 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     if isinstance(request_vars.get('military_branch'), list):
         # search for exact values in facets
         branch_facets = ["military_branch:'%s'" % branch_facet for branch_facet in request_vars.get('military_branch')]
-        filter_queries.append("(or %s)" % " ".join( branch_facets ))
+        filter_queries.append("(or %s)" % " ".join(branch_facets))
     elif request_vars.get('military_branch'):
         filter_queries.append("(term field=military_branch '%s' )" % request_vars.get('military_branch'))
 

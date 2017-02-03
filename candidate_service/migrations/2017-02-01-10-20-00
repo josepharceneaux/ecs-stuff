@@ -3,6 +3,7 @@ This script will add "title" column to candidate table
 """
 
 from candidate_service.common.models.db import db
+from sqlalchemy.dialects.mysql import VARCHAR
 
 
 db.session.execute("ALTER TABLE candidate ADD COLUMN title VARCHAR(100);")

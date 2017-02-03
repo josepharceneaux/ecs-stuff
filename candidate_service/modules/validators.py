@@ -15,7 +15,8 @@ from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPON
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from candidate_service.common.models.candidate import (
     Candidate, CandidateEmail, CandidateEducation, CandidateExperience, CandidatePhone,
-    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateMilitaryService
+    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateMilitaryService,
+    CandidateSource
 )
 from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign
@@ -23,7 +24,7 @@ from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User, Role
 from candidate_service.common.models.misc import AreaOfInterest, CustomField
 from candidate_service.common.models.user import User
-from candidate_service.common.utils.validators import is_number, format_phone_number
+from candidate_service.common.utils.validators import is_number, format_phone_number, is_valid_email
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
@@ -297,7 +298,12 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "radius": 'number',
     "area_of_interest_ids": 'id_list',
     "status_ids": 'id_list',
+
+    # Sources
     "source_ids": 'id_list',
+    "source_details": 'string_list',
+    "source_added_date": "date",
+
     "minimum_years_experience": 'number',
     "maximum_years_experience": 'number',
     "skills": 'string_list',

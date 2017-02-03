@@ -861,6 +861,7 @@ def create_or_update_candidate_from_params(
         dice_profile_id=None,
         added_datetime=None,
         source_id=None,
+        source_detail=None,
         source_product_id=None,
         objective=None,
         summary=None,
@@ -963,12 +964,14 @@ def create_or_update_candidate_from_params(
     if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name,
                                          objective, summary, candidate_id, user_id, resume_url,
-                                         source_id, source_product_id, status_id, resume_text, title)
+                                         source_id, source_detail, source_product_id, status_id,
+                                         resume_text, title)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name, formatted_name,
                                       added_datetime, status_id, user_id, dice_profile_id,
-                                      dice_social_profile_id, source_id, source_product_id,
-                                      objective, summary, resume_url, resume_text, title)
+                                      dice_social_profile_id, source_id, source_detail,
+                                      source_product_id, objective, summary, resume_url,
+                                      resume_text, title)
 
     candidate = Candidate.get_by_id(candidate_id)
     """
@@ -1163,8 +1166,8 @@ def social_network_name_from_url(url):
 
 
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                      candidate_id, user_id, resume_url, source_id, source_product_id,
-                      candidate_status_id, resume_text, title):
+                      candidate_id, user_id, resume_url, source_id, source_detail,
+                      source_product_id, candidate_status_id, resume_text, title):
     """
     Function will update Candidate's primary information.
     Candidate's Primary information include:
@@ -1188,7 +1191,8 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
 
     update_dict = {
         'objective': objective, 'summary': summary, 'filename': resume_url,
-        'source_id': source_id, 'candidate_status_id': candidate_status_id,
+        'source_id': source_id, 'source_detail': source_detail,
+        'candidate_status_id': candidate_status_id,
         'source_product_id': source_product_id, 'resume_text': resume_text,
         'title': title
     }
@@ -1229,7 +1233,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
 
 def _add_candidate(first_name, middle_name, last_name, formatted_name,
                    added_time, candidate_status_id, user_id, dice_profile_id,
-                   dice_social_profile_id, source_id, source_product_id,
+                   dice_social_profile_id, source_id, source_detail, source_product_id,
                    objective, summary, resume_url, resume_text, title):
     """
     Function will add Candidate and its primary information to db
@@ -1238,11 +1242,13 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     """
     # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     add_dict = dict(
-        first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
-        added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
+        first_name=first_name, middle_name=middle_name, last_name=last_name,
+        formatted_name=formatted_name, added_time=added_time,
+        candidate_status_id=candidate_status_id, user_id=user_id,
         source_product_id=source_product_id, dice_profile_id=dice_profile_id,
-        dice_social_profile_id=dice_social_profile_id, source_id=source_id, objective=objective,
-        summary=summary, filename=resume_url, resume_text=resume_text, title=title, is_dirty=0
+        dice_social_profile_id=dice_social_profile_id, source_id=source_id,
+        source_detail=source_detail,  objective=objective, summary=summary,
+        filename=resume_url, resume_text=resume_text, title=title, is_dirty=0
     )
 
     # All empty values must be removed

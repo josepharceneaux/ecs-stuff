@@ -34,6 +34,7 @@ class Candidate(db.Model):
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
     source_id = db.Column('SourceId', db.Integer, db.ForeignKey('candidate_source.Id'))
+    source_detail = db.Column(db.VARCHAR(100), nullable=True)
     source_product_id = db.Column('SourceProductId', db.Integer, db.ForeignKey('product.Id'),
                                   nullable=True, default=2)  # Web = 2
     filename = db.Column('Filename', db.String(100))
