@@ -47,6 +47,7 @@ DEFAULT_USER_NAME_MERGETAG = "*|USERNAME|*"
 DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
 TEST_PREFERENCE_URL = get_web_app_url() + "/account/subscription-preferences"
 TRACKING_PIXEL_URL = "https://s3-us-west-1.amazonaws.com/gettalent-static/pixel.png"
+TOPIC_ARN = 'arn:aws:sns:us-east-1:528222547498:email-campaign-to-candidate-%s'  # TODO: Move this to web.cfg
 TRACKING_URL_TYPE = 0
 TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
