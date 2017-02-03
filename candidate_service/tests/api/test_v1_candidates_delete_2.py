@@ -1,9 +1,8 @@
 """
 Test cases for CandidateResource/delete()
 """
-# Candidate Service app instance
-
 # Conftest
+from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from candidate_sample_data import generate_single_candidate_data
@@ -20,7 +19,7 @@ class TestDeleteCandidateMilitaryService(object):
         Expect: 401
         """
         # Delete Candidate's military_services
-        resp = send_request('delete', CandidateApiUrl.MILITARY_SERVICES % 5, None)
+        resp = send_request('delete', CandidateApiUrl.MILITARY_SERVICES % str(5), None)
         print response_info(resp)
         assert resp.status_code == 401
 
@@ -40,9 +39,8 @@ class TestDeleteCandidateMilitaryService(object):
         print response_info(resp)
         assert resp.status_code == 404
 
-    def test_delete_military_service_of_a_candidate_belonging_to_a_diff_user(self, user_first, access_token_first,
-                                                                             talent_pool, user_second,
-                                                                             access_token_second):
+    def test_delete_military_service_of_a_candidate_belonging_to_a_diff_user(self, access_token_first,
+                                                                             talent_pool, access_token_second):
         """
         Test:   Attempt to delete the military_services of a Candidate that belongs
                 to a different user from a different domain
@@ -61,7 +59,7 @@ class TestDeleteCandidateMilitaryService(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_military_service_of_a_different_candidate(self, user_first, access_token_first, talent_pool):
+    def test_delete_military_service_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete the military_service of a different Candidate
         Expect: 403
@@ -85,7 +83,7 @@ class TestDeleteCandidateMilitaryService(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.MILITARY_FORBIDDEN
 
-    def test_delete_candidate_military_services(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_military_services(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's military services from db
         Expect: 204, Candidate must not have any military services left
@@ -105,7 +103,7 @@ class TestDeleteCandidateMilitaryService(object):
         assert updated_resp.status_code == 204
         assert len(can_dict_after_update['military_services']) == 0
 
-    def test_delete_can_military_service(self, user_first, access_token_first, talent_pool):
+    def test_delete_can_military_service(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's military service from db
         Expect: 204, Candidate's military services must be less 1
@@ -141,7 +139,7 @@ class TestDeleteCandidatePreferredLocation(object):
         Expect: 401
         """
         # Delete Candidate's preferred locations
-        resp = send_request('delete', CandidateApiUrl.PREFERRED_LOCATIONS % 5, None)
+        resp = send_request('delete', CandidateApiUrl.PREFERRED_LOCATIONS % str(5), None)
         print response_info(resp)
         assert resp.status_code == 401
 
@@ -161,8 +159,7 @@ class TestDeleteCandidatePreferredLocation(object):
         print response_info(resp)
         assert resp.status_code == 404
 
-    def test_delete_preferred_location_of_a_candidate_belonging_to_a_diff_user(self, user_first, access_token_first,
-                                                                               talent_pool, user_second,
+    def test_delete_preferred_location_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, talent_pool,
                                                                                access_token_second):
         """
         Test:   Attempt to delete preferred locations of a Candidate that belongs
@@ -182,7 +179,7 @@ class TestDeleteCandidatePreferredLocation(object):
         print response_info(updated_resp)
         assert updated_resp.status_code == 403
 
-    def test_delete_preferred_location_of_a_different_candidate(self, user_first, access_token_first, talent_pool):
+    def test_delete_preferred_location_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete the preferred location of a different Candidate
         Expect: 403
@@ -206,7 +203,7 @@ class TestDeleteCandidatePreferredLocation(object):
         print response_info(updated_resp)
         assert updated_resp.status_code == 403
 
-    def test_delete_candidate_preferred_locations(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_preferred_locations(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's preferred locations from db
         Expect: 204, Candidate must not have any preferred locations left
@@ -226,7 +223,7 @@ class TestDeleteCandidatePreferredLocation(object):
         assert updated_resp.status_code == 204
         assert len(can_dict_after_update['preferred_locations']) == 0
 
-    def test_delete_candidate_preferred_location(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_preferred_location(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's preferred location from db
         Expect: 204, Candidate's preferred locations must be less 1
@@ -262,7 +259,7 @@ class TestDeleteCandidateSkill(object):
         Expect: 401
         """
         # Delete Candidate's skills
-        resp = send_request('delete', CandidateApiUrl.SKILLS % 5, None)
+        resp = send_request('delete', CandidateApiUrl.SKILLS % str(5), None)
         print response_info(resp)
         assert resp.status_code == 401
 
@@ -281,9 +278,8 @@ class TestDeleteCandidateSkill(object):
         print response_info(resp)
         assert resp.status_code == 404
 
-    def test_delete_skill_of_a_candidate_belonging_to_a_diff_user(self, user_first, access_token_first,
-                                                                  talent_pool, user_second,
-                                                                  access_token_second):
+    def test_delete_skill_of_a_candidate_belonging_to_a_diff_user(self, access_token_first,
+                                                                  talent_pool, access_token_second):
         """
         Test:   Attempt to delete the skill of a Candidate that belongs
                 to a different user from a different domain
@@ -303,7 +299,7 @@ class TestDeleteCandidateSkill(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_skill_of_a_different_candidate(self, user_first, access_token_first, talent_pool):
+    def test_delete_skill_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete skill of a different Candidate
         Expect: 403
@@ -327,7 +323,7 @@ class TestDeleteCandidateSkill(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.SKILL_FORBIDDEN
 
-    def test_delete_candidate_skills(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_skills(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's skills from db
         Expect: 204, Candidate must not have any skills left
@@ -347,7 +343,7 @@ class TestDeleteCandidateSkill(object):
         assert updated_resp.status_code == 204
         assert len(can_dict_after_update['skills']) == 0
 
-    def test_delete_candidate_skill(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_skill(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's skill from db
         Expect: 204, Candidate's skills must be less 1
@@ -383,7 +379,7 @@ class TestDeleteCandidateSocialNetwork(object):
         Expect: 401
         """
         # Delete Candidate's social networks
-        resp = send_request('delete', CandidateApiUrl.SOCIAL_NETWORKS % 5, None)
+        resp = send_request('delete', CandidateApiUrl.SOCIAL_NETWORKS % str(5), None)
         print response_info(resp)
         assert resp.status_code == 401
 
@@ -403,9 +399,8 @@ class TestDeleteCandidateSocialNetwork(object):
         print response_info(resp)
         assert resp.status_code == 404
 
-    def test_delete_social_network_of_a_candidate_belonging_to_a_diff_user(self, user_first, access_token_first,
-                                                                           talent_pool, user_second,
-                                                                           access_token_second):
+    def test_delete_social_network_of_a_candidate_belonging_to_a_diff_user(self, access_token_first,
+                                                                           talent_pool, access_token_second):
         """
         Test:   Attempt to delete the social networks of a Candidate that belongs
                 to a different user from a different domain
@@ -424,7 +419,7 @@ class TestDeleteCandidateSocialNetwork(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_social_network_of_a_different_candidate(self, user_first, access_token_first, talent_pool):
+    def test_delete_social_network_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete the social network of a different Candidate
         Expect: 403
@@ -448,7 +443,7 @@ class TestDeleteCandidateSocialNetwork(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.SOCIAL_NETWORK_FORBIDDEN
 
-    def test_delete_candidate_social_networks(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_social_networks(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's social networks from db
         Expect: 204, Candidate must not have any social networks left
@@ -468,7 +463,7 @@ class TestDeleteCandidateSocialNetwork(object):
         assert updated_resp.status_code == 204
         assert len(can_dict_after_update['social_networks']) == 0
 
-    def test_delete_can_social_network(self, user_first, access_token_first, talent_pool):
+    def test_delete_can_social_network(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's social network from db
         Expect: 204, Candidate's social networks must be less 1
@@ -504,7 +499,7 @@ class TestDeleteWorkPreference(object):
         Expect: 401
         """
         # Delete Candidate's work preference
-        resp = send_request('delete', CandidateApiUrl.WORK_PREFERENCES % 5, None)
+        resp = send_request('delete', CandidateApiUrl.WORK_PREFERENCES % str(5), None)
         print response_info(resp)
         assert resp.status_code == 401
 
@@ -519,9 +514,8 @@ class TestDeleteWorkPreference(object):
         print response_info(resp)
         assert resp.status_code == 404
 
-    def test_delete_work_preference_of_a_candidate_belonging_to_a_diff_user(self, user_first, access_token_first,
-                                                                            talent_pool, user_second,
-                                                                            access_token_second):
+    def test_delete_work_preference_of_a_candidate_belonging_to_a_diff_user(self, access_token_first,
+                                                                            talent_pool, access_token_second):
         """
         Test:   Attempt to delete the work preference of a Candidate that belongs
                 to a user from a different domain
@@ -540,7 +534,7 @@ class TestDeleteWorkPreference(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_candidate_work_preference(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_work_preference(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's work-preference from db
         Expect: 204, Candidate must not have any work-preference left

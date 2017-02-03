@@ -344,8 +344,8 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     # Create blast for email-campaign
     email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id)
     EmailCampaignBlast.save(email_campaign_blast)
-
     blast_id = email_campaign_blast.id
+
     # TODO: commenting for now - basit
     # Add data in Dynamo DB
     # try:
@@ -354,6 +354,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     # except Exception as e:
     #     logger.error("\nUnable to put item(email-campaign-id:{}, candidate_ids:{} in DynamoDB table:{}. "
     #                  "Error: {}".format(campaign.id, all_candidate_ids, EmailMarketing.dynamo_table_name, e.message))
+
     # Get subscribed and un-subscribed candidate ids
     subscribed_candidate_ids, unsubscribed_candidate_ids = \
         get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)

@@ -1,18 +1,12 @@
 """
 Test cases for CandidateTagResource endpoints & their modules
 """
-# Candidate Service app instance
-
-# Conftest
-
-from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_errors
 
 
 class TestCreateCandidateTags(object):
-
     def test_add_tags(self, access_token_first, candidate_first):
         """
         Test:  Add tags to candidate

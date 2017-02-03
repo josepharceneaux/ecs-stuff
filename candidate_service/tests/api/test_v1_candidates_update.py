@@ -7,8 +7,6 @@ import pycountry
 
 from candidate_sample_data import (fake, generate_single_candidate_data, GenerateCandidateData)
 from candidate_service.common.models.candidate import CandidateEmail
-from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.tests.conftest import *
 
 # Conftest
 from candidate_service.common.tests.conftest import *
@@ -64,8 +62,7 @@ class TestUpdateCandidateSuccessfully(object):
 
 
 class TestUpdateCandidate(object):
-    def test_archive_candidates(self, user_first, access_token_first, talent_pool,
-                                domain_source, domain_aois, domain_custom_fields):
+    def test_archive_candidates(self, access_token_first, talent_pool, domain_source, domain_aois, domain_custom_fields):
         """
         Test:  Create a candidate and archive it
         Expect: 200; candidate should not be retrievable
@@ -153,7 +150,7 @@ class TestUpdateCandidate(object):
         assert update_resp.status_code == 403
         assert update_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_update_candidate_without_id(self, access_token_first, user_first):
+    def test_update_candidate_without_id(self, access_token_first):
         """
         Test:   Attempt to update a Candidate without providing the ID
         Expect: 400
@@ -166,7 +163,7 @@ class TestUpdateCandidate(object):
         assert resp.status_code == 400
         assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
-    def test_update_candidate_names(self, access_token_first, user_first, talent_pool):
+    def test_update_candidate_names(self, access_token_first, talent_pool):
         """
         Test:   Update candidate's first, middle, and last names
         Expect: 200
@@ -195,7 +192,7 @@ class TestUpdateCandidate(object):
         full_name_from_data = str(f_name) + ' ' + str(m_name) + ' ' + str(l_name)
         assert candidate_dict['full_name'] == full_name_from_data
 
-    def test_update_candidate_names_with_candidate_id_in_url(self, access_token_first, user_first, talent_pool):
+    def test_update_candidate_names_with_candidate_id_in_url(self, access_token_first, talent_pool):
         """
         Test:   Update candidate's first, middle, and last names with candidate ID sent thru the url
         Expect: 200
@@ -223,7 +220,7 @@ class TestUpdateCandidate(object):
         full_name_from_data = str(f_name) + ' ' + str(m_name) + ' ' + str(l_name)
         assert candidate_dict['full_name'] == full_name_from_data
 
-    def test_update_candidates_in_bulk_with_one_erroneous_data(self, access_token_first, user_first, talent_pool):
+    def test_update_candidates_in_bulk_with_one_erroneous_data(self, access_token_first, talent_pool):
         """
         Test: Attempt to update few candidates, one of which will have bad data
         Expect: 400; no record should be added to the db
@@ -636,7 +633,7 @@ class TestUpdateCandidateAddress(object):
         # Only one of the addresses must be default!
         assert sum([1 for address in updated_can_addresses if address['is_default']]) == 1
 
-    def test_update_an_existing_address(self, access_token_first, user_first, talent_pool):
+    def test_update_an_existing_address(self, access_token_first, talent_pool):
         """
         Test:   Update an existing CandidateAddress
         Expect: 200
@@ -668,7 +665,7 @@ class TestUpdateCandidateAddress(object):
                pycountry.subdivisions.get(code=data['candidates'][0]['addresses'][0]['subdivision_code']).name
         assert updated_address['zip_code'] == data['candidates'][0]['addresses'][0]['zip_code']
 
-    def test_update_candidate_current_address(self, access_token_first, user_first, talent_pool):
+    def test_update_candidate_current_address(self, access_token_first, talent_pool):
         """
         Test:   Set one of candidate's addresses' is_default to True and assert it's the first
                 CandidateAddress object returned in addresses-list
@@ -705,7 +702,7 @@ class TestUpdateCandidateAddress(object):
 
 
 class TestUpdateCandidateAOI(object):
-    def test_add_new_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aois):
+    def test_add_new_area_of_interest(self, access_token_first, talent_pool, domain_aois):
         """
         Test:   Add a new CandidateAreaOfInterest to existing Candidate.
                 Number of CandidateAreaOfInterest should increase by 1.
@@ -738,7 +735,7 @@ class TestUpdateCandidateAOI(object):
 
 
 class TestUpdateWorkPreference(object):
-    def test_add_multiple_work_preference(self, access_token_first, user_first, talent_pool):
+    def test_add_multiple_work_preference(self, access_token_first, talent_pool):
         """
         Test:   Attempt to add two CandidateWorkPreference
         Expect: 400
@@ -755,7 +752,7 @@ class TestUpdateWorkPreference(object):
         assert updated_resp.status_code == 400
         assert updated_resp.json()['error']['code'] == custom_error.WORK_PREF_EXISTS
 
-    def test_update_work_preference(self, access_token_first, user_first, talent_pool):
+    def test_update_work_preference(self, access_token_first, talent_pool):
         """
         Test:   Update candidate's work preference. Since this is an update,
                 number of CandidateWorkPreference must remain unchanged.
@@ -791,7 +788,7 @@ class TestUpdateWorkPreference(object):
 
 
 class TestUpdateCandidateMilitaryService(object):
-    def test_add_military_service_with_incorrect_date_format(self, access_token_first, user_first, talent_pool):
+    def test_add_military_service_with_incorrect_date_format(self, access_token_first, talent_pool):
         """
         Test: Attempt to add military service to candidate with faulty to_date or from_date format
         Expect: 400
@@ -807,7 +804,7 @@ class TestUpdateCandidateMilitaryService(object):
         assert create_resp.status_code == 400
         assert create_resp.json()['error']['code'] == custom_error.MILITARY_INVALID_DATE
 
-    def test_add_military_service(self, access_token_first, user_first, talent_pool):
+    def test_add_military_service(self, access_token_first, talent_pool):
         """
         Test:   Add a CandidateMilitaryService to an existing Candidate.
                 Number of candidate's military_services should increase by 1.
@@ -839,7 +836,7 @@ class TestUpdateCandidateMilitaryService(object):
         assert military_services_after_update[-1]['branch'] == 'air force'
         assert military_services_after_update[-1]['comments'] == 'adept at killing cows with mad-cow-disease'
 
-    def test_update_military_service(self, access_token_first, user_first, talent_pool):
+    def test_update_military_service(self, access_token_first, talent_pool):
         """
         Test:   Update an existing CandidateMilitaryService.
                 Number of candidate's military_services should remain unchanged.
@@ -874,7 +871,7 @@ class TestUpdateCandidateMilitaryService(object):
 
 
 class TestUpdateCandidatePreferredLocation(object):
-    def test_add_preferred_location(self, access_token_first, user_first, talent_pool):
+    def test_add_preferred_location(self, access_token_first, talent_pool):
         """
         Test:   Add a CandidatePreferredLocation to an existing Candidate.
                 Number of candidate's preferred_location should increase by 1.
@@ -904,7 +901,7 @@ class TestUpdateCandidatePreferredLocation(object):
         assert preferred_locations_after_update[-1]['city'] == 'austin'
         assert preferred_locations_after_update[-1]['state'] == 'texas'
 
-    def test_update_preferred_location(self, access_token_first, user_first, talent_pool):
+    def test_update_preferred_location(self, access_token_first, talent_pool):
         """
         Test:   Update an existing CandidatePreferredLocation.
                 Number of candidate's preferred_location should remain unchanged.
@@ -937,7 +934,7 @@ class TestUpdateCandidatePreferredLocation(object):
 
 
 class TestUpdateCandidateSkill(object):
-    def test_add_skill(self, access_token_first, user_first, talent_pool):
+    def test_add_skill(self, access_token_first, talent_pool):
         """
         Test:   Add a CandidateSkill to an existing Candidate.
                 Number of candidate's preferred_location should increase by 1.
@@ -966,7 +963,7 @@ class TestUpdateCandidateSkill(object):
         assert len(skills_after_update) == skills_count_before_update + 1
         assert skills_after_update[-1]['name'] == 'pos'
 
-    def test_update_skill(self, access_token_first, user_first, talent_pool):
+    def test_update_skill(self, access_token_first, talent_pool):
         """
         Test:   Update an existing CandidateSkill.
                 Number of candidate's preferred_location should remain unchanged.
@@ -997,7 +994,7 @@ class TestUpdateCandidateSkill(object):
 
 
 class TestUpdateCandidateSocialNetwork(object):
-    def test_add_social_network(self, access_token_first, user_first, talent_pool):
+    def test_add_social_network(self, access_token_first, talent_pool):
         """
         Test:   Add a CandidateSocialNetwork to an existing Candidate.
                 Number of candidate's social_networks should increase by 1.

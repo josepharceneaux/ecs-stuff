@@ -73,7 +73,7 @@ def fetch_optic_response(resume, filename_str):
         )
 
     if bg_response.status_code != requests.codes.ok:
-        logger.error(bg_response.content)
+        logger.error('ResumeParsingService::Error::BGError: {}'.format(bg_response.content))
         raise InternalServerError(
             error_message=error_constants.BG_ERROR['message'],
             error_code=error_constants.BG_ERROR['code']

@@ -1502,7 +1502,7 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     if isinstance(tags, list):
         tag_name_facets = ["tags:'{}'".format(tag_facet) for tag_facet in tags]
         filter_queries.append("(and {} )".format(" ".join(tag_name_facets)))
-    elif request_vars.get('tags'):
+    elif tags:
         filter_queries.append("(term field=tags '{}')".format(tags))
 
     # Custom fields

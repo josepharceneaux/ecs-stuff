@@ -263,7 +263,7 @@ class TestTrackCandidateEducationEdits(object):
 
 
 class TestTrackCandidateExperienceEdits(object):
-    def test_edit_candidate_experience(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_experience(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's experience records
         Expect: 200
@@ -303,7 +303,7 @@ class TestTrackCandidateExperienceEdits(object):
         assert candidate_edits[-1]['old_value'] == old_experience_dict['organization']
         assert candidate_edits[-1]['new_value'] == new_experience_dict['organization']
 
-    def test_edit_candidate_experience_bullet(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_experience_bullet(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's experience bullet records
         Expect: 200
@@ -344,7 +344,7 @@ class TestTrackCandidateExperienceEdits(object):
 
 
 class TestTrackCandidateWorkPreferenceEdits(object):
-    def test_edit_candidate_work_preference(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_work_preference(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's work preference records
         Expect: 200
@@ -387,7 +387,7 @@ class TestTrackCandidateWorkPreferenceEdits(object):
 
 
 class TestTrackCandidatePhoneEdits(object):
-    def test_edit_candidate_phone(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_phone(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's phone record
         Expect: 200
@@ -422,7 +422,7 @@ class TestTrackCandidatePhoneEdits(object):
 
 
 class TestTrackCandidateMilitaryServiceEdits(object):
-    def test_edit_candidate_military_service(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_military_service(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's military service record
         Expect: 200
@@ -456,7 +456,7 @@ class TestTrackCandidateMilitaryServiceEdits(object):
 
 
 class TestTrackCandidatePreferredLocationEdits(object):
-    def test_edit_candidate_preferred_location_edits(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_preferred_location_edits(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's preferred location record
         Expect: 200
@@ -495,7 +495,7 @@ class TestTrackCandidatePreferredLocationEdits(object):
 
 
 class TestTrackCandidateSkillEdits(object):
-    def test_edit_candidate_skill_edits(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_skill_edits(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's skill record
         Expect: 200
@@ -532,7 +532,7 @@ class TestTrackCandidateSkillEdits(object):
 
 
 class TestTrackCandidateSocialNetworkEdits(object):
-    def test_edit_candidate_social_network_edits(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_social_network_edits(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's social network record
         Expect: 200
