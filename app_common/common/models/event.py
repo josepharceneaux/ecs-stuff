@@ -250,3 +250,11 @@ class MeetupGroup(db.Model):
         :return: returns a group record
         """
         return cls.query.filter_by(user_id=user_id, group_id=group_id).first()
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        """
+        Returns a list of all Meetup Groups associated with given user id.
+        :param int user_id: user id
+        """
+        return cls.query.filter_by(user_id=user_id).all()

@@ -46,7 +46,7 @@ from flask.ext.restful import Resource
 
 # application specific imports
 
-from social_network_service.common.models.event import Event
+from social_network_service.common.models.event import Event, MeetupGroup
 from social_network_service.modules import custom_codes
 from social_network_service.tasks import import_events
 from social_network_service.modules.custom_codes import VENUE_EXISTS_IN_GT_DATABASE
@@ -369,14 +369,8 @@ class MeetupGroupsResource(Resource):
                     500 (Internal Server Error)
         """
         user_id = request.user.id
-        try:
-            meetup = Meetup(user_id=user_id)
-            groups = meetup.get_groups()
-            response = dict(groups=groups, count=len(groups))
-        except Exception as e:
-            logger.exception('Could not get meetup groups')
-            raise InternalServerError(e.message)
-        return response
+        groups = MeetupGroup.get_by_user_id(user_id)
+        return {'groups': [group.to_json() for group in groups]}
 
 
 @api.route(SocialNetworkApi.TOKEN_VALIDITY)
