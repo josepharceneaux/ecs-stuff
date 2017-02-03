@@ -96,7 +96,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 
     # Sources
     'source_id':                     dict(IndexFieldType='int'),
-    'source_details':                dict(IndexFieldType='text'),
+    'source_details':                dict(IndexFieldType='literal-array'),
 
     'source_product_id':             dict(IndexFieldType='int'),
 
@@ -274,6 +274,8 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
     """
     Returns dicts like: {type="add", id="{candidate_id}", fields={dict of fields to values}}
 
+    Note: Candidate fields must be exactly as they are defined in Cloud Search Index Field Names.
+     Ex: candidate.firstName AS `first_name`
     """
     if not candidate_ids:
         logger.warn("Attempted to build candidate documents when candidate_ids=%s", candidate_ids)
@@ -286,7 +288,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.id AS `id`, candidate.firstName AS `first_name`, candidate.lastName AS `last_name`,
                 candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, :date_format) AS `added_time`,
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
-                candidate.is_archived AS `is_archived`,
+                candidate.is_archived AS `is_archived`, candidate.source_detail AS `source_details`,
                 HOUR(candidate.addedTime) AS `added_time_hour`, candidate.sourceId AS `source_id`,
                 candidate.sourceProductId AS `source_product_id`, candidate.totalMonthsExperience AS
                 `total_months_experience`, candidate.isWebHidden AS `is_web_hidden`,
