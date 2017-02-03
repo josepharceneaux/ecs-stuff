@@ -364,7 +364,8 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
         if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.JENKINS]:
             # Send campaigns via Lambda triggered by SNS
-            client = boto3.client('sns')
+            region_name = 'us-east-1'
+            client = boto3.client('sns', region_name=region_name)
             topic_arn = TOPIC_ARN % TalentConfigKeys.ENV_KEY
             for candidate_id_and_email in candidate_ids_and_emails:
                 event = {
