@@ -186,6 +186,7 @@ def fetch_candidate_info(candidate, fields=None):
         'talent_pool_ids': talent_pool_ids,
         'resume_url': resume_url,
         'source_id': candidate.source_id,
+        'source_detail': candidate.source_detail,
         'source_product_id': source_product_id,
         'source_product_info': source_product_info,
         'summary': candidate.summary,
