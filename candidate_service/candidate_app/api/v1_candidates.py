@@ -233,6 +233,13 @@ class CandidatesResource(Resource):
                     if country_code:
                         if not is_country_code_valid(country_code):
                             raise InvalidUsage("Country code not recognized: {}".format(country_code))
+
+                    # Name is a required field (must not be empty)
+                    for tag in candidate_dict_.get('tags', []):
+                        tag['name'] = tag['name'].strip().lower()  # remove whitespaces while validating
+                        if not tag['name']:
+                            raise InvalidUsage('Tag name is a required field', custom_error.MISSING_INPUT)
+
             except Exception as e:
                 # If it's a bulk import, we want to ignore the individual candidate errors
                 if multiple_candidates:
@@ -303,6 +310,7 @@ class CandidatesResource(Resource):
                 talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url'),
                 resume_text=candidate_dict.get('resume_text'),
+                tags=candidate_dict.get('tags', []),
                 title=candidate_dict.get('title')
             )
 

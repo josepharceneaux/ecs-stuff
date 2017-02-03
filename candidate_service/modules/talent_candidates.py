@@ -26,6 +26,7 @@ from candidate_service.common.models.candidate import (
     SocialNetwork, CandidateEducationDegreeBullet, CandidateExperienceBullet, ClassificationType,
     CandidatePhoto, PhoneLabel, EmailLabel, CandidateSubscriptionPreference
 )
+from candidate_service.modules.tags import create_tags, update_candidate_tags
 from candidate_service.common.models.candidate_edit import CandidateView
 from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
@@ -866,6 +867,7 @@ def create_or_update_candidate_from_params(
         talent_pool_ids=None,
         resume_url=None,
         resume_text=None,
+        tags=None,
         title=None
 ):
     """
@@ -918,6 +920,7 @@ def create_or_update_candidate_from_params(
     :type   delete_talent_pools:    bool
     :type   resume_url              basestring
     :type   resume_text             basestring
+    :type   tags                    list
     :type   title                   basestring
     :rtype                          dict
     """
@@ -1028,6 +1031,12 @@ def create_or_update_candidate_from_params(
             _add_or_update_social_networks(candidate, social_networks, user_id, is_updating)
         else:
             raise ForbiddenError("You are not authorized to add/modify social networks of this candidate")
+
+    if tags:
+        if is_creating:
+            create_tags(candidate_id, tags)
+        else:
+            update_candidate_tags(candidate_id, tags)
 
     # Commit to database after all insertions/updates are executed successfully
     db.session.commit()
