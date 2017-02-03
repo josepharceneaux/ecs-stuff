@@ -141,7 +141,7 @@ class TestBulkDelete(object):
         db.session.commit()
 
         # Create 50 candidates
-        number_of_candidates = 50
+        number_of_candidates = 5
         candidates_data = generate_single_candidate_data(talent_pool_ids=[talent_pool.id],
                                                          number_of_candidates=number_of_candidates)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, candidates_data)
