@@ -79,7 +79,7 @@ echo "Beginning tests."
 py.test -n 48 email_campaign_service/tests
 
 # TODO Below are removed tests that should be added back in - Amir
-# candidate_service/tests sms_campaign_service/tests email_campaign_service/tests
+# sms_campaign_service/tests email_campaign_service/tests app_common/common/campaign_services/tests
 
 
 if [ $? -ne 0 ] ; then
