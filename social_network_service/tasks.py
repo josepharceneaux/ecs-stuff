@@ -129,7 +129,7 @@ def process_meetup_event(event):
                         gt_event_data['user_id'] = group_user.user_id
                         meetup_event_base.save_or_update_event(gt_event_data)
                     except Exception as e:
-                        logger.error(e)
+                        logger.error("An error occured while marking event deleted, error: %s" % e)
 
             elif event['status'] in ['canceled', MEETUP_EVENT_STATUS['deleted']]:
                 social_network_event_id = event['id']
@@ -149,8 +149,7 @@ def process_meetup_event(event):
                         else:
                             logger.info("Meetup event not found in database. event:`%s`." % event)
                     except Exception as e:
-                        logger.error(e)
-                        pass
+                        logger.error("An error occured while marking event deleted, error: %s" % e)
 
         except Exception:
             logger.exception('Failed to save event: %s' % event)
