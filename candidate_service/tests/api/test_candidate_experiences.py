@@ -73,7 +73,13 @@ class TestUpdateWorkExperience(object):
         candidate_id = create_resp.json()['candidates'][0]['id']
         db.session.commit()
         candidate = Candidate.get_by_id(candidate_id)
-        assert candidate.total_months_experience == 84  # 24 + 60
+
+        start_year_1 = data['candidates'][0]['work_experiences'][0]['start_year']
+        end_year_1 = data['candidates'][0]['work_experiences'][0]['end_year']
+        start_year_2 = data['candidates'][0]['work_experiences'][1]['start_year']
+        end_year_2 = datetime.utcnow().year  # current year because end_year is null for most recent job
+        total_months_worked = (end_year_1 - start_year_1) * 12 + (end_year_2 - start_year_2) * 12
+        assert candidate.total_months_experience == total_months_worked
 
         # Retrieve candidate
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
