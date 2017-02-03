@@ -4,7 +4,6 @@ This file contain tests for events api
 # Std imports
 import sys
 import json
-
 # Third-Part imports
 import pytest
 import requests

@@ -23,7 +23,7 @@ from social_network_service.modules.utilities import process_event, delete_event
 from social_network_service.common.utils.handy_functions import get_valid_json_data
 from social_network_service.common.utils.api_utils import api_route, ApiResponse, generate_pagination_headers, \
     get_pagination_params
-from social_network_service.tasks import import_events
+from social_network_service.tasks import sync_events
 
 events_blueprint = Blueprint('events_api', __name__)
 api = TalentApi()
@@ -385,14 +385,14 @@ class EventById(Resource):
         raise ForbiddenError('Forbidden: Unable to delete event')
 
 
-@api.route(SocialNetworkApi.UPDATE_EVENTS)
-class EventUpdater(Resource):
+@api.route(SocialNetworkApi.SYNC_EVENTS)
+class EventSynchronizer(Resource):
     """
     This resource handles event importer
     """
     def post(self):
         """
-        This endpoint triggers an event updater(Celery task) against a post request with valid data
+        This endpoint triggers an event synchronizer(Celery task) against a post request with valid data
         Example:
         {
             "user_id": 1,
@@ -407,9 +407,7 @@ class EventUpdater(Resource):
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(data['user_id'],
                                                                                          data['social_network_id'])
         if user_credentials:
-            social_network_base = SocialNetworkBase(user_id=user_credentials.user_id,
-                                                    social_network_id=user_credentials.social_network_id)
-            import_events.delay(social_network_base)
+            sync_events.delay(user_credentials)
             return ApiResponse({'message': 'Your events are being updated'})
         raise ResourceNotFound("User credentials not found for user_id: %d and social_network_id: %d" %
                                (data['user_id'], data['social_network_id']))
