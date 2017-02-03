@@ -29,7 +29,7 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.error_handling import InternalServerError
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from email_campaign_service.common.models.candidate import CandidateEmail, EmailLabel, Candidate
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, get_web_app_url)
@@ -47,11 +47,20 @@ DEFAULT_USER_NAME_MERGETAG = "*|USERNAME|*"
 DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
 TEST_PREFERENCE_URL = get_web_app_url() + "/account/subscription-preferences"
 TRACKING_PIXEL_URL = "https://s3-us-west-1.amazonaws.com/gettalent-static/pixel.png"
-TOPIC_ARN = 'arn:aws:sns:us-east-1:528222547498:email-campaign-to-candidate-%s'  # TODO: Move this to web.cfg
 TRACKING_URL_TYPE = 0
 TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
 TASK_ALREADY_SCHEDULED = 6057
+
+
+def get_topic_arn_and_region_name():
+    region_name = 'us-east-1'
+    env = app.config[TalentConfigKeys.ENV_KEY]
+    if env == TalentEnvs.JENKINS:
+        region_name = 'us-west-1'
+        # TODO: Move this to web.cfg
+    topic_arn = 'arn:aws:sns:%s:528222547498:email-campaign-to-candidate-%s' % (region_name, env)
+    return topic_arn, region_name
 
 
 @celery_app.task(name='get_candidates_from_smartlist')

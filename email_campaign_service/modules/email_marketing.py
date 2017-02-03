@@ -26,7 +26,7 @@ from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE, get_candidates_from_smartlist,
                                                   do_mergetag_replacements, create_email_campaign_url_conversions,
-                                                  decrypt_password, get_priority_emails, TOPIC_ARN)
+                                                  decrypt_password, get_priority_emails, get_topic_arn_and_region_name)
 
 # Common Utils
 from email_campaign_service.common.models.db import db
@@ -362,11 +362,10 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
 
     if candidate_ids_and_emails:
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
-        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.JENKINS]:
+        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.JENKINS, TalentEnvs.DEV]:
             # Send campaigns via Lambda triggered by SNS
-            region_name = 'us-east-1'
+            topic_arn, region_name = get_topic_arn_and_region_name()
             client = boto3.client('sns', region_name=region_name)
-            topic_arn = TOPIC_ARN % TalentConfigKeys.ENV_KEY
             for candidate_id_and_email in candidate_ids_and_emails:
                 event = {
                     'candidate_id': candidate_id_and_email[0],
