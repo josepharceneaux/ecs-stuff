@@ -195,6 +195,7 @@ class Meetup(SocialNetworkBase):
                     update({'access_token': self.access_token, 'refresh_token': refresh_token})
                 db.session.commit()
                 logger.info("Access token has been refreshed.")
+                status = True
             except Exception:
                 logger.exception('refresh_access_token: user_id: %s' % self.user.id)
         else:

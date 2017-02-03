@@ -574,13 +574,14 @@ class SocialNetworkBase(object):
 
         if len(records_in_db) >= 1:
             for record in records_in_db:
-                if record.user.domain_id == self.user.domain_id:
-                    error_message = 'Some other user is already using this account. user_id:%s, social_network:%s , ' \
-                                    'member_id:%s.' % (self.user.id, self.social_network.name.title(), member_id)
+                if record.user.id == self.user.id:
+                    error_message = 'You are already connected to this account.'
                     logger.error(error_message)
                     raise InvalidUsage(error_message)
-                elif record.user.id == self.user.id:
-                    error_message = 'You are already connected to this account.'
+                elif record.user.domain_id == self.user.domain_id:
+                    error_message = 'Some other user is already in your domain with this account. user_id:%s, ' \
+                                    'social_network:%s , member_id:%s.' % (self.user.id,
+                                                                           self.social_network.name.title(), member_id)
                     logger.error(error_message)
                     raise InvalidUsage(error_message)
                 else:

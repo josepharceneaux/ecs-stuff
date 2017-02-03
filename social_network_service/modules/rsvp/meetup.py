@@ -346,6 +346,7 @@ class Meetup(RSVPBase):
         saved_rsvps_count = len(filter(None, processed_rsvps))
         total_rsvps_count = len(rsvps) * len(groups)
         failed_rsvps_count = total_rsvps_count - saved_rsvps_count
+        user_ids = list(set(user_ids))
         if total_rsvps_count:
             logger.info('''
                         process_rsvps: RSVPs for events of (UserIds:%s) have been processed.

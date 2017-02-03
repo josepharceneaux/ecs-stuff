@@ -132,20 +132,25 @@ def process_meetup_event(event):
                         logger.error(e)
 
             elif event['status'] in ['canceled', MEETUP_EVENT_STATUS['deleted']]:
-                event_id = event['id']
+                social_network_event_id = event['id']
                 for group_user in groups:
-                    event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(group_user.user_id,
-                                                                                         meetup.id, event_id)
-                    if event_in_db:
-                        meetup_event_base.user = group_user.user
-                        if meetup_event_base.delete_event(event_in_db.id, delete_from_vendor=False):
-                            logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
-                                        % event_in_db.to_json())
+                    try:
+                        event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(group_user.user_id,
+                                                                                             meetup.id,
+                                                                                             social_network_event_id)
+                        if event_in_db:
+                            meetup_event_base.user = group_user.user
+                            if meetup_event_base.delete_event(event_in_db.id, delete_from_vendor=False):
+                                logger.info('Meetup event has been marked as is_deleted_from_vendor in gt database: %s'
+                                            % event_in_db.to_json())
+                            else:
+                                logger.info('Event could not be marked as is_deleted_from_vendor in gt database: %s'
+                                            % event_in_db.to_json())
                         else:
-                            logger.info('Event could not be marked as is_deleted_from_vendor in gt database: %s'
-                                        % event_in_db.to_json())
-                    else:
-                        logger.info("Meetup event not found in database. event:`%s`." % event)
+                            logger.info("Meetup event not found in database. event:`%s`." % event)
+                    except Exception as e:
+                        logger.error(e)
+                        pass
 
         except Exception:
             logger.exception('Failed to save event: %s' % event)
