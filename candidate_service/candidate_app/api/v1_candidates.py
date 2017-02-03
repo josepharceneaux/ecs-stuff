@@ -310,7 +310,8 @@ class CandidatesResource(Resource):
                 talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url'),
                 resume_text=candidate_dict.get('resume_text'),
-                tags=candidate_dict.get('tags', [])
+                tags=candidate_dict.get('tags', []),
+                title=candidate_dict.get('title')
             )
 
             if multiple_candidates:
@@ -427,7 +428,7 @@ class CandidatesResource(Resource):
                 candidate.is_archived = 1
                 archived_candidate_ids.append(candidate_id)
                 skip = True
-            else:  # json-schema will only allow True or False
+            elif archive_candidate is False:
                 if not is_user_permitted_to_archive_candidate(authed_user, candidate):
                     raise ForbiddenError(error_message="Only admins and candidate's owner may archive the candidate",
                                          error_code=custom_error.CANDIDATE_FORBIDDEN)
@@ -558,7 +559,8 @@ class CandidatesResource(Resource):
                 summary=candidate_dict.get('summary', ''),
                 talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url', ''),
-                resume_text=candidate_dict.get('resume_text', '')
+                resume_text=candidate_dict.get('resume_text', ''),
+                title=candidate_dict.get('title')
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 

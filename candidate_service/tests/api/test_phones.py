@@ -6,7 +6,6 @@ Test cases for adding, retrieving, updating, and deleting candidate phones
 # Conftest
 from candidate_sample_data import fake, GenerateCandidateData, candidate_phones, generate_single_candidate_data
 from candidate_service.common.models.candidate import PhoneLabel
-from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.utils.validators import get_phone_number_extension_if_exists
@@ -194,7 +193,6 @@ class TestUpdateCandidatePhones(object):
         resp = send_request('patch', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first, data_3)
         print response_info(resp)
         assert resp.status_code == requests.codes.BAD
-
 
     def test_add_candidate_phones(self, access_token_first, talent_pool):
         """

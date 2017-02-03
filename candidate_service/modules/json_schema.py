@@ -36,6 +36,10 @@ candidates_resource_schema_post = {
                         "type": ["string", "null"],
                         "maxLength": 150
                     },
+                    "title": {
+                        "type": ["string", "null"],
+                        "maxLength": 100
+                    },
                     "status_id": {
                         "type": ["integer", "null"]
                     },
@@ -634,6 +638,10 @@ candidates_resource_schema_patch = {
                     "full_name": {
                         "type": ["string", "null"],
                         "maxLength": 150
+                    },
+                    "title": {
+                        "type": ["string", "null"],
+                        "maxLength": 100
                     },
                     "status_id": {
                         "type": ["integer", "null"]

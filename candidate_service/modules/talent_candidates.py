@@ -189,7 +189,8 @@ def fetch_candidate_info(candidate, fields=None):
         'source_product_id': source_product_id,
         'source_product_info': source_product_info,
         'summary': candidate.summary,
-        'objective': candidate.objective
+        'objective': candidate.objective,
+        'title': candidate.title
     }
 
 
@@ -866,7 +867,8 @@ def create_or_update_candidate_from_params(
         talent_pool_ids=None,
         resume_url=None,
         resume_text=None,
-        tags=None
+        tags=None,
+        title=None
 ):
     """
     Function will parse each parameter and:
@@ -919,6 +921,7 @@ def create_or_update_candidate_from_params(
     :type   resume_url              basestring
     :type   resume_text             basestring
     :type   tags                    list
+    :type   title                   basestring
     :rtype                          dict
     """
     # Format inputs
@@ -960,12 +963,12 @@ def create_or_update_candidate_from_params(
     if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name,
                                          objective, summary, candidate_id, user_id, resume_url,
-                                         source_id, source_product_id, status_id, resume_text)
+                                         source_id, source_product_id, status_id, resume_text, title)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name, formatted_name,
                                       added_datetime, status_id, user_id, dice_profile_id,
                                       dice_social_profile_id, source_id, source_product_id,
-                                      objective, summary, resume_url, resume_text)
+                                      objective, summary, resume_url, resume_text, title)
 
     candidate = Candidate.get_by_id(candidate_id)
     """
@@ -1161,7 +1164,7 @@ def social_network_name_from_url(url):
 
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
                       candidate_id, user_id, resume_url, source_id, source_product_id,
-                      candidate_status_id, resume_text):
+                      candidate_status_id, resume_text, title):
     """
     Function will update Candidate's primary information.
     Candidate's Primary information include:
@@ -1183,9 +1186,12 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
-                   'source_id': source_id, 'candidate_status_id': candidate_status_id,
-                   'source_product_id': source_product_id, 'resume_text': resume_text}
+    update_dict = {
+        'objective': objective, 'summary': summary, 'filename': resume_url,
+        'source_id': source_id, 'candidate_status_id': candidate_status_id,
+        'source_product_id': source_product_id, 'resume_text': resume_text,
+        'title': title
+    }
 
     # Strip each key-value and remove keys with empty-string-values
     update_dict = purge_dict(update_dict, remove_empty_strings_only=True)
@@ -1224,7 +1230,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
 def _add_candidate(first_name, middle_name, last_name, formatted_name,
                    added_time, candidate_status_id, user_id, dice_profile_id,
                    dice_social_profile_id, source_id, source_product_id,
-                   objective, summary, resume_url, resume_text):
+                   objective, summary, resume_url, resume_text, title):
     """
     Function will add Candidate and its primary information to db
     All empty values (None or empty strings) will be ignored
@@ -1236,7 +1242,7 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         source_product_id=source_product_id, dice_profile_id=dice_profile_id,
         dice_social_profile_id=dice_social_profile_id, source_id=source_id, objective=objective,
-        summary=summary, filename=resume_url, resume_text=resume_text, is_dirty=0
+        summary=summary, filename=resume_url, resume_text=resume_text, title=title, is_dirty=0
     )
 
     # All empty values must be removed

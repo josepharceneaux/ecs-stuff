@@ -4,16 +4,12 @@ Test cases for CandidateViewResource/get()
 # Candidate Service app instance
 
 # Conftest
-from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 
-# Custom errors
-
 
 class TestGetCandidateViewInfo(object):
-
     def test_retrieve_candidate_view_information(self, access_token_first, user_first, talent_pool):
         """
         Test: Get information pertaining to candidate from the CandidateView resource
@@ -37,7 +33,6 @@ class TestGetCandidateViewInfo(object):
         assert view_resp.json()['candidate_views'][1]['candidate_id'] == candidate_id
         assert view_resp.json()['candidate_views'][0]['user_id'] == user_first.id
         assert view_resp.json()['candidate_views'][1]['user_id'] == user_first.id
-
 
     def test_all_users_from_domain_get_candidate_view(self, access_token_first, user_first, talent_pool,
                                                       user_same_domain, access_token_same):
@@ -84,8 +79,8 @@ class TestViewAggregate(object):
         send_request('post', CandidateApiUrl.CANDIDATE_VIEW % candidate_id, access_token_first)
 
         # View candidate with user_same_domain
-        send_request('post', CandidateApiUrl.CANDIDATE_VIEW  % candidate_id, access_token_same)
-        send_request('post', CandidateApiUrl.CANDIDATE_VIEW  % candidate_id, access_token_same)
+        send_request('post', CandidateApiUrl.CANDIDATE_VIEW % candidate_id, access_token_same)
+        send_request('post', CandidateApiUrl.CANDIDATE_VIEW % candidate_id, access_token_same)
 
         # Retrieve view information
         get_views_resp = requests.get(
@@ -95,6 +90,6 @@ class TestViewAggregate(object):
         print response_info(get_views_resp)
         assert get_views_resp.status_code == 200
         assert len(get_views_resp.json()['aggregated_views']) == 2, 'Four get requests have been made, ' \
-                                                'but only 2 are from unique domain users'
+                                                                    'but only 2 are from unique domain users'
         assert get_views_resp.json()['aggregated_views'][0]['user_id'] == user_first.id
         assert get_views_resp.json()['aggregated_views'][-1]['user_id'] == user_same_domain.id
