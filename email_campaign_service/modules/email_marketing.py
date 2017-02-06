@@ -369,11 +369,11 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
             _update_blast_sends(blast_id=blast_id, new_sends=len(subscribed_candidate_ids), campaign=campaign,
                                 new_candidates_only=new_candidates_only, update_blast_sends=False)
         else:  # TODO: Cutting off Celery for now and sending campaigns via Lambda on staging
+            _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
             with app.app_context():
                 logger.info('Emails for email campaign (id:%d) are being sent using Celery. Blast ID is %d' %
                             (campaign.id, email_campaign_blast.id))
-            send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_id, campaign,
-                                        new_candidates_only)
+            send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_id, campaign, new_candidates_only)
 
 
 def _publish_to_sns(boto3_client, topic_arn, email_campaign_blast_id, candidate_id, candidate_address):
