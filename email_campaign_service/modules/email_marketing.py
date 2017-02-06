@@ -223,8 +223,7 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
             #                                    new_candidates_only, campaign,
             #                                    len(list_of_new_email_html_or_text))
             # Update campaign blast with number of sends
-            _update_blast_sends(email_campaign_blast.id, len(candidate_ids_and_emails), campaign, new_candidates_only,
-                                update_blast_sends=False)
+            _update_blast_sends(email_campaign_blast.id, len(candidate_ids_and_emails), campaign, new_candidates_only)
             return list_of_new_email_html_or_text
     # For each candidate, create URL conversions and send the email via Celery task
     get_smartlist_candidates_via_celery(current_user.id, campaign_id, smartlist_ids, new_candidates_only)
