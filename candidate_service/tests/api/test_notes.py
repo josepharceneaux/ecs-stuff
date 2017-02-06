@@ -12,7 +12,6 @@ URL = CandidateApiUrl.NOTES
 
 
 class TestAddNotes(object):
-
     def test_add_candidate_notes(self, access_token_first, candidate_first):
         """
         Test:  Add notes to candidate
@@ -41,7 +40,6 @@ class TestAddNotes(object):
 
 
 class TestGetNotes(object):
-
     def test_get_candidate_notes(self, notes_first, access_token_first):
         """
         Test: Retrieve all of candidate's notes
@@ -72,7 +70,6 @@ class TestGetNotes(object):
 
 
 class TestDeleteNotes(object):
-
     def test_delete_candidate_notes(self, notes_first, access_token_first):
         """
         Test: Delete all of candidate's notes

@@ -91,13 +91,9 @@ class Meetup(SocialNetworkBase):
         time.sleep(0.34)
         response = http_request('GET', url, params=params, headers=self.headers, user_id=self.user.id)
         if response.ok:
-            # If some error occurs during HTTP call,
-            # we log it inside http_request()
-            meta_data = response.json()['meta']
-            member_id = meta_data['url'].split('=')[1].split('&')[0]
-            data = json.loads(response.text)['results']
-            groups = filter(lambda item: item['organizer']['member_id'] == int(member_id), data)
-            return groups
+            return response.json()['results']
+        else:
+            return []
 
     def import_meetup_groups(self):
         """

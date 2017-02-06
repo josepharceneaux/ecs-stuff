@@ -34,6 +34,7 @@ class Candidate(db.Model):
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
     source_id = db.Column('SourceId', db.Integer, db.ForeignKey('candidate_source.Id'))
+    source_detail = db.Column(db.VARCHAR(100), nullable=True)
     source_product_id = db.Column('SourceProductId', db.Integer, db.ForeignKey('product.Id'),
                                   nullable=True, default=2)  # Web = 2
     filename = db.Column('Filename', db.String(100))
@@ -42,6 +43,7 @@ class Candidate(db.Model):
     total_months_experience = db.Column('TotalMonthsExperience', db.Integer)
     resume_text = db.Column('ResumeText', db.Text)
     culture_id = db.Column('CultureId', db.Integer, db.ForeignKey('culture.Id'), default=1)
+    title = db.Column(db.String(100))
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     is_dirty = db.Column('IsDirty', db.SmallInteger, default=0)

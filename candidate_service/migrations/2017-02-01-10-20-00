@@ -1,0 +1,9 @@
+"""
+This script will add "title" column to candidate table
+"""
+
+from candidate_service.common.models.db import db
+from sqlalchemy.dialects.mysql import VARCHAR
+
+# SQL command below is commented out because it is suspected to cause a lock on Candidate's table in Prod DB
+# db.session.execute("ALTER TABLE candidate ADD COLUMN title VARCHAR(100);")

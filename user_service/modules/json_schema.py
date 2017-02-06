@@ -15,6 +15,10 @@ source_schema = {
                 "description": {
                     "type": "string",
                     "maxLength": 1000
+                },
+                "details": {
+                    "type": ["string", "null"],
+                    "maxLength": 255
                 }
             },
             "required": [
