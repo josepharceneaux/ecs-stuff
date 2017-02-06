@@ -8,6 +8,7 @@ This file contains function used by email-campaign-api.
 # Standard Imports
 import re
 import json
+import boto3
 import getpass
 from datetime import datetime
 
@@ -25,7 +26,7 @@ from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE, get_candidates_from_smartlist,
                                                   do_mergetag_replacements, create_email_campaign_url_conversions,
-                                                  decrypt_password, get_priority_emails)
+                                                  decrypt_password, get_priority_emails, get_topic_arn_and_region_name)
 
 # Common Utils
 from email_campaign_service.common.models.db import db
@@ -33,7 +34,7 @@ from email_campaign_service.common.models.user import Domain, User
 from email_campaign_service.common.utils.dynamo_utils import EmailMarketing
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignApiUrl
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
@@ -343,28 +344,59 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     # Create blast for email-campaign
     email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id)
     EmailCampaignBlast.save(email_campaign_blast)
+    blast_id = email_campaign_blast.id
 
-    # TODO: commenting for now - basit
-    # Add data in Dynamo DB
-    # try:
-    #     dynamo_data = dict(blast_id=email_campaign_blast.id, candidate_ids=all_candidate_ids)
-    #     EmailMarketing.add_blast_id_and_candidate_ids(dynamo_data)
-    # except Exception as e:
-    #     logger.error("\nUnable to put item(email-campaign-id:{}, candidate_ids:{} in DynamoDB table:{}. "
-    #                  "Error: {}".format(campaign.id, all_candidate_ids, EmailMarketing.dynamo_table_name, e.message))
-    
     # Get subscribed and un-subscribed candidate ids
     subscribed_candidate_ids, unsubscribed_candidate_ids = \
         get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
     candidate_ids_and_emails = get_priority_emails(campaign.user, subscribed_candidate_ids)
+
     if candidate_ids_and_emails:
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
-        _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
-        with app.app_context():
-            logger.info('Emails for email campaign (id:%d) are being sent using Celery. Blast ID is %d' %
-                        (campaign.id, email_campaign_blast.id))
-        send_campaign_to_candidates(user_id, candidate_ids_and_emails, email_campaign_blast.id, campaign,
-                                    new_candidates_only)
+        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA]:
+            # Send campaigns via Lambda triggered by SNS
+            topic_arn, region_name = get_topic_arn_and_region_name()
+            boto3_client = boto3.client('sns', region_name=region_name)
+
+            for candidate_id_and_email in candidate_ids_and_emails:
+                candidate_id, candidate_address = candidate_id_and_email
+                try:
+                    _publish_to_sns(boto3_client, topic_arn, blast_id, candidate_id, candidate_address)
+                except Exception as error:
+                    logger.error('Could not publish to SNS topic:%s. Error:%s, blast_id:%s, candidate_id:%s'
+                                     % (topic_arn, error.message, blast_id, candidate_id))
+            _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
+            _update_blast_sends(blast_id=blast_id, new_sends=len(subscribed_candidate_ids), campaign=campaign,
+                                new_candidates_only=new_candidates_only, update_blast_sends=False)
+        else:  # TODO: Cutting off Celery for now and sending campaigns via Lambda on staging
+            _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
+            with app.app_context():
+                logger.info('Emails for email campaign (id:%d) are being sent using Celery. Blast ID is %d' %
+                            (campaign.id, email_campaign_blast.id))
+            send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_id, campaign, new_candidates_only)
+
+
+def _publish_to_sns(boto3_client, topic_arn, email_campaign_blast_id, candidate_id, candidate_address):
+    """
+    Here we publish to SNS topic for each candidate to send email-campaign via Lambda.
+    """
+    event = {
+        'candidate_id': candidate_id,
+        'candidate_address': candidate_address,
+        'blast_id': email_campaign_blast_id
+    }
+    response = boto3_client.publish(
+        TopicArn=topic_arn,
+        Message=json.dumps(event),
+        Subject='EmailMarketing',
+        MessageStructure='string'
+    )
+    logger.info('''
+                    Publish to SNS topic.
+                    Topic ARN: %s,
+                    Environment: %s,
+                    Response: %s,
+                ''' % (topic_arn, app.config[TalentConfigKeys.ENV_KEY], response))
 
 # This will be used in later version
 # def update_candidate_document_on_cloud(user, candidate_ids_and_emails):
@@ -765,7 +797,7 @@ def get_subscription_preference(candidate_id):
         return None
 
 
-def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only):
+def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only, update_blast_sends=True):
     """
     This updates the email campaign blast object with number of sends and logs that
     Marketing email batch completed.
@@ -785,7 +817,8 @@ def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only):
         raise InternalServerError(error_message='Valid campaign object must be provided')
 
     blast_obj = EmailCampaignBlast.get_by_id(blast_id)
-    blast_obj.update(sends=blast_obj.sends + new_sends)
+    if update_blast_sends:
+        blast_obj.update(sends=blast_obj.sends + new_sends)
     # This will be needed later
     # update_candidate_document_on_cloud(user, candidate_ids_and_emails)
     logger.info("Marketing email batch completed, emails sent=%s, "
