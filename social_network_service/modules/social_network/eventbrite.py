@@ -8,6 +8,7 @@ import requests
 
 # Application Specific
 from base import SocialNetworkBase
+from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.modules.constants import ACTIONS
 from social_network_service.modules.urls import get_url
@@ -65,7 +66,11 @@ class Eventbrite(SocialNetworkBase):
         """
         user_credentials_in_db = super(Eventbrite,
                                        Eventbrite).save_user_credentials_in_db(user_credentials)
-        Eventbrite.create_webhook(user_credentials_in_db)
+        try:
+            Eventbrite.create_webhook(user_credentials_in_db)
+        except Exception:
+            UserSocialNetworkCredential.delete(user_credentials_in_db)
+            raise
         return user_credentials_in_db
 
     @classmethod
@@ -205,7 +210,6 @@ class Eventbrite(SocialNetworkBase):
             class inside social_network_service/eventbrite.py.
         """
         url = user_credentials.social_network.api_url + "/webhooks/"
-        cls.delete_webhooks(user_credentials)  # delete old webhooks
         payload = {'endpoint_url': SocialNetworkApiUrl.WEBHOOK % user_credentials.user_id,
                    'actions': ','.join([ACTIONS['published'],
                                         ACTIONS['unpublished'],
@@ -223,19 +227,18 @@ class Eventbrite(SocialNetworkBase):
     @classmethod
     def delete_webhooks(cls, user_credentials):
         """
-        This method deletes all webhooks for current user from eventbrite
+        This method deletes webhook for current user from eventbrite
         :param type(t) user_credentials: user credentials for eventbrite for this user
         """
-        url = user_credentials.social_network.api_url + "/webhooks/"
+        url = user_credentials.social_network.api_url + "/webhooks/" + user_credentials.webhook
         headers = {'Authorization': 'Bearer ' + user_credentials.access_token}
         response = http_request('GET', url, headers=headers,
                                 user_id=user_credentials.user.id)
         if response.ok:
-            webhooks = response.json()['webhooks']
-            # Deleting all existing webhooks for this user because we don't know about their action types.
+            webhook = response.json()
+            # Deleting existing webhook for this user because we don't know about their action types.
             # Need to register a webhook with `event.published` and `event.unpublished` actions and correct callback url
-            for webhook in webhooks:
-                http_request('DELETE', webhook['resource_uri'], headers=headers, user_id=user_credentials.user.id)
+            http_request('DELETE', webhook['resource_uri'], headers=headers, user_id=user_credentials.user.id)
 
     @classmethod
     def disconnect(cls, user_id, social_network):
