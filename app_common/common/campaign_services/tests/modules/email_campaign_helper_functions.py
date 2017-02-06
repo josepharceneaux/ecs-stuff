@@ -104,6 +104,7 @@ def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_coun
     # assert on sends
     CampaignsTestsHelpers.assert_blast_sends(campaign, blast_index=blasts_count - 1, expected_count=blast_sends,
                                              abort_time_for_sends=abort_time_for_sends)
+    db.session.commit()
     campaign_sends = campaign.sends.all()
     assert len(campaign_sends) == total_sends
     sends_url_conversions = []
