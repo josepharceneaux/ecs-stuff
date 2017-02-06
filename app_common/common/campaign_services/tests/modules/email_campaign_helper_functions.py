@@ -115,6 +115,7 @@ def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_coun
             if via_amazon_ses:  # If email-campaign is sent via Amazon SES, we should have message_id and request_id
                 # saved in database table "email_campaign_sends"
                 assert campaign_send.ses_message_id
+                assert campaign_send.ses_request_id  # TODO: Won't be needed in boto3
             if campaign.base_campaign_id:
                 CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_EVENT_SEND,
                                                           campaign_send.id)
