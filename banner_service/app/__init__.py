@@ -16,8 +16,8 @@ app, logger = init_talent_app(__name__)
 
 try:
     redis_store = FlaskRedis(app)
-    # from views import api
-    # app.register_blueprint(api.PARSE_MOD, url_prefix=ResumeApi.URL_PREFIX)
+    from views.v1_banners_api import banner_api_bp
+    app.register_blueprint(banner_api_bp, url_prefix='/v1')
 
     logger.info("Starting banner_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
