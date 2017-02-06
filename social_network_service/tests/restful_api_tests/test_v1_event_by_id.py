@@ -10,7 +10,7 @@ import datetime
 # Third Party
 import requests
 from requests import codes
-
+from redo import retry
 # Application imports
 from social_network_service.common.models import db
 from social_network_service.social_network_app import logger
@@ -175,8 +175,10 @@ class TestEventById(object):
         # check if event delete activity
         user_id = event_in_db_second['user_id']
         db.db.session.commit()
-        activity = Activity.get_by_user_id_type_source_id(user_id=user_id, source_id=event_id,
-                                                          type_=Activity.MessageIds.EVENT_DELETE)
+        activity = retry(Activity.get_by_user_id_type_source_id, kwargs={'user_id': user_id, 'source_id': event_id,
+                                                                         'type_': Activity.MessageIds.EVENT_DELETE},
+                         sleeptime=10, attempts=15, sleepscale=1,
+                         retry_exceptions=(AssertionError,))
         assert activity, 'Activity not found'
         data = json.loads(activity.params)
         assert data['event_title'] == event_in_db_second['title']
