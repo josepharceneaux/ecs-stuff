@@ -488,7 +488,10 @@ class CandidatesResource(Resource):
                     raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
                             source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
 
-                _candidate_dict['source_product_id'] = int(source_product_id) if source_product_id else None
+                # Candidate's primary information will be "deleted" if its value is set to null
+                # the intention here is not to delete existing source-product-ID, hence it's set to an empty string
+                # if no value is provided
+                _candidate_dict['source_product_id'] = int(source_product_id) if source_product_id else ''
 
         if skip:
             db.session.commit()
@@ -560,7 +563,7 @@ class CandidatesResource(Resource):
                 talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url', ''),
                 resume_text=candidate_dict.get('resume_text', ''),
-                title=candidate_dict.get('title')
+                title=candidate_dict.get('title', '')
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
