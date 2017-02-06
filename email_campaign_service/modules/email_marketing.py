@@ -223,7 +223,8 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
             #                                    new_candidates_only, campaign,
             #                                    len(list_of_new_email_html_or_text))
             # Update campaign blast with number of sends
-            _update_blast_sends(email_campaign_blast.id, len(candidate_ids_and_emails), campaign, new_candidates_only)
+            _update_blast_sends(email_campaign_blast.id, len(candidate_ids_and_emails), campaign, new_candidates_only,
+                                update_blast_sends=False)
             return list_of_new_email_html_or_text
     # For each candidate, create URL conversions and send the email via Celery task
     get_smartlist_candidates_via_celery(current_user.id, campaign_id, smartlist_ids, new_candidates_only)
@@ -386,7 +387,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
 
             _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
             _update_blast_sends(blast_id=blast_id, new_sends=len(subscribed_candidate_ids), campaign=campaign,
-                                new_candidates_only=new_candidates_only)
+                                new_candidates_only=new_candidates_only, update_blast_sends=False)
         else:  # TODO: Cutting off Celery for now and sending campaigns via Lambda on staging and Jenkins
             with app.app_context():
                 logger.info('Emails for email campaign (id:%d) are being sent using Celery. Blast ID is %d' %
@@ -793,7 +794,7 @@ def get_subscription_preference(candidate_id):
         return None
 
 
-def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only):
+def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only, update_blast_sends=True):
     """
     This updates the email campaign blast object with number of sends and logs that
     Marketing email batch completed.
@@ -813,7 +814,8 @@ def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only):
         raise InternalServerError(error_message='Valid campaign object must be provided')
 
     blast_obj = EmailCampaignBlast.get_by_id(blast_id)
-    blast_obj.update(sends=blast_obj.sends + new_sends)
+    if update_blast_sends:
+        blast_obj.update(sends=blast_obj.sends + new_sends)
     # This will be needed later
     # update_candidate_document_on_cloud(user, candidate_ids_and_emails)
     logger.info("Marketing email batch completed, emails sent=%s, "
