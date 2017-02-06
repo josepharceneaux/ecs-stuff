@@ -318,34 +318,34 @@ class TestSendCampaign(object):
                                                   campaign_send['sends'][0]['id'])
         UrlConversion.delete(url_conversion)
 
-    # def test_campaign_send_with_two_smartlists(self, access_token_first, headers, user_first, talent_pipeline,
-    #                                            email_campaign_of_user_first):
-    #     """
-    #     This function creates two smartlists with 20 candidates each and associates them
-    #     with a campaign. Sends that campaign and tests if emails are sent to all 40 candidates.
-    #     :param access_token_first: Access token of user_first
-    #     :param user_first: Valid user from fist domain
-    #     :param talent_pipeline: valid talent pipeline
-    #     :param email_campaign_of_user_first: email campaign associated with user first
-    #     """
-    #     smartlist_id1, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
-    #                                                                              count=20, emails_list=True)
-    #     smartlist_id2, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
-    #                                                                              count=20, emails_list=True)
-    #     campaign = email_campaign_of_user_first
-    #     create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2], email_campaign_id=campaign.id)
-    #     response = requests.post(self.URL % campaign.id, headers=headers)
-    #     assert_campaign_send(response, campaign, user_first.id, 40)
+    def test_campaign_send_with_two_smartlists(self, access_token_first, headers, user_first, talent_pipeline,
+                                               email_campaign_of_user_first):
+        """
+        This function creates two smartlists with 20 candidates each and associates them
+        with a campaign. Sends that campaign and tests if emails are sent to all 40 candidates.
+        :param access_token_first: Access token of user_first
+        :param user_first: Valid user from fist domain
+        :param talent_pipeline: valid talent pipeline
+        :param email_campaign_of_user_first: email campaign associated with user first
+        """
+        smartlist_id1, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
+                                                                                 count=20, emails_list=True)
+        smartlist_id2, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
+                                                                                 count=20, emails_list=True)
+        campaign = email_campaign_of_user_first
+        create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2], email_campaign_id=campaign.id)
+        response = requests.post(self.URL % campaign.id, headers=headers)
+        assert_campaign_send(response, campaign, user_first.id, 40)
 
-    # def test_campaign_send_with_hundred_sends(self, headers, user_first, campaign_to_ten_candidates_not_sent):
-    #     """
-    #     Here we send one campaign to 10 candidates 10 times. Total sends should be 100.
-    #     """
-    #     campaign = campaign_to_ten_candidates_not_sent
-    #     for number in xrange(1, 11):
-    #         response = requests.post(self.URL % campaign.id, headers=headers)
-    #         assert_campaign_send(response, campaign, user_first.id, blasts_count=number,
-    #                              blast_sends=10, total_sends=number * 10)
+    def test_campaign_send_with_hundred_sends(self, headers, user_first, campaign_to_ten_candidates_not_sent):
+        """
+        Here we send one campaign to 10 candidates 10 times. Total sends should be 100.
+        """
+        campaign = campaign_to_ten_candidates_not_sent
+        for number in xrange(1, 11):
+            response = requests.post(self.URL % campaign.id, headers=headers)
+            assert_campaign_send(response, campaign, user_first.id, blasts_count=number,
+                                 blast_sends=10, total_sends=number * 10)
 
     def test_campaign_send_with_two_smartlists_having_same_candidate(
             self, headers, user_first, campaign_with_same_candidate_in_multiple_smartlists):

@@ -54,6 +54,10 @@ TASK_ALREADY_SCHEDULED = 6057
 
 
 def get_topic_arn_and_region_name():
+    """
+    This returns SNS Topic ARN and region name depending on environment.
+    :rtype: tuple
+    """
     region_name = 'us-east-1'
     env = app.config[TalentConfigKeys.ENV_KEY]
     if env == TalentEnvs.JENKINS:

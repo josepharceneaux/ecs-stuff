@@ -12,10 +12,3 @@ if app.config[TalentConfigKeys.ENV_KEY] not in [TalentEnvs.DEV, TalentEnvs.JENKI
 
     # Schedule job for getting email-conversations
     schedule_job_for_email_conversations()
-
-# with app.app_context():
-#     try:
-#         create_dynamo_tables(table_name=EmailMarketing.dynamo_table_name, primary_key='blast_id')
-#     except Exception as e:
-#         logger.error("\nUnable to create DynamoDB table:{}. "
-#                      "Error: {}".format(EmailMarketing.dynamo_table_name, e.message))

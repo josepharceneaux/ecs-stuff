@@ -347,15 +347,6 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     EmailCampaignBlast.save(email_campaign_blast)
     blast_id = email_campaign_blast.id
 
-    # TODO: commenting for now - basit
-    # Add data in Dynamo DB
-    # try:
-    #     dynamo_data = dict(blast_id=email_campaign_blast.id, candidate_ids=all_candidate_ids)
-    #     EmailMarketing.add_blast_id_and_candidate_ids(dynamo_data)
-    # except Exception as e:
-    #     logger.error("\nUnable to put item(email-campaign-id:{}, candidate_ids:{} in DynamoDB table:{}. "
-    #                  "Error: {}".format(campaign.id, all_candidate_ids, EmailMarketing.dynamo_table_name, e.message))
-
     # Get subscribed and un-subscribed candidate ids
     subscribed_candidate_ids, unsubscribed_candidate_ids = \
         get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
@@ -363,37 +354,50 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
 
     if candidate_ids_and_emails:
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
-        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.JENKINS]:
+        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA]:
             # Send campaigns via Lambda triggered by SNS
             topic_arn, region_name = get_topic_arn_and_region_name()
-            client = boto3.client('sns', region_name=region_name)
-            for candidate_id_and_email in candidate_ids_and_emails:
-                event = {
-                    'candidate_id': candidate_id_and_email[0],
-                    'candidate_address': candidate_id_and_email[1],
-                    'blast_id': blast_id
-                }
-                response = client.publish(
-                    TopicArn=topic_arn,
-                    Message=json.dumps(event),
-                    Subject='EmailMarketing',
-                    MessageStructure='string'
-                )
-                logger.info(''' Publish to SNS topic.
-                                Topic ARN: %s,
-                                Environment: %s,
-                                Response: %s,
-                            ''' % (topic_arn, app.config[TalentConfigKeys.ENV_KEY], response))
+            boto3_client = boto3.client('sns', region_name=region_name)
 
+            for candidate_id_and_email in candidate_ids_and_emails:
+                candidate_id, candidate_address = candidate_id_and_email
+                try:
+                    _publish_to_sns(boto3_client, topic_arn, blast_id, candidate_id, candidate_address)
+                except Exception as error:
+                    logger.error('Could not publish to SNS topic:%s. Error:%s, blast_id:%s, candidate_id:%s'
+                                     % (topic_arn, error.message, blast_id, candidate_id))
             _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
             _update_blast_sends(blast_id=blast_id, new_sends=len(subscribed_candidate_ids), campaign=campaign,
                                 new_candidates_only=new_candidates_only, update_blast_sends=False)
-        else:  # TODO: Cutting off Celery for now and sending campaigns via Lambda on staging and Jenkins
+        else:  # TODO: Cutting off Celery for now and sending campaigns via Lambda on staging
             with app.app_context():
                 logger.info('Emails for email campaign (id:%d) are being sent using Celery. Blast ID is %d' %
                             (campaign.id, email_campaign_blast.id))
             send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_id, campaign,
                                         new_candidates_only)
+
+
+def _publish_to_sns(boto3_client, topic_arn, email_campaign_blast_id, candidate_id, candidate_address):
+    """
+    Here we publish to SNS topic for each candidate to send email-campaign via Lambda.
+    """
+    event = {
+        'candidate_id': candidate_id,
+        'candidate_address': candidate_address,
+        'blast_id': email_campaign_blast_id
+    }
+    response = boto3_client.publish(
+        TopicArn=topic_arn,
+        Message=json.dumps(event),
+        Subject='EmailMarketing',
+        MessageStructure='string'
+    )
+    logger.info('''
+                    Publish to SNS topic.
+                    Topic ARN: %s,
+                    Environment: %s,
+                    Response: %s,
+                ''' % (topic_arn, app.config[TalentConfigKeys.ENV_KEY], response))
 
 # This will be used in later version
 # def update_candidate_document_on_cloud(user, candidate_ids_and_emails):
