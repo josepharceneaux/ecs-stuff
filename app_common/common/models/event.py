@@ -249,6 +249,7 @@ class MeetupGroup(db.Model):
         """
         :param string | int group_id: group unique id
         :return: all matching group record
+        :rtype: list
         """
         return cls.query.filter_by(group_id=group_id).all()
 

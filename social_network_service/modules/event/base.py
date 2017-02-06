@@ -547,7 +547,7 @@ class EventBase(object):
 
     def update_event_associated_with_other_users(self, event_data):
         """
-        This method takes an event an update it for all users associated with it.
+        This method takes an event an update it for all users associated with it. Child will override this.
         :param event_data: Event dict
         """
         pass

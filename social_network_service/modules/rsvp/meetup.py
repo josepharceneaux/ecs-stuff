@@ -12,6 +12,7 @@ import time
 from base import RSVPBase, logger, db
 from social_network_service.modules.urls import get_url
 from social_network_service.common.models.event import Event, MeetupGroup
+from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.custom_exceptions import EventNotFound
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import Attendee, milliseconds_since_epoch_to_dt
@@ -340,9 +341,13 @@ class Meetup(RSVPBase):
             # an RSVP, we simply log the error and move to process next RSVP.
             groups = MeetupGroup.get_all_records_by_group_id(rsvp['group']['id'])
             for group_user in groups:
-                self.user = db.session.merge(group_user.user)
-                processed_rsvps.append(self.post_process_rsvp(rsvp))
-                user_ids.append(self.user.id)
+                user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(group_user.user.id,
+                                                                                                 self.social_network.id)
+                sn_rsvp_obj = Meetup(user_credentials=user_credentials, headers=self.headers,
+                                     social_network=self.social_network)
+
+                processed_rsvps.append(sn_rsvp_obj.post_process_rsvp(rsvp))
+                user_ids.append(sn_rsvp_obj.user.id)
         saved_rsvps_count = len(filter(None, processed_rsvps))
         total_rsvps_count = len(rsvps) * len(groups)
         failed_rsvps_count = total_rsvps_count - saved_rsvps_count

@@ -121,15 +121,18 @@ def process_meetup_event(event):
                 gt_event_data, gt_venue_data = meetup_event_base.event_sn_to_gt_mapping(event_data)
                 for group_user in groups:
                     try:
-                        meetup_event_base.user = group_user.user
+                        group_user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id\
+                            (group_user.user.id, meetup.id)
+                        meetup_event_obj = Meetup(user_credentials=group_user_credentials,
+                                                  social_network=meetup, headers=meetup_sn.headers)
                         if gt_venue_data:
                             gt_venue_data['user_id'] = group_user.user_id
-                            venue_in_db = meetup_event_base.save_or_update_venue(gt_venue_data)
+                            venue_in_db = meetup_event_obj.save_or_update_venue(gt_venue_data)
                             gt_event_data['venue_id'] = venue_in_db.id
                         gt_event_data['user_id'] = group_user.user_id
-                        meetup_event_base.save_or_update_event(gt_event_data)
+                        meetup_event_obj.save_or_update_event(gt_event_data)
                     except Exception as e:
-                        logger.error("An error occured while marking event deleted, error: %s" % e)
+                        logger.error("An error occured while saving event, error: %s" % e)
 
             elif event['status'] in ['canceled', MEETUP_EVENT_STATUS['deleted']]:
                 social_network_event_id = event['id']

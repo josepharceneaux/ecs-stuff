@@ -183,13 +183,6 @@ class Meetup(SocialNetworkBase):
                 self.access_token = response.get('access_token')
                 self.headers.update({'Authorization': 'Bearer ' + self.access_token})
                 refresh_token = response.get('refresh_token')
-                # records_in_db = UserSocialNetworkCredential.filter_by_keywords(social_network_id=self.social_network.id,
-                #                                                                member_id=
-                #                                                                self.user_credentials.member_id)
-                # # It will also update self object
-                # for record in records_in_db:
-                #     record.access_token = self.access_token
-                #     record.refresh_token = refresh_token
                 UserSocialNetworkCredential.query.filter_by(social_network_id=self.social_network.id,
                                                             member_id=self.user_credentials.member_id).\
                     update({'access_token': self.access_token, 'refresh_token': refresh_token})

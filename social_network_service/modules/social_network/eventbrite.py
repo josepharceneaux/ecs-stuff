@@ -210,7 +210,6 @@ class Eventbrite(SocialNetworkBase):
             class inside social_network_service/eventbrite.py.
         """
         url = user_credentials.social_network.api_url + "/webhooks/"
-        # cls.delete_webhooks(user_credentials)  # delete old webhooks
         payload = {'endpoint_url': SocialNetworkApiUrl.WEBHOOK % user_credentials.user_id,
                    'actions': ','.join([ACTIONS['published'],
                                         ACTIONS['unpublished'],
