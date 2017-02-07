@@ -21,7 +21,11 @@ class BannerResource(Resource):
     """
 
     def get(self):
-        return jsonify({'Response': 'Landed'})
+        existing_banner = redis_store.hgetall(BANNER_REDIS_KEY)
+        if not existing_banner:
+            raise InvalidUsage(error_message='No banner currently set.')
+
+        return jsonify(existing_banner)
 
     #TODO content-type decorator
     def post(self):
@@ -45,6 +49,13 @@ class BannerResource(Resource):
         current_banner = redis_store.hmset(posted_data)
 
         return jsonify(current_banner)
+
+    def delete(self):
+        existing_banner = redis_store.hgetall(BANNER_REDIS_KEY)
+        if not existing_banner:
+            raise InvalidUsage(error_message='No banner currently set.')
+
+        redis_store.delete(BANNER_REDIS_KEY)
 
 
 api.add_resource(BannerResource, '/banners')
