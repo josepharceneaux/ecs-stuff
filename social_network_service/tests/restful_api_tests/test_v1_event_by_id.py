@@ -147,9 +147,11 @@ class TestEventById(object):
             'end_datetime is modified'
 
         # Check activity updated
-        activity = Activity.get_by_user_id_type_source_id(source_id=event['id'],
-                                                          type_=Activity.MessageIds.EVENT_UPDATE,
-                                                          user_id=event_occurrence_in_db['user_id'])
+        activity = retry(Activity.get_by_user_id_type_source_id, kwargs={'user_id': event_occurrence_in_db['user_id'],
+                                                                         'source_id': event['id'],
+                                                                         'type_': Activity.MessageIds.EVENT_UPDATE},
+                         sleeptime=10, attempts=15, sleepscale=1,
+                         retry_exceptions=(AssertionError,))
 
         data = json.loads(activity.params)
         assert data['event_title'] == event['title']
