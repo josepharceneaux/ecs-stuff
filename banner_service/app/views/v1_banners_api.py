@@ -32,12 +32,12 @@ class BannerResource(Resource):
     # TODO add role decorator
     def post(self):
         posted_data = request.get_json()
-        return jsonify(create_banner(posted_data))
+        return jsonify({'banner_created': create_banner(posted_data)})
 
     # TODO add auth
     # TODO add role decorator
     def delete(self):
-        return jsonify(delete_banner())
+        return jsonify({'banner_delete': delete_banner()})
 
 
 api.add_resource(BannerResource, '/banners')

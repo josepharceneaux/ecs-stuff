@@ -47,4 +47,4 @@ def delete_banner():
     if not existing_banner:
         raise InvalidUsage(error_message='No banner currently set.')
 
-    redis_store.delete(BANNER_REDIS_KEY)
+    return redis_store.delete(BANNER_REDIS_KEY) == 1
