@@ -95,7 +95,7 @@ def validate_and_format_smartlist_patch_data(smart_list, data, user):
             formatted_request_data['add_candidate_ids'] = validate_candidate_ids(add_candidate_ids, user)
             if SmartlistCandidate(SmartlistCandidate.smartlist_id == smart_list.id,
                                   SmartlistCandidate.candidate_id.in_(
-                                          formatted_request_data['remove_candidate_ids'])).count():
+                                          formatted_request_data['add_candidate_ids'])).count():
                 raise InvalidUsage("Some candidates to be added are already the part of smart_list")
 
         if remove_candidate_ids:
