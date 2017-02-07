@@ -264,9 +264,11 @@ def candidate_experiences(candidate_id):
     """
     assert isinstance(candidate_id, (int, long))
     # Query CandidateExperience from db in descending order based on start_date & is_current
-    experiences = db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id).\
+    experiences = db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id). \
         order_by(CandidateExperience.is_current.desc(),
+                 CandidateExperience.end_year.desc(),
                  CandidateExperience.start_year.desc(),
+                 CandidateExperience.end_month.desc(),
                  CandidateExperience.start_month.desc())
     return [{'id': experience.id,
              'organization': experience.organization,
@@ -1189,6 +1191,17 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         first_name = parsed_names_object.first
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
+
+    # Retrieve candidate's most recent experience from db
+    # If title is not provided and candidate has experience, its title will be its most recent position
+    most_recent_experience = CandidateExperience.query.filter_by(candidate_id=candidate_id). \
+        order_by(CandidateExperience.is_current.desc(),
+                 CandidateExperience.end_year.desc(),
+                 CandidateExperience.start_year.desc(),
+                 CandidateExperience.end_month.desc(),
+                 CandidateExperience.start_month.desc()).first()
+    if most_recent_experience and not title:
+        title = most_recent_experience.position
 
     update_dict = {
         'objective': objective, 'summary': summary, 'filename': resume_url,
@@ -2578,6 +2591,37 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
 
     candidate.total_months_experience += total_months_experience
     return
+
+
+def most_recent_position(work_experiences):
+    start_year, start_month = None, None
+    end_year, end_month = None, None
+    found = None
+
+    for index, experience in enumerate(work_experiences):
+        if experience.get('is_current') is True:
+            return experience['position']
+        else:
+            experience_start_year = experience.get('start_year')
+            experience_start_month = experience.get('start_month')
+            experience_end_year = experience.get('end_year')
+            experience_end_month = experience.get('end_month')
+
+            if experience_start_year >= start_year:
+                start_year = experience_start_year
+                found = index
+                if experience_start_month > start_month:
+                    start_month = experience_start_month
+                    found = index
+
+            if experience_end_year >= end_year:
+                end_year = experience_end_year
+                found = index
+                if experience_end_month > end_month:
+                    end_month = experience_end_month
+                    found = index
+
+    return work_experiences[found].get('position') if found is not None else None
 
 
 class CachedData(object):
