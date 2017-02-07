@@ -1,6 +1,3 @@
-# Candidate Service app instance
-from candidate_service.candidate_app import app
-
 # Conftest
 from candidate_service.common.tests.conftest import *
 
@@ -40,7 +37,7 @@ class TestCandidatePhoto(object):
         assert get_resp.status_code == requests.codes.ok
         assert len(get_resp.json()['candidate_photos']) == 2
 
-    def test_create_duplicate_photos(self, access_token_first, user_first, talent_pool):
+    def test_create_duplicate_photos(self, access_token_first, talent_pool):
         """
         Test: Attempt to create two photos with the same url for the same candidate in the same domain
         Expect: 204, but duplicate image_url should not be inserted into the db
@@ -66,7 +63,7 @@ class TestCandidatePhoto(object):
 
 
 class TestCandidatePhotoEdit(object):
-    def test_update_candidate_photo(self, access_token_first, user_first, talent_pool):
+    def test_update_candidate_photo(self, access_token_first, talent_pool):
         # Create candidate
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
@@ -100,7 +97,7 @@ class TestCandidatePhotoEdit(object):
 
 
 class TestCandidatePhotoDelete(object):
-    def test_delete_candidate_photos(self, access_token_first, user_first, talent_pool):
+    def test_delete_candidate_photos(self, access_token_first, talent_pool):
         # Create candidate
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)

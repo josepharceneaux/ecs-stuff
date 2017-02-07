@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import TINYINT
 from ..utils.validators import is_number
+from contracts import contract
 from ..error_handling import InvalidUsage, ForbiddenError
 
 
@@ -132,7 +133,8 @@ class Event(db.Model):
         :return: count of updated events
         :rtype: int | long
         """
-        events_count = cls.query.filter_by(user_id=user_id, social_network_id=social_network_id).update({'is_hidden': False})
+        events_count = cls.query.filter_by(user_id=user_id, social_network_id=social_network_id).\
+            update({'is_hidden': False})
         cls.session.commit()
         return events_count
 
@@ -242,6 +244,16 @@ class MeetupGroup(db.Model):
         return cls.query.filter_by(group_id=group_id).first()
 
     @classmethod
+    @contract
+    def get_all_records_by_group_id(cls, group_id):
+        """
+        :param string | int group_id: group unique id
+        :return: all matching group record
+        :rtype: list
+        """
+        return cls.query.filter_by(group_id=group_id).all()
+
+    @classmethod
     def get_by_user_id_and_group_id(cls, user_id, group_id):
         """
         Search a group by user_id and group unique id
@@ -250,3 +262,11 @@ class MeetupGroup(db.Model):
         :return: returns a group record
         """
         return cls.query.filter_by(user_id=user_id, group_id=group_id).first()
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        """
+        Returns a list of all Meetup Groups associated with given user id.
+        :param int user_id: user id
+        """
+        return cls.query.filter_by(user_id=user_id).all()

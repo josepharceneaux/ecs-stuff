@@ -228,5 +228,6 @@ def create_candidates_from_candidate_api(access_token, data):
                      'content-type': 'application/json'},
             data=json.dumps(data)
     )
+    print "resp.json: {}".format(resp.json() if hasattr(resp, 'json') else resp)
     assert resp.status_code == 201
     return [candidate['id'] for candidate in resp.json()['candidates']]

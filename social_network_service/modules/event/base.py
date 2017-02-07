@@ -442,11 +442,17 @@ class EventBase(object):
         events as `is_deleted_from_vendor = True`
         :param list events: list of events (dict) retrieved from Meetup / Eventbrite
         """
-        events_in_db = Event.filter_by_keywords(user_id=self.user.id, social_network_id=self.social_network.id,
-                                                is_deleted_from_vendor=0)
+        member_users = UserSocialNetworkCredential.filter_by_keywords(member_id=self.member_id,
+                                                                      social_network_id=self.social_network.id)
+        members_events = []
         social_network_event_ids = [event['id'] for event in events]
-        deleted_event_ids = [event.id for event in events_in_db
-                             if event.social_network_event_id not in social_network_event_ids]
+        member_user_ids = [member.user_id for member in member_users]
+        events_to_mark_deleted = Event.query.filter(Event.user_id.in_(member_user_ids), Event.is_deleted_from_vendor == 0,
+                                                    Event.social_network_id == self.social_network.id,
+                                                    ~Event.social_network_event_id.in_(social_network_event_ids))
+
+        events_marked_deleted = events_to_mark_deleted.update({'is_deleted_from_vendor': 1}, synchronize_session=False)
+        db.session.commit()
         # TODO: This commented code will be required for a future feature. Entirely delete unused events from db
         # deleted_event_ids = []
         # for event_obj in missing_events:
@@ -456,9 +462,8 @@ class EventBase(object):
         #         event = None
         #     if not event or (event and event.get('status') in self.cancelled_status):
         #         deleted_event_ids.append(event_obj.id)
-        num_of_deleted_events = Event.mark_vendor_deleted(deleted_event_ids)
         logger.info('%s events have been marked as vendor deleted. SocialNetwork: %s, UserId: %s'
-                    % (num_of_deleted_events, self.social_network.name, self.user.id))
+                    % (events_marked_deleted, self.social_network.name, self.user.id))
 
     def delete_event(self, event_id, delete_from_vendor=True):
         """
@@ -540,6 +545,13 @@ class EventBase(object):
         """
         pass
 
+    def update_event_associated_with_other_users(self, event_data):
+        """
+        This method takes an event an update it for all users associated with it. Child will override this.
+        :param event_data: Event dict
+        """
+        pass
+
     def import_event(self, event):
         """
         This method takes json event data from social network. It then maps that data to getTalent event
@@ -553,6 +565,10 @@ class EventBase(object):
         if venue_data:
             venue_in_db = self.save_or_update_venue(venue_data)
             event_data['venue_id'] = venue_in_db.id
+        user_id = event_data['user_id']
+        del event_data['user_id']
+        self.update_event_associated_with_other_users(event_data)
+        event_data['user_id'] = user_id
         return self.save_or_update_event(event_data)
 
     def get_events_from_db(self, start_date=None):

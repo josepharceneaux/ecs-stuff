@@ -4,10 +4,7 @@ Test cases for candidate CRUD operations
 # Candidate Service app instance
 
 import sys
-
 from requests.status_codes import codes as http_status_codes
-
-from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_errors
@@ -119,10 +116,49 @@ class TestCandidateSourceId(object):
         assert get_resp.json()['candidate']['source_id'] is None
 
 
+class TestCandidateSource(object):
+    def test_add_source_to_candidate(self, user_first, access_token_first, talent_pool):
+        """
+        Test: Add user defined source and source details to candidate
+        """
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
+        # Add source to candidate's domain
+        source_data = {
+            "source": {
+                "description": "testing_{}".format(str(uuid.uuid4())[:5])
+            }
+        }
+        resp = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_first, source_data)
+        print response_info(resp)
+
+        source_id = resp.json()['source']['id']
+
+        # Create candidate
+        data = {'candidates': [
+            {
+                'talent_pool_ids': {'add': [talent_pool.id]},
+                'source_id': source_id,
+                'source_detail': 'www.linkedin.com',
+                'source_product_id': 2
+            }
+        ]}
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == http_status_codes.CREATED
+
+        candidate_id = create_resp.json()['candidates'][0]['id']
+
+        # Retrieve candidate
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
+
+
 class TestUpdateCandidateName(object):
     URL = CandidateApiUrl.CANDIDATES
 
-    def test_update_first_name(self, user_first, access_token_first, talent_pool):
+    def test_update_first_name(self, access_token_first, talent_pool):
         """
         Test:  Update candidate's first name
         Expect: 200, candidate's full name should also be updated
@@ -147,7 +183,7 @@ class TestUpdateCandidateName(object):
         assert updated_full_name != candidate_full_name
         assert updated_full_name.startswith(data['candidates'][0]['first_name'])
 
-    def test_update_middle_name(self, user_first, access_token_first, talent_pool):
+    def test_update_middle_name(self, access_token_first, talent_pool):
         """
         Test:  Update candidate's middle name
         Expect: 200, candidate's full name should also be updated
@@ -172,7 +208,7 @@ class TestUpdateCandidateName(object):
         assert updated_full_name != candidate_full_name
         assert data['candidates'][0]['middle_name'] in updated_full_name
 
-    def test_update_last_name(self, user_first, access_token_first, talent_pool):
+    def test_update_last_name(self, access_token_first, talent_pool):
         """
         Test:  Update candidate's last name
         Expect: 200, candidate's full name should also be updated

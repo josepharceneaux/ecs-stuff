@@ -3,13 +3,10 @@ import json
 from datetime import datetime
 from activity_constants import ACTIVTY_PARAMS
 
-from app_common.common.models.misc import Activity
-from app_common.common.models.user import User
-
 
 class TalentActivityManager(object):
 
-    def __init__(self, db, activity_model=Activity, logger=None):
+    def __init__(self, db, activity_model, logger=None):
         """
         Allows flask-app/service to set flask-sqlalchemy db and Activity Models.
         :param db:

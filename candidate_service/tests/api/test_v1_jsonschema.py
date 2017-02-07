@@ -1,9 +1,8 @@
 """
 Test cases for testing json schema validations
 """
-# Candidate Service app instance
-
 # Conftest
+from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from candidate_service.common.routes import CandidateApiUrl
@@ -12,7 +11,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 
 class TestSchemaValidationPost(object):
-    def test_schema_validation(self, access_token_first, user_first, talent_pool):
+    def test_schema_validation(self, access_token_first, talent_pool):
         """
         Test: Schema validations for CandidatesResource/post()
         Expect: 400 unless if a dict of CandidateObject is provided with at least
@@ -44,7 +43,7 @@ class TestSchemaValidationPost(object):
 
 
 class TestSchemaValidationPatch(object):
-    def test_data_validations(self, access_token_first, user_first):
+    def test_data_validations(self, access_token_first):
         """
         Test:   Validate json data
         Expect: 400
