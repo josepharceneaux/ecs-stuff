@@ -923,18 +923,3 @@ class TalentbotAuth(db.Model):
         :rtype: list
         """
         return cls.query.with_entities(cls.user_phone_id).distinct().all()
-
-    def __str__(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "user_phone_id": self.user_phone_id,
-            "email": self.email,
-            "facebook_user_id": self.facebook_user_id,
-            "slack_user_id": self.slack_user_id,
-            "slack_team_name": self.slack_team_name
-        }
-
-    def remove(self):
-        db.session.delete(self)
-        db.session.commit()

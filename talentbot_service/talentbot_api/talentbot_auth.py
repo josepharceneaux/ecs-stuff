@@ -199,7 +199,7 @@ class TalentbotAuthById(Resource):
         requested_auth_object = check_if_auth_exists(_id)
         if requested_auth_object.user_id == request.user.id or request.user.role.id == 2:
             requested_auth_object = check_if_auth_exists(_id)
-            return ApiResponse(requested_auth_object.__str__())
+            return ApiResponse(requested_auth_object.to_json())
         raise ForbiddenError("You don't have permission to view this record")
 
     def delete(self, **kwargs):
@@ -221,7 +221,7 @@ class TalentbotAuthById(Resource):
         _id = kwargs.get('id')
         requested_auth_object = check_if_auth_exists(_id)
         if requested_auth_object.user_id == request.user.id or request.user.role.id == 2:
-            TalentbotAuth.remove(requested_auth_object)
+            TalentbotAuth.delete(requested_auth_object)
             return ApiResponse({"talentbot_auth_id": requested_auth_object.id})
         raise ForbiddenError("You don't have permission to delete this record")
 
@@ -251,5 +251,5 @@ def check_if_auth_exists(_id):
     """
     requested_auth_object = TalentbotAuth.get_by_id(_id) if id else None
     if not requested_auth_object:
-        raise NotFoundError("Either talentbot_auth_id is not provided or doesn't exist")
+        raise NotFoundError("No talentbot_auth exists against id: %d" % _id)
     return requested_auth_object

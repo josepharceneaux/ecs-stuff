@@ -2,6 +2,7 @@
 This module contains validators for SMS, Facebook, Email and Slack request parameters
 Author: Kamal Hasan <kamalhasan.qc@gmail.com>
 """
+import re
 from talentbot_service.common.error_handling import InvalidUsage, NotFoundError
 from talentbot_service.common.models.user import UserPhone, TalentbotAuth, User
 
@@ -84,8 +85,11 @@ def validate_and_format_data_for_email(data):
     email = data.get("email")
     if not email:
         raise InvalidUsage("No email specified")
+    is_valid_email = re.search(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9]+\.[a-zA-Z0-9.]*\.*[com|org|edu]{3}$)", email)
+    if not is_valid_email:
+        raise InvalidUsage("Invalid email")
     return {
-        "email": email.strip()
+        "email": email.strip().lower()
     }
 
 
