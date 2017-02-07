@@ -10,7 +10,6 @@ import pytest
 import requests
 from datetime import timedelta
 from requests import codes
-from redo import retry
 
 # App specific imports
 from social_network_service.tests.conftest import EVENTBRITE_CONFIG
@@ -25,6 +24,7 @@ from social_network_service.tests.helper_functions import auth_header, send_post
 from social_network_service.common.campaign_services.tests_helpers import assert_invalid_datetime_format
 from social_network_service.custom_exceptions import (VenueNotFound, EventInputMissing, EventOrganizerNotFound,
                                                       SocialNetworkNotImplemented, SocialNetworkError)
+from social_network_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 class TestResourceEvents(object):
@@ -182,11 +182,9 @@ class TestResourceEvents(object):
         assert response.status_code == codes.CREATED, 'Status should be Ok, Resource Created (201)'
         event_id = response.json()['id']
         db.db.session.commit()
-        activities = retry(Activity.get_by_user_id_type_source_id, kwargs={'user_id': event_data['user_id'],
-                                                                           'source_id': event_id,
-                                                                           'type_': Activity.MessageIds.EVENT_CREATE},
-                           sleeptime=10, attempts=15, sleepscale=1,
-                           retry_exceptions=(AssertionError,))
+        CampaignsTestsHelpers.assert_for_activity(event_data['user_id'], Activity.MessageIds.EVENT_CREATE, event_id)
+        activities = Activity.get_by_user_id_type_source_id(user_id=event_data['user_id'], source_id=event_id,
+                                                            type_=Activity.MessageIds.EVENT_CREATE)
         data = json.loads(activities.params)
         assert data['event_title'] == event_data['title']
 
