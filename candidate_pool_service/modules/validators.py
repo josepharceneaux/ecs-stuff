@@ -60,7 +60,7 @@ def validate_and_format_smartlist_post_data(data, user):
     return formatted_request_data
 
 
-def validate_and_format_smartlist_patch_data(data, user):
+def validate_and_format_smartlist_patch_data(smart_list, data, user):
     """Validates request.form data against required parameters
     strips unwanted whitespaces (if present)
     creates list of candidate ids (if present)
@@ -93,11 +93,16 @@ def validate_and_format_smartlist_patch_data(data, user):
 
         if add_candidate_ids:
             formatted_request_data['add_candidate_ids'] = validate_candidate_ids(add_candidate_ids, user)
+            if SmartlistCandidate(SmartlistCandidate.smartlist_id == smart_list.id,
+                                  SmartlistCandidate.candidate_id.in_(
+                                          formatted_request_data['remove_candidate_ids'])).count():
+                raise InvalidUsage("Some candidates to be added are already the part of smart_list")
 
         if remove_candidate_ids:
             formatted_request_data['remove_candidate_ids'] = validate_candidate_ids(remove_candidate_ids, user)
-            if SmartlistCandidate.query.filter(SmartlistCandidate.candidate_id.in_(
-                    formatted_request_data['remove_candidate_ids'])).count() != len(
+            if SmartlistCandidate.query.filter(
+                            SmartlistCandidate.smartlist_id == smart_list.id, SmartlistCandidate.candidate_id.in_(
+                            formatted_request_data['remove_candidate_ids'])).count() != len(
                     formatted_request_data['remove_candidate_ids']):
                 raise InvalidUsage("Some of candidates to be removed are not the part of smart_list")
     else:

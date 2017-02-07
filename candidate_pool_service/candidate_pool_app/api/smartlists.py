@@ -183,7 +183,8 @@ class SmartlistResource(Resource):
         if data.get('search_params'):
             smart_list.search_params = data.get('search_params')
         elif data.get('remove_candidate_ids'):
-            SmartlistCandidate.query.filter(SmartlistCandidate.candidate_id.in_(data.get('remove_candidate_ids'))).delete()
+            SmartlistCandidate.query.filter(SmartlistCandidate.smartlist_id == smart_list.id,
+                                            SmartlistCandidate.candidate_id.in_(data.get('remove_candidate_ids'))).delete()
         elif data.get('add_candidate_ids'):
             for candidate_id in data.get('add_candidate_ids'):
                 row = SmartlistCandidate(smartlist_id=smart_list.id, candidate_id=candidate_id)
