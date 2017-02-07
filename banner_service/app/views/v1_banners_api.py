@@ -4,7 +4,7 @@ Flask end points for v1 banner app api.
 __author__ = 'erik@getTalent'
 # StdLib
 # Third Party
-from flask import Blueprint, request
+from flask import Blueprint, jsonify, request
 from flask_restful import Resource
 # Module Specific
 from banner_service.common.talent_api import TalentApi
@@ -25,19 +25,19 @@ class BannerResource(Resource):
     # TODO add auth
     # TODO add role decorator
     def get(self):
-        return read_banner()
+        return jsonify(read_banner())
 
     # TODO content-type decorator
     # TODO add auth
     # TODO add role decorator
     def post(self):
         posted_data = request.get_json()
-        return create_banner(posted_data)
+        return jsonify(create_banner(posted_data))
 
     # TODO add auth
     # TODO add role decorator
     def delete(self):
-        return delete_banner()
+        return jsonify(delete_banner())
 
 
 api.add_resource(BannerResource, '/banners')

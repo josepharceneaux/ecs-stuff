@@ -31,9 +31,7 @@ def create_banner(json_data):
     # TODO Implement validated user ID
     # posted_data['owner_id'] = request.user.id
 
-    current_banner = redis_store.hmset(json_data)
-
-    return jsonify(current_banner)
+    return redis_store.hmset(BANNER_REDIS_KEY, json_data)
 
 
 def read_banner():
@@ -41,7 +39,7 @@ def read_banner():
     if not existing_banner:
         raise InvalidUsage(error_message='No banner currently set.')
 
-    return jsonify(existing_banner)
+    return existing_banner
 
 
 def delete_banner():
