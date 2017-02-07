@@ -14,7 +14,8 @@ from requests import codes
 
 from ...models.db import db
 from ...tests.sample_data import fake
-from ...models.event import MeetupGroup
+from ...models.event import MeetupGroup, Event
+from ...models.venue import Venue
 from ...redis_cache import redis_store2
 from ...tests.app import test_app, logger
 from ...constants import (MEETUP, EVENTBRITE)
@@ -39,7 +40,7 @@ from ...tests.api_conftest import (user_first, token_first, talent_pool_session_
 
 __author__ = 'basit'
 
-EVENTBRITE_CONFIG = {'skip': True,
+EVENTBRITE_CONFIG = {'skip': False,
                      'reason': 'In contact with Eventbrite support for increasing hit rate limit'}
 
 # Add new vendor here to run tests for that particular social-network
@@ -497,7 +498,6 @@ def meetup_event_second(test_meetup_credentials, meetup, meetup_venue_second,
     """
     This creates another event for Meetup for user_first
     """
-
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
 
     assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
@@ -545,13 +545,10 @@ def eventbrite_venue_second(test_eventbrite_credentials, user_first, eventbrite,
     return {'id': venue_id}
 
 
-@pytest.fixture(scope="function")
-def eventbrite_event_second(test_eventbrite_credentials, eventbrite, eventbrite_venue_second,
-                            token_first):
+@pytest.fixture(scope="session")
+def eventbrite_event_global(eventbrite, eventbrite_venue_second, token_first):
     """
-    This method create a dictionary data to create event on eventbrite.
-    It uses meetup SocialNetwork model object, venue for meetup
-    and an organizer to create event data for
+    This method creates an eventbrite event and we use its copy in eventbrite_event_second
     """
     event = EVENT_DATA.copy()
     event['title'] = 'Eventbrite ' + event['title']
@@ -563,16 +560,33 @@ def eventbrite_event_second(test_eventbrite_credentials, eventbrite, eventbrite_
     data = response.json()
     assert data['id']
 
-    response_get = send_request('get', url=SocialNetworkApiUrl.EVENT % data['id'], access_token=token_first)
+
+@pytest.fixture(scope="function")
+def eventbrite_event_second(test_eventbrite_credentials, eventbrite, eventbrite_venue_second,
+                            token_first, eventbrite_event_global):
+    """
+    This method create a dictionary data to create event on eventbrite.
+    It uses meetup SocialNetwork model object, venue for meetup
+    and an organizer to create event data for
+    """
+    response_get = send_request('get', url=SocialNetworkApiUrl.EVENT % eventbrite_event_global['id'],
+                                access_token=token_first)
 
     assert response_get.status_code == codes.OK, response_get.text
 
     _event = response_get.json()['event']
-    _event['venue_id'] = _event['venue']['id']
+    venue = deepcopy(_event['venue'])
+    del venue['id']
+    venue_in_db = Venue.save(**venue)
+    db.session.commit()
+    _event['venue_id'] = venue_in_db.id
     del _event['venue']
     del _event['event_organizer']
-
-    return _event
+    event = deepcopy(_event)
+    del event['id']
+    event_db = Event.save(**event)
+    db.session.commit()
+    return dict(event_db)
 
 
 @pytest.fixture(scope="function", params=VENDORS)
