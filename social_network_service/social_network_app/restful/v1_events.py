@@ -390,12 +390,14 @@ class EventSynchronizer(Resource):
     """
     This resource handles event importer
     """
+
+    decorators = [require_oauth()]
+
     def post(self):
         """
         This endpoint triggers an event synchronizer(Celery task) against a post request with valid data
         Example:
         {
-            "user_id": 1,
             "social_network_id": 1
         }
         :return:
@@ -404,7 +406,7 @@ class EventSynchronizer(Resource):
             }
         """
         data = get_valid_json_data(request)
-        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(data['user_id'],
+        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(request.user.id,
                                                                                          data['social_network_id'])
         if user_credentials:
             sync_events.delay(user_credentials)
