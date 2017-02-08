@@ -115,7 +115,7 @@ def require_role(role_name):
                 return func(*args, **kwargs)
 
             role = request.user.role.name
-            if role != 'TALENT_ADMIN':
+            if role != role_name:
                 raise UnauthorizedError(
                     error_message="User doesn't have appropriate permissions to "
                                   "perform this operation")
