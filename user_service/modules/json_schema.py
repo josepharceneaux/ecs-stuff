@@ -15,6 +15,10 @@ source_schema = {
                 "description": {
                     "type": "string",
                     "maxLength": 1000
+                },
+                "details": {
+                    "type": ["string", "null"],
+                    "maxLength": 255
                 }
             },
             "required": [
@@ -171,6 +175,33 @@ aoi_schema = {
     },
     "required": [
         "areas_of_interest"
+    ]
+}
+
+source_product_schema = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "source_products": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "notes": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            }
+        }
+    },
+    "required": [
+        "source_products"
     ]
 }
 

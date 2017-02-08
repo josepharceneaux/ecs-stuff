@@ -461,7 +461,12 @@ class RSVPBase(object):
                 "notes": attendee.event.title
             }
         }
-        response = http_request('POST', UserServiceApiUrl.DOMAIN_SOURCES, headers=self.gt_headers,
+        access_token = User.generate_jw_token(user_id=self.user.id)
+        header = {
+            'Content-Type': 'application/json',
+            'Authorization': access_token
+        }
+        response = http_request('POST', UserServiceApiUrl.DOMAIN_SOURCES, headers=header,
                                 data=json.dumps(candidate_source))
         # Source already exists
         if response.status_code == requests.codes.bad:
@@ -555,8 +560,12 @@ class RSVPBase(object):
                          })
         # Update social network data to be sent with candidate
         data.update({'social_networks': [social_network_data]})
-
-        resp = http_request(request_method, url=CandidateApiUrl.CANDIDATES, headers=self.gt_headers,
+        access_token = User.generate_jw_token(user_id=self.user.id)
+        header = {
+            'Content-Type': 'application/json',
+            'Authorization': access_token
+        }
+        resp = http_request(request_method, url=CandidateApiUrl.CANDIDATES, headers=header,
                             data=json.dumps(dict(candidates=[data])), app=app)
         data_resp = resp.json()
         if resp.status_code not in [codes.CREATED, codes.OK]:

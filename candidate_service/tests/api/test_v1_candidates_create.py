@@ -1,17 +1,13 @@
 """
 Test cases for CandidateResource/post()
 """
-# Candidate Service app instance
-
 import time
-
 from auth_service.custom_error_codes import AuthServiceCustomErrorCodes as auth_errors
 from candidate_sample_data import (
     GenerateCandidateData, generate_single_candidate_data, candidate_military_service,
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
 from candidate_service.common.models.candidate import CandidateEmail
-from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.iso_standards import get_country_name
 from candidate_service.common.utils.test_utils import send_request, response_info
@@ -38,6 +34,7 @@ class TestCreateCandidateSuccessfully(object):
     """
     Class contains functional tests that are expected to create candidate(s) successfully
     """
+
     def test_create_candidate_with_all_fields(self, access_token_first, user_first, talent_pool,
                                               domain_aois, domain_custom_fields):
         """
@@ -129,15 +126,21 @@ class TestCreateCandidateSuccessfully(object):
         assert educations[0]['degrees'][0]['id']
         assert educations[0]['degrees'][0]['title'] == data_sent_in['educations'][0]['degrees'][0]['title']
         assert educations[0]['degrees'][0]['type'] == data_sent_in['educations'][0]['degrees'][0]['type']
-        assert educations[0]['degrees'][0]['gpa'] == '{0:.2f}'.format(data_sent_in['educations'][0]['degrees'][0]['gpa'])
-        assert educations[0]['degrees'][0]['start_year'] == str(data_sent_in['educations'][0]['degrees'][0]['start_year'])
-        assert educations[0]['degrees'][0]['start_year'] == str(data_sent_in['educations'][0]['degrees'][0]['start_year'])
-        assert educations[0]['degrees'][0]['start_month'] == str(data_sent_in['educations'][0]['degrees'][0]['start_month'])
+        assert educations[0]['degrees'][0]['gpa'] == '{0:.2f}'.format(
+            data_sent_in['educations'][0]['degrees'][0]['gpa'])
+        assert educations[0]['degrees'][0]['start_year'] == str(
+            data_sent_in['educations'][0]['degrees'][0]['start_year'])
+        assert educations[0]['degrees'][0]['start_year'] == str(
+            data_sent_in['educations'][0]['degrees'][0]['start_year'])
+        assert educations[0]['degrees'][0]['start_month'] == str(
+            data_sent_in['educations'][0]['degrees'][0]['start_month'])
         assert educations[0]['degrees'][0]['end_year'] == str(data_sent_in['educations'][0]['degrees'][0]['end_year'])
         assert educations[0]['degrees'][0]['end_month'] == str(data_sent_in['educations'][0]['degrees'][0]['end_month'])
         assert educations[0]['degrees'][0]['bullets'][0]['id']
-        assert educations[0]['degrees'][0]['bullets'][0]['major'] == data_sent_in['educations'][0]['degrees'][0]['bullets'][0]['major']
-        assert educations[0]['degrees'][0]['bullets'][0]['comments'] == data_sent_in['educations'][0]['degrees'][0]['bullets'][0]['comments']
+        assert educations[0]['degrees'][0]['bullets'][0]['major'] == \
+               data_sent_in['educations'][0]['degrees'][0]['bullets'][0]['major']
+        assert educations[0]['degrees'][0]['bullets'][0]['comments'] == \
+               data_sent_in['educations'][0]['degrees'][0]['bullets'][0]['comments']
         assert educations[1]['id']
         assert educations[1]['city'] == data_sent_in['educations'][1]['city']
         assert educations[1]['country'] == get_country_name(data_sent_in['educations'][1]['country_code'])
@@ -148,15 +151,21 @@ class TestCreateCandidateSuccessfully(object):
         assert educations[1]['degrees'][0]['id']
         assert educations[1]['degrees'][0]['title'] == data_sent_in['educations'][1]['degrees'][0]['title']
         assert educations[1]['degrees'][0]['type'] == data_sent_in['educations'][1]['degrees'][0]['type']
-        assert educations[1]['degrees'][0]['gpa'] == '{0:.2f}'.format(data_sent_in['educations'][1]['degrees'][0]['gpa'])
-        assert educations[1]['degrees'][0]['start_year'] == str(data_sent_in['educations'][1]['degrees'][0]['start_year'])
-        assert educations[1]['degrees'][0]['start_year'] == str(data_sent_in['educations'][1]['degrees'][0]['start_year'])
-        assert educations[1]['degrees'][0]['start_month'] == str(data_sent_in['educations'][1]['degrees'][0]['start_month'])
+        assert educations[1]['degrees'][0]['gpa'] == '{0:.2f}'.format(
+            data_sent_in['educations'][1]['degrees'][0]['gpa'])
+        assert educations[1]['degrees'][0]['start_year'] == str(
+            data_sent_in['educations'][1]['degrees'][0]['start_year'])
+        assert educations[1]['degrees'][0]['start_year'] == str(
+            data_sent_in['educations'][1]['degrees'][0]['start_year'])
+        assert educations[1]['degrees'][0]['start_month'] == str(
+            data_sent_in['educations'][1]['degrees'][0]['start_month'])
         assert educations[1]['degrees'][0]['end_year'] == str(data_sent_in['educations'][1]['degrees'][0]['end_year'])
         assert educations[1]['degrees'][0]['end_month'] == str(data_sent_in['educations'][1]['degrees'][0]['end_month'])
         assert educations[1]['degrees'][0]['bullets'][0]['id']
-        assert educations[1]['degrees'][0]['bullets'][0]['major'] == data_sent_in['educations'][1]['degrees'][0]['bullets'][0]['major']
-        assert educations[1]['degrees'][0]['bullets'][0]['comments'] == data_sent_in['educations'][1]['degrees'][0]['bullets'][0]['comments']
+        assert educations[1]['degrees'][0]['bullets'][0]['major'] == \
+               data_sent_in['educations'][1]['degrees'][0]['bullets'][0]['major']
+        assert educations[1]['degrees'][0]['bullets'][0]['comments'] == \
+               data_sent_in['educations'][1]['degrees'][0]['bullets'][0]['comments']
 
         # Candidate's phones
         phones = candidate_data['phones']
@@ -203,7 +212,8 @@ class TestCreateCandidateSuccessfully(object):
         assert experiences[0]['organization'] == data_sent_in['work_experiences'][0]['organization']
         assert experiences[0]['position'] == data_sent_in['work_experiences'][0]['position']
         assert experiences[0]['bullets'][0]['id']
-        assert experiences[0]['bullets'][0]['description'] == data_sent_in['work_experiences'][0]['bullets'][0]['description']
+        assert experiences[0]['bullets'][0]['description'] == data_sent_in['work_experiences'][0]['bullets'][0][
+            'description']
         assert experiences[1]['id']
         assert experiences[1]['city'] == data_sent_in['work_experiences'][1]['city']
         assert experiences[1]['country'] == get_country_name(data_sent_in['work_experiences'][1]['country_code'])
@@ -212,7 +222,8 @@ class TestCreateCandidateSuccessfully(object):
         assert experiences[1]['organization'] == data_sent_in['work_experiences'][1]['organization']
         assert experiences[1]['position'] == data_sent_in['work_experiences'][1]['position']
         assert experiences[1]['bullets'][0]['id']
-        assert experiences[1]['bullets'][0]['description'] == data_sent_in['work_experiences'][1]['bullets'][0]['description']
+        assert experiences[1]['bullets'][0]['description'] == data_sent_in['work_experiences'][1]['bullets'][0][
+            'description']
 
         # Candidate's work preference
         work_preference = candidate_data['work_preference']
@@ -276,13 +287,15 @@ class TestCreateCandidateSuccessfully(object):
         assert preferred_locations[0]['id']
         assert preferred_locations[0]['city'] == data_sent_in['preferred_locations'][0]['city']
         assert preferred_locations[0]['state'] == data_sent_in['preferred_locations'][0]['state']
-        assert preferred_locations[0]['country'] == get_country_name(data_sent_in['preferred_locations'][0]['country_code'])
+        assert preferred_locations[0]['country'] == get_country_name(
+            data_sent_in['preferred_locations'][0]['country_code'])
         assert preferred_locations[1]['id']
         assert preferred_locations[1]['city'] == data_sent_in['preferred_locations'][1]['city']
         assert preferred_locations[1]['state'] == data_sent_in['preferred_locations'][1]['state']
-        assert preferred_locations[1]['country'] == get_country_name(data_sent_in['preferred_locations'][1]['country_code'])
+        assert preferred_locations[1]['country'] == get_country_name(
+            data_sent_in['preferred_locations'][1]['country_code'])
 
-    def test_add_candidate_with_names_and_talent_pool_id(self, user_first, access_token_first, talent_pool):
+    def test_add_candidate_with_names_and_talent_pool_id(self, access_token_first, talent_pool):
         """
         Test: Create a new candidate with only talent pool ID + candidate's names provided
         """
@@ -297,8 +310,7 @@ class TestCreateCandidateSuccessfully(object):
         print response_info(create_resp)
         assert create_resp.status_code == requests.codes.CREATED
 
-    def test_add_candidate_with_names_and_talent_pool_id_and_resume_url(self, user_first, access_token_first,
-                                                                        talent_pool):
+    def test_add_candidate_with_names_and_talent_pool_id_and_resume_url(self, access_token_first, talent_pool):
         """
         Test: Create a new candidate with talent pool ID, candidate's names and resume url
         """
@@ -323,6 +335,7 @@ class TestCreateInvalidCandidates(object):
         - forbidden access (403)
         - non existing data (404)
     """
+
     def test_create_candidate_with_expired_token(self, access_token_first):
         """
         Test: Attempt to create a candidate using an expired bearer token
@@ -815,8 +828,7 @@ class TestCreateAOI(object):
         assert candidate_aoi[0]['name'] == AreaOfInterest.query.get(candidate_aoi[0]['id']).name
         assert candidate_aoi[1]['name'] == AreaOfInterest.query.get(candidate_aoi[1]['id']).name
 
-    def test_create_candidate_area_of_interest_outside_of_domain(self, access_token_second, user_second,
-                                                                 domain_aois, talent_pool):
+    def test_create_candidate_area_of_interest_outside_of_domain(self, access_token_second, domain_aois, talent_pool):
         """
         Test: Attempt to create candidate's area of interest outside of user's domain
         Expect: 403
@@ -870,7 +882,7 @@ class TestCreateCandidateCustomField(object):
 
 
 class TestCreateWorkPreference(object):
-    def test_create_candidate_work_preference(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_work_preference(self, access_token_first, talent_pool):
         """
         Test:   Create CandidateWorkPreference for Candidate
         Expect: 201
@@ -901,7 +913,7 @@ class TestCreateWorkPreference(object):
 
 
 class TestCreateMilitaryService(object):
-    def test_create_military_service_successfully(self, access_token_first, user_first, talent_pool):
+    def test_create_military_service_successfully(self, access_token_first, talent_pool):
         """
         Test:  Create candidate + military service
         Expect: 201
@@ -921,7 +933,7 @@ class TestCreateMilitaryService(object):
         assert get_country_code_from_name(
             get_resp.json()['candidate']['military_services'][0]['country']) == country_code
 
-    def test_create_candidate_military_service(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_military_service(self, access_token_first, talent_pool):
         """
         Test:   Create CandidateMilitaryService for Candidate
         Expect: 201
@@ -987,7 +999,7 @@ class TestCreateMilitaryService(object):
 
 
 class TestCreatePreferredLocation(object):
-    def test_create_preferred_locations_successfully(self, access_token_first, user_first, talent_pool):
+    def test_create_preferred_locations_successfully(self, access_token_first, talent_pool):
         """
         Test:  Create candidate + preferred locations
         Expect: 201
@@ -1031,7 +1043,7 @@ class TestCreatePreferredLocation(object):
         assert can_preferred_locations[0]['city'] == can_preferred_locations_data[0]['city']
         assert can_preferred_locations[0]['state'] == can_preferred_locations_data[0]['state']
 
-    def test_add_with_empty_values(self, access_token_first, user_first, talent_pool):
+    def test_add_with_empty_values(self, access_token_first, talent_pool):
         """
         Test:  Add candidate preferred location with all-empty-values and another one with some empty values
         Expect: 201; empty values should not be inserted into db
@@ -1076,7 +1088,7 @@ class TestCreatePreferredLocation(object):
 
 
 class TestCreateSkills(object):
-    def test_create_candidate_skills(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_skills(self, access_token_first, talent_pool):
         """
         Test:   Create CandidateSkill for Candidate
         Expect: 201
@@ -1101,7 +1113,7 @@ class TestCreateSkills(object):
         assert can_skills[0]['name'] == can_skills_data['name']
         assert can_skills[0]['months_used'] == can_skills_data['months_used']
 
-    def test_poorly_formatted_data(self, access_token_first, user_first, talent_pool):
+    def test_poorly_formatted_data(self, access_token_first, talent_pool):
         """
         Test:  Create CandidateSkill with poorly formatted values
         Expect: 201, server should clean up data automatically
@@ -1133,7 +1145,7 @@ class TestCreateSkills(object):
         cleaned_data_skill_names = [skill.strip() for skill in data_skill_names if (skill or '').strip()]
         assert set(candidate_skill_names).issubset(cleaned_data_skill_names)
 
-    def test_add_with_empty_values(self, access_token_first, user_first, talent_pool):
+    def test_add_with_empty_values(self, access_token_first, talent_pool):
         """
         Test:  Add candidate skill with empty values
         Expect: 201; no empty values should be added to db
@@ -1161,7 +1173,7 @@ class TestCreateSkills(object):
 
 
 class TestCreateSocialNetworks(object):
-    def test_create_candidate_social_networks(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_social_networks(self, access_token_first, talent_pool):
         """
         Test:   Create CandidateSocialNetwork for Candidate
         Expect: 201

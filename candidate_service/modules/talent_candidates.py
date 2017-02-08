@@ -26,12 +26,13 @@ from candidate_service.common.models.candidate import (
     SocialNetwork, CandidateEducationDegreeBullet, CandidateExperienceBullet, ClassificationType,
     CandidatePhoto, PhoneLabel, EmailLabel, CandidateSubscriptionPreference
 )
+from candidate_service.modules.tags import create_tags, update_candidate_tags
 from candidate_service.common.models.candidate_edit import CandidateView
 from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
     EmailCampaignSendUrlConversion
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.misc import AreaOfInterest, UrlConversion
+from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.user import User, Permission
@@ -150,6 +151,13 @@ def fetch_candidate_info(candidate, fields=None):
     if (get_all_fields or 'resume_url' in fields) and candidate.filename:
         resume_url = get_s3_url(folder_path="OriginalFiles", name=candidate.filename)
 
+    # Get candidate's source product information
+    source_product_info = None
+    source_product_id = candidate.source_product_id
+    if source_product_id:
+        source_product = Product.get(source_product_id)
+        source_product_info = source_product.to_json()
+
     return {
         'id': candidate_id,
         'owner_id': candidate.user_id,
@@ -178,9 +186,12 @@ def fetch_candidate_info(candidate, fields=None):
         'talent_pool_ids': talent_pool_ids,
         'resume_url': resume_url,
         'source_id': candidate.source_id,
-        'source_product_id': candidate.source_product_id,
+        'source_detail': candidate.source_detail,
+        'source_product_id': source_product_id,
+        'source_product_info': source_product_info,
         'summary': candidate.summary,
-        'objective': candidate.objective
+        'objective': candidate.objective,
+        'title': candidate.title
     }
 
 
@@ -851,12 +862,15 @@ def create_or_update_candidate_from_params(
         dice_profile_id=None,
         added_datetime=None,
         source_id=None,
+        source_detail=None,
         source_product_id=None,
         objective=None,
         summary=None,
         talent_pool_ids=None,
         resume_url=None,
-        resume_text=None
+        resume_text=None,
+        tags=None,
+        title=None
 ):
     """
     Function will parse each parameter and:
@@ -908,6 +922,8 @@ def create_or_update_candidate_from_params(
     :type   delete_talent_pools:    bool
     :type   resume_url              basestring
     :type   resume_text             basestring
+    :type   tags                    list
+    :type   title                   basestring
     :rtype                          dict
     """
     # Format inputs
@@ -949,12 +965,14 @@ def create_or_update_candidate_from_params(
     if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name,
                                          objective, summary, candidate_id, user_id, resume_url,
-                                         source_id, source_product_id, status_id, resume_text)
+                                         source_id, source_detail, source_product_id, status_id,
+                                         resume_text, title)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name, formatted_name,
                                       added_datetime, status_id, user_id, dice_profile_id,
-                                      dice_social_profile_id, source_id, source_product_id,
-                                      objective, summary, resume_url, resume_text)
+                                      dice_social_profile_id, source_id, source_detail,
+                                      source_product_id, objective, summary, resume_url,
+                                      resume_text, title)
 
     candidate = Candidate.get_by_id(candidate_id)
     """
@@ -1017,6 +1035,12 @@ def create_or_update_candidate_from_params(
             _add_or_update_social_networks(candidate, social_networks, user_id, is_updating)
         else:
             raise ForbiddenError("You are not authorized to add/modify social networks of this candidate")
+
+    if tags:
+        if is_creating:
+            create_tags(candidate_id, tags)
+        else:
+            update_candidate_tags(candidate_id, tags)
 
     # Commit to database after all insertions/updates are executed successfully
     db.session.commit()
@@ -1143,8 +1167,8 @@ def social_network_name_from_url(url):
 
 
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                      candidate_id, user_id, resume_url, source_id, source_product_id,
-                      candidate_status_id, resume_text):
+                      candidate_id, user_id, resume_url, source_id, source_detail,
+                      source_product_id, candidate_status_id, resume_text, title):
     """
     Function will update Candidate's primary information.
     Candidate's Primary information include:
@@ -1166,9 +1190,13 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
-                   'source_id': source_id, 'candidate_status_id': candidate_status_id,
-                   'source_product_id': source_product_id, 'resume_text': resume_text}
+    update_dict = {
+        'objective': objective, 'summary': summary, 'filename': resume_url,
+        'source_id': source_id, 'source_detail': source_detail,
+        'candidate_status_id': candidate_status_id,
+        'source_product_id': source_product_id, 'resume_text': resume_text,
+        'title': title
+    }
 
     # Strip each key-value and remove keys with empty-string-values
     update_dict = purge_dict(update_dict, remove_empty_strings_only=True)
@@ -1206,8 +1234,8 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
 
 def _add_candidate(first_name, middle_name, last_name, formatted_name,
                    added_time, candidate_status_id, user_id, dice_profile_id,
-                   dice_social_profile_id, source_id, source_product_id,
-                   objective, summary, resume_url, resume_text):
+                   dice_social_profile_id, source_id, source_detail, source_product_id,
+                   objective, summary, resume_url, resume_text, title):
     """
     Function will add Candidate and its primary information to db
     All empty values (None or empty strings) will be ignored
@@ -1215,11 +1243,13 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     """
     # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     add_dict = dict(
-        first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
-        added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
+        first_name=first_name, middle_name=middle_name, last_name=last_name,
+        formatted_name=formatted_name, added_time=added_time,
+        candidate_status_id=candidate_status_id, user_id=user_id,
         source_product_id=source_product_id, dice_profile_id=dice_profile_id,
-        dice_social_profile_id=dice_social_profile_id, source_id=source_id, objective=objective,
-        summary=summary, filename=resume_url, resume_text=resume_text, is_dirty=0
+        dice_social_profile_id=dice_social_profile_id, source_id=source_id,
+        source_detail=source_detail,  objective=objective, summary=summary,
+        filename=resume_url, resume_text=resume_text, title=title, is_dirty=0
     )
 
     # All empty values must be removed
@@ -2383,7 +2413,7 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
 
             # CandidateSocialNetwork must belong to Candidate
             if can_sn_obj.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthorized candidate social network',
+                raise ForbiddenError(error_message='Unauthorized candidate social network: %s' % can_sn_obj.social_profile_url,
                                      error_code=custom_error.SOCIAL_NETWORK_FORBIDDEN)
 
             # Track all changes

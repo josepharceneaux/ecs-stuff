@@ -6,7 +6,6 @@ Test cases for adding, retrieving, updating, and deleting candidate emails
 # Conftest
 from candidate_sample_data import (fake, generate_single_candidate_data, GenerateCandidateData)
 from candidate_service.common.models.candidate import EmailLabel
-from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
@@ -123,7 +122,6 @@ class TestCreateCandidateEmail(object):
 
         assert len(get_resp.json()['candidate']['emails']) == 1
 
-
     def test_add_duplicate_candidate_with_same_email(self, access_token_first, talent_pool):
         """
         Test: Add candidate with an email that is associated with another candidate in the same domain
@@ -190,6 +188,7 @@ class TestCreateCandidateEmail(object):
 
         # Only one of the emails should be default email
         assert len(filter(None, [email['is_default'] for email in retrieved_email_data])) == 1
+
 
 class TestUpdateCandidateEmails(object):
     def test_add_emails(self, access_token_first, candidate_first):

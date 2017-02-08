@@ -245,18 +245,27 @@ class UserServiceApi(object):
     FORGOT_PASSWORD = "users/forgot-password"
     RESET_PASSWORD = "users/reset-password/<token>"
 
+    # Source Product
+    SOURCE_PRODUCTS = '/' + VERSION + '/source_products'
+    SOURCE_PRODUCT = SOURCE_PRODUCTS + '/<int:id>'
+
+    # Domain Sources
     DOMAIN_SOURCES = '/' + VERSION + '/sources'
     DOMAIN_SOURCE = '/' + VERSION + '/sources/<int:id>'
 
+    # Domain Custom Fields
     DOMAIN_CUSTOM_FIELDS = '/' + VERSION + '/custom_fields'
     DOMAIN_CUSTOM_FIELD = DOMAIN_CUSTOM_FIELDS + '/<int:id>'
 
+    # Domain Custom Field Categories
     DOMAIN_CUSTOM_FIELD_CATEGORIES = URL_PREFIX + 'custom_field_categories'
     DOMAIN_CUSTOM_FIELD_CATEGORY = DOMAIN_CUSTOM_FIELD_CATEGORIES + '/<int:id>'
 
+    # Domain Areas of Interest
     DOMAIN_AOIS = '/' + VERSION + '/areas_of_interest'
     DOMAIN_AOI = '/' + VERSION + '/areas_of_interest/<int:id>'
 
+    # Domain Tags
     DOMAIN_TAGS = '/' + VERSION + '/tags'
 
     TEST_SETUP = 'test-setup'
@@ -279,6 +288,9 @@ class UserServiceApiUrl(object):
     DOMAIN_ROLES_API = HOST_NAME % ('/' + VERSION + '/domain/%s/roles')
     DOMAIN_GROUPS_API = HOST_NAME % ('/' + VERSION + '/domain/%s/groups')
     DOMAIN_GROUPS_UPDATE_API = HOST_NAME % ('/' + VERSION + '/domain/groups/%s')
+
+    SOURCE_PRODUCTS = HOST_NAME % ('/' + VERSION + '/source_products')
+    SOURCE_PRODUCT = SOURCE_PRODUCTS + '/%s'
 
     DOMAIN_SOURCES = HOST_NAME % ('/' + VERSION + '/sources')
     DOMAIN_SOURCE = HOST_NAME % ('/' + VERSION + '/sources/%s')

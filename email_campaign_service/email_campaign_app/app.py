@@ -28,7 +28,6 @@ app.register_blueprint(email_clients_blueprint)
 app.register_blueprint(base_campaign_blueprint)
 
 
-
 @app.route('/amazon_sns_endpoint', methods=['POST'])
 def amazon_sns_endpoint():
     """

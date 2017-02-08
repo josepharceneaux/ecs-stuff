@@ -25,7 +25,7 @@ from jsonschema import validate, FormatChecker, ValidationError
 from redo import retry
 
 # Activity Creation
-# from candidate_service.common.activity_service.activity_creator import TalentActivityManager
+from candidate_service.common.activity_service.activity_creator import TalentActivityManager
 from candidate_service.common.models.misc import Activity
 
 from candidate_service.candidate_app import logger
@@ -182,9 +182,7 @@ class CandidatesResource(Resource):
                 # Provided source ID must be recognized & belong to candidate's domain
                 source_id = candidate_dict_.get('source_id')
                 if source_id:
-
                     candidate_source = CandidateSource.get(source_id)
-
                     if not candidate_source:
                         raise NotFoundError("Source ID ({}) not recognized", custom_error.SOURCE_NOT_FOUND)
 
@@ -233,6 +231,13 @@ class CandidatesResource(Resource):
                     if country_code:
                         if not is_country_code_valid(country_code):
                             raise InvalidUsage("Country code not recognized: {}".format(country_code))
+
+                    # Name is a required field (must not be empty)
+                    for tag in candidate_dict_.get('tags', []):
+                        tag['name'] = tag['name'].strip().lower()  # remove whitespaces while validating
+                        if not tag['name']:
+                            raise InvalidUsage('Tag name is a required field', custom_error.MISSING_INPUT)
+
             except Exception as e:
                 # If it's a bulk import, we want to ignore the individual candidate errors
                 if multiple_candidates:
@@ -297,12 +302,15 @@ class CandidatesResource(Resource):
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id'),
+                source_detail=(candidate_dict.get('source_detail') or '').strip(),
                 source_product_id=candidate_dict.get('source_product_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
                 talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url'),
-                resume_text=candidate_dict.get('resume_text')
+                resume_text=candidate_dict.get('resume_text'),
+                tags=candidate_dict.get('tags', []),
+                title=candidate_dict.get('title')
             )
 
             if multiple_candidates:
@@ -317,16 +325,16 @@ class CandidatesResource(Resource):
             else:
                 resp_dict = create_or_update_candidate_from_params(**candidate_data)
                 created_candidate_ids.append(resp_dict['candidate_id'])
-                # tam = TalentActivityManager(db, activity_model=Activity,logger=logger)
-                # tam.create_activity({
-                #     'activity_params': {'username': authed_user.first_name,
-                #                         'formatted_name': candidate_data.get('formatted_name') or 'Unknown'},
-                #     'activity_type': 'CANDIDATE_CREATE_WEB',
-                #     'activity_type_id': Activity.MessageIds.CANDIDATE_CREATE_WEB,
-                #     'source_id': resp_dict['candidate_id'],
-                #     'source_table': 'candidate',
-                #     'user_id': user_id
-                # })
+                tam = TalentActivityManager(db, activity_model=Activity,logger=logger)
+                tam.create_activity({
+                    'activity_params': {'username': authed_user.email,
+                                        'formatted_name': candidate_data.get('formatted_name') or 'Unknown'},
+                    'activity_type': 'CANDIDATE_CREATE_WEB',
+                    'activity_type_id': Activity.MessageIds.CANDIDATE_CREATE_WEB,
+                    'source_id': resp_dict['candidate_id'],
+                    'source_table': 'candidate',
+                    'user_id': user_id,
+                })
 
         # Add candidates to cloud search
         upload_candidate_documents.delay(created_candidate_ids)
@@ -419,7 +427,7 @@ class CandidatesResource(Resource):
                 candidate.is_archived = 1
                 archived_candidate_ids.append(candidate_id)
                 skip = True
-            else:  # json-schema will only allow True or False
+            elif archive_candidate is False:
                 if not is_user_permitted_to_archive_candidate(authed_user, candidate):
                     raise ForbiddenError(error_message="Only admins and candidate's owner may archive the candidate",
                                          error_code=custom_error.CANDIDATE_FORBIDDEN)
@@ -480,7 +488,10 @@ class CandidatesResource(Resource):
                     raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
                             source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
 
-                _candidate_dict['source_product_id'] = int(source_product_id) if source_product_id else None
+                # Candidate's primary information will be "deleted" if its value is set to null
+                # the intention here is not to delete existing source-product-ID, hence it's set to an empty string
+                # if no value is provided
+                _candidate_dict['source_product_id'] = int(source_product_id) if source_product_id else ''
 
         if skip:
             db.session.commit()
@@ -545,12 +556,14 @@ class CandidatesResource(Resource):
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id', ''),
+                source_detail=(candidate_dict.get('source_detail') or '').strip(),
                 source_product_id=candidate_dict.get('source_product_id'),
                 objective=candidate_dict.get('objective', ''),
                 summary=candidate_dict.get('summary', ''),
                 talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url', ''),
-                resume_text=candidate_dict.get('resume_text', '')
+                resume_text=candidate_dict.get('resume_text', ''),
+                title=candidate_dict.get('title', '')
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
@@ -1236,13 +1249,19 @@ class CandidateSocialNetworkResource(Resource):
         """
         auth_user = request.user
         social_network_url = request.args.get('url')
+        social_network_canonicals = [social_network_url]
+        url_protocol = 'https://' if 'https://' in social_network_url else 'http://'
+        social_network_canonicals.append(social_network_url.replace(url_protocol, ''))
+        social_network_canonicals.append(social_network_url.replace(url_protocol, 'https://' if url_protocol == 'http://' else 'http://'))
+
         if social_network_url:
             users_in_domain = [user.id for user in User.all_users_of_domain(domain_id=auth_user.domain_id)]
 
             candidate_query = db.session.query(Candidate).join(CandidateSocialNetwork)\
-                .filter(CandidateSocialNetwork.social_profile_url == social_network_url,
+                .filter(CandidateSocialNetwork.social_profile_url.in_(social_network_canonicals),
                         Candidate.user_id.in_(users_in_domain))\
                 .first()
+
             if candidate_query:
                 return {"candidate_id": candidate_query.id}
             else:

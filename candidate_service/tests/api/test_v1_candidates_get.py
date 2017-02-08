@@ -5,7 +5,6 @@ Test cases for CandidateResource/get()
 
 # Conftest
 from candidate_sample_data import generate_single_candidate_data
-from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
@@ -13,12 +12,12 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 class TestGetCandidate(object):
     @staticmethod
-    def create_candidate(access_token_first, user_first, talent_pool, data=None):
+    def create_candidate(access_token_first, talent_pool, data=None):
         if data is None:
             data = generate_single_candidate_data([talent_pool.id])
         return send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
-    def test_create_candidate_with_empty_input(self, access_token_first, user_first):
+    def test_create_candidate_with_empty_input(self, access_token_first):
         """
         Test: Retrieve user's candidate(s) by providing empty string for data
         Expect: 400
@@ -31,7 +30,7 @@ class TestGetCandidate(object):
         assert resp.status_code == 400
         assert resp.json()['error']['code'] == custom_error.MISSING_INPUT
 
-    def test_create_candidate_with_non_json_data(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_with_non_json_data(self, access_token_first, talent_pool):
         """
         Test: Send post request with non json data
         Expect: 400
@@ -47,7 +46,7 @@ class TestGetCandidate(object):
         assert resp.status_code == 400
         assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
-    def test_get_candidate_without_authed_user(self, access_token_first, user_first, talent_pool):
+    def test_get_candidate_without_authed_user(self, access_token_first, talent_pool):
         """
         Test:   Attempt to retrieve candidate with no access token
         Expect: 401
@@ -66,7 +65,7 @@ class TestGetCandidate(object):
         assert get_resp.status_code == 401
         assert get_resp.json()['error']['code'] == 11 # Bearer token not found
 
-    def test_get_candidate_without_id_or_email(self, access_token_first, user_first, talent_pool):
+    def test_get_candidate_without_id_or_email(self, access_token_first, talent_pool):
         """
         Test:   Attempt to retrieve candidate without providing ID or Email
         Expect: 400
@@ -83,8 +82,7 @@ class TestGetCandidate(object):
         assert get_resp.status_code == 400
         assert get_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
-    def test_get_candidate_from_forbidden_domain(self, access_token_first, user_first, talent_pool,
-                                                 access_token_second, user_second):
+    def test_get_candidate_from_forbidden_domain(self, access_token_first, talent_pool, access_token_second):
         """
         Test:   Attempt to retrieve a candidate outside of logged-in-user's domain
         Expect: 403 status_code

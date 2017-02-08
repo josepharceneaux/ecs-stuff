@@ -25,7 +25,8 @@ def test_valid_json_builder():
             'filepicker_key': 'fpk',
             'resume_file': None,
             'source_id': None,
-            'talent_pools': None
+            'source_product_id': None,
+            'talent_pool_ids': None
         }
 
 
@@ -46,7 +47,8 @@ def test_valid_json_builder_no_filename():
             'filepicker_key': 'fpk',
             'resume_file': None,
             'source_id': None,
-            'talent_pools': None
+            'source_product_id': None,
+            'talent_pool_ids': None
         }
 
 
@@ -69,7 +71,8 @@ def test_valid_json_builder_tpids():
             'filepicker_key': 'fpk',
             'resume_file': None,
             'source_id': 1337,
-            'talent_pools': [1, 2, 3]
+            'source_product_id': None,
+            'talent_pool_ids': [1, 2, 3]
         }
 
 
@@ -107,5 +110,5 @@ def test_valid_form_params():
         assert params['create_candidate'] is True
         assert params['filename'] == 'Han_Brolo.doc'
         assert params['filepicker_key'] is None
-        assert params['talent_pools'] == []
+        assert params['talent_pool_ids'] == []
         assert params['resume_file'].read() == 'I\'ve got a bad feeling about this'
