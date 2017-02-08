@@ -406,10 +406,15 @@ class EventSynchronizer(Resource):
             }
         """
         data = get_valid_json_data(request)
+        social_network_id = data.get('social_network_id')  # Required
+        if not social_network_id:
+            raise InvalidUsage('Please provide social_network_id')
+        if not isinstance(social_network_id, (int, long)):
+            raise InvalidUsage("Invalid social_network_id type")
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(request.user.id,
-                                                                                         data['social_network_id'])
+                                                                                         social_network_id)
         if user_credentials:
             sync_events.delay(user_credentials)
             return ApiResponse({'message': 'Your events are being updated'})
         raise ResourceNotFound("User credentials not found for user_id: %d and social_network_id: %d" %
-                               (data['user_id'], data['social_network_id']))
+                               (request.user.id, social_network_id))
