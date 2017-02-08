@@ -359,6 +359,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     candidate_ids_and_emails = get_priority_emails(campaign.user, subscribed_candidate_ids)
     if candidate_ids_and_emails:
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
+        email_campaign_blast = db.session.merge(email_campaign_blast)
         _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
         with app.app_context():
             logger.info('Emails for email campaign (id:%d) are being sent using Celery. Blast ID is %d' %

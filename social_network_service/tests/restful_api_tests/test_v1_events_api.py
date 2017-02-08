@@ -61,7 +61,7 @@ class TestResourceEvents(object):
         for event in events:
             match_event_fields(event)
 
-    def test_events_get_in_domain_of_user(self, token_same_domain, event_in_db, event_in_db_second):
+    def test_events_get_in_domain_of_user(self, token_same_domain, event_in_db_second):
         """
         Here one user tries to get events in its domain. It should get 2 events created by some other user of
         same domain.

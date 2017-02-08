@@ -161,33 +161,33 @@ class TestBaseCampaignEvent(object):
                                 token_first)
         assert response.status_code == codes.NOT_FOUND, response.text
 
-    def test_link_base_campaign_with_deleted_event(self, event_in_db_second, token_first, base_campaign):
+    def test_link_base_campaign_with_deleted_event(self, new_event_in_db_second, token_first, base_campaign):
         """
         This tests linking of base campaign with deleted event. This should result in a Resource not found.
         """
-        response = requests.delete(SocialNetworkApiUrl.EVENT % event_in_db_second['id'],
+        response = requests.delete(SocialNetworkApiUrl.EVENT % new_event_in_db_second['id'],
                                    headers=auth_header(token_first))
-        event_response = requests.get(SocialNetworkApiUrl.EVENT % event_in_db_second['id'],
+        event_response = requests.get(SocialNetworkApiUrl.EVENT % new_event_in_db_second['id'],
                                       headers=auth_header(token_first))
         event_content = event_response.json()
         assert event_content['event']['is_deleted_from_vendor'] and event_content['event']['is_hidden']
 
-        response = send_request(self.HTTP_METHOD, self.URL % (base_campaign['id'], event_in_db_second['id']),
+        response = send_request(self.HTTP_METHOD, self.URL % (base_campaign['id'], new_event_in_db_second['id']),
                                 token_first)
         assert response.status_code == codes.NOT_FOUND, response.text
 
-    def test_link_base_campaign_with_deleted_event_form_vendor(self, event_in_db_second, token_first, base_campaign):
+    def test_link_base_campaign_with_deleted_event_form_vendor(self, new_event_in_db_second, token_first, base_campaign):
         """
         This tests linking of base campaign with deleted event from vendor. This should result in a Resource not found
         """
         db.session.commit()
-        event = Event.get_by_id(event_in_db_second['id'])
+        event = Event.get_by_id(new_event_in_db_second['id'])
         event.update(is_deleted_from_vendor=1)
-        event_response = requests.get(SocialNetworkApiUrl.EVENT % event_in_db_second['id'],
+        event_response = requests.get(SocialNetworkApiUrl.EVENT % new_event_in_db_second['id'],
                                       headers=auth_header(token_first))
         event_content = event_response.json()
         assert event_content['event']['is_deleted_from_vendor'] and not event_content['event']['is_hidden']
-        response = send_request(self.HTTP_METHOD, self.URL % (base_campaign['id'], event_in_db_second['id']),
+        response = send_request(self.HTTP_METHOD, self.URL % (base_campaign['id'], new_event_in_db_second['id']),
                                 token_first)
         assert response.status_code == codes.NOT_FOUND, response.text
 
@@ -314,18 +314,18 @@ class TestDeleteEventWithCampaign(object):
     """
 
     def test_delete_event_and_associated_campaigns(self, base_campaign, token_first, base_campaign_event_second,
-                                                  email_campaign_with_base_id, event_in_db_second):
+                                                  email_campaign_with_base_id, new_event_in_db_second):
         """
         This tests if we delete an event through api then campaigns associated with it should be deleted or archived.
         """
-        response = requests.delete(SocialNetworkApiUrl.EVENT % event_in_db_second['id'],
+        response = requests.delete(SocialNetworkApiUrl.EVENT % new_event_in_db_second['id'],
                                    headers=auth_header(token_first))
         campaign_response = requests.get(EmailCampaignApiUrl.CAMPAIGN % email_campaign_with_base_id['id'],
                                          headers=auth_header(token_first))
         campaign_content = campaign_response.json()
         assert campaign_content['email_campaign']['is_hidden']
 
-        event_response = requests.get(SocialNetworkApiUrl.EVENT % event_in_db_second['id'],
+        event_response = requests.get(SocialNetworkApiUrl.EVENT % new_event_in_db_second['id'],
                                       headers=auth_header(token_first))
         event_content = event_response.json()
         assert event_content['event']['is_deleted_from_vendor'] and event_content['event']['is_hidden']

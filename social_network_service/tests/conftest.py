@@ -32,8 +32,10 @@ from social_network_service.common.campaign_services.tests.conftest import (meet
                                                                             eventbrite_venue_same_domain, organizer_in_db,
                                                                             meetup_venue_second, meetup_event_second,
                                                                             eventbrite_venue_second, eventbrite_event_second,
-                                                                            event_in_db_second, test_credentials,
-                                                                            EVENTBRITE_CONFIG)
+                                                                            event_in_db_second, new_event_in_db_second,
+                                                                            test_credentials, EVENTBRITE_CONFIG,
+                                                                            eventbrite_event_global,
+                                                                            eventbrite_new_event_second)
 
 
 # Models

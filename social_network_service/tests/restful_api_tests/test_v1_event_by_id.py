@@ -6,6 +6,7 @@ import copy
 import json
 import sys
 import datetime
+import pytest
 
 # Third Party
 import requests
@@ -62,7 +63,7 @@ class TestEventById(object):
 
             if event.get('venue_id'):
                 del event['venue_id']
-            if event.get('organizer_id'):
+            if event.get('organizer_id') or event.get('organizer_id') == '':
                 del event['organizer_id']
             comparison = '\n{0: <20}  |  {1: <40} |  {2: <40}\n'.format('Key', 'Expected', 'Found')
             comparison += '=' * 100 + '\n'
@@ -117,14 +118,15 @@ class TestEventById(object):
         logger.info(response.text)
         assert response.status_code == codes.NOT_FOUND, 'Event not found with this social network event id'
 
-    def test_put_with_valid_token(self, token_first, event_in_db_second):
+    @pytest.mark.haider
+    def test_put_with_valid_token(self, token_first, new_event_in_db_second):
         """
         - Get event data from db (using fixture - event_in_db)
         - Using event id, send PUT request to update event data
         - Should get 200 response
         - Check if activity is created or not
         """
-        event = copy.deepcopy(event_in_db_second)
+        event = copy.deepcopy(new_event_in_db_second)
         # Success case, event should be updated
         datetime_now = datetime.datetime.utcnow()
         datetime_now = datetime_now.replace(microsecond=0)
@@ -161,25 +163,26 @@ class TestEventById(object):
         """
         unauthorize_test('delete', url=SocialNetworkApiUrl.EVENT % event_in_db['id'])
 
-    def test_delete_with_valid_token(self, token_first, event_in_db_second):
+    @pytest.mark.haider
+    def test_delete_with_valid_token(self, token_first, new_event_in_db_second):
         """
         - Try to delete event data using id, if deleted you expect 200 response
         - Then again try to delete event using same event id and expect 403 response
         """
-        event_id = event_in_db_second['id']
+        event_id = new_event_in_db_second['id']
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
         logger.info(response.text)
         assert response.status_code == codes.OK, str(response.text)
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
 
         # check if event delete activity
-        user_id = event_in_db_second['user_id']
+        user_id = new_event_in_db_second['user_id']
         db.db.session.commit()
         activity = Activity.get_by_user_id_type_source_id(user_id=user_id, source_id=event_id,
                                                           type_=Activity.MessageIds.EVENT_DELETE)
         assert activity, 'Activity not found'
         data = json.loads(activity.params)
-        assert data['event_title'] == event_in_db_second['title']
+        assert data['event_title'] == new_event_in_db_second['title']
 
         logger.info(response.text)
         assert response.status_code == codes.FORBIDDEN, 'Unable to delete event as it is not present there (403)'
