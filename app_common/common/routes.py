@@ -102,6 +102,7 @@ class GTApis(object):
     MOCK_SERVICE_PORT = 8016
     TALENTBOT_PORT = 8017
     GRAPHQL_SERVICE_PORT = 8018
+    BANNER_SERVICE_PORT = 8019
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
