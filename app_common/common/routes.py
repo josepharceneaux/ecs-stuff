@@ -659,6 +659,7 @@ class SocialNetworkApi(object):
     """
     VERSION = 'v1'
     # URLs, in case of API
+    SYNC_EVENTS = '/' + VERSION + '/sync-events'
     EVENTS = '/' + VERSION + '/events'
     EVENT = '/' + VERSION + '/events/<int:event_id>'
     SOCIAL_NETWORKS = '/' + VERSION + '/social-networks'
@@ -703,8 +704,8 @@ class SocialNetworkApiUrl(object):
         UI_APP_URL = 'https://app.gettalent.com/%s'
     else:
         UI_APP_URL = 'http://127.0.0.1:3000/%s'
-
     SUBSCRIBE = UI_APP_URL % 'account/integrations?code=%s'
+    SYNC_EVENT = HOST_NAME % ('/' + VERSION + '/sync-events')
     EVENTS = HOST_NAME % ('/' + VERSION + '/events')
     EVENT = HOST_NAME % ('/' + VERSION + '/events/%s')
     SOCIAL_NETWORKS = HOST_NAME % ('/' + VERSION + '/social-networks')

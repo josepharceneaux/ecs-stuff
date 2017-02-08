@@ -76,14 +76,10 @@ sleep 10
 
 echo "Beginning tests."
 
-py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests candidate_pool_service/tests spreadsheet_import_service/tests app_common/common/tests app_common/common/campaign_services/tests talentbot_service/tests sms_campaign_service/tests email_campaign_service/tests banner_service/tests
+py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests candidate_pool_service/tests spreadsheet_import_service/tests app_common/common/tests app_common/common/campaign_services/tests talentbot_service/tests sms_campaign_service/tests email_campaign_service/tests social_network_service/tests banner_service/tests
 
 # TODO Below are removed tests that should be added back in - Amir
 # candidate_service/tests
-
-# TODO: Fix social-network-service tests in GET-2107
-# social_network_service/tests
-
 
 if [ $? -ne 0 ] ; then
     exit 1
