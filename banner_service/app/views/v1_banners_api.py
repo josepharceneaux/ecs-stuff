@@ -22,19 +22,16 @@ class BannerResource(Resource):
     """
     CRD API for interacting with Redis.
     """
-    # TODO add role decorator
     decorators = [require_role('TALENT_ADMIN'), require_oauth()]
 
     def get(self):
         return jsonify(read_banner())
 
     # TODO content-type decorator
-    # TODO add role decorator
     def post(self):
         posted_data = request.get_json()
         return jsonify({'banner_created': create_banner(posted_data)})
 
-    # TODO add role decorator
     def delete(self):
         return jsonify({'banner_delete': delete_banner()})
 
