@@ -8,7 +8,7 @@ from flask import Blueprint, jsonify, request
 from flask_restful import Resource
 # Module Specific
 from banner_service.common.talent_api import TalentApi
-from banner_service.common.utils.auth_utils import require_oauth
+from banner_service.common.utils.auth_utils import require_oauth, require_role
 from banner_service.app.modules.v1_api_processors import create_banner, read_banner, delete_banner
 
 BANNER_REDIS_KEY = 'gt_global_banner'
@@ -23,7 +23,7 @@ class BannerResource(Resource):
     CRD API for interacting with Redis.
     """
     # TODO add role decorator
-    decorators = [require_oauth()]
+    decorators = [require_role('POTATO'), require_oauth()]
 
     def get(self):
         return jsonify(read_banner())
