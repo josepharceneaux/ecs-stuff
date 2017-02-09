@@ -7,7 +7,7 @@ from flask_restful import Resource
 # Module Specific
 from banner_service.common.talent_api import TalentApi
 from banner_service.common.utils.auth_utils import require_oauth
-from banner_service.app.modules.v1_user_banner_processors import create_user_banner_entry
+from banner_service.app.modules.v1_user_banner_processors import create_user_banner_entry, retrieve_user_banner_entry
 
 user_banner_api_bp = Blueprint('v1_user_banner_api', __name__)
 api = TalentApi(user_banner_api_bp)
@@ -21,7 +21,7 @@ class UserBannerResource(Resource):
 
     def get(self):
         user_id = request.user.id
-        return {'has_seen_banner': True}, 200
+        return {'has_seen_banner': retrieve_user_banner_entry(user_id)}, 200
 
     def post(self):
         user_id = request.user.id
