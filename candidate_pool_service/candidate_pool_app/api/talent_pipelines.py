@@ -619,9 +619,9 @@ class TalentPipelineCandidates(Resource):
                 TalentPipelineIncludedCandidates.candidate_id.in_(candidate_ids)).delete()
 
         for candidate_id in candidate_ids:
-            if not TalentPipelineIncludedCandidates.query.filter_by(talent_pipeline_id=talent_pipeline.id,
+            if not TalentPipelineExcludedCandidates.query.filter_by(talent_pipeline_id=talent_pipeline.id,
                                                                     candidate_id=candidate_id).first():
-                db.session.add(TalentPipelineIncludedCandidates(talent_pipeline_id=talent_pipeline.id,
+                db.session.add(TalentPipelineExcludedCandidates(talent_pipeline_id=talent_pipeline.id,
                                                                 candidate_id=candidate_id))
         db.session.commit()
 
