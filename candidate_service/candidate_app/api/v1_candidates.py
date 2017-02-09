@@ -65,7 +65,7 @@ from candidate_service.modules.talent_candidates import (
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
-    add_languages, update_candidate_languages, CachedData
+    add_languages, update_candidate_languages, CachedData, most_recent_position
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 from candidate_service.modules.talent_openweb import (
@@ -265,6 +265,10 @@ class CandidatesResource(Resource):
             if i in dict_position:
                 continue
 
+            work_experiences = candidate_dict.get('work_experiences')
+            # If title is empty; set candidate's title to its most recent position
+            title = (candidate_dict.get('title') or '').strip() or most_recent_position(work_experiences or [])
+
             user_id = authed_user.id
             emails = [
                 {
@@ -295,7 +299,7 @@ class CandidatesResource(Resource):
                 areas_of_interest=candidate_dict.get('areas_of_interest'),
                 custom_fields=candidate_dict.get('custom_fields'),
                 social_networks=candidate_dict.get('social_networks'),
-                work_experiences=candidate_dict.get('work_experiences'),
+                work_experiences=work_experiences,
                 work_preference=candidate_dict.get('work_preference'),
                 preferred_locations=candidate_dict.get('preferred_locations'),
                 skills=candidate_dict.get('skills'),
@@ -310,7 +314,7 @@ class CandidatesResource(Resource):
                 resume_url=candidate_dict.get('resume_url'),
                 resume_text=candidate_dict.get('resume_text'),
                 tags=candidate_dict.get('tags', []),
-                title=candidate_dict.get('title')
+                title=title
             )
 
             if multiple_candidates:
