@@ -433,7 +433,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             if source_id:
                 candidate_source = session.query(CandidateSource).get(source_id)
                 field_name_to_sql_value['source_name'] = candidate_source.description
-                field_name_to_sql_value['source_notes'] = candidate_source.notes
 
             # Massage 'field_name_to_sql_value' values into the types they are supposed to be
             resume_text = ''
@@ -458,7 +457,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
                 if field_name == 'source_id' and candidate_source:
                     resume_text += (' ' + candidate_source.description)
-                    resume_text += (' ' + candidate_source.notes or '')
 
                 index_field_type = index_field_options['IndexFieldType']
                 if 'array' in index_field_type:

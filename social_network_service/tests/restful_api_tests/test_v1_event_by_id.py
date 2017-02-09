@@ -11,7 +11,6 @@ import pytest
 # Third Party
 import requests
 from requests import codes
-
 # Application imports
 from social_network_service.common.models import db
 from social_network_service.social_network_app import logger
@@ -149,10 +148,10 @@ class TestEventById(object):
             'end_datetime is modified'
 
         # Check activity updated
-        activity = Activity.get_by_user_id_type_source_id(source_id=event['id'],
-                                                          type_=Activity.MessageIds.EVENT_UPDATE,
-                                                          user_id=event_occurrence_in_db['user_id'])
-
+        CampaignsTestsHelpers.assert_for_activity(event_occurrence_in_db['user_id'], Activity.MessageIds.EVENT_UPDATE,
+                                                  event['id'])
+        activity = Activity.get_by_user_id_type_source_id(user_id=event_occurrence_in_db['user_id'],
+                                                          source_id=event['id'], type_=Activity.MessageIds.EVENT_UPDATE)
         data = json.loads(activity.params)
         assert data['event_title'] == event['title']
 
@@ -178,6 +177,7 @@ class TestEventById(object):
         # check if event delete activity
         user_id = new_event_in_db_second['user_id']
         db.db.session.commit()
+        CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.EVENT_DELETE, event_id)
         activity = Activity.get_by_user_id_type_source_id(user_id=user_id, source_id=event_id,
                                                           type_=Activity.MessageIds.EVENT_DELETE)
         assert activity, 'Activity not found'

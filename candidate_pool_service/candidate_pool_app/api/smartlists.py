@@ -3,7 +3,7 @@ from flask_restful import Resource
 
 from candidate_pool_service.modules.smartlists import *
 from candidate_pool_service.candidate_pool_app import logger
-from candidate_pool_service.common.models.user import User
+from candidate_pool_service.common.models.user import User, db
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
@@ -12,7 +12,9 @@ from candidate_pool_service.common.models.user import Permission
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from candidate_pool_service.common.utils.api_utils import (DEFAULT_PAGE, DEFAULT_PAGE_SIZE,
                                                            ApiResponse, generate_pagination_headers)
-from candidate_pool_service.modules.validators import validate_and_format_smartlist_post_data
+from candidate_pool_service.modules.validators import (
+    validate_and_format_smartlist_post_data, validate_and_format_smartlist_patch_data
+)
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_stats_generic_function
@@ -141,6 +143,59 @@ class SmartlistResource(Resource):
                                    search_params=data.get('search_params'), candidate_ids=data.get('candidate_ids'),
                                    access_token=request.oauth_token)
         return {'smartlist': {'id': smartlist.id}}, 201
+
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_SMART_LISTS)
+    def patch(self, **kwargs):
+        """
+        PATCH list with search params or with list of candidate ids
+        Input data:
+            json body having following keys
+            "name": Name with which smart list will be created
+            "search_params": search parameters for smart list in dictionary format
+                or  "candidate_ids": if not search_params then candidate_ids should be present
+        :return: smartlist id
+        """
+        auth_user = request.user
+
+        list_id = kwargs.get('id')
+        data = request.get_json(silent=True)
+
+        if not data:
+            raise InvalidUsage("Received empty request body")
+
+        if not list_id or not is_number(list_id):
+            raise InvalidUsage("Either List ID is not provided or It's not an integer")
+
+        smart_list = Smartlist.query.get(list_id)
+
+        if not smart_list:
+            raise InvalidUsage("No SmartList exists with id: %s" % list_id)
+
+        # request data must pass through this function, as this will create data in desired format
+        data = validate_and_format_smartlist_patch_data(data, auth_user)
+
+        if data.get('name'):
+            smart_list.name = data.get('name')
+
+        if data.get('talent_pipeline_id'):
+            smart_list.talent_pipeline_id = data.get('talent_pipeline_id')
+
+        if data.get('search_params'):
+            smart_list.search_params = data.get('search_params')
+        elif data.get('remove_candidate_ids'):
+            SmartlistCandidate.query.filter(SmartlistCandidate.smartlist_id == smart_list.id,
+                                            SmartlistCandidate.candidate_id.in_(data.get('remove_candidate_ids'))).delete()
+        elif data.get('add_candidate_ids'):
+            for candidate_id in data.get('add_candidate_ids'):
+                row = SmartlistCandidate(smartlist_id=smart_list.id, candidate_id=candidate_id)
+                db.session.add(row)
+
+        db.session.commit()
+
+        candidate_ids = data.get('remove_candidate_ids', []) + data.get('add_candidate_ids', [])
+        update_candidates_on_cloudsearch(request.oauth_token, candidate_ids)
+
+        return {'smartlist': {'id': smart_list.id}}, 201
 
     @require_all_permissions(Permission.PermissionNames.CAN_DELETE_SMART_LISTS)
     def delete(self, **kwargs):

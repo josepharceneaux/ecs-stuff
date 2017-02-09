@@ -18,6 +18,7 @@
 .idea/runConfigurations/Test_CandidatePoolService.xml
 .idea/runConfigurations/Test_PushCampaignService.xml
 .idea/runConfigurations/Test_Scheduler_Service.xml
+.idea/codeStyleSettings.xml
 
 
 # Sensitive or high-churn files:
@@ -57,7 +58,9 @@ crashlytics-build.properties
 
 
 ### talent-flask-services Specific Files to exclude
-resume_parsing_service/Dockertest
+resume_parsing_service/IMaaS
+resume_parsing_service/email_receiver/deployments
+resume_parsing_service/resume_lambda/venv/
 social_network_service/assets/*.html
 social_network_service/assets/*.json
 
