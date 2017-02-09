@@ -333,9 +333,9 @@ class TalentPipelineIncludedCandidates(db.Model):
 
     # Relationships
     talent_pipeline = db.relationship('TalentPipeline',
-                                      backref=db.backref('talent_pipeline_candidate', cascade="all, delete-orphan"))
+                                      backref=db.backref('talent_pipeline_included_candidates', cascade="all, delete-orphan"))
     candidate = db.relationship('Candidate',
-                                backref=db.backref('talent_pipeline_candidate', cascade="all, delete-orphan"))
+                                backref=db.backref('talent_pipeline_included_candidates', cascade="all, delete-orphan"))
 
 
 class TalentPipelineExcludedCandidates(db.Model):
@@ -346,6 +346,6 @@ class TalentPipelineExcludedCandidates(db.Model):
 
     # Relationships
     talent_pipeline = db.relationship('TalentPipeline',
-                                      backref=db.backref('talent_pipeline_candidate', cascade="all, delete-orphan"))
+                                      backref=db.backref('talent_pipeline_excluded_candidates', cascade="all, delete-orphan"))
     candidate = db.relationship('Candidate',
-                                backref=db.backref('talent_pipeline_candidate', cascade="all, delete-orphan"))
+                                backref=db.backref('talent_pipeline_excluded_candidates', cascade="all, delete-orphan"))

@@ -575,14 +575,14 @@ class TalentPipelineCandidates(Resource):
         if Candidate.query.filter(Candidate.id.in_(candidate_ids)).count() != len(candidate_ids):
             raise InvalidUsage("Some of the candidates don't exist in DB")
 
-        TalentPipelineIncludedCandidates.query.filter(
-                TalentPipelineIncludedCandidates.talent_pipeline_id == talent_pipeline.id,
-                TalentPipelineIncludedCandidates.candidate_id.in_(candidate_ids)).delete()
+        TalentPipelineExcludedCandidates.query.filter(
+                TalentPipelineExcludedCandidates.talent_pipeline_id == talent_pipeline.id,
+                TalentPipelineExcludedCandidates.candidate_id.in_(candidate_ids)).delete()
 
         for candidate_id in candidate_ids:
-            if not TalentPipelineExcludedCandidates.query.filter_by(talent_pipeline_id=talent_pipeline.id,
+            if not TalentPipelineIncludedCandidates.query.filter_by(talent_pipeline_id=talent_pipeline.id,
                                                                     candidate_id=candidate_id).first():
-                db.session.add(TalentPipelineExcludedCandidates(talent_pipeline_id=talent_pipeline.id,
+                db.session.add(TalentPipelineIncludedCandidates(talent_pipeline_id=talent_pipeline.id,
                                                                 candidate_id=candidate_id))
         db.session.commit()
 
@@ -614,40 +614,9 @@ class TalentPipelineCandidates(Resource):
         if Candidate.query.filter(Candidate.id.in_(candidate_ids)).count() != len(candidate_ids):
             raise InvalidUsage("Some of the candidates don't exist in DB")
 
-        for candidate_id in candidate_ids:
-            if not TalentPipelineIncludedCandidates.query.filter_by(talent_pipeline_id=talent_pipeline.id,
-                                                                    candidate_id=candidate_id).first():
-                db.session.add(TalentPipelineIncludedCandidates(talent_pipeline_id=talent_pipeline.id,
-                                                                candidate_id=candidate_id))
-        db.session.commit()
-
-        return '', 204
-
-    @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
-    def post(self, **kwargs):
-        """
-        POST /talent-pipeline/<id>/candidates  Add candidates to a Talent Pipeline
-        :return None
-
-        :rtype: None
-        """
-        talent_pipeline_id = kwargs.get('id')
-
-        talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
-
-        if not talent_pipeline:
-            raise NotFoundError("Talent pipeline with id {} doesn't exist in database".format(talent_pipeline_id))
-
-        posted_data = request.get_json(silent=True)
-        if not posted_data or 'candidate_ids' not in posted_data:
-            raise InvalidUsage("Request body is empty or not provided")
-
-        candidate_ids = posted_data.get('candidate_ids')
-
-        candidate_ids = list(set(candidate_ids))
-
-        if Candidate.query.filter(Candidate.id.in_(candidate_ids)).count() != len(candidate_ids):
-            raise InvalidUsage("Some of the candidates don't exist in DB")
+        TalentPipelineIncludedCandidates.query.filter(
+                TalentPipelineIncludedCandidates.talent_pipeline_id == talent_pipeline.id,
+                TalentPipelineIncludedCandidates.candidate_id.in_(candidate_ids)).delete()
 
         for candidate_id in candidate_ids:
             if not TalentPipelineIncludedCandidates.query.filter_by(talent_pipeline_id=talent_pipeline.id,
