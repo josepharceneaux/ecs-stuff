@@ -48,6 +48,7 @@ class TestResourceEvents(object):
         events = response.json()['events']
         assert len(events) == 0, 'There shouldn\'t be some events for test user'
 
+    @pytest.mark.wy
     def test_events_get_with_valid_token(self, token_first, event_in_db_second):
         """
         event_in_db fixture creates an event entry in db. So, when request is made, it should return that created event
@@ -61,6 +62,7 @@ class TestResourceEvents(object):
         for event in events:
             match_event_fields(event)
 
+    @pytest.mark.wy
     def test_events_get_in_domain_of_user(self, token_same_domain, event_in_db_second):
         """
         Here one user tries to get events in its domain. It should get 2 events created by some other user of

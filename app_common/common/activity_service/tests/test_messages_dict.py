@@ -1,7 +1,8 @@
 """
 tests
 """
-from app_common.common.activty_service.activity_constants import ACTIVTY_PARAMS
+from ...activity_service.activity_constants import ACTIVTY_PARAMS
+
 
 def test_params_is_tuple():
     for activity_type in ACTIVTY_PARAMS.keys():

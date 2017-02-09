@@ -40,11 +40,11 @@ from ...tests.api_conftest import (user_first, token_first, talent_pool_session_
 
 __author__ = 'basit'
 
-EVENTBRITE_CONFIG = {'skip': False,
+EVENTBRITE_CONFIG = {'skip': True,
                      'reason': 'In contact with Eventbrite support for increasing hit rate limit'}
 
 # Add new vendor here to run tests for that particular social-network
-VENDORS = [
+VENDORS = [MEETUP.title(),
            pytest.mark.skipif(EVENTBRITE_CONFIG['skip'], reason=EVENTBRITE_CONFIG['reason'])(EVENTBRITE.title())]
 
 """
@@ -400,7 +400,8 @@ def base_campaign_event(base_campaign, event_in_db, token_first):
 @pytest.fixture()
 def base_campaign_event_second(base_campaign, new_event_in_db_second, token_first):
     """
-    This hits the API with valid event and base campaign and link both of them with each other.
+    This hits the API with valid event and base campaign and link both of them with each other. This uses
+    fixture 'new_event_in_db_second' which returns new event every time.
     """
     response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT % (base_campaign['id'],
                                                                                new_event_in_db_second['id']),
@@ -546,7 +547,7 @@ def eventbrite_venue_second(test_eventbrite_credentials, user_first, eventbrite,
 
 
 @pytest.fixture(scope="session")
-def eventbrite_event_global(eventbrite, eventbrite_venue, token_first):
+def eventbrite_event_global(token_first, eventbrite, eventbrite_venue):
     """
     This method creates an eventbrite event and we use its copy in eventbrite_event_second
     """
@@ -691,7 +692,8 @@ def event_campaign_with_client_id(token_first, scheduled_email_campaign_with_bas
 @pytest.fixture(scope="function", params=VENDORS)
 def event_campaign(token_first, scheduled_email_campaign_with_base_id, event_in_db_second):
     """
-    This returns scheduled event campaign
+    This returns scheduled event campaign. Its  is using fixture 'event_in_db_second' which return
+    one single event every time. So don't use this fixture('event_campaign') to test event deletion.
     """
     db.session.commit()
     email_campaign = EmailCampaign.get(scheduled_email_campaign_with_base_id['id'])

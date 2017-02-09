@@ -43,6 +43,7 @@ class TestEventById(object):
         response = unauthorize_test(url=SocialNetworkApiUrl.EVENT % non_existing_id, method='get')
         assert 'event' not in response.json()
 
+    @pytest.mark.wy
     def test_get_by_id_with_valid_token(self, token_first, token_same_domain, event_in_db_second):
         """
         - Get event using id and response should be 200
