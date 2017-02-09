@@ -141,6 +141,8 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'military_end_date':             dict(IndexFieldType='date-array',      DateArrayOptions={'ReturnEnabled': False}),
     'talent_pools':                  dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'dumb_lists':                    dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
+    'added_talent_pipelines':        dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
+    'removed_talent_pipelines':      dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'start_date_at_current_job':     dict(IndexFieldType='date',            DateOptions={'FacetEnabled': False,
                                                                                          'ReturnEnabled': True}),
     'candidate_engagement_score':    dict(IndexFieldType='double',          DoubleOptions={'FacetEnabled': True,
@@ -307,6 +309,12 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 # Dumb Lists
                 GROUP_CONCAT(DISTINCT smart_list_candidate.smartlistId SEPARATOR :sep) AS `dumb_lists`,
 
+                # Pipelines to which candidate belongs statically
+                GROUP_CONCAT(DISTINCT talent_pipeline_included_candidates.talent_pipeline_id SEPARATOR :sep) AS `added_talent_pipelines`,
+
+                # Pipelines to which candidate doesn't belong at all
+                GROUP_CONCAT(DISTINCT talent_pipeline_excluded_candidates.talent_pipeline_id SEPARATOR :sep) AS `removed_talent_pipelines`,
+
                 # AOIs and Custom Fields
                 GROUP_CONCAT(DISTINCT candidate_area_of_interest.areaOfInterestId SEPARATOR :sep) AS `area_of_interest_id`,
                 GROUP_CONCAT(DISTINCT CONCAT(candidate_custom_field.customFieldId, '|', candidate_custom_field.value) SEPARATOR :sep) AS `custom_field_id_and_value`,
@@ -347,6 +355,8 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
     LEFT JOIN   talent_pool_candidate ON (candidate.id = talent_pool_candidate.candidate_id)
     LEFT JOIN   smart_list_candidate ON (candidate.id = smart_list_candidate.candidateId)
+    LEFT JOIN   talent_pipeline_included_candidates ON (candidate.id = talent_pipeline_included_candidates.candidate_id)
+    LEFT JOIN   talent_pipeline_excluded_candidates ON (candidate.id = talent_pipeline_excluded_candidates.candidate_id)
     LEFT JOIN   candidate_address ON (candidate.id = candidate_address.candidateId)
     LEFT JOIN   candidate_email ON (candidate.id = candidate_email.candidateId)
 
@@ -737,6 +747,21 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         else:
             dumb_list_filter_query_string = "(term field=dumb_lists %s)" % dumb_list_ids
 
+    added_talent_pipelines_filter_query_string = ''
+    removed_talent_pipelines_filter_query_string = ''
+    talent_pipelines = request_vars.get('talent_pipelines', '')
+
+    if talent_pipelines:
+        # This parameter is for internal Talent-Pipeline search only
+        if isinstance(talent_pipelines, list):
+            removed_talent_pipelines_filter_query_string = "(or %s)" % ' '.join(
+                    "removed_talent_pipelines:%s" % removed_talent_pipeline for removed_talent_pipeline in talent_pipelines)
+            added_talent_pipelines_filter_query_string = "(or %s)" % ' '.join(
+                    "added_talent_pipelines:%s" % added_talent_pipeline for added_talent_pipeline in talent_pipelines)
+        else:
+            removed_talent_pipelines_filter_query_string = "(term field=removed_talent_pipelines %s)" % talent_pipelines
+            added_talent_pipelines_filter_query_string = "(term field=added_talent_pipelines %s)" % talent_pipelines
+
     # Sorting
     sort = '%s %s'
     if request_vars.get('sort_by'):
@@ -794,6 +819,12 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         filter_query = "(and %s %s %s %s)" % (filter_query, domain_filter, talent_pool_filter, candidate_status)
     else:
         filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
+
+    if added_talent_pipelines_filter_query_string:
+        filter_query = "(or %s %s)" % (filter_query, added_talent_pipelines_filter_query_string)
+
+    if removed_talent_pipelines_filter_query_string:
+        filter_query = "(and %s (not %s))" % (filter_query, removed_talent_pipelines_filter_query_string)
 
     params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene', query_options={'fields': QUERY_OPTIONS})
     if offset:

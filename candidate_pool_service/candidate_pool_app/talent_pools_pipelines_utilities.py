@@ -302,6 +302,8 @@ def get_candidates_of_talent_pipeline(talent_pipeline, oauth_token=None, request
 
     request_params = dict((k, v) for k, v in request_params.iteritems() if v)
 
+    request_params['talent_pipelines'] = str(talent_pipeline.id)
+
     # Query Candidate Search API to get all candidates of a given talent-pipeline
     is_successful, response = get_candidates_from_search_api(request_params,
                                                              generate_jwt_header(oauth_token, talent_pipeline.user_id))
