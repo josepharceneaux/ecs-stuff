@@ -281,6 +281,11 @@ def access_token_first(user_first, sample_client):
 
 
 @pytest.fixture()
+def talent_admin_access_token_first(talent_admin_first, sample_client):
+    return get_access_token(talent_admin_first, PASSWORD, sample_client.client_id, sample_client.client_secret)
+
+
+@pytest.fixture()
 def access_token_second(user_second, sample_client):
     return get_access_token(user_second, PASSWORD, sample_client.client_id, sample_client.client_secret)
 
@@ -338,6 +343,15 @@ def user_first(domain_first, first_group):
     Fixture creates a user in domain_first
     """
     user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
+    return user
+
+
+@pytest.fixture()
+def talent_admin_first(domain_first, first_group):
+    """
+    Fixture creates a user in domain_first
+    """
+    user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id, role_id=4)
     return user
 
 
