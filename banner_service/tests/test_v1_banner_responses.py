@@ -2,17 +2,17 @@ import pytest
 import json
 
 from banner_service.app import app, redis_store
-from banner_service.app.modules.v1_api_processors import BANNER_REDIS_KEY
+from banner_service.app.modules.v1_banner_processors import BANNER_REDIS_KEY
 from banner_service.common.tests.conftest import talent_admin_access_token_first
 from banner_service.common.tests.conftest import talent_admin_first
 from banner_service.common.tests.conftest import domain_first
 from banner_service.common.tests.conftest import first_group
 from banner_service.common.tests.conftest import sample_client
 
-REQUIRED_RESPONSE_KEYS = ('title', 'text', 'link', 'color', 'timestamp')
+REQUIRED_RESPONSE_KEYS = ('title', 'text', 'link', 'style', 'timestamp')
 
 
-class TestApiEndpoints(object):
+class TestBannerApiEndpoints(object):
     def setup_method(self, method):
         with app.test_client() as tc:
             self.app = tc
@@ -29,15 +29,17 @@ class TestApiEndpoints(object):
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
             'link': 'www.getTalent.com',
-            'color': 'vermillion'
+            'style': 'vermillion'
         }
 
         response = self.app.post(
             '/v1/banners',
             data=json.dumps(sample_banner),
             headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer {}'.format(talent_admin_access_token_first)
+                'Content-Type':
+                'application/json',
+                'Authorization':
+                'Bearer {}'.format(talent_admin_access_token_first)
             })
 
         response_json = json.loads(response.data)
@@ -51,15 +53,17 @@ class TestApiEndpoints(object):
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
             'link': 'www.getTalent.com',
-            'color': 'vermillion'
+            'style': 'vermillion'
         }
 
         response = self.app.post(
             '/v1/banners',
             data=json.dumps(sample_banner),
             headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer {}'.format(talent_admin_access_token_first)
+                'Content-Type':
+                'application/json',
+                'Authorization':
+                'Bearer {}'.format(talent_admin_access_token_first)
             })
 
         response_json = json.loads(response.data)
@@ -69,15 +73,17 @@ class TestApiEndpoints(object):
             'title': 'Onions',
             'text': 'Onions: not just for making you cry now!',
             'link': 'www.whySoSerious.com',
-            'color': 'rose'
+            'style': 'rose'
         }
 
         response = self.app.post(
             '/v1/banners',
             data=json.dumps(second_banner),
             headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer {}'.format(talent_admin_access_token_first)
+                'Content-Type':
+                'application/json',
+                'Authorization':
+                'Bearer {}'.format(talent_admin_access_token_first)
             })
 
         response_json = json.loads(response.data)
@@ -91,8 +97,10 @@ class TestApiEndpoints(object):
         response = self.app.get(
             '/v1/banners',
             headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer {}'.format(talent_admin_access_token_first)
+                'Content-Type':
+                'application/json',
+                'Authorization':
+                'Bearer {}'.format(talent_admin_access_token_first)
             })
         response_json = json.loads(response.data)
         assert response_json.get(
@@ -106,15 +114,17 @@ class TestApiEndpoints(object):
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
             'link': 'www.getTalent.com',
-            'color': 'vermillion'
+            'style': 'vermillion'
         }
 
         post_response = self.app.post(
             '/v1/banners',
             data=json.dumps(sample_banner),
             headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer {}'.format(talent_admin_access_token_first)
+                'Content-Type':
+                'application/json',
+                'Authorization':
+                'Bearer {}'.format(talent_admin_access_token_first)
             })
 
         response_json = json.loads(post_response.data)
@@ -123,8 +133,10 @@ class TestApiEndpoints(object):
         get_response = self.app.get(
             '/v1/banners',
             headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer {}'.format(talent_admin_access_token_first)
+                'Content-Type':
+                'application/json',
+                'Authorization':
+                'Bearer {}'.format(talent_admin_access_token_first)
             })
         response_json = json.loads(get_response.data)
 
@@ -135,15 +147,17 @@ class TestApiEndpoints(object):
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
             'link': 'www.getTalent.com',
-            'color': 'vermillion'
+            'style': 'vermillion'
         }
 
         post_response = self.app.post(
             '/v1/banners',
             data=json.dumps(sample_banner),
             headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer {}'.format(talent_admin_access_token_first)
+                'Content-Type':
+                'application/json',
+                'Authorization':
+                'Bearer {}'.format(talent_admin_access_token_first)
             })
 
         response_json = json.loads(post_response.data)
@@ -152,8 +166,10 @@ class TestApiEndpoints(object):
         delete_response = self.app.delete(
             '/v1/banners',
             headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer {}'.format(talent_admin_access_token_first)
+                'Content-Type':
+                'application/json',
+                'Authorization':
+                'Bearer {}'.format(talent_admin_access_token_first)
             })
         response_json = json.loads(delete_response.data)
         assert response_json.get('banner_delete')
@@ -161,8 +177,10 @@ class TestApiEndpoints(object):
         get_response = self.app.get(
             '/v1/banners',
             headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer {}'.format(talent_admin_access_token_first)
+                'Content-Type':
+                'application/json',
+                'Authorization':
+                'Bearer {}'.format(talent_admin_access_token_first)
             })
         response_json = json.loads(get_response.data)
         assert response_json.get(
