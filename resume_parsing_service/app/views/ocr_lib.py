@@ -50,4 +50,5 @@ def ocr_image(img_file_obj, filename_str):
         logger.info('ResumeParsingService::Info::OCR Score {}'.format(ocr_confidence))
 
     results =  ''.join(result.get('ParsedText') for result in json_ocr_response.get('ParsedResults'))
+    logger.info('ResumeParsingService::Info::OCRSpace ParsedText: {}'.format(results))
     return re.sub(u'[^\x00-\x7F]+', ' ', results)
