@@ -19,21 +19,18 @@ class TestCRDFunction(object):
             assert create_banner({
                 'title': 'Potato',
                 'text': 'We have a new potato feature',
-                'link': 'www.lmgtfy.com',
                 'style': 'chartreuse'
             })
 
     def test_we_can_read(self):
         # TODO add user id
-        REQUIRED_RESPONSE_KEYS = ('title', 'text', 'link', 'style',
-                                  'timestamp')
+        REQUIRED_RESPONSE_KEYS = ('title', 'text', 'style', 'timestamp')
         with self.app:
             # Create the entry
             # Redundant assert that we can create when no key is set.
             assert create_banner({
                 'title': 'Turnip',
                 'text': 'We can now grow turnips for you',
-                'link': 'www.stackoverflow.com',
                 'style': 'lavender'
             })
 
@@ -47,7 +44,6 @@ class TestCRDFunction(object):
             assert create_banner({
                 'title': 'Turnip',
                 'text': 'We can now grow turnips for you',
-                'link': 'www.stackoverflow.com',
                 'style': 'lavender'
             })
 
