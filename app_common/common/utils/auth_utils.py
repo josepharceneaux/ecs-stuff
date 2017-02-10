@@ -99,7 +99,7 @@ def require_jwt_oauth(allow_null_user=False, allow_candidate=False):
 
 
 def require_role(role_name):
-    """ This method ensures that user should have all permissions given in permission list"""
+    """ This method ensures that user should have a certain role"""
 
     def roles(func):
         @wraps(func)
@@ -107,7 +107,6 @@ def require_role(role_name):
             # For server-to-server Auth roles check should be skipped
 
             if not role_name:
-                # Permission list is empty so it means func is not permission protected
                 return func(*args, **kwargs)
 
             # TODO Investigate this code path
@@ -118,7 +117,8 @@ def require_role(role_name):
             if role != role_name:
                 raise UnauthorizedError(
                     error_message="User doesn't have appropriate permissions to "
-                                  "perform this operation")
+                                  "perform this operation",
+                    additional_error_info=role)
             return func(*args, **kwargs)
 
         return authenticate_role
