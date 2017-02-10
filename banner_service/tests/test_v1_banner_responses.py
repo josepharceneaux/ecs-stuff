@@ -11,7 +11,7 @@ from banner_service.common.tests.conftest import domain_first
 from banner_service.common.tests.conftest import first_group
 from banner_service.common.tests.conftest import sample_client
 
-REQUIRED_RESPONSE_KEYS = ('title', 'text', 'link', 'style', 'timestamp')
+REQUIRED_RESPONSE_KEYS = ('title', 'text', 'style', 'timestamp')
 
 
 class TestBannerApiEndpoints(object):
@@ -30,7 +30,6 @@ class TestBannerApiEndpoints(object):
         sample_banner = {
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
-            'link': 'www.getTalent.com',
             'style': 'vermillion'
         }
 
@@ -47,6 +46,27 @@ class TestBannerApiEndpoints(object):
         response_json = json.loads(response.data)
         assert response_json.get('banner_created')
 
+    def test_user_cannot_post(self, access_token_first):
+        """
+        Tests that we can create a banner via the endpoint.
+        """
+        sample_banner = {
+            'title': 'Rutabaga',
+            'text': 'Rutabaga beta feature available to test now!',
+            'style': 'vermillion'
+        }
+
+        response = self.app.post(
+            '/v1/banners',
+            data=json.dumps(sample_banner),
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer {}'.format(access_token_first)
+            })
+
+        response_json = json.loads(response.data)
+        assert response_json.get('error')
+
     def test_cannot_create_when_exists(self, talent_admin_access_token_first):
         """
         Tests presence of error response if a banner is already in redis.
@@ -54,7 +74,6 @@ class TestBannerApiEndpoints(object):
         sample_banner = {
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
-            'link': 'www.getTalent.com',
             'style': 'vermillion'
         }
 
@@ -74,7 +93,6 @@ class TestBannerApiEndpoints(object):
         second_banner = {
             'title': 'Onions',
             'text': 'Onions: not just for making you cry now!',
-            'link': 'www.whySoSerious.com',
             'style': 'rose'
         }
 
@@ -130,7 +148,6 @@ class TestBannerApiEndpoints(object):
         sample_banner = {
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
-            'link': 'www.getTalent.com',
             'style': 'vermillion'
         }
 
@@ -163,7 +180,6 @@ class TestBannerApiEndpoints(object):
         sample_banner = {
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
-            'link': 'www.getTalent.com',
             'style': 'vermillion'
         }
 
