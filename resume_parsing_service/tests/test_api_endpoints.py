@@ -391,6 +391,11 @@ def test_email_with_punctuation(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
+def test_web_1341(token_fixture, user_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'WEB-1341.jpg')
+    assert_non_create_content_and_status(content, status)
+
+
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################
