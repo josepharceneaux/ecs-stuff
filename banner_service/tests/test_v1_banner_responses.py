@@ -4,6 +4,8 @@ import json
 from banner_service.app import app, redis_store
 from banner_service.app.modules.v1_banner_processors import BANNER_REDIS_KEY
 from banner_service.common.tests.conftest import talent_admin_access_token_first
+from banner_service.common.tests.conftest import access_token_first
+from banner_service.common.tests.conftest import user_first
 from banner_service.common.tests.conftest import talent_admin_first
 from banner_service.common.tests.conftest import domain_first
 from banner_service.common.tests.conftest import first_group
@@ -90,7 +92,8 @@ class TestBannerApiEndpoints(object):
         assert response_json.get('error', {}).get(
             'message') == 'Cannot POST banner when an active banner exists'
 
-    def test_get_endpoint_with_no_data(self, talent_admin_access_token_first):
+    def test_get_endpoint_with_no_data_admin(self,
+                                             talent_admin_access_token_first):
         """
         Tests that get will return error when no banner stored in redis.
         """
@@ -101,6 +104,20 @@ class TestBannerApiEndpoints(object):
                 'application/json',
                 'Authorization':
                 'Bearer {}'.format(talent_admin_access_token_first)
+            })
+        response_json = json.loads(response.data)
+        assert response_json.get(
+            'error', {}).get('message') == 'No banner currently set.'
+
+    def test_get_endpoint_with_no_data_user(self, access_token_first):
+        """
+        Tests that get will return error when no banner stored in redis.
+        """
+        response = self.app.get(
+            '/v1/banners',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer {}'.format(access_token_first)
             })
         response_json = json.loads(response.data)
         assert response_json.get(
