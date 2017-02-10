@@ -48,6 +48,7 @@ def parse_resume(file_obj, filename_str, cache_key):
     # If file is an image, OCR it
     if is_image:
         start_time = time()
+
         if file_ext != '.pdf':
             with Image.open(file_obj) as im:
                 width, height = im.size
@@ -56,7 +57,15 @@ def parse_resume(file_obj, filename_str, cache_key):
                     im.thumbnail((2500, 2500), Image.ANTIALIAS)
                     im.save(file_obj, format='PNG')
 
-        doc_content = ocr_image(file_obj, filename_str)
+                doc_content = ocr_image(file_obj, filename_str)
+                """
+                Due to StringIO processing we need to validate the content on the open file object
+                before it is closed with im.save
+                """
+                validate_content_len(doc_content, file_obj, filename_str)
+        else:
+            doc_content = ocr_image(file_obj, filename_str)
+
         logger.info(
             "ResumeParsingService::Benchmark: OCR for {}: took {}s to process".format(
                 filename_str, time() - start_time)
@@ -65,15 +74,7 @@ def parse_resume(file_obj, filename_str, cache_key):
     else:
         doc_content = file_obj.getvalue()
 
-    if not doc_content or len(doc_content) < 10: #  If doc content is < 10 not worth parsing.
-        bucket = current_app.config['S3_BUCKET_NAME']
-        boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
-        logger.error('ResumeParsingService::UncaughtError::parse_resume Key {}. Unable to determine the documents contents of'.format(filename_str))
-        file_obj.close()  # Free file from memory after attempted upload caused by failure.
-        raise InvalidUsage(
-            error_message=error_constants.NO_TEXT_EXTRACTED['message'],
-            error_code=error_constants.NO_TEXT_EXTRACTED['code']
-        )
+    validate_content_len(doc_content, file_obj, filename_str)
 
 
     try:
@@ -140,3 +141,14 @@ def is_resume_image(file_ext, file_obj):
             resume_is_image = True
 
     return resume_is_image
+
+def validate_content_len(doc_content, file_obj, filename_str):
+    if not doc_content or len(doc_content) < 10: #  If doc content is < 10 not worth parsing.
+        bucket = current_app.config['S3_BUCKET_NAME']
+        boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
+        logger.error('ResumeParsingService::UncaughtError::parse_resume Key {}. Unable to determine the documents contents of'.format(filename_str))
+        file_obj.close()  # Free file from memory after attempted upload caused by failure.
+        raise InvalidUsage(
+            error_message=error_constants.NO_TEXT_EXTRACTED['message'],
+            error_code=error_constants.NO_TEXT_EXTRACTED['code']
+        )
