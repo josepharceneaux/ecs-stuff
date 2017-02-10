@@ -498,10 +498,11 @@ def garbage_collect_ecs(service, cluster):
         print "WARNING: Currently running task definition {} for {} not found in Task Definition list.".format(current_td, service_name)
 
     # Cull the newest revisions that we want to keep out of the list
-    count = 0
-    while count < GC_THRESHOLD:
-        del td_arn_list[0] 
-        count += 1
+    if len(td_arn_list) > GC_THRESHOLD:
+        count = 0
+        while count < GC_THRESHOLD:
+            del td_arn_list[0] 
+            count += 1
 
     # Gather all the images from our updated task def list
     image_delete_list = []

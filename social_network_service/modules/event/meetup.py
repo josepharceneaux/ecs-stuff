@@ -128,7 +128,7 @@ class Meetup(EventBase):
         # have status=upcoming, so we are not explicitly specifying in fields.
         meetup_groups = MeetupGroup.filter_by_keywords(user_id=self.user.id)
         if not meetup_groups:
-            logger.warn('''No MeetupGroup is asscoiated with this user subscription for Meetup.
+            logger.warn('''No MeetupGroup is associated with this user subscription for Meetup.
                            UserId: %s
                            MemberId: %s
                            ''' % (self.user.id, self.user_credentials.member_id))

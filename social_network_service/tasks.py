@@ -351,7 +351,7 @@ def _get_event(user_id, social_network_id, social_network_event_id):
 
 
 @celery.task(name="import_events")
-def import_events(user_credentials):
+def sync_events(user_credentials):
     """
     This celery task imports all active/live events of a specific user and social network and it will be invoked when
     user will subscribe to Meetup or Eventbrite.
