@@ -402,11 +402,8 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
         # Go through results & build action dicts
         for field_name_to_sql_value in results:
-            candidate_id = field_name_to_sql_value['id']  # TODO: this may be redundant -Amir
-            is_archived = field_name_to_sql_value['is_archived']
-            if is_archived == 1:
-                logger.info("Unable to upload document of an archived candidate: %s" % candidate_id)
-                continue
+            candidate_id = field_name_to_sql_value['id']
+            
             action_dict = dict(type='add', id=str(candidate_id))
 
             # Remove keys with empty values
