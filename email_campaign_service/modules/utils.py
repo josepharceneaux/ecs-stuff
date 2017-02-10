@@ -22,6 +22,7 @@ from dateutil.relativedelta import relativedelta
 
 # Service Specific
 from email_campaign_service.email_campaign_app import (logger, celery_app, cache, app)
+from sqlalchemy import inspect
 
 # Common Utils
 from email_campaign_service.common.redis_cache import redis_store
@@ -492,3 +493,22 @@ def decrypt_password(password):
     :param string password: Login password of user for email-client
     """
     return decrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY], b64decode(password))
+
+
+def map_cursor_to_model(cursor, page, per_page):
+    list_of_dict = []
+    for row in cursor:
+        keys = get_keys_from_row_proxy(row)
+        list_of_dict.append(dict(zip(keys, list(row._row))))
+    start = (page - 1) * per_page
+    end = page * per_page
+    return {'blasts': list_of_dict[start:end]}
+
+
+def get_keys_from_row_proxy(row):
+    keys = []
+    for key in row._keymap:
+        if isinstance(key, basestring):
+            keys.append(key)
+    return keys
+

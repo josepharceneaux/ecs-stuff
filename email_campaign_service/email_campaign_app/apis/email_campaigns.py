@@ -358,8 +358,13 @@ class EmailCampaignBlasts(Resource):
         # Get a campaign that was created by this user
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.EMAIL)
         # get paginated response
+        from email_campaign_service.common.models.email_campaign import db
+        from email_campaign_service.modules.utils import map_cursor_to_model
         page, per_page = get_pagination_params(request)
-        return get_paginated_response('blasts', campaign.blasts, page, per_page)
+        query = 'SELECT id, EmailCampaignId as campaign_id, HtmlClicks as html_clicks, TextClicks as text_clicks, Opens as opens, Bounces as bounces, Complaints as complaints, (SELECT COUNT(*) from email_campaign_send where email_campaign_send.EmailCampaignBlastId in (SELECT email_campaign_blast.id where email_campaign_blast.EmailCampaignId=385)) as sends from email_campaign_blast where email_campaign_blast.EmailCampaignId=385;'
+        blasts = db.engine.execute(query)
+
+        return map_cursor_to_model(blasts, page, per_page)
 
 
 @api.route(EmailCampaignApi.BLAST)
