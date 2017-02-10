@@ -4,7 +4,6 @@ __author__ = 'ufarooqi'
 
 from flask import Blueprint
 from dateutil import parser
-from sqlalchemy import and_, or_
 from flask_restful import Resource
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
@@ -19,6 +18,7 @@ from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities 
     get_stats_generic_function, top_most_engaged_candidates_of_pipeline, top_most_engaged_pipelines_of_candidate,
     get_talent_pipeline_stat_for_given_day)
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
+from candidate_pool_service.common.inter_service_calls.candidate_service_calls import update_candidates_on_cloudsearch
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
 
@@ -577,7 +577,7 @@ class TalentPipelineCandidates(Resource):
 
         TalentPipelineExcludedCandidates.query.filter(
                 TalentPipelineExcludedCandidates.talent_pipeline_id == talent_pipeline.id,
-                TalentPipelineExcludedCandidates.candidate_id.in_(candidate_ids)).delete()
+                TalentPipelineExcludedCandidates.candidate_id.in_(candidate_ids)).delete(synchronize_session='fetch')
 
         for candidate_id in candidate_ids:
             if not TalentPipelineIncludedCandidates.query.filter_by(talent_pipeline_id=talent_pipeline.id,
@@ -585,6 +585,8 @@ class TalentPipelineCandidates(Resource):
                 db.session.add(TalentPipelineIncludedCandidates(talent_pipeline_id=talent_pipeline.id,
                                                                 candidate_id=candidate_id))
         db.session.commit()
+
+        update_candidates_on_cloudsearch(request.oauth_token, candidate_ids)
 
         return '', 204
 
@@ -616,7 +618,7 @@ class TalentPipelineCandidates(Resource):
 
         TalentPipelineIncludedCandidates.query.filter(
                 TalentPipelineIncludedCandidates.talent_pipeline_id == talent_pipeline.id,
-                TalentPipelineIncludedCandidates.candidate_id.in_(candidate_ids)).delete()
+                TalentPipelineIncludedCandidates.candidate_id.in_(candidate_ids)).delete(synchronize_session='fetch')
 
         for candidate_id in candidate_ids:
             if not TalentPipelineExcludedCandidates.query.filter_by(talent_pipeline_id=talent_pipeline.id,
@@ -624,6 +626,8 @@ class TalentPipelineCandidates(Resource):
                 db.session.add(TalentPipelineExcludedCandidates(talent_pipeline_id=talent_pipeline.id,
                                                                 candidate_id=candidate_id))
         db.session.commit()
+
+        update_candidates_on_cloudsearch(request.oauth_token, candidate_ids)
 
         return '', 204
 
