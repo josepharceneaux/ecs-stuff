@@ -198,7 +198,7 @@ class User(db.Model):
 
     # ***** Below function to be used for testing only *****
     @staticmethod
-    def add_test_user(session, password, domain_id, user_group_id):
+    def add_test_user(session, password, domain_id, user_group_id, role_id=1):
         """
         Function creates a unique user for testing
         :rtype: User
@@ -207,7 +207,7 @@ class User(db.Model):
                     password=generate_password_hash(password, method='pbkdf2:sha512'),
                     domain_id=domain_id,
                     user_group_id=user_group_id,
-                    expiration=None)
+                    expiration=None, role_id=role_id)
         session.add(user)
         session.commit()
         return user

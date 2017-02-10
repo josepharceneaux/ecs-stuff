@@ -150,6 +150,9 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'tag_ids':                       dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'tags':                          dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': True}),
 
+    # Candidate's title
+    'title':                         dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY, 'HighlightEnabled': False}),
+
     # Archive options
     'is_archived':                   dict(IndexFieldType='int',             IntOptions={'FacetEnabled': True,
                                                                                         'SearchEnabled': True,
@@ -291,7 +294,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.is_archived AS `is_archived`, candidate.source_detail AS `source_details`,
                 HOUR(candidate.addedTime) AS `added_time_hour`, candidate.sourceId AS `source_id`,
                 candidate.sourceProductId AS `source_product_id`, candidate.totalMonthsExperience AS
-                `total_months_experience`, candidate.isWebHidden AS `is_web_hidden`,
+                `total_months_experience`, candidate.title AS `title`,
 
                 # Address & contact info
                 candidate_address.city AS `city`, candidate_address.state AS `state`, candidate_address.zipCode AS `zip_code`,
@@ -399,10 +402,10 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
         # Go through results & build action dicts
         for field_name_to_sql_value in results:
-            candidate_id = field_name_to_sql_value['id']
-            is_hidden = field_name_to_sql_value['is_web_hidden']  # TODO: change key to "is_archived" after is_web_hidden is removed from Candidate model
-            if is_hidden == 1:
-                logger.info("Unable to upload candidate document of hidden candidate: %s" % candidate_id)
+            candidate_id = field_name_to_sql_value['id']  # TODO: this may be redundant -Amir
+            is_archived = field_name_to_sql_value['is_archived']
+            if is_archived == 1:
+                logger.info("Unable to upload document of an archived candidate: %s" % candidate_id)
                 continue
             action_dict = dict(type='add', id=str(candidate_id))
 
@@ -792,6 +795,11 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         filter_query = "(and %s %s %s %s)" % (filter_query, domain_filter, talent_pool_filter, candidate_status)
     else:
         filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
+
+    # Candidate's title
+    title = request_vars.get('title')
+    if title:
+        filter_query = "(term field=title '%s')" % title
 
     params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene', query_options={'fields': QUERY_OPTIONS})
     if offset:

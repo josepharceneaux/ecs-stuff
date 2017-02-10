@@ -98,6 +98,34 @@ def require_jwt_oauth(allow_null_user=False, allow_candidate=False):
     return auth_wrapper
 
 
+def require_role(role_name):
+    """ This method ensures that user should have all permissions given in permission list"""
+
+    def roles(func):
+        @wraps(func)
+        def authenticate_role(*args, **kwargs):
+            # For server-to-server Auth roles check should be skipped
+
+            if not role_name:
+                # Permission list is empty so it means func is not permission protected
+                return func(*args, **kwargs)
+
+            # TODO Investigate this code path
+            if not request.user:
+                return func(*args, **kwargs)
+
+            role = request.user.role.name
+            if role != role_name:
+                raise UnauthorizedError(
+                    error_message="User doesn't have appropriate permissions to "
+                                  "perform this operation")
+            return func(*args, **kwargs)
+
+        return authenticate_role
+
+    return roles
+
+
 def require_all_permissions(*permission_names):
     """ This method ensures that user should have all permissions given in permission list"""
 
