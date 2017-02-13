@@ -496,24 +496,21 @@ def decrypt_password(password):
 
 
 @contract
-def map_result_proxy_to_dict_and_paginate(result, page, per_page):
+def calculate_sends_and_paginate(blasts, page, per_page):
     """
-    This method takes sqlalchemy.engine.result.ResultProxy object and iterates over it and maps each row to dict
-    and append all the dicts in a single array and returns limited number of rows (pagination)
-    :param type(t) result:
+    This method takes EmailCampaignBlast object and iterates over it and calculate sends on the go,
+    append them in a single array and returns dict of limited number of rows (pagination)
+    :param type(t) blasts:
     :param positive page: Page Number
     :param positive per_page: Number of rows per page
     :return: blast dicts
     :rtype: dict
     """
     list_of_dict = []
-    blast_keys = ['id', 'campaign_id', 'html_clicks', 'text_clicks', 'opens', 'bounces', 'complaints',
-                  'updated_datetime', 'sent_datetime', 'sends']
-    for row in result:
-        blast_dict = dict(zip(blast_keys, list(row._row)))
-        blast_dict['updated_datetime'] = str(blast_dict['updated_datetime'])  # datetime object is not Json serializable
-        blast_dict['sent_datetime'] = str(blast_dict['sent_datetime'])  # datetime object is not Json serializable
-        list_of_dict.append(blast_dict)
     start = (page - 1) * per_page
     end = page * per_page
+    # return {'blasts': list_of_dict[start:end]}
+    for blast in blasts:
+        blast.sends = blast.blast_sends.count()
+        list_of_dict.append(blast.to_json())
     return {'blasts': list_of_dict[start:end]}
