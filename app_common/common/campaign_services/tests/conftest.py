@@ -40,7 +40,7 @@ from ...tests.api_conftest import (user_first, token_first, talent_pool_session_
 
 __author__ = 'basit'
 
-EVENTBRITE_CONFIG = {'skip': True,
+EVENTBRITE_CONFIG = {'skip': False,
                      'reason': 'In contact with Eventbrite support for increasing hit rate limit'}
 
 # Add new vendor here to run tests for that particular social-network
@@ -692,8 +692,8 @@ def event_campaign_with_client_id(token_first, scheduled_email_campaign_with_bas
 @pytest.fixture(scope="function", params=VENDORS)
 def event_campaign(token_first, scheduled_email_campaign_with_base_id, event_in_db_second):
     """
-    This returns scheduled event campaign. Its  is using fixture 'event_in_db_second' which return
-    one single event every time. So don't use this fixture('event_campaign') to test event deletion.
+    This returns scheduled event campaign. Its  is using fixture 'event_in_db_second' which returns
+    copy of global event every time. So don't use this fixture('event_campaign') to test event deletion.
     """
     db.session.commit()
     email_campaign = EmailCampaign.get(scheduled_email_campaign_with_base_id['id'])

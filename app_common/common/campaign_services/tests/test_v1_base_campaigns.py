@@ -337,7 +337,6 @@ class TestEventCampaignActivity(object):
     Here are the tests for activity of event campaign
     """
 
-    @pytest.mark.wy
     def test_event_campaign_with_client_id(self, event_campaign_with_client_id):
         """
         This gets an event campaign with client id, tests its open activity.
@@ -374,7 +373,6 @@ class TestEventCampaignActivity(object):
                                                   campaign_send.id)
         UrlConversion.delete(url_conversion)
 
-    @pytest.mark.wy
     def test_activity_send_event_campaign(self, token_first, event_campaign):
         """
         This gets an event campaign, tests its send activity.

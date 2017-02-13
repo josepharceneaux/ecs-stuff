@@ -43,7 +43,6 @@ class TestEventById(object):
         response = unauthorize_test(url=SocialNetworkApiUrl.EVENT % non_existing_id, method='get')
         assert 'event' not in response.json()
 
-    @pytest.mark.wy
     def test_get_by_id_with_valid_token(self, token_first, token_same_domain, event_in_db_second):
         """
         - Get event using id and response should be 200
@@ -118,7 +117,6 @@ class TestEventById(object):
         logger.info(response.text)
         assert response.status_code == codes.NOT_FOUND, 'Event not found with this social network event id'
 
-    @pytest.mark.haider
     def test_put_with_valid_token(self, token_first, new_event_in_db_second):
         """
         - Get event data from db (using fixture - event_in_db)
@@ -163,7 +161,6 @@ class TestEventById(object):
         """
         unauthorize_test('delete', url=SocialNetworkApiUrl.EVENT % event_in_db['id'])
 
-    @pytest.mark.haider
     def test_delete_with_valid_token(self, token_first, new_event_in_db_second):
         """
         - Try to delete event data using id, if deleted you expect 200 response
