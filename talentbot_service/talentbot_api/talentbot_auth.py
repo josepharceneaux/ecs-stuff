@@ -8,7 +8,7 @@ import types
 from talentbot_service import logger
 from talentbot_service.common.utils.handy_functions import get_valid_json_data
 from talentbot_service.common.error_handling import InvalidUsage, ForbiddenError, NotFoundError
-from talentbot_service.modules.validations import validate_user_id, validate_and_format_request_data_for_sms, \
+from talentbot_service.modules.validations import validate_and_format_request_data_for_sms, \
     validate_and_format_data_for_slack, validate_and_format_request_data_for_facebook, \
     validate_and_format_data_for_email
 # Common modules
@@ -43,7 +43,6 @@ class TalentbotAuthApi(Resource):
         This method takes data to create a talentbot_auth entry in database
         Example:
             {
-            "user_id": 5000,
             "sms": {
                     "user_phone_id": 7
             },
@@ -81,13 +80,13 @@ class TalentbotAuthApi(Resource):
             }
         """
         data = get_valid_json_data(request)
-        validate_user_id(data)
-        user_id = data['user_id']
+        # validate_user_id(data)
+        user_id = request.user.id
         is_facebook, is_slack, is_sms, is_email = data.get("facebook"), data.get("slack"), data.get("sms"),\
                                                   data.get("email")
         formatted_data = {"user_id": user_id}
         if is_sms:
-            formatted_data.update(validate_and_format_request_data_for_sms(data['sms']))
+            formatted_data.update(validate_and_format_request_data_for_sms(data['sms'], request.user.id))
         if is_facebook:
             formatted_data.update(validate_and_format_request_data_for_facebook(data['facebook']))
         if is_email:
@@ -103,7 +102,6 @@ class TalentbotAuthApi(Resource):
             # if not response.ok:
             #     raise InternalServerError("Something went wrong while adding user_phone")
             # phone_object = UserPhone.get_by_phone_value(user_phone)
-
             phone_object = UserPhone(user_id=user_id, value=user_phone, phone_label_id=6)
             phone_object.save()
             if phone_object:
@@ -131,7 +129,6 @@ class TalentbotAuthById(Resource):
         This method takes data validates it and update in database
         Example:
             {
-                "user_id": 5000,
                 "sms":{
                     "user_phone_id": 9
                 }
@@ -153,8 +150,8 @@ class TalentbotAuthById(Resource):
         data = get_valid_json_data(request)
         _id = kwargs.get('id')
         check_if_auth_exists(_id)
-        validate_user_id(data)
-        user_id = data.get('user_id')  # Required
+        # validate_user_id(data)
+        user_id = request.user.id
         is_sms = data.get('sms')
         updated_dict = {}
         if is_sms:
@@ -166,11 +163,14 @@ class TalentbotAuthById(Resource):
             requested_phone = UserPhone.get_by_id(user_phone_id)
             if not requested_phone:
                 raise NotFoundError("user_phone doesn't exist against given user_phone_id")
+            if requested_phone.user_id != user_id:
+                raise ForbiddenError("user_phone against provided user_phone_id is not owned by you")
             updated_dict.update({
                 "user_id": user_id,
                 "user_phone_id": user_phone_id
             })
         TalentbotAuth.query.filter(TalentbotAuth.id == _id).update(updated_dict)
+        TalentbotAuth.session.commit()
         return ApiResponse(data)
 
     def get(self, **kwargs):
