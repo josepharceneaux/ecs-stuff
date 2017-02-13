@@ -53,7 +53,7 @@ class TestOrganizers(object):
         logger.info(response.text)
         assert response.status_code == codes.UNAUTHORIZED, "Response: {}".format(response.text)
 
-    def test_post_with_valid_token(self, token_first, user_first):
+    def test_post_with_valid_token(self, token_first, user_first, test_eventbrite_credentials):
         """
         Send POST request with valid event organizer data and response should be 201 (id in response content)
         """
@@ -106,7 +106,7 @@ class TestOrganizers(object):
         assert event_organizer, 'Event organizer not found in db'
         EventOrganizer.delete(event_organizer.id)
 
-    def test_post_with_missing_field(self, token_first, user_first):
+    def test_post_with_missing_field(self, token_first, user_first, test_eventbrite_credentials):
         """
         Send POST request with organizer data with missing fields. API will raise 400
         """
