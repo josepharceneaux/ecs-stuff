@@ -80,7 +80,6 @@ class TalentbotAuthApi(Resource):
             }
         """
         data = get_valid_json_data(request)
-        # validate_user_id(data)
         user_id = request.user.id
         is_facebook, is_slack, is_sms, is_email = data.get("facebook"), data.get("slack"), data.get("sms"),\
                                                   data.get("email")
@@ -150,7 +149,6 @@ class TalentbotAuthById(Resource):
         data = get_valid_json_data(request)
         _id = kwargs.get('id')
         check_if_auth_exists(_id)
-        # validate_user_id(data)
         user_id = request.user.id
         is_sms = data.get('sms')
         updated_dict = {}
