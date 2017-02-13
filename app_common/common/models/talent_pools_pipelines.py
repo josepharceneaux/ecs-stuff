@@ -323,3 +323,29 @@ class TalentPipeline(db.Model):
         if page_number is None:
             return query_object.all()
         return get_paginated_objects(query_object, page_number)
+
+
+class TalentPipelineIncludedCandidates(db.Model):
+    __tablename__ = 'talent_pipeline_included_candidates'
+    id = db.Column(db.Integer, primary_key=True)
+    talent_pipeline_id = db.Column(db.Integer, db.ForeignKey('talent_pipeline.id', ondelete='CASCADE'), nullable=False)
+    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'), nullable=False)
+
+    # Relationships
+    talent_pipeline = db.relationship('TalentPipeline',
+                                      backref=db.backref('talent_pipeline_included_candidates', cascade="all, delete-orphan"))
+    candidate = db.relationship('Candidate',
+                                backref=db.backref('talent_pipeline_included_candidates', cascade="all, delete-orphan"))
+
+
+class TalentPipelineExcludedCandidates(db.Model):
+    __tablename__ = 'talent_pipeline_excluded_candidates'
+    id = db.Column(db.Integer, primary_key=True)
+    talent_pipeline_id = db.Column(db.Integer, db.ForeignKey('talent_pipeline.id', ondelete='CASCADE'), nullable=False)
+    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'), nullable=False)
+
+    # Relationships
+    talent_pipeline = db.relationship('TalentPipeline',
+                                      backref=db.backref('talent_pipeline_excluded_candidates', cascade="all, delete-orphan"))
+    candidate = db.relationship('Candidate',
+                                backref=db.backref('talent_pipeline_excluded_candidates', cascade="all, delete-orphan"))

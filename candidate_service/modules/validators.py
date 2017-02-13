@@ -329,10 +329,13 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "dumb_list_ids": 'id_list',
     # List of ids of smart_lists (For Internal TalentPipeline Search Only)
     "smartlist_ids": 'id_list',
+    # List of ids of Pipelines to which a candidate belong (For Internal TalentPipeline Search Only)
+    "talent_pipelines": 'id_list',
     # candidate id: to check if candidate is present in smartlist.
     "id": 'digit',
     # is_archived: to check if candidate is activated or archived
-    "status": "string"
+    "status": "string",
+    "title": "string"
 }
 
 
