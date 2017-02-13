@@ -244,7 +244,7 @@ def test_eventbrite_credentials_same_domain(user_same_domain, eventbrite):
 
 
 @pytest.fixture(scope="session")
-def eventbrite_venue(user_first, eventbrite, token_first):
+def eventbrite_venue(user_first, eventbrite, token_first, test_eventbrite_credentials):
     """
     This fixture returns eventbrite venue in getTalent database
     """
