@@ -4,12 +4,14 @@ import json
 from banner_service.app import app, redis_store
 from banner_service.app.modules.v1_banner_processors import BANNER_REDIS_KEY
 from banner_service.common.tests.conftest import talent_admin_access_token_first
+from banner_service.common.tests.conftest import access_token_first
+from banner_service.common.tests.conftest import user_first
 from banner_service.common.tests.conftest import talent_admin_first
 from banner_service.common.tests.conftest import domain_first
 from banner_service.common.tests.conftest import first_group
 from banner_service.common.tests.conftest import sample_client
 
-REQUIRED_RESPONSE_KEYS = ('title', 'text', 'link', 'style', 'timestamp')
+REQUIRED_RESPONSE_KEYS = ('title', 'text', 'style', 'timestamp')
 
 
 class TestBannerApiEndpoints(object):
@@ -28,7 +30,6 @@ class TestBannerApiEndpoints(object):
         sample_banner = {
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
-            'link': 'www.getTalent.com',
             'style': 'vermillion'
         }
 
@@ -45,6 +46,27 @@ class TestBannerApiEndpoints(object):
         response_json = json.loads(response.data)
         assert response_json.get('banner_created')
 
+    def test_user_cannot_post(self, access_token_first):
+        """
+        Tests that we can create a banner via the endpoint.
+        """
+        sample_banner = {
+            'title': 'Rutabaga',
+            'text': 'Rutabaga beta feature available to test now!',
+            'style': 'vermillion'
+        }
+
+        response = self.app.post(
+            '/v1/banners',
+            data=json.dumps(sample_banner),
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer {}'.format(access_token_first)
+            })
+
+        response_json = json.loads(response.data)
+        assert response_json.get('error')
+
     def test_cannot_create_when_exists(self, talent_admin_access_token_first):
         """
         Tests presence of error response if a banner is already in redis.
@@ -52,7 +74,6 @@ class TestBannerApiEndpoints(object):
         sample_banner = {
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
-            'link': 'www.getTalent.com',
             'style': 'vermillion'
         }
 
@@ -72,7 +93,6 @@ class TestBannerApiEndpoints(object):
         second_banner = {
             'title': 'Onions',
             'text': 'Onions: not just for making you cry now!',
-            'link': 'www.whySoSerious.com',
             'style': 'rose'
         }
 
@@ -90,7 +110,8 @@ class TestBannerApiEndpoints(object):
         assert response_json.get('error', {}).get(
             'message') == 'Cannot POST banner when an active banner exists'
 
-    def test_get_endpoint_with_no_data(self, talent_admin_access_token_first):
+    def test_get_endpoint_with_no_data_admin(self,
+                                             talent_admin_access_token_first):
         """
         Tests that get will return error when no banner stored in redis.
         """
@@ -106,6 +127,20 @@ class TestBannerApiEndpoints(object):
         assert response_json.get(
             'error', {}).get('message') == 'No banner currently set.'
 
+    def test_get_endpoint_with_no_data_user(self, access_token_first):
+        """
+        Tests that get will return error when no banner stored in redis.
+        """
+        response = self.app.get(
+            '/v1/banners',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer {}'.format(access_token_first)
+            })
+        response_json = json.loads(response.data)
+        assert response_json.get(
+            'error', {}).get('message') == 'No banner currently set.'
+
     def test_can_read_created(self, talent_admin_access_token_first):
         """
         Tests that the expected keys exist in the GET response after creating a banner.
@@ -113,7 +148,6 @@ class TestBannerApiEndpoints(object):
         sample_banner = {
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
-            'link': 'www.getTalent.com',
             'style': 'vermillion'
         }
 
@@ -146,7 +180,6 @@ class TestBannerApiEndpoints(object):
         sample_banner = {
             'title': 'Rutabaga',
             'text': 'Rutabaga beta feature available to test now!',
-            'link': 'www.getTalent.com',
             'style': 'vermillion'
         }
 

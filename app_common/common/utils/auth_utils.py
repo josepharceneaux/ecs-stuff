@@ -117,8 +117,7 @@ def require_role(role_name):
             if role != role_name:
                 raise UnauthorizedError(
                     error_message="User doesn't have appropriate permissions to "
-                                  "perform this operation",
-                    additional_error_info=role)
+                                  "perform this operation")
             return func(*args, **kwargs)
 
         return authenticate_role

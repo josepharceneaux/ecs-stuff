@@ -11,7 +11,7 @@ from banner_service.app import redis_store
 from banner_service.common.error_handling import InvalidUsage
 
 BANNER_REDIS_KEY = 'gt_global_banner'
-REQUIRED_DATA = ('title', 'text', 'link', 'style')
+REQUIRED_DATA = ('title', 'text', 'style')
 
 
 def create_banner(json_data):
