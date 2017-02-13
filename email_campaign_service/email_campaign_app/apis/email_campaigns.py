@@ -55,12 +55,13 @@ from flask import request, Blueprint, jsonify
 
 # Service Specific
 from email_campaign_service.email_campaign_app import logger
-from email_campaign_service.modules.utils import get_valid_send_obj
+from email_campaign_service.modules.utils import get_valid_send_obj, map_result_proxy_to_dict
 from email_campaign_service.modules.validations import validate_and_format_request_data
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
                                                             update_hit_count, send_test_email)
 
 # Common utils
+from email_campaign_service.common.models.email_campaign import db
 from email_campaign_service.common.models.rsvp import RSVP
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignApi
@@ -358,13 +359,14 @@ class EmailCampaignBlasts(Resource):
         # Get a campaign that was created by this user
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.EMAIL)
         # get paginated response
-        from email_campaign_service.common.models.email_campaign import db
-        from email_campaign_service.modules.utils import map_cursor_to_model
         page, per_page = get_pagination_params(request)
-        query = 'SELECT id, EmailCampaignId as campaign_id, HtmlClicks as html_clicks, TextClicks as text_clicks, Opens as opens, Bounces as bounces, Complaints as complaints, (SELECT COUNT(*) from email_campaign_send where email_campaign_send.EmailCampaignBlastId in (SELECT email_campaign_blast.id where email_campaign_blast.EmailCampaignId=385)) as sends from email_campaign_blast where email_campaign_blast.EmailCampaignId=385;'
+        # We need to calculate sends at runtime so we are using raw query for sake of lesser querying latency
+        query = 'SELECT id, EmailCampaignId as campaign_id, HtmlClicks as html_clicks, TextClicks as text_clicks, Opens as opens, Bounces as bounces, Complaints as complaints, UpdatedTime as updated_datetime, SentTime as sent_datetime, (SELECT COUNT(*) from email_campaign_send where email_campaign_send.EmailCampaignBlastId in (SELECT email_campaign_blast.id where email_campaign_blast.EmailCampaignId=%d)) as sends' \
+                ' from email_campaign_blast' \
+                ' where email_campaign_blast.EmailCampaignId=%d;' % (campaign.id, campaign.id)
         blasts = db.engine.execute(query)
 
-        return map_cursor_to_model(blasts, page, per_page)
+        return map_result_proxy_to_dict(blasts, page, per_page)
 
 
 @api.route(EmailCampaignApi.BLAST)

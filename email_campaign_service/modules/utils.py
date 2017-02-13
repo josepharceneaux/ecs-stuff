@@ -495,20 +495,25 @@ def decrypt_password(password):
     return decrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY], b64decode(password))
 
 
-def map_cursor_to_model(cursor, page, per_page):
+@contract
+def map_result_proxy_to_dict(result, page, per_page):
+    """
+    This method takes sqlalchemy.engine.result.ResultProxy object and iterates over it and maps each row to dict
+    and append all the dicts in a single array and returns limited number of rows (pagination)
+    :param type(t) result:
+    :param positive page: Page Number
+    :param positive per_page: Number of rows per page
+    :return: blast dicts
+    :rtype: dict
+    """
     list_of_dict = []
-    for row in cursor:
-        keys = get_keys_from_row_proxy(row)
-        list_of_dict.append(dict(zip(keys, list(row._row))))
+    blast_keys = ['id', 'campaign_id', 'html_clicks', 'text_clicks', 'opens', 'bounces', 'complaints',
+                  'updated_datetime', 'sent_datetime', 'sends']
+    for row in result:
+        blast_dict = dict(zip(blast_keys, list(row._row)))
+        blast_dict['updated_datetime'] = str(blast_dict['updated_datetime'])  # datetime object is not Json serializable
+        blast_dict['sent_datetime'] = str(blast_dict['sent_datetime'])  # datetime object is not Json serializable
+        list_of_dict.append(blast_dict)
     start = (page - 1) * per_page
     end = page * per_page
     return {'blasts': list_of_dict[start:end]}
-
-
-def get_keys_from_row_proxy(row):
-    keys = []
-    for key in row._keymap:
-        if isinstance(key, basestring):
-            keys.append(key)
-    return keys
-
