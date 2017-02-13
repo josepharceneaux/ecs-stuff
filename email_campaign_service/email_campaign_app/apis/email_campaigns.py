@@ -55,7 +55,7 @@ from flask import request, Blueprint, jsonify
 
 # Service Specific
 from email_campaign_service.email_campaign_app import logger
-from email_campaign_service.modules.utils import get_valid_send_obj, map_result_proxy_to_dict
+from email_campaign_service.modules.utils import get_valid_send_obj, map_result_proxy_to_dict_and_paginate
 from email_campaign_service.modules.validations import validate_and_format_request_data
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
                                                             update_hit_count, send_test_email)
@@ -366,7 +366,7 @@ class EmailCampaignBlasts(Resource):
                 ' where email_campaign_blast.EmailCampaignId=%d;' % (campaign.id, campaign.id)
         blasts = db.engine.execute(query)
 
-        return map_result_proxy_to_dict(blasts, page, per_page)
+        return map_result_proxy_to_dict_and_paginate(blasts, page, per_page)
 
 
 @api.route(EmailCampaignApi.BLAST)

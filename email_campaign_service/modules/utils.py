@@ -496,7 +496,7 @@ def decrypt_password(password):
 
 
 @contract
-def map_result_proxy_to_dict(result, page, per_page):
+def map_result_proxy_to_dict_and_paginate(result, page, per_page):
     """
     This method takes sqlalchemy.engine.result.ResultProxy object and iterates over it and maps each row to dict
     and append all the dicts in a single array and returns limited number of rows (pagination)
