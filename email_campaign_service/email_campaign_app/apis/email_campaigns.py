@@ -360,7 +360,7 @@ class EmailCampaignBlasts(Resource):
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.EMAIL)
         # get paginated response
         page, per_page = get_pagination_params(request)
-        return dict(calculate_sends_and_paginate(campaign.blasts, page, per_page))
+        return calculate_sends_and_paginate(campaign.blasts, page, per_page)
 
 
 @api.route(EmailCampaignApi.BLAST)

@@ -498,9 +498,9 @@ def decrypt_password(password):
 @contract
 def calculate_sends_and_paginate(blasts, page, per_page):
     """
-    This method takes EmailCampaignBlast object and iterates over it and calculate sends on the go,
-    append them in a single array and returns dict of limited number of rows (pagination)
-    :param type(t) blasts:
+    This method takes EmailCampaignBlast Query object and updates sends at runtime,
+    appends them in a single array and returns dict of limited number of rows (pagination)
+    :param type(t) blasts: EmailCampaignBlast Query object
     :param positive page: Page Number
     :param positive per_page: Number of rows per page
     :return: blast dicts
@@ -510,7 +510,7 @@ def calculate_sends_and_paginate(blasts, page, per_page):
     start = (page - 1) * per_page
     end = page * per_page
     # return {'blasts': list_of_dict[start:end]}
-    for blast in blasts:
+    for blast in blasts[start:end]:
         blast.sends = blast.blast_sends.count()
         list_of_dict.append(blast.to_json())
-    return {'blasts': list_of_dict[start:end]}
+    return {'blasts': list_of_dict}
