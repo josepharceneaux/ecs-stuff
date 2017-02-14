@@ -501,8 +501,8 @@ def calculate_sends_and_paginate(blasts, page, per_page):
     This method takes EmailCampaignBlast Query object and updates sends at runtime,
     appends them in a single array and returns dict of limited number of rows (pagination)
     :param type(t) blasts: EmailCampaignBlast Query object
-    :param positive page: Page Number
-    :param positive per_page: Number of rows per page
+    :param int,>0 page: Page Number
+    :param int,>0 per_page: Number of rows per page
     :return: blast dicts
     :rtype: dict
     """
