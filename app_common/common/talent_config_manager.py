@@ -141,7 +141,7 @@ def _set_environment_specific_configurations(environment, app_config):
         app_config['DEBUG'] = True
         app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200
         app_config['JWT_OAUTH_EXPIRATION'] = 3600 * 24 * 7  # One week expiry time for bearer token
-        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
+        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local?charset=utf8'
 
 
 def missing_config_key_definition(app_config):
