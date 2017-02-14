@@ -96,6 +96,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 
     # Sources
     'source_id':                     dict(IndexFieldType='int'),
+    'source_name':                   dict(IndexFieldType='text'),
     'source_details':                dict(IndexFieldType='literal-array'),
 
     'source_product_id':             dict(IndexFieldType='int'),
