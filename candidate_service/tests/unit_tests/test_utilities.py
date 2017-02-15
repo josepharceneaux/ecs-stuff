@@ -1,7 +1,115 @@
 """
 File contains unittests for testing functions used by the candidate-service
 """
+import random
+from faker import Faker
 from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
+from candidate_service.modules.talent_candidates import CandidateTitle
+
+fake = Faker()
+
+
+class TestMostRecentPosition(object):
+    """
+    Class contains test functions for testing CandidateTitle
+    """
+
+    def test_with_no_experience(self):
+        experiences = []
+        t = CandidateTitle(experiences)
+        print "CandidateTitle: {}".format(t.title)
+        assert t.title is None
+
+    def test_with_no_dates(self):
+        experiences = [{'position': fake.job()}, {'position': fake.job()}]
+        t = CandidateTitle(experiences)
+        print "CandidateTitle: {}".format(t.title)
+        assert t.title is None
+
+    def test_with_is_current(self):
+        experiences = [
+            {'position': fake.job()},
+            {'position': fake.job()},
+            {'position': fake.job()}
+        ]
+        # Randomly set one of the experience's is_current value to true
+        random.choice(experiences)['is_current'] = True
+        t = CandidateTitle(experiences)
+        print "CandidateTitle: {}".format(t.title)
+        assert t.title == [exp['position'] for exp in experiences if exp.get('is_current')].pop()
+
+    def test_with_dates(self):
+        experiences = [
+            {
+                'position': fake.job(),
+                'start_year': 2000,
+                'start_month': 1,
+                'end_year': 2002,
+                'end_month': 2
+            },
+            {
+                'position': fake.job(),
+                'start_year': 2005,
+                'start_month': 3,
+                'end_year': 2008,
+                'end_month': 11
+            },
+            {
+                'position': fake.job(),
+                'start_year': 2015,
+                'end_year': 2017
+            }
+        ]
+        t = CandidateTitle(experiences)
+        print "CandidateTitle: {}".format(t.title)
+        assert t.title == experiences[-1]['position']
+
+    def test_with_same_year_diff_months(self):
+        experiences = [
+            {
+                'position': fake.job(),
+                'start_year': 2016,
+                'start_month': 3,
+                'end_year': 2017,
+                'end_month': 4
+            },
+            {
+                'position': fake.job(),
+                'start_year': 2016,
+                'start_month': 1,
+                'end_year': 2017,
+                'end_month': 2
+            }
+        ]
+        t = CandidateTitle(experiences)
+        print "CandidateTitle: {}".format(t.title)
+        assert t.title == experiences[0]['position']
+
+    def test_with_title(self):
+        title = fake.job()
+        t = CandidateTitle(title=title)
+        assert t.title == title
+
+    def test_with_title_and_experiences(self):
+        experiences = [
+            {
+                'position': fake.job(),
+                'start_year': 2016,
+                'start_month': 3,
+                'end_year': 2017,
+                'end_month': 4
+            },
+            {
+                'position': fake.job(),
+                'start_year': 2016,
+                'start_month': 1,
+                'end_year': 2017,
+                'end_month': 2
+            }
+        ]
+        title = fake.job()
+        t = CandidateTitle(experiences, title)
+        assert t.title == title
 
 
 class TestRemoveTabs(object):
@@ -103,5 +211,3 @@ class TestRemoveTabs(object):
         }
 
         assert expected == r
-
-
