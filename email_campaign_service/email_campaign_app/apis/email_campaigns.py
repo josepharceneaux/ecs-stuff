@@ -55,12 +55,13 @@ from flask import request, Blueprint, jsonify
 
 # Service Specific
 from email_campaign_service.email_campaign_app import logger
-from email_campaign_service.modules.utils import get_valid_send_obj
+from email_campaign_service.modules.utils import get_valid_send_obj, calculate_sends_and_paginate
 from email_campaign_service.modules.validations import validate_and_format_request_data
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
                                                             update_hit_count, send_test_email)
 
 # Common utils
+from email_campaign_service.common.models.email_campaign import db
 from email_campaign_service.common.models.rsvp import RSVP
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignApi
@@ -359,7 +360,7 @@ class EmailCampaignBlasts(Resource):
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.EMAIL)
         # get paginated response
         page, per_page = get_pagination_params(request)
-        return get_paginated_response('blasts', campaign.blasts, page, per_page)
+        return calculate_sends_and_paginate(campaign.blasts, page, per_page)
 
 
 @api.route(EmailCampaignApi.BLAST)

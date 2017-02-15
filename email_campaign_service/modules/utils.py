@@ -22,6 +22,7 @@ from dateutil.relativedelta import relativedelta
 
 # Service Specific
 from email_campaign_service.email_campaign_app import (logger, celery_app, cache, app)
+from sqlalchemy import inspect
 
 # Common Utils
 from email_campaign_service.common.redis_cache import redis_store
@@ -492,3 +493,24 @@ def decrypt_password(password):
     :param string password: Login password of user for email-client
     """
     return decrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY], b64decode(password))
+
+
+@contract
+def calculate_sends_and_paginate(blasts, page, per_page):
+    """
+    This method takes EmailCampaignBlast Query object and updates sends at runtime,
+    appends them in a single array and returns dict of limited number of rows (pagination)
+    :param type(t) blasts: EmailCampaignBlast Query object
+    :param int,>0 page: Page Number
+    :param int,>0 per_page: Number of rows per page
+    :return: blast dicts
+    :rtype: dict
+    """
+    list_of_dict = []
+    start = (page - 1) * per_page
+    end = page * per_page
+    # return {'blasts': list_of_dict[start:end]}
+    for blast in blasts[start:end]:
+        blast.sends = blast.blast_sends.count()
+        list_of_dict.append(blast.to_json())
+    return {'blasts': list_of_dict}
