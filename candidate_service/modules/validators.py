@@ -597,13 +597,15 @@ def get_work_experience_if_exists(experiences, experience_dict):
     """
     for experience in experiences:
         organization = (experience_dict.get('organization') or '').lower()
+        start_year = experience_dict.get('start_year')
+        end_year = experience_dict.get('end_year')
+        start_month = experience_dict.get('start_month')
+        end_month = experience_dict.get('end_month')
         if experience.organization and (experience.start_year or experience.end_year):
-            if experience.start_year == experience_dict.get('start_year') and \
-                            experience.organization.lower() == organization:
+            if experience.start_year == start_year and experience.organization.lower() == organization and experience.start_month == start_month:
                 return experience.id
 
-            if experience.end_year == experience_dict.get('end_year') and \
-                            experience.organization.lower() == organization:
+            if experience.end_year == end_year and experience.end_month == end_month and experience.organization.lower() == organization:
                 return experience.id
         elif experience.organization and not (experience.start_year or experience.end_year):
             if experience.organization.lower() == organization:
