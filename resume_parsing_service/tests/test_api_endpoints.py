@@ -239,6 +239,11 @@ def test_bad_tpool_inputs(token_fixture):
         assert status_code == requests.codes.bad
 
 
+def test_posting_mislabeled_pdf(token_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'ipdf_img_1487216451.jpeg')
+    assert_non_create_content_and_status(content, status)
+
+
 ####################################################################################################
 # Test FilePicker Key Parsing without create option
 ####################################################################################################
