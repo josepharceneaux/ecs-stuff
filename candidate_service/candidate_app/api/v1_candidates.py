@@ -65,7 +65,7 @@ from candidate_service.modules.talent_candidates import (
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
-    add_languages, update_candidate_languages, CachedData, most_recent_position
+    add_languages, update_candidate_languages, CachedData, CandidateTitle
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 from candidate_service.modules.talent_openweb import (
@@ -266,8 +266,9 @@ class CandidatesResource(Resource):
                 continue
 
             work_experiences = candidate_dict.get('work_experiences')
-            # If title is empty; set candidate's title to its most recent position
-            title = (candidate_dict.get('title') or '').strip() or most_recent_position(work_experiences or [])
+
+            # Set candidate's title
+            title = CandidateTitle(experiences=work_experiences, title=candidate_dict.get('title')).title
 
             user_id = authed_user.id
             emails = [
@@ -536,10 +537,11 @@ class CandidatesResource(Resource):
             if the keys are not provided in the request body. This is because NULL values for the
             aforementioned fields will be treated as "delete the record"
             """
+            candidate_id = candidate_dict.get('id') or candidate_id_from_url
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
                 is_updating=True,
-                candidate_id=candidate_dict.get('id') or candidate_id_from_url,
+                candidate_id=candidate_id,
                 first_name=candidate_dict.get('first_name'),
                 middle_name=candidate_dict.get('middle_name'),
                 last_name=candidate_dict.get('last_name'),
@@ -567,7 +569,10 @@ class CandidatesResource(Resource):
                 talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url', ''),
                 resume_text=candidate_dict.get('resume_text', ''),
-                title=candidate_dict.get('title', '')
+                title=CandidateTitle(
+                    experiences=candidate_dict.get('work_experiences'),
+                    title=candidate_dict.get('title', ''),
+                    candidate_id=candidate_id).title
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 

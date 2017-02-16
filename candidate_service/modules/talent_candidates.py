@@ -1192,17 +1192,6 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    # Retrieve candidate's most recent experience from db
-    # If title is not provided and candidate has experience, its title will be its most recent position
-    most_recent_experience = CandidateExperience.query.filter_by(candidate_id=candidate_id). \
-        order_by(CandidateExperience.is_current.desc(),
-                 CandidateExperience.end_year.desc(),
-                 CandidateExperience.start_year.desc(),
-                 CandidateExperience.end_month.desc(),
-                 CandidateExperience.start_month.desc()).first()
-    if most_recent_experience and not title:
-        title = most_recent_experience.position
-
     update_dict = {
         'objective': objective, 'summary': summary, 'filename': resume_url,
         'source_id': source_id, 'source_detail': source_detail,
@@ -1882,8 +1871,11 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                                              error_code=custom_error.EXPERIENCE_BULLET_FORBIDDEN)
 
                     # Track all changes made to CandidateExperienceBullet
-                    track_edits(update_dict=experience_bullet_dict, table_name='candidate_experience_bullet',
-                                candidate_id=candidate_id, user_id=user_id, query_obj=can_exp_bullet_obj)
+                    track_edits(update_dict=experience_bullet_dict,
+                                table_name='candidate_experience_bullet',
+                                candidate_id=candidate_id,
+                                user_id=user_id,
+                                query_obj=can_exp_bullet_obj)
 
                     can_exp_bullet_obj.update(**experience_bullet_dict)
                 else:  # Add
@@ -2607,6 +2599,9 @@ def most_recent_position(work_experiences):
             experience_end_year = experience.get('end_year')
             experience_end_month = experience.get('end_month')
 
+            if not experience_start_year and not experience_end_year:
+                continue
+
             if experience_start_year >= start_year:
                 start_year = experience_start_year
                 found = index
@@ -2622,6 +2617,119 @@ def most_recent_position(work_experiences):
                     found = index
 
     return work_experiences[found].get('position') if found is not None else None
+
+
+class CandidateTitle(object):
+    def __init__(self, experiences=None, title=None, candidate_id=None):
+        """
+        :type experiences: list
+        :type title: str
+        :type candidate_id: int
+        """
+        self.title = (title or '').strip()
+        self.experiences = list(experiences) if experiences else None
+
+        # Extrapolate job title from experiences data ONLY if title is not provided
+        # and candidate is being created
+        if not self.title and not candidate_id and self.experiences:
+            # title will be set to current experience's position if provided, otherwise it will be
+            # extrapolated from the experiences data
+            self.title = self._set_title(self.experiences)
+
+        # During candidate update, only change its title if title is set to empty string
+        elif candidate_id and self.title == '':
+            candidates_most_recent_exp = self._get_candidates_most_recent_experience(candidate_id)
+            # If candidate exists, we need to compare candidate's existing experiences with provided experiences
+            # and set candidate's title to its most recent position
+            if self.experiences and candidates_most_recent_exp:
+                self.experiences.append(candidates_most_recent_exp)
+                self.title = self._set_title(self.experiences)
+
+            # If candidate exists but no additional experiences are provided, set its title to candidate's
+            # most recent position retrieved from database
+            elif not self.experiences and candidates_most_recent_exp:
+                self.title = candidates_most_recent_exp.get('position')
+        # Set title to null if candidate is not being updated, and no title or experiences are provided
+        elif not self.title:
+            self.title = None
+
+    @staticmethod
+    def _set_title(experiences):
+        """
+        Method will return most recent experience's position if start year or end year is provided
+        :type experiences: list
+        :rtype: basestring | None
+        """
+        found = None
+        for i, exp in enumerate(experiences):
+            is_current = exp.get('is_current')
+            if is_current is True:
+                return exp.get('position')
+
+            exp_start_year = exp.get('start_year')
+            exp_end_year = exp.get('end_year')
+            if exp_start_year or exp_end_year:
+                found = i
+
+        # At least one of the experience data must have start year or end year
+        if found is None:
+            return None
+        else:
+            start_year = experiences[found].get('start_year')
+            start_month = experiences[found].get('start_month')
+            end_year = experiences[found].get('end_year')
+            end_month = experiences[found].get('end_month')
+
+            for index, experience in enumerate(experiences):
+                experience_start_year = experience.get('start_year')
+                experience_start_month = experience.get('start_month')
+                experience_end_year = experience.get('end_year')
+                experience_end_month = experience.get('end_month')
+
+                # Ignore position if start year and end year of experience are not provided
+                if not experience_start_year and not experience_end_year:
+                    continue
+
+                # If start years are equal, compare start months
+                if experience_start_year == start_year and experience_start_month > start_month:
+                    found = index
+
+                if experience_start_year > start_year:
+                    start_year = experience_start_year
+                    found = index
+                    if experience_start_month > start_month:
+                        start_month = experience_start_month
+                        found = index
+
+                # If end years are equal, compare end months
+                if experience_end_year == end_year and experience_end_month > end_month:
+                    found = index
+
+                if experience_end_year > end_year:
+                    end_year = experience_end_year
+                    found = index
+                    if experience_end_month > end_month:
+                        end_month = experience_end_month
+                        found = index
+
+            return experiences[found].get('position')
+
+    @staticmethod
+    def _get_candidates_most_recent_experience(candidate_id):
+        """
+        Method will retrieve & return candidate's most recent experience from database
+        :type candidate_id: int
+        :rtype: dict
+        """
+        # Retrieve candidate's most recent experience from db
+        # If title is not provided and candidate has experience, its title will be its most recent position
+        most_recent_experience = CandidateExperience.query.filter_by(candidate_id=candidate_id). \
+            order_by(CandidateExperience.is_current.desc(),
+                     CandidateExperience.end_year.desc(),
+                     CandidateExperience.start_year.desc(),
+                     CandidateExperience.end_month.desc(),
+                     CandidateExperience.start_month.desc()).first()  # type: CandidateExperience
+        return most_recent_experience.to_json() if most_recent_experience else None
 
 
 class CachedData(object):
