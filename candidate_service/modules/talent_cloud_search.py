@@ -746,20 +746,29 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         else:
             dumb_list_filter_query_string = "(term field=dumb_lists %s)" % dumb_list_ids
 
-    # added_talent_pipelines_filter_query_string = ''
-    # removed_talent_pipelines_filter_query_string = ''
-    # talent_pipelines = request_vars.get('talent_pipelines', '')
+    added_talent_pipelines_filter_query_string = ''
+    removed_talent_pipelines_filter_query_string = ''
+    removed_talent_pipelines_filter_search_query = ''
+    added_talent_pipelines_filter_search_query = ''
+    talent_pipelines = request_vars.get('talent_pipelines', '')
 
-    # if talent_pipelines:
-    #     # This parameter is for internal Talent-Pipeline search only
-    #     if isinstance(talent_pipelines, list):
-    #         removed_talent_pipelines_filter_query_string = "(or %s)" % ' '.join(
-    #                 "removed_talent_pipelines:%s" % removed_talent_pipeline for removed_talent_pipeline in talent_pipelines)
-    #         added_talent_pipelines_filter_query_string = "(or %s)" % ' '.join(
-    #                 "added_talent_pipelines:%s" % added_talent_pipeline for added_talent_pipeline in talent_pipelines)
-    #     else:
-    #         removed_talent_pipelines_filter_query_string = "(term field=removed_talent_pipelines %s)" % talent_pipelines
-    #         added_talent_pipelines_filter_query_string = "(term field=added_talent_pipelines %s)" % talent_pipelines
+    if talent_pipelines:
+        # This parameter is for internal Talent-Pipeline search only
+        if isinstance(talent_pipelines, list):
+            removed_talent_pipelines_filter_query_string = "(or %s)" % ' '.join(
+                    "removed_talent_pipelines:%s" % removed_talent_pipeline for removed_talent_pipeline in talent_pipelines)
+            added_talent_pipelines_filter_query_string = "(or %s)" % ' '.join(
+                    "added_talent_pipelines:%s" % added_talent_pipeline for added_talent_pipeline in talent_pipelines)
+            removed_talent_pipelines_filter_search_query = ' OR '.join(
+                    "removed_talent_pipelines:%s" % removed_talent_pipeline for
+                    removed_talent_pipeline in talent_pipelines)
+            added_talent_pipelines_filter_search_query = ' OR '.join(
+                    "added_talent_pipelines:%s" % added_talent_pipeline for added_talent_pipeline in talent_pipelines)
+        else:
+            removed_talent_pipelines_filter_query_string = "(term field=removed_talent_pipelines %s)" % talent_pipelines
+            added_talent_pipelines_filter_query_string = "(term field=added_talent_pipelines %s)" % talent_pipelines
+            removed_talent_pipelines_filter_search_query = "removed_talent_pipelines:%s" % talent_pipelines
+            added_talent_pipelines_filter_search_query = "added_talent_pipelines:%s" % talent_pipelines
 
     # Sorting
     sort = '%s %s'
@@ -801,6 +810,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
             # If we want to check if a certain candidate ID is in a smartlist
             search_query = "(id:%s) AND (%s)" % (request_vars['id'], search_query)
 
+
     # For TalentPipeline candidate search we'll need to query candidates of given dumb_lists
     if dumb_list_filter_query_string:
         filter_query = "(or %s %s)" % (dumb_list_filter_query_string, filter_query)
@@ -819,11 +829,11 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     else:
         filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
 
-    # if added_talent_pipelines_filter_query_string:
-    #     filter_query = "(or %s %s)" % (filter_query, added_talent_pipelines_filter_query_string)
-    #
-    # if removed_talent_pipelines_filter_query_string:
-    #     filter_query = "(and %s (not %s))" % (filter_query, removed_talent_pipelines_filter_query_string)
+    if talent_pipelines:
+        filter_query = "(or %s %s)" % (filter_query, added_talent_pipelines_filter_query_string)
+        filter_query = "(and %s (not %s))" % (filter_query, removed_talent_pipelines_filter_query_string)
+        search_query = "(%s) OR (%s)" % (search_query, added_talent_pipelines_filter_search_query)
+        search_query = "(%s) NOT (%s)" % (search_query, removed_talent_pipelines_filter_search_query)
 
     # Candidate's title
     title = request_vars.get('title')
