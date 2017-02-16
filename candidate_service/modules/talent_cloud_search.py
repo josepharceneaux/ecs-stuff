@@ -748,7 +748,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     added_talent_pipelines_filter_query_string = ''
     removed_talent_pipelines_filter_query_string = ''
-    removed_talent_pipelines_filter_search_query = ''
     added_talent_pipelines_filter_search_query = ''
     talent_pipelines = request_vars.get('talent_pipelines', '')
 
@@ -767,7 +766,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         else:
             removed_talent_pipelines_filter_query_string = "(term field=removed_talent_pipelines %s)" % talent_pipelines
             added_talent_pipelines_filter_query_string = "(term field=added_talent_pipelines %s)" % talent_pipelines
-            removed_talent_pipelines_filter_search_query = "removed_talent_pipelines:%s" % talent_pipelines
             added_talent_pipelines_filter_search_query = "added_talent_pipelines:%s" % talent_pipelines
 
     # Sorting
@@ -833,7 +831,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         filter_query = "(or %s %s)" % (filter_query, added_talent_pipelines_filter_query_string)
         filter_query = "(and %s (not %s))" % (filter_query, removed_talent_pipelines_filter_query_string)
         search_query = "(%s) OR (%s)" % (search_query, added_talent_pipelines_filter_search_query)
-        search_query = "(%s) NOT (%s)" % (search_query, removed_talent_pipelines_filter_search_query)
 
     # Candidate's title
     title = request_vars.get('title')
