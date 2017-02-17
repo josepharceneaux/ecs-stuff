@@ -758,9 +758,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
                     "removed_talent_pipelines:%s" % removed_talent_pipeline for removed_talent_pipeline in talent_pipelines)
             added_talent_pipelines_filter_query_string = "(or %s)" % ' '.join(
                     "added_talent_pipelines:%s" % added_talent_pipeline for added_talent_pipeline in talent_pipelines)
-            removed_talent_pipelines_filter_search_query = ' OR '.join(
-                    "removed_talent_pipelines:%s" % removed_talent_pipeline for
-                    removed_talent_pipeline in talent_pipelines)
             added_talent_pipelines_filter_search_query = ' OR '.join(
                     "added_talent_pipelines:%s" % added_talent_pipeline for added_talent_pipeline in talent_pipelines)
         else:
@@ -807,7 +804,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         if request_vars.get('id'):
             # If we want to check if a certain candidate ID is in a smartlist
             search_query = "(id:%s) AND (%s)" % (request_vars['id'], search_query)
-
 
     # For TalentPipeline candidate search we'll need to query candidates of given dumb_lists
     if dumb_list_filter_query_string:
