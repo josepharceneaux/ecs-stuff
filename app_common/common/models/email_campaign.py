@@ -325,13 +325,32 @@ class EmailCampaignBlast(db.Model):
             filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)).\
             filter(cls.sends > 0).order_by(desc(cls.opens/cls.sends)).first()
 
+    @property
+    def bounces_at_runtime(self):
+        """
+        This returns query object for number of bounced emails
+        """
+        return EmailCampaignSend.query.filter(EmailCampaignSend.blast_id == self.id,
+                                              EmailCampaignSend.ses_message_id is not None,
+                                              EmailCampaignSend.is_ses_bounce == 1)
+
+    @property
+    def sends_at_runtime(self):
+        """
+        This returns query object for number of sends
+        """
+        return EmailCampaignSend.query.filter(EmailCampaignSend.blast_id == self.id,
+                                              EmailCampaignSend.ses_message_id is not None,
+                                              EmailCampaignSend.is_ses_bounce == 0)
+
     def to_json(self, include_fields=None):
         """
         This calculates sends at runtime and returns required fields when an EmailCampaignBlast object is requested.
         :param list[str] | None include_fields: List of fields to include, or None for all.
         :rtype: dict[str, T]
         """
-        self.sends = self.blast_sends.count()
+        self.sends = self.sends_at_runtime.count()
+        self.bounces = self.bounces_at_runtime.count()
         return_dict = super(EmailCampaignBlast, self).to_json(include_fields=include_fields)
         return return_dict
 
