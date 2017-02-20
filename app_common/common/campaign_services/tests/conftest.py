@@ -564,7 +564,6 @@ def eventbrite_event_global(request, token_first, eventbrite, eventbrite_venue):
     def teardown():
         delete_response = send_request('delete', SocialNetworkApiUrl.EVENT % data['id'],
                                        access_token=token_first)
-        logger.info('teardown')
     request.addfinalizer(teardown)
     return data
 
