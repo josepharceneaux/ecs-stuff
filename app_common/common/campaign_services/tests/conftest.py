@@ -547,7 +547,7 @@ def eventbrite_venue_second(test_eventbrite_credentials, user_first, eventbrite,
 
 
 @pytest.fixture(scope="session")
-def eventbrite_event_global(token_first, eventbrite, eventbrite_venue):
+def eventbrite_event_global(request, token_first, eventbrite, eventbrite_venue):
     """
     This method creates an eventbrite event and we use its copy in eventbrite_event_second
     """
@@ -560,6 +560,12 @@ def eventbrite_event_global(token_first, eventbrite, eventbrite_venue):
 
     data = response.json()
     assert data['id']
+
+    def teardown():
+        delete_response = send_request('delete', SocialNetworkApiUrl.EVENT % data['id'],
+                                       access_token=token_first)
+        logger.info('teardown')
+    request.addfinalizer(teardown)
     return data
 
 
