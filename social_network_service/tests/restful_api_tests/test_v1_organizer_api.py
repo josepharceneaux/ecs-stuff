@@ -53,7 +53,7 @@ class TestOrganizers(object):
         logger.info(response.text)
         assert response.status_code == codes.UNAUTHORIZED, "Response: {}".format(response.text)
 
-    def test_post_with_valid_token(self, token_first, user_first):
+    def test_post_with_valid_token(self, token_first, user_first, test_eventbrite_credentials):
         """
         Send POST request with valid event organizer data and response should be 201 (id in response content)
         """
@@ -75,7 +75,7 @@ class TestOrganizers(object):
         assert event_organizer, 'Event organizer created successfully in db'
         EventOrganizer.delete(event_organizer.id)
 
-    def test_post_with_same_organizer_name(self, token_first, user_first):
+    def test_post_with_same_organizer_name(self, token_first, user_first, test_eventbrite_credentials):
         """
         Send POST request with valid event organizer data and response should be 201 but when
         we will try to create organizer with same name again, API will raise InvalidUsage 400 error.
@@ -106,7 +106,7 @@ class TestOrganizers(object):
         assert event_organizer, 'Event organizer not found in db'
         EventOrganizer.delete(event_organizer.id)
 
-    def test_post_with_missing_field(self, token_first, user_first):
+    def test_post_with_missing_field(self, token_first, user_first, test_eventbrite_credentials):
         """
         Send POST request with organizer data with missing fields. API will raise 400
         """
@@ -119,7 +119,7 @@ class TestOrganizers(object):
         required_fields = ['name', 'about']
         missing_keys_test(SocialNetworkApiUrl.EVENT_ORGANIZERS, event_organizer, required_fields, token_first)
 
-    def test_match_event_organizer_fields(self, user_first, token_first):
+    def test_match_event_organizer_fields(self, user_first, token_first, test_eventbrite_credentials):
         """
         Send POST request with valid event organizer data and response should be 201 (id in response content)
         Then get data from api and test if expected fields exist and have some data.
