@@ -369,7 +369,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                     except Exception as error:
                         logger.error('Could not publish to SNS topic:%s. Error:%s, blast_id:%s, candidate_id:%s'
                                      % (topic_arn, error.message, blast_id, candidate_id))
-                    sleep(1)
+                    sleep(1)  # Waiting for completion of 90 Lambda functions each functions takes approx 0.94 sec
             _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
             _update_blast_sends(blast_id=blast_id, new_sends=len(subscribed_candidate_ids), campaign=campaign,
                                 new_candidates_only=new_candidates_only, update_blast_sends=False)
