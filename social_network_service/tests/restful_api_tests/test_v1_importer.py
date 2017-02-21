@@ -208,68 +208,68 @@ class Test_Event_Importer(object):
         RSVP.delete(rsvp.id)
 
 
-@pytest.mark.skipif(ENV in [TalentEnvs.DEV, TalentEnvs.JENKINS],
-                    reason='TODO: Need to create mock endpoints for importer')
-def test_event_import_to_create_new_event(user_first, token_first, event_data, meetup, everbrite_webhook, meetup_group):
-    """
-    Test Eventbrite and Meetup events importer.
-    We will create a event using api and then we will delete that event from database. After few seconds,
-    event importer will create another event with same data by importing that event.
-    """
-    if ENV == TalentEnvs.JENKINS and event_data['social_network_id'] == meetup['id']:
-        logger.info('Meetup event importer test will not work on jenkins due to mock server.')
-    else:
-        title = fake.sentence() + datetime.now().strftime('%s')
-        event_data['title'] = title
-        response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first,
-                                data=event_data)
-        assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
-        data = response.json()
-        event_id = data['id']
-        db.db.session.commit()
-        Event.delete(event_id)
-        found = False
-        for _ in redo.retrier(attempts=10, sleeptime=5, sleepscale=1):
-            db.db.session.commit()
-            event = Event.query.filter_by(title=title, user_id=user_first['id']).first()
-            if event:
-                assert event.id > event_id
-                found = True
-                break
-        assert found, 'Unable to find event with title `%s` and user_id: %s' % (title, user_first['id'])
-        response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event.id, access_token=token_first)
-        assert response.status_code == codes.OK
+# @pytest.mark.skipif(True,
+#                     reason='TODO: Need to create mock endpoints for importer')
+# def test_event_import_to_create_new_event(user_first, token_first, event_data, meetup, everbrite_webhook, meetup_group):
+#     """
+#     Test Eventbrite and Meetup events importer.
+#     We will create a event using api and then we will delete that event from database. After few seconds,
+#     event importer will create another event with same data by importing that event.
+#     """
+#     if ENV == TalentEnvs.JENKINS and event_data['social_network_id'] == meetup['id']:
+#         logger.info('Meetup event importer test will not work on jenkins due to mock server.')
+#     else:
+#         title = fake.sentence() + datetime.now().strftime('%s')
+#         event_data['title'] = title
+#         response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first,
+#                                 data=event_data)
+#         assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
+#         data = response.json()
+#         event_id = data['id']
+#         db.db.session.commit()
+#         Event.delete(event_id)
+#         found = False
+#         for _ in redo.retrier(attempts=10, sleeptime=5, sleepscale=1):
+#             db.db.session.commit()
+#             event = Event.query.filter_by(title=title, user_id=user_first['id']).first()
+#             if event:
+#                 assert event.id > event_id
+#                 found = True
+#                 break
+#         assert found, 'Unable to find event with title `%s` and user_id: %s' % (title, user_first['id'])
+#         response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event.id, access_token=token_first)
+#         assert response.status_code == codes.OK
 
 
-@pytest.mark.skipif(ENV in [TalentEnvs.DEV, TalentEnvs.JENKINS],
-                    reason='TODO: Need to create mock endpoints for importer')
-def test_event_import_to_update_existing_event(user_first, token_first, event_data, meetup, meetup_group):
-    """
-    Test Eventbrite and Meetup events importer.
-    We will create a event using api and then we will update that event by making title empty.
-    After few seconds, event importer will update this event with actual event data and now this event in database
-    must contain same title and description
-    """
-    if ENV == TalentEnvs.JENKINS and event_data['social_network_id'] == meetup['id']:
-        logger.info('Meetup event importer test will not work on jenkins due to mock server.')
-    else:
-        title = fake.sentence() + datetime.now().strftime('%s')
-        event_data['title'] = title
-        response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first,
-                                data=event_data)
-        assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
-        data = response.json()
-        event_id = data['id']
-        db.db.session.commit()
-        event = Event.get_by_id(event_id)
-        event.update(title='')
-        found = False
-        for _ in redo.retrier(attempts=10, sleeptime=5, sleepscale=1):
-            db.db.session.commit()
-            event = Event.query.filter_by(id=event_id, title=title, user_id=user_first['id']).first()
-            if event:
-                found = True
-                break
-        assert found,  'Unable to find event with title `%s` and user_id: %s' % (title, user_first['id'])
-        response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event.id, access_token=token_first)
-        assert response.status_code == codes.OK
+# @pytest.mark.skipif(ENV in [TalentEnvs.DEV, TalentEnvs.JENKINS],
+#                     reason='TODO: Need to create mock endpoints for importer')
+# def test_event_import_to_update_existing_event(user_first, token_first, event_data, meetup, meetup_group):
+#     """
+#     Test Eventbrite and Meetup events importer.
+#     We will create a event using api and then we will update that event by making title empty.
+#     After few seconds, event importer will update this event with actual event data and now this event in database
+#     must contain same title and description
+#     """
+#     if ENV == TalentEnvs.JENKINS and event_data['social_network_id'] == meetup['id']:
+#         logger.info('Meetup event importer test will not work on jenkins due to mock server.')
+#     else:
+#         title = fake.sentence() + datetime.now().strftime('%s')
+#         event_data['title'] = title
+#         response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first,
+#                                 data=event_data)
+#         assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
+#         data = response.json()
+#         event_id = data['id']
+#         db.db.session.commit()
+#         event = Event.get_by_id(event_id)
+#         event.update(title='')
+#         found = False
+#         for _ in redo.retrier(attempts=10, sleeptime=5, sleepscale=1):
+#             db.db.session.commit()
+#             event = Event.query.filter_by(id=event_id, title=title, user_id=user_first['id']).first()
+#             if event:
+#                 found = True
+#                 break
+#         assert found,  'Unable to find event with title `%s` and user_id: %s' % (title, user_first['id'])
+#         response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event.id, access_token=token_first)
+#         assert response.status_code == codes.OK

@@ -142,8 +142,8 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'military_end_date':             dict(IndexFieldType='date-array',      DateArrayOptions={'ReturnEnabled': False}),
     'talent_pools':                  dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'dumb_lists':                    dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
-    # 'added_talent_pipelines':        dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
-    # 'removed_talent_pipelines':      dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
+    'added_talent_pipelines':        dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
+    'removed_talent_pipelines':      dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'start_date_at_current_job':     dict(IndexFieldType='date',            DateOptions={'FacetEnabled': False,
                                                                                          'ReturnEnabled': True}),
     'candidate_engagement_score':    dict(IndexFieldType='double',          DoubleOptions={'FacetEnabled': True,
@@ -314,10 +314,10 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 GROUP_CONCAT(DISTINCT smart_list_candidate.smartlistId SEPARATOR :sep) AS `dumb_lists`,
 
                 # Pipelines to which candidate belongs statically
-                # GROUP_CONCAT(DISTINCT talent_pipeline_included_candidates.talent_pipeline_id SEPARATOR :sep) AS `added_talent_pipelines`,
+                GROUP_CONCAT(DISTINCT talent_pipeline_included_candidates.talent_pipeline_id SEPARATOR :sep) AS `added_talent_pipelines`,
 
                 # Pipelines to which candidate doesn't belong at all
-                # GROUP_CONCAT(DISTINCT talent_pipeline_excluded_candidates.talent_pipeline_id SEPARATOR :sep) AS `removed_talent_pipelines`,
+                GROUP_CONCAT(DISTINCT talent_pipeline_excluded_candidates.talent_pipeline_id SEPARATOR :sep) AS `removed_talent_pipelines`,
 
                 # AOIs and Custom Fields
                 GROUP_CONCAT(DISTINCT candidate_area_of_interest.areaOfInterestId SEPARATOR :sep) AS `area_of_interest_id`,

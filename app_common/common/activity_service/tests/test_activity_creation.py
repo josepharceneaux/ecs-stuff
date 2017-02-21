@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from app_common.common.activty_service.activity_creator import TalentActivityManager
-from app_common.common.models.db import db
-from app_common.common.models.misc import Activity
-from app_common.common.utils.models_utils import init_talent_app
+from ...activity_service.activity_creator import TalentActivityManager
+from ...models.db import db
+from ...models.misc import Activity
+from ...utils.models_utils import init_talent_app
 
 app = init_talent_app('FakeAppForTesting')
 
