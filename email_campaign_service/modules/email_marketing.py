@@ -11,6 +11,7 @@ import json
 import boto3
 import getpass
 from datetime import datetime
+from time import sleep
 
 # Third Party
 from celery import chord
@@ -358,13 +359,17 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
             topic_arn, region_name = get_topic_arn_and_region_name()
             boto3_client = boto3.client('sns', region_name=region_name)
 
-            for candidate_id_and_email in candidate_ids_and_emails:
-                candidate_id, candidate_address = candidate_id_and_email
-                try:
-                    _publish_to_sns(boto3_client, topic_arn, blast_id, candidate_id, candidate_address)
-                except Exception as error:
-                    logger.error('Could not publish to SNS topic:%s. Error:%s, blast_id:%s, candidate_id:%s'
+            # Splitting list into chunks to avoid reaching SES send rate
+            chunks_of_candidate_ids_list = [candidate_ids_and_emails[x:x + 90] for x in xrange(0, len(candidate_ids_and_emails), 90)]
+            for chunk in chunks_of_candidate_ids_list:
+                for candidate_id_and_email in chunk:
+                    candidate_id, candidate_address = candidate_id_and_email
+                    try:
+                        _publish_to_sns(boto3_client, topic_arn, blast_id, candidate_id, candidate_address)
+                    except Exception as error:
+                        logger.error('Could not publish to SNS topic:%s. Error:%s, blast_id:%s, candidate_id:%s'
                                      % (topic_arn, error.message, blast_id, candidate_id))
+                    sleep(1)
             _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
             _update_blast_sends(blast_id=blast_id, new_sends=len(subscribed_candidate_ids), campaign=campaign,
                                 new_candidates_only=new_candidates_only, update_blast_sends=False)
