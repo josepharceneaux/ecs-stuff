@@ -18,7 +18,9 @@ from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.ocr_lib import ocr_image
-from resume_parsing_service.app.views.pdf_utils import (convert_pdf_to_text, decrypt_pdf)
+from resume_parsing_service.app.views.pdf_utils import convert_pdf_to_text
+from resume_parsing_service.app.views.pdf_utils import decrypt_pdf
+from resume_parsing_service.app.views.pdf_utils import detect_pdf_has_form
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
 from resume_parsing_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
@@ -45,6 +47,7 @@ def parse_resume(file_obj, filename_str, cache_key):
         file_obj = decrypt_pdf(file_obj)
 
     is_image = is_resume_image(file_ext, file_obj)
+    logger.info('RPS:INFO: {} - {} is image'.format(filename_str, is_image))
 
     # If file is an image, OCR it
     if is_image:
@@ -117,7 +120,6 @@ def is_resume_image(file_ext, file_obj):
     :param cStringIO file_obj: In memory representation of the file being tested
     :rtype: bool
     """
-    resume_is_image = False
 
     if not file_ext.startswith("."):
         file_ext = ".{}".format(file_ext)
@@ -129,15 +131,18 @@ def is_resume_image(file_ext, file_obj):
             error_code=error_constants.INVALID_FILE_TYPE['code'])
 
     # Find out if the file is an image
+    resume_is_image = False
     if file_ext in IMAGE_FORMATS:
         if file_ext == '.pdf':
             text = convert_pdf_to_text(file_obj)
-            if not text.strip():
-                # pdf is possibly an image
+            has_form = detect_pdf_has_form(file_obj)
+            if not text.strip() and not has_form:
+                # PDF is likely an image because there is:
+                # NO text extracted
+                # Presence of forms was detected
                 resume_is_image = True
         else:
             resume_is_image = True
-
     return resume_is_image
 
 
