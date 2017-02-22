@@ -14,7 +14,8 @@ from requests import codes
 
 from ...models.db import db
 from ...tests.sample_data import fake
-from ...models.event import MeetupGroup
+from ...models.event import MeetupGroup, Event
+from ...models.venue import Venue
 from ...redis_cache import redis_store2
 from ...tests.app import test_app, logger
 from ...constants import (MEETUP, EVENTBRITE)
@@ -39,7 +40,7 @@ from ...tests.api_conftest import (user_first, token_first, talent_pool_session_
 
 __author__ = 'basit'
 
-EVENTBRITE_CONFIG = {'skip': True,
+EVENTBRITE_CONFIG = {'skip': False,
                      'reason': 'In contact with Eventbrite support for increasing hit rate limit'}
 
 # Add new vendor here to run tests for that particular social-network
@@ -243,7 +244,7 @@ def test_eventbrite_credentials_same_domain(user_same_domain, eventbrite):
 
 
 @pytest.fixture(scope="session")
-def eventbrite_venue(user_first, eventbrite, token_first):
+def eventbrite_venue(user_first, eventbrite, token_first, test_eventbrite_credentials):
     """
     This fixture returns eventbrite venue in getTalent database
     """
@@ -397,12 +398,13 @@ def base_campaign_event(base_campaign, event_in_db, token_first):
 
 
 @pytest.fixture()
-def base_campaign_event_second(base_campaign, event_in_db_second, token_first):
+def base_campaign_event_second(base_campaign, new_event_in_db_second, token_first):
     """
-    This hits the API with valid event and base campaign and link both of them with each other.
+    This hits the API with valid event and base campaign and link both of them with each other. This uses
+    fixture 'new_event_in_db_second' which returns new event every time.
     """
     response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT % (base_campaign['id'],
-                                                                               event_in_db_second['id']),
+                                                                               new_event_in_db_second['id']),
                             token_first)
     assert response.status_code == codes.CREATED, response.text
     assert response.json()['id']
@@ -497,7 +499,6 @@ def meetup_event_second(test_meetup_credentials, meetup, meetup_venue_second,
     """
     This creates another event for Meetup for user_first
     """
-
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
 
     assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
@@ -545,8 +546,60 @@ def eventbrite_venue_second(test_eventbrite_credentials, user_first, eventbrite,
     return {'id': venue_id}
 
 
+@pytest.fixture(scope="session")
+def eventbrite_event_global(request, token_first, eventbrite, eventbrite_venue):
+    """
+    This method creates an eventbrite event and we use its copy in eventbrite_event_second
+    """
+    event = EVENT_DATA.copy()
+    event['title'] = 'Eventbrite ' + event['title']
+    event['social_network_id'] = eventbrite['id']
+    event['venue_id'] = eventbrite_venue['id']
+    response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=event)
+    assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
+
+    data = response.json()
+    assert data['id']
+
+    def teardown():
+        delete_response = send_request('delete', SocialNetworkApiUrl.EVENT % data['id'],
+                                       access_token=token_first)
+    request.addfinalizer(teardown)
+    return data
+
+
 @pytest.fixture(scope="function")
 def eventbrite_event_second(test_eventbrite_credentials, eventbrite, eventbrite_venue_second,
+                            token_first, eventbrite_event_global):
+    """
+    This method create a dictionary data to create event on eventbrite.
+    It uses meetup SocialNetwork model object, venue for meetup
+    and an organizer to create event data for
+    """
+    response_get = send_request('get', url=SocialNetworkApiUrl.EVENT % eventbrite_event_global['id'],
+                                access_token=token_first)
+
+    assert response_get.status_code == codes.OK, response_get.text
+
+    _event = response_get.json()['event']
+    venue = deepcopy(_event['venue'])
+    del venue['id']
+    venue_obj = Venue(**venue)
+    venue_in_db = Venue.save(venue_obj)
+    db.session.commit()
+    _event['venue_id'] = venue_in_db.id
+    del _event['venue']
+    del _event['event_organizer']
+    event = deepcopy(_event)
+    del event['id']
+    event_obj = Event(**event)
+    event_db = Event.save(event_obj)
+    db.session.commit()
+    return event_db.to_json()
+
+
+@pytest.fixture(scope="function")
+def eventbrite_new_event_second(test_eventbrite_credentials, eventbrite, eventbrite_venue_second,
                             token_first):
     """
     This method create a dictionary data to create event on eventbrite.
@@ -582,6 +635,18 @@ def event_in_db_second(request):
     e.g. In case of Eventbrite, it will return fixture named as "eventbrite_event_second"
     """
     return deepcopy(request.getfuncargvalue("{}_event_second".format(request.param.lower())))
+
+
+@pytest.fixture(scope="function", params=VENDORS)
+def new_event_in_db_second(request):
+    """
+    This fixture creates another event on vendor basis and returns it.
+    e.g. In case of Eventbrite, it will return fixture named as "eventbrite_event_second"
+    """
+    if request.param.lower() == "eventbrite":
+        return deepcopy(request.getfuncargvalue("{}_new_event_second".format(request.param.lower())))
+    else:
+        return deepcopy(request.getfuncargvalue("{}_event_second".format(request.param.lower())))
 
 
 @pytest.fixture()
@@ -632,7 +697,8 @@ def event_campaign_with_client_id(token_first, scheduled_email_campaign_with_bas
 @pytest.fixture(scope="function", params=VENDORS)
 def event_campaign(token_first, scheduled_email_campaign_with_base_id, event_in_db_second):
     """
-    This returns scheduled event campaign
+    This returns scheduled event campaign. Its  is using fixture 'event_in_db_second' which returns
+    copy of global event every time. So don't use this fixture('event_campaign') to test event deletion.
     """
     db.session.commit()
     email_campaign = EmailCampaign.get(scheduled_email_campaign_with_base_id['id'])

@@ -59,7 +59,7 @@ class TestVenues(object):
         assert response.status_code == codes.UNAUTHORIZED, 'It should be unauthorized (401)'
 
     @pytest.mark.skipif(EVENTBRITE_CONFIG['skip'], reason=EVENTBRITE_CONFIG['reason'])
-    def test_post_with_valid_token(self, token_first):
+    def test_post_with_valid_token(self, token_first, test_eventbrite_credentials):
         """
         Send POST request with valid venue data to create venue endpoint and response should be 201
         """

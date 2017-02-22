@@ -1,7 +1,9 @@
 
 __author__ = 'ufarooqi'
 
+from flask import redirect
 from werkzeug.security import gen_salt
+from urlparse import urlparse, urlunparse
 from auth_service.oauth import app, logger
 from auth_service.oauth import gt_oauth
 from auth_service.common.error_handling import *
@@ -19,12 +21,24 @@ def access_token_v2():
     body = request.form.to_dict()
     username = body.get('username', '')
     password = body.get('password', '')
+    redirect_uri = body.get('redirect_uri', '')
+
     if not username or not password:
         raise InvalidUsage("Username or password is missing")
     else:
         authenticated_user = authenticate_user(username, password)
         if authenticated_user:
-            return save_token_v2(authenticated_user)
+            token_dict = save_token_v2(authenticated_user)
+            if redirect_uri:
+                redirect_uri = list(urlparse(redirect_uri))
+                query_params = redirect_uri[-2].split('&')
+                query_params.append('access_token={}'.format(token_dict.get('access_token')))
+                query_params.append('expires_at={}'.format(token_dict.get('expires_at')))
+                redirect_uri[-2] = '&'.join(query_params)
+                redirect_uri = urlunparse(tuple(redirect_uri))
+                return redirect(redirect_uri, code=302)
+            else:
+                return token_dict
         else:
             raise InvalidUsage("Incorrect username/password")
 

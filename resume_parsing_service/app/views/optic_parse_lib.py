@@ -27,7 +27,6 @@ from resume_parsing_service.app.views.utils import extra_skills_parsing, string_
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
-
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
 SPLIT_DESCRIPTION_REGEXP = re.compile(ur"•≅_|≅_| \* |■|•|➢|→|â|˘|\n\n\n")
 
@@ -46,7 +45,7 @@ def fetch_optic_response(resume, filename_str):
 
     auth_params = {
         'consumer_key': 'StevePeck',
-        'consumer_secret':  current_app.config['CONSUMER_SECRET'],
+        'consumer_secret': current_app.config['CONSUMER_SECRET'],
         'token_secret': current_app.config['TOKEN_SECRET'],
         'endpoint_url': bg_url
     }
@@ -56,11 +55,7 @@ def fetch_optic_response(resume, filename_str):
         'content-type': 'application/json',
         'Authorization': auth,
     }
-    data = {
-        'binaryData': resume,
-        'instanceType': 'XRAY',
-        'locale': 'en_us'
-    }
+    data = {'binaryData': resume, 'instanceType': 'XRAY', 'locale': 'en_us'}
 
     try:
         bg_response = requests.post(bg_url, headers=headers, json=data, timeout=30)
@@ -68,16 +63,12 @@ def fetch_optic_response(resume, filename_str):
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("Could not reach Burning Glass")
         raise InternalServerError(
-            error_message=error_constants.BG_UNAVAILABLE['message'],
-            error_code=error_constants.BG_UNAVAILABLE['code']
-        )
+            error_message=error_constants.BG_UNAVAILABLE['message'], error_code=error_constants.BG_UNAVAILABLE['code'])
 
     if bg_response.status_code != requests.codes.ok:
         logger.error('ResumeParsingService::Error::BGError: {}'.format(bg_response.content))
         raise InternalServerError(
-            error_message=error_constants.BG_ERROR['message'],
-            error_code=error_constants.BG_ERROR['code']
-        )
+            error_message=error_constants.BG_ERROR['message'], error_code=error_constants.BG_ERROR['code'])
 
     try:
         html_parser = HTMLParser.HTMLParser()
@@ -88,13 +79,9 @@ def fetch_optic_response(resume, filename_str):
         logger.exception('Error translating BG response.')
         raise InternalServerError(
             error_message=error_constants.ERROR_DECODING_TEXT['message'],
-            error_code=error_constants.ERROR_DECODING_TEXT['code']
-        )
+            error_code=error_constants.ERROR_DECODING_TEXT['code'])
 
-    logger.info(
-        "Benchmark: fetch_optic_response({}) took {}s".format(filename_str,
-                                                              time() - start_time)
-    )
+    logger.info("Benchmark: fetch_optic_response({}) took {}s".format(filename_str, time() - start_time))
     return unescaped
 
 
@@ -141,8 +128,7 @@ def parse_optic_xml(resume_xml_text):
         references=references,
         summary=parse_candidate_summary(summary_xml_list),
         resume_text=pretty_text,
-        social_networks=linkedIn_urls
-    )
+        social_networks=linkedIn_urls)
 
 
 @contract
@@ -231,8 +217,8 @@ def parse_candidate_phones(bs_contact_xml_list):
                         if not phone_number_obj.country_code:
                             value = str(phone_number_obj.national_number)
                         else:
-                            value = str(phonenumbers.format_number(phone_number_obj,
-                                                                   phonenumbers.PhoneNumberFormat.E164))
+                            value = str(
+                                phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164))
                     output.append({'value': value, 'label': gt_phone_type})
 
                 except UnicodeEncodeError:
@@ -248,12 +234,7 @@ def get_phone_type(bg_phone_type):
     :param string | None bg_phone_type: BG phone type (if parsed from XML).
     :rtype: string
     """
-    return {
-        'cell': 'Mobile',
-        'home': 'Home',
-        'fax': 'Home Fax',
-        'work': 'Work'
-    }.get(bg_phone_type, 'Other')
+    return {'cell': 'Mobile', 'home': 'Home', 'fax': 'Home Fax', 'work': 'Work'}.get(bg_phone_type, 'Other')
 
 
 @contract
@@ -290,8 +271,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
                 is_current_job = False
                 if base_exp['end_year'] and base_exp['end_month']:
                     today_date = datetime.date.today()
-                    experience_end_date = datetime.date(base_exp['end_year'],
-                                                        base_exp['end_month'], 1)
+                    experience_end_date = datetime.date(base_exp['end_year'], base_exp['end_month'], 1)
                     if today_date == experience_end_date:
                         is_current_job = True
 
@@ -300,24 +280,26 @@ def parse_candidate_experiences(bg_experience_xml_list):
                 company_city = _tag_text(company_address, 'city', capwords=True)
                 company_state = _tag_text(company_address, 'state')
                 company_country = get_country_code_from_address_tag(company_address)
-                output.append(dict(
-                    position=base_exp['title'],
-                    organization=base_exp['organization'],
-                    start_month=base_exp['start_month'],
-                    start_year=base_exp['start_year'],
-                    end_month=base_exp['end_month'],
-                    end_year=base_exp['end_year'],
-                    city=company_city,
-                    state=company_state,
-                    country_code=company_country,
-                    is_current=is_current_job,
-                    bullets=[{'description': '\n'.join(candidate_experience_bullets)}]
-                ))
+                output.append(
+                    dict(
+                        position=base_exp['title'],
+                        organization=base_exp['organization'],
+                        start_month=base_exp['start_month'],
+                        start_year=base_exp['start_year'],
+                        end_month=base_exp['end_month'],
+                        end_year=base_exp['end_year'],
+                        city=company_city,
+                        state=company_state,
+                        country_code=company_country,
+                        is_current=is_current_job,
+                        bullets=[{
+                            'description': '\n'.join(candidate_experience_bullets)
+                        }]))
     return output
 
 
 def gen_base_exp_from_exp_tag(experience_xml):
-    start_month, start_year, end_month, end_year, start_datetime, end_datetime = (None,) * 6
+    start_month, start_year, end_month, end_year, start_datetime, end_datetime = (None, ) * 6
     organization = _tag_text(experience_xml, 'employer')
     # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
     if organization and len(organization) > 5:
@@ -401,13 +383,13 @@ def parse_candidate_educations(bg_educations_xml_list):
             gpa_tag = school.find('gpa')
             gpa_value = float(gpa_tag.get('value')) if gpa_tag else None
 
-            output.append(dict(
-                school_name=school_name,
-                city=school_city,
-                state=school_state,
-                country_code=country,
-                degrees=[
-                    {
+            output.append(
+                dict(
+                    school_name=school_name,
+                    city=school_city,
+                    state=school_state,
+                    country_code=country,
+                    degrees=[{
                         'type': degree_type,
                         'title': _tag_text(school, 'degree'),
                         'start_year': start_year,
@@ -415,15 +397,11 @@ def parse_candidate_educations(bg_educations_xml_list):
                         'end_year': end_year,
                         'end_month': end_month,
                         'gpa_num': gpa_value,
-                        'bullets': [
-                            {
-                                'major': _tag_text(school, 'major'),
-                                'comments': _tag_text(school, 'honors')
-                            }
-                        ]
-                    }
-                ],
-            ))
+                        'bullets': [{
+                            'major': _tag_text(school, 'major'),
+                            'comments': _tag_text(school, 'honors')
+                        }]
+                    }], ))
     return output
 
 
@@ -451,7 +429,7 @@ def parse_candidate_skills(bg_skills_xml_list, encoded_resume_text=None):
         processed_skill = {'name': parsed_name, 'last_used_date': None, 'months_used': None}
 
         if processed_skill['name'].lower() in skills_parsed:
-            continue # skip further processing if duplicate.
+            continue  # skip further processing if duplicate.
 
         if start_days and end_days:
             """
@@ -469,7 +447,7 @@ def parse_candidate_skills(bg_skills_xml_list, encoded_resume_text=None):
         if last_used_date:
             processed_skill['last_used_date'] = last_used_date.strftime(ISO8601_DATE_FORMAT)
 
-        if months_used and months_used > 0: # Rarely a skill will have an end before the start.
+        if months_used and months_used > 0:  # Rarely a skill will have an end before the start.
             processed_skill['months_used'] = int(months_used)
 
         output.append(processed_skill)
@@ -478,10 +456,11 @@ def parse_candidate_skills(bg_skills_xml_list, encoded_resume_text=None):
     if encoded_resume_text:
         bonus_skills = extra_skills_parsing(encoded_resume_text)
 
-        for bonus_skill in bonus_skills:
-            if bonus_skill.lower() not in skills_parsed:
-                skills_parsed.add(bonus_skill.lower())
-                output.append({'name': bonus_skill, 'last_used_date': None, 'months_used': None})
+        if bonus_skills:
+            for bonus_skill in bonus_skills:
+                if bonus_skill.lower() not in skills_parsed:
+                    skills_parsed.add(bonus_skill.lower())
+                    output.append({'name': bonus_skill, 'last_used_date': None, 'months_used': None})
 
     return output
 
@@ -545,11 +524,8 @@ def parse_candidate_linkedin_urls(soup_text):
     LINKEDIN_REGEX = re.compile('linkedin.com/in/+(?:[A-Z][A-Z0-9_]*)', re.I)
 
     profile_urls = LINKEDIN_REGEX.findall(soup_text)
-    for url in set(profile_urls): #  A user may have linkedin urls in a footer on every page.
-        output.append({
-            'name': 'LinkedIn',
-            'profile_url': URL_PREFIX + url
-        })
+    for url in set(profile_urls):  #  A user may have linkedin urls in a footer on every page.
+        output.append({'name': 'LinkedIn', 'profile_url': URL_PREFIX + url})
 
     return output
 
@@ -561,8 +537,7 @@ def parse_candidate_linkedin_urls(soup_text):
 NEWLINES_REGEXP = re.compile(r"[\r\n]+")
 
 
-def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines=True,
-              capwords=False):
+def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines=True, capwords=False):
     if not tag:
         return None
     if child_tag_name == 'description':
@@ -638,8 +613,8 @@ def scrub_candidate_name(name_unicode):
     :rtype string:
     """
 
-    translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)
-                                    if unicodedata.category(unichr(i)).startswith('P'))
+    translate_table = dict.fromkeys(
+        i for i in xrange(sys.maxunicode) if unicodedata.category(unichr(i)).startswith('P'))
 
     name_unicode = name_unicode[:35]
     name_unicode = name_unicode.translate(translate_table)
