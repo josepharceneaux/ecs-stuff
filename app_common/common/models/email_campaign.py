@@ -331,7 +331,6 @@ class EmailCampaignBlast(db.Model):
         This returns query object for number of bounced emails
         """
         return EmailCampaignSend.query.filter(EmailCampaignSend.blast_id == self.id,
-                                              EmailCampaignSend.ses_message_id is not None,
                                               EmailCampaignSend.is_ses_bounce == 1)
 
     @property
@@ -340,7 +339,7 @@ class EmailCampaignBlast(db.Model):
         This returns query object for number of sends
         """
         return EmailCampaignSend.query.filter(EmailCampaignSend.blast_id == self.id,
-                                              EmailCampaignSend.ses_message_id is not None,
+                                              EmailCampaignSend.ses_message_id,
                                               EmailCampaignSend.is_ses_bounce == 0)
 
     def to_json(self, include_fields=None):
