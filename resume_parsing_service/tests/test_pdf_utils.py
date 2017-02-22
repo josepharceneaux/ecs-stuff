@@ -1,8 +1,9 @@
 import os
 from cStringIO import StringIO
 import PyPDF2
-from resume_parsing_service.app.views.pdf_utils import convert_pdf_to_text, decrypt_pdf
-
+from resume_parsing_service.app.views.pdf_utils import convert_pdf_to_text
+from resume_parsing_service.app.views.pdf_utils import decrypt_pdf
+from resume_parsing_service.app.views.pdf_utils import detect_pdf_has_form
 
 CURRENT_DIR = os.path.dirname(__file__)
 
@@ -30,6 +31,7 @@ def test_image_based_pdfs_return_no_text():
             data = StringIO(infile.read())
             assert convert_pdf_to_text(data) == ''
 
+
 def test_encrypted_pdfs_can_be_decrypted():
     """
     Test that pdfs can be decrypted and return a decrypted file for future use. This assumes
@@ -47,3 +49,8 @@ def test_encrypted_pdfs_can_be_decrypted():
         decrypted_pdf = decrypt_pdf(data)
         pdf_reader = PyPDF2.PdfFileReader(decrypted_pdf)
         assert pdf_reader.isEncrypted == 0
+
+
+def test_form_detection():
+    with open(os.path.join(CURRENT_DIR, 'files/ingram.pdf'), 'rb') as infile:
+        assert detect_pdf_has_form(infile)

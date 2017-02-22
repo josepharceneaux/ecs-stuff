@@ -401,6 +401,11 @@ def test_email_with_punctuation(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
+def test_ingram(token_fixture, user_fixture, source_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'ingram.pdf')
+    assert_non_create_content_and_status(content, status)
+
+
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################
