@@ -326,7 +326,7 @@ class EmailCampaignBlast(db.Model):
             filter(cls.sends > 0).order_by(desc(cls.opens/cls.sends)).first()
 
     @property
-    def bounces_at_runtime(self):
+    def email_bounces(self):
         """
         This returns query object for number of bounced emails
         """
@@ -335,7 +335,7 @@ class EmailCampaignBlast(db.Model):
                                               EmailCampaignSend.is_ses_bounce == 1)
 
     @property
-    def sends_at_runtime(self):
+    def email_sends(self):
         """
         This returns query object for number of sends
         """
@@ -349,8 +349,8 @@ class EmailCampaignBlast(db.Model):
         :param list[str] | None include_fields: List of fields to include, or None for all.
         :rtype: dict[str, T]
         """
-        self.sends = self.sends_at_runtime.count()
-        self.bounces = self.bounces_at_runtime.count()
+        self.sends = self.email_sends.count()
+        self.bounces = self.email_bounces.count()
         return_dict = super(EmailCampaignBlast, self).to_json(include_fields=include_fields)
         return return_dict
 
