@@ -111,6 +111,14 @@ class TalentActivityManager(object):
             "<b>%(formattedName)s</b> was removed from the list <b>%(name)s</b>",
             "%(count)s candidates were removed from the list <b>%(name)s</b>",
             "smartlist.png"),
+        Activity.MessageIds.PIPELINE_ADD_CANDIDATE: (
+            "<b>%(formattedName)s<b> was added to pipeline <b>%(name)s</b>",
+            "%(count)s candidates were added to pipeline <b>%(name)s</b>",
+            "pipeline.png"),
+        Activity.MessageIds.PIPELINE_REMOVE_CANDIDATE: (
+            "<b>%(formattedName)s</b> was removed from the pipeline <b>%(name)s</b>",
+            "%(count)s candidates were removed from the pipeline <b>%(name)s</b>",
+            "pipeline.png"),
         Activity.MessageIds.USER_CREATE: (
             "<b>%(username)s</b> has joined",
             "%(count)s users have joined",

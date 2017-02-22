@@ -10,6 +10,7 @@ from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.user import Permission
+from candidate_pool_service.common.models.misc import Activity
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from candidate_pool_service.common.utils.api_utils import ApiResponse, generate_pagination_headers
@@ -19,6 +20,7 @@ from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities 
     get_talent_pipeline_stat_for_given_day)
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from candidate_pool_service.common.inter_service_calls.candidate_service_calls import update_candidates_on_cloudsearch
+from candidate_pool_service.common.inter_service_calls.activity_service_calls import add_activity
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
 
@@ -588,6 +590,17 @@ class TalentPipelineCandidates(Resource):
 
         update_candidates_on_cloudsearch(request.oauth_token, candidate_ids)
 
+        activity_data = {
+            'name': talent_pipeline.name
+        }
+        candidates = Candidate.query.with_entities(Candidate.id, Candidate.formatted_name).filter(
+                Candidate.id.in_(candidate_ids)).all()
+
+        for candidate_id, formatted_name in candidates:
+            activity_data['formattedName'] = formatted_name
+            add_activity(user_id=request.user.id, activity_type=Activity.MessageIds.PIPELINE_ADD_CANDIDATE,
+                         source_table=Candidate.__tablename__, source_id=candidate_id, params=activity_data)
+
         return '', 204
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_TALENT_PIPELINES)
@@ -628,6 +641,17 @@ class TalentPipelineCandidates(Resource):
         db.session.commit()
 
         update_candidates_on_cloudsearch(request.oauth_token, candidate_ids)
+
+        activity_data = {
+            'name': talent_pipeline.name
+        }
+        candidates = Candidate.query.with_entities(Candidate.id, Candidate.formatted_name).filter(
+                Candidate.id.in_(candidate_ids)).all()
+
+        for candidate_id, formatted_name in candidates:
+            activity_data['formattedName'] = formatted_name
+            add_activity(user_id=request.user.id, activity_type=Activity.MessageIds.PIPELINE_REMOVE_CANDIDATE,
+                         source_table=Candidate.__tablename__, source_id=candidate_id, params=activity_data)
 
         return '', 204
 
