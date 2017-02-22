@@ -360,8 +360,10 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
             boto3_client = boto3.client('sns', region_name=region_name)
 
             # Splitting list into chunks to avoid reaching SES send rate
-            chunks_of_candidate_ids_list = [candidate_ids_and_emails[x:x + 450] for x in
-                                            xrange(0, len(candidate_ids_and_emails), 450)]
+            ses_send_rate = app.config[TalentConfigKeys.SES_SEND_RATE]
+            ses_delay = app.config[TalentConfigKeys.SES_DELAY_TIME]
+            chunks_of_candidate_ids_list = [candidate_ids_and_emails[x:x + ses_send_rate] for x in
+                                            xrange(0, len(candidate_ids_and_emails), ses_send_rate)]
             for chunk in chunks_of_candidate_ids_list:
                 for candidate_id_and_email in chunk:
                     candidate_id, candidate_address = candidate_id_and_email
@@ -370,7 +372,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                     except Exception as error:
                         logger.error('Could not publish to SNS topic:%s. Error:%s, blast_id:%s, candidate_id:%s'
                                      % (topic_arn, error.message, blast_id, candidate_id))
-                sleep(2)  # Waiting for completion of 90 Lambda functions each functions takes approx 2.3 sec
+                sleep(ses_delay)  # Waiting for completion of 90 Lambda functions each functions takes approx 2.3 sec
             _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
             _update_blast_sends(blast_id=blast_id, new_sends=len(subscribed_candidate_ids), campaign=campaign,
                                 new_candidates_only=new_candidates_only, update_blast_sends=False)
