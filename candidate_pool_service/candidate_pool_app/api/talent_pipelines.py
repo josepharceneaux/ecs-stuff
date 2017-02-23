@@ -581,9 +581,11 @@ class TalentPipelineCandidates(Resource):
                 TalentPipelineExcludedCandidates.talent_pipeline_id == talent_pipeline.id,
                 TalentPipelineExcludedCandidates.candidate_id.in_(candidate_ids)).delete(synchronize_session='fetch')
 
+        added_candidate_ids = []
         for candidate_id in candidate_ids:
             if not TalentPipelineIncludedCandidates.query.filter_by(talent_pipeline_id=talent_pipeline.id,
                                                                     candidate_id=candidate_id).first():
+                added_candidate_ids.append(candidate_id)
                 db.session.add(TalentPipelineIncludedCandidates(talent_pipeline_id=talent_pipeline.id,
                                                                 candidate_id=candidate_id))
         db.session.commit()
@@ -594,7 +596,7 @@ class TalentPipelineCandidates(Resource):
             'name': talent_pipeline.name
         }
         candidates = Candidate.query.with_entities(Candidate.id, Candidate.formatted_name).filter(
-                Candidate.id.in_(candidate_ids)).all()
+                Candidate.id.in_(added_candidate_ids)).all()
 
         for candidate_id, formatted_name in candidates:
             activity_data['formattedName'] = formatted_name
@@ -633,9 +635,11 @@ class TalentPipelineCandidates(Resource):
                 TalentPipelineIncludedCandidates.talent_pipeline_id == talent_pipeline.id,
                 TalentPipelineIncludedCandidates.candidate_id.in_(candidate_ids)).delete(synchronize_session='fetch')
 
+        removed_candidate_ids = []
         for candidate_id in candidate_ids:
             if not TalentPipelineExcludedCandidates.query.filter_by(talent_pipeline_id=talent_pipeline.id,
                                                                     candidate_id=candidate_id).first():
+                removed_candidate_ids.append(candidate_id)
                 db.session.add(TalentPipelineExcludedCandidates(talent_pipeline_id=talent_pipeline.id,
                                                                 candidate_id=candidate_id))
         db.session.commit()
@@ -646,7 +650,7 @@ class TalentPipelineCandidates(Resource):
             'name': talent_pipeline.name
         }
         candidates = Candidate.query.with_entities(Candidate.id, Candidate.formatted_name).filter(
-                Candidate.id.in_(candidate_ids)).all()
+                Candidate.id.in_(removed_candidate_ids)).all()
 
         for candidate_id, formatted_name in candidates:
             activity_data['formattedName'] = formatted_name
