@@ -34,11 +34,12 @@ def access_token_v2():
                 query_params = redirect_uri[-2].split('&')
                 query_params.append('access_token={}'.format(token_dict.get('access_token')))
                 query_params.append('expires_at={}'.format(token_dict.get('expires_at')))
+                query_params = [query_param for query_param in query_params if query_param]
                 redirect_uri[-2] = '&'.join(query_params)
                 redirect_uri = urlunparse(tuple(redirect_uri))
                 return redirect(redirect_uri, code=302)
             else:
-                return token_dict
+                return jsonify(token_dict)
         else:
             raise InvalidUsage("Incorrect username/password")
 
@@ -50,7 +51,7 @@ def refresh_token_v2():
     secret_key_id, authenticated_user = authenticate_request()
     redis_store.delete(secret_key_id)
 
-    return save_token_v2(authenticated_user)
+    return jsonify(save_token_v2(authenticated_user))
 
 
 @app.route(AuthApiV2.TOKEN_REVOKE, methods=['POST'])
@@ -89,7 +90,7 @@ def access_token_of_user_v2(user_id):
     if not user_object:
         raise NotFoundError("User with user_id %s doesn't exist" % user_id)
 
-    return save_token_v2(user_object)
+    return jsonify(save_token_v2(user_object))
 
 
 gt_oauth.grantgetter(lambda *args, **kwargs: None)

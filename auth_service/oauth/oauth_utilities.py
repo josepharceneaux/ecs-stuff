@@ -95,12 +95,12 @@ def save_token_v2(user):
     user.last_login_datetime = datetime.utcnow()
     db.session.commit()
 
-    return jsonify(dict(
+    return dict(
         user_id=user.id,
         access_token='%s.%s' % (s.dumps(payload), secret_key_id),
         expires_at=expires_at,
         token_type="Bearer"
-    ))
+    )
 
 
 def verify_jwt(token, secret_key_id):
