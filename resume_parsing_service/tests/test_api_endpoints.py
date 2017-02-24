@@ -10,20 +10,13 @@ import requests
 # Test fixtures, imports required even though not 'used'
 from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.common.routes import ResumeApiUrl
-from resume_parsing_service.tests.test_fixtures import client_fixture
-from resume_parsing_service.tests.test_fixtures import country_fixture
-from resume_parsing_service.tests.test_fixtures import culture_fixture
-from resume_parsing_service.tests.test_fixtures import domain_fixture
-from resume_parsing_service.tests.test_fixtures import email_label_fixture
-from resume_parsing_service.tests.test_fixtures import org_fixture
-from resume_parsing_service.tests.test_fixtures import phone_label_fixture
-from resume_parsing_service.tests.test_fixtures import product_fixture
-from resume_parsing_service.tests.test_fixtures import source_fixture
-from resume_parsing_service.tests.test_fixtures import talent_pool_fixture
-from resume_parsing_service.tests.test_fixtures import talent_pool_group_fixture
-from resume_parsing_service.tests.test_fixtures import token_fixture
-from resume_parsing_service.tests.test_fixtures import user_fixture
-from resume_parsing_service.tests.test_fixtures import user_group_fixture
+from resume_parsing_service.common.tests.conftest import access_token_first
+from resume_parsing_service.common.tests.conftest import domain_first
+from resume_parsing_service.common.tests.conftest import domain_source
+from resume_parsing_service.common.tests.conftest import first_group
+from resume_parsing_service.common.tests.conftest import sample_client
+from resume_parsing_service.common.tests.conftest import talent_pool
+from resume_parsing_service.common.tests.conftest import user_first
 
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
 PDF15_FP_KEY = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
@@ -47,23 +40,25 @@ def test_health_check():
 ####################################################################################################
 # Test Invalid Inputs
 ####################################################################################################
-def test_invalid_fp_key(token_fixture, user_fixture, source_fixture):
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, "MichaelKane/AlfredFromBatman.doc")
+# def test_invalid_fp_key(token_fixture, user_fixture, source_fixture):
+def test_invalid_fp_key(access_token_first, domain_source):
+    content, status = fetch_resume_fp_key_response(access_token_first, domain_source,
+                                                   "MichaelKane/AlfredFromBatman.doc")
     assert 'error' in content
     assert status == requests.codes.bad_request
 
 
-def test_none_fp_key(token_fixture, user_fixture, source_fixture):
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, None)
+def test_none_fp_key(access_token_first, domain_source):
+    content, status = fetch_resume_fp_key_response(access_token_first, domain_source, None)
     assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
     assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
     assert status == requests.codes.bad_request
 
 
-def test_posting_no_file(token_fixture, user_fixture):
+def test_posting_no_file(access_token_first):
     invalid_post = requests.post(
         ResumeApiUrl.PARSE,
-        headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+        headers={'Authorization': 'Bearer {}'.format(access_token_first),
                  'Content-Type': 'application/json'},
         data=json.dumps({
             'resume_file_name': 'foobarbaz',
@@ -75,10 +70,10 @@ def test_posting_no_file(token_fixture, user_fixture):
     assert invalid_post.status_code == requests.codes.bad_request
 
 
-def test_posting_None_file(token_fixture, user_fixture):
+def test_posting_None_file(access_token_first):
     invalid_post = requests.post(
         ResumeApiUrl.PARSE,
-        headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+        headers={'Authorization': 'Bearer {}'.format(access_token_first),
                  'Content-Type': 'application/json'},
         data=json.dumps({
             'resume_file': None,
@@ -90,10 +85,10 @@ def test_posting_None_file(token_fixture, user_fixture):
     assert invalid_post.status_code == requests.codes.bad_request
 
 
-def test_no_fp_json_key_error(token_fixture):
+def test_no_fp_json_key_error(access_token_first):
     invalid_post = requests.post(
         ResumeApiUrl.PARSE,
-        headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+        headers={'Authorization': 'Bearer {}'.format(access_token_first),
                  'Content-Type': 'application/json'},
         data=json.dumps({
             'resume_file_name': 'foobarbaz',
@@ -126,10 +121,10 @@ def test_invalid_token_fails():
     assert test_response.status_code == requests.codes.unauthorized
 
 
-def test_bad_header(token_fixture, user_fixture):
+def test_bad_header(access_token_first):
     invalid_post = requests.post(
         ResumeApiUrl.PARSE,
-        headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+        headers={'Authorization': 'Bearer {}'.format(access_token_first),
                  'Content-Type': 'text/csv'},
         data=json.dumps({
             'resume_file_name': 'foobarbaz',
@@ -141,8 +136,8 @@ def test_bad_header(token_fixture, user_fixture):
     assert invalid_post.status_code == requests.codes.bad_request
 
 
-def test_blank_file(token_fixture, user_fixture, source_fixture):
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'blank.txt')
+def test_blank_file(access_token_first, domain_source):
+    content, status = fetch_resume_fp_key_response(access_token_first, domain_source, 'blank.txt')
     assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED[
         'message'], "There should be an error if no text can be extracted."
     assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
@@ -160,14 +155,12 @@ def test_blank_file(token_fixture, user_fixture, source_fixture):
 # assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
 
 
-def test_bad_create_candidate_inputs(token_fixture):
+def test_bad_create_candidate_inputs(access_token_first):
     for invalid_type in [1, 'string', {}, []]:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
-            headers={
-                'Authorization': 'Bearer {}'.format(token_fixture.access_token),
-                'Content-Type': 'application/json'
-            },
+            headers={'Authorization': 'Bearer {}'.format(access_token_first),
+                     'Content-Type': 'application/json'},
             data=json.dumps({
                 'filepicker_key': 'hey',
                 'create_candidate': invalid_type
@@ -180,14 +173,12 @@ def test_bad_create_candidate_inputs(token_fixture):
         assert status_code == requests.codes.bad
 
 
-def test_bad_filename_inputs(token_fixture):
+def test_bad_filename_inputs(access_token_first):
     for invalid_type in [1, True, {}, []]:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
-            headers={
-                'Authorization': 'Bearer {}'.format(token_fixture.access_token),
-                'Content-Type': 'application/json'
-            },
+            headers={'Authorization': 'Bearer {}'.format(access_token_first),
+                     'Content-Type': 'application/json'},
             data=json.dumps({
                 'filepicker_key': 'hey',
                 'filename': invalid_type
@@ -200,14 +191,12 @@ def test_bad_filename_inputs(token_fixture):
         assert status_code == requests.codes.bad
 
 
-def test_bad_fpkey_inputs(token_fixture):
+def test_bad_fpkey_inputs(access_token_first):
     for invalid_type in [1, True, {}, [], None]:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
-            headers={
-                'Authorization': 'Bearer {}'.format(token_fixture.access_token),
-                'Content-Type': 'application/json'
-            },
+            headers={'Authorization': 'Bearer {}'.format(access_token_first),
+                     'Content-Type': 'application/json'},
             data=json.dumps({
                 'filepicker_key': invalid_type
             }))
@@ -219,14 +208,12 @@ def test_bad_fpkey_inputs(token_fixture):
         assert status_code == requests.codes.bad
 
 
-def test_bad_tpool_inputs(token_fixture):
+def test_bad_tpool_inputs(access_token_first):
     for invalid_type in [1, True, {}, 'string']:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
-            headers={
-                'Authorization': 'Bearer {}'.format(token_fixture.access_token),
-                'Content-Type': 'application/json'
-            },
+            headers={'Authorization': 'Bearer {}'.format(access_token_first),
+                     'Content-Type': 'application/json'},
             data=json.dumps({
                 'filepicker_key': 'unused_key',
                 'talent_pools': invalid_type
@@ -239,17 +226,17 @@ def test_bad_tpool_inputs(token_fixture):
         assert status_code == requests.codes.bad
 
 
-def test_posting_mislabeled_pdf(token_fixture):
-    content, status = fetch_resume_post_response(token_fixture, 'ipdf_img_1487216451.jpeg')
+def test_posting_mislabeled_pdf(access_token_first):
+    content, status = fetch_resume_post_response(access_token_first, 'ipdf_img_1487216451.jpeg')
     assert_non_create_content_and_status(content, status)
 
 
 ####################################################################################################
 # Test FilePicker Key Parsing without create option
 ####################################################################################################
-def test_doc_from_fp_key(token_fixture, user_fixture, source_fixture):
+def test_doc_from_fp_key(access_token_first, domain_source):
     """Test that .doc files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, DOC_FP_KEY)
+    content, status = fetch_resume_fp_key_response(access_token_first, domain_source, DOC_FP_KEY)
     assert_non_create_content_and_status(content, status,
                                          {'addresses': 1,
                                           'educations': 0,
@@ -257,9 +244,9 @@ def test_doc_from_fp_key(token_fixture, user_fixture, source_fixture):
                                           'work_experiences': 5})
 
 
-def test_v15_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
+def test_v15_pdf_from_fp_key(access_token_first, domain_source):
     """Test that v1.5 pdf files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, PDF15_FP_KEY)
+    content, status = fetch_resume_fp_key_response(access_token_first, domain_source, PDF15_FP_KEY)
     assert_non_create_content_and_status(content, status,
                                          {'addresses': 0,
                                           'educations': 0,
@@ -267,9 +254,9 @@ def test_v15_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
                                           'work_experiences': 6})
 
 
-def test_v14_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
+def test_v14_pdf_from_fp_key(access_token_first, domain_source):
     """Test that v1.4 pdf files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'test_bin_14.pdf')
+    content, status = fetch_resume_fp_key_response(access_token_first, domain_source, 'test_bin_14.pdf')
     assert_non_create_content_and_status(content, status,
                                          {'addresses': 1,
                                           'educations': 1,
@@ -277,9 +264,9 @@ def test_v14_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
                                           'work_experiences': 2})
 
 
-def test_v13_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
+def test_v13_pdf_from_fp_key(access_token_first, domain_source):
     """Test that v1.3 pdf files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'test_bin_13.pdf')
+    content, status = fetch_resume_fp_key_response(access_token_first, domain_source, 'test_bin_13.pdf')
     assert_non_create_content_and_status(content, status,
                                          {'addresses': 0,
                                           'educations': 0,
@@ -287,15 +274,15 @@ def test_v13_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
                                           'work_experiences': 1})
 
 
-def test_jpg_from_fp_key(token_fixture, user_fixture, source_fixture):
+def test_jpg_from_fp_key(access_token_first, domain_source):
     """Test that jpg files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'test_bin.jpg')
+    content, status = fetch_resume_fp_key_response(access_token_first, domain_source, 'test_bin.jpg')
     assert_non_create_content_and_status(content, status, {'addresses': 0, 'phones': 1, 'work_experiences': 1})
 
 
-def test_doc_with_texthtml_mime(token_fixture, user_fixture, source_fixture):
+def test_doc_with_texthtml_mime(access_token_first, domain_source):
     """Test that jpg files from S3 can be parsed."""
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'Breland.Bobby.doc')
+    content, status = fetch_resume_fp_key_response(access_token_first, domain_source, 'Breland.Bobby.doc')
     assert_non_create_content_and_status(content, status,
                                          {'addresses': 1,
                                           'educations': 0,
@@ -303,8 +290,8 @@ def test_doc_with_texthtml_mime(token_fixture, user_fixture, source_fixture):
                                           'work_experiences': 7})
 
 
-def test_web_1341(token_fixture, user_fixture, source_fixture):
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'WEB-1341.jpg')
+def test_web_1341(access_token_first, domain_source):
+    content, status = fetch_resume_fp_key_response(access_token_first, domain_source, 'WEB-1341.jpg')
     assert_non_create_content_and_status(content, status,
                                          {'addresses': 0,
                                           'educations': 1,
@@ -317,44 +304,44 @@ def test_web_1341(token_fixture, user_fixture, source_fixture):
 ####################################################################################################
 
 
-def test_doc_by_post(token_fixture, user_fixture):
+def test_doc_by_post(access_token_first):
     """Test that .doc files that are posted to the end point can be parsed."""
-    content, status = fetch_resume_post_response(token_fixture, 'test_bin.docx')
+    content, status = fetch_resume_post_response(access_token_first, 'test_bin.docx')
     assert_non_create_content_and_status(content, status, {'addresses': 1, 'educations': 0, 'work_experiences': 4})
 
 
-def test_HTML_doc_by_post(token_fixture, user_fixture):
+def test_HTML_doc_by_post(access_token_first):
     """Test that .doc files that are posted to the end point can be parsed."""
-    content, status = fetch_resume_post_response(token_fixture, 'Bridgeport.Ave.doc')
+    content, status = fetch_resume_post_response(access_token_first, 'Bridgeport.Ave.doc')
     assert_non_create_content_and_status(content, status, {'addresses': 0, 'educations': 1, 'work_experiences': 6})
 
 
-def test_v14_pdf_by_post(token_fixture, user_fixture):
+def test_v14_pdf_by_post(access_token_first):
     """Test that v1.4 pdf files can be posted."""
-    content, status = fetch_resume_post_response(token_fixture, 'test_bin_14.pdf')
+    content, status = fetch_resume_post_response(access_token_first, 'test_bin_14.pdf')
     assert_non_create_content_and_status(content, status, {'addresses': 1, 'educations': 1, 'work_experiences': 2})
 
 
-def test_v13_pdf_by_post(token_fixture, user_fixture):
+def test_v13_pdf_by_post(access_token_first):
     """Test that v1.5 pdf files can be posted."""
-    content, status = fetch_resume_post_response(token_fixture, 'test_bin_13.pdf')
+    content, status = fetch_resume_post_response(access_token_first, 'test_bin_13.pdf')
     assert_non_create_content_and_status(content, status, {'addresses': 0, 'educations': 0, 'work_experiences': 2})
 
 
-def test_jpg_by_post(token_fixture, user_fixture):
+def test_jpg_by_post(access_token_first):
     """Test that jpg files can be posted."""
-    content, status = fetch_resume_post_response(token_fixture, 'test_bin.jpg')
+    content, status = fetch_resume_post_response(access_token_first, 'test_bin.jpg')
     assert_non_create_content_and_status(content, status, {'addresses': 0, 'phones': 1, 'work_experiences': 1})
 
 
-def test_2448_3264_jpg_by_post(token_fixture, user_fixture):
+def test_2448_3264_jpg_by_post(access_token_first):
     """Test that large jpgs files can be posted."""
-    content, status = fetch_resume_post_response(token_fixture, '2448_3264.jpg')
+    content, status = fetch_resume_post_response(access_token_first, '2448_3264.jpg')
     assert_non_create_content_and_status(content, status, {'addresses': 0, 'phones': 2, 'work_experiences': 4})
 
 
-def test_jpg_in_pdf(token_fixture, user_fixture):
-    content, status = fetch_resume_post_response(token_fixture, 'jpg_in_pdf.pdf')
+def test_jpg_in_pdf(access_token_first):
+    content, status = fetch_resume_post_response(access_token_first, 'jpg_in_pdf.pdf')
     """Test PDF wrapped images can be parsed."""
     assert_non_create_content_and_status(content, status)
     candidate = content['candidate']
@@ -362,16 +349,16 @@ def test_jpg_in_pdf(token_fixture, user_fixture):
     assert len(candidate['educations']) > 0
 
 
-def test_txt_with_jpg_in_encrypted_pdf(token_fixture, user_fixture):
-    content, status = fetch_resume_post_response(token_fixture, 'pic_in_encrypted.pdf')
+def test_txt_with_jpg_in_encrypted_pdf(access_token_first):
+    content, status = fetch_resume_post_response(access_token_first, 'pic_in_encrypted.pdf')
     assert_non_create_content_and_status(content, status, {'addresses': 0})
 
 
-def test_no_multiple_skills(token_fixture, user_fixture):
+def test_no_multiple_skills(access_token_first):
     """
     Test for GET-1301 where multiple skills are being parsed out for a single new candidate.
     """
-    content, status = fetch_resume_post_response(token_fixture, 'GET_1301.doc')
+    content, status = fetch_resume_post_response(access_token_first, 'GET_1301.doc')
     assert_non_create_content_and_status(content, status)
     skills = content['candidate']['skills']
     skills_set = set()
@@ -380,148 +367,148 @@ def test_no_multiple_skills(token_fixture, user_fixture):
     assert len(skills) == len(skills_set)
 
 
-def test_encrypted_resume(token_fixture, user_fixture):
+def test_encrypted_resume(access_token_first):
     """Test that encrypted pdf files that are posted to the end point can be parsed."""
-    content, status = fetch_resume_post_response(token_fixture, 'jDiMaria.pdf')
+    content, status = fetch_resume_post_response(access_token_first, 'jDiMaria.pdf')
     assert_non_create_content_and_status(content, status, {'addresses': 1, 'educations': 3, 'work_experiences': 7})
 
 
-def test_626a(token_fixture, user_fixture):
+def test_626a(access_token_first):
     """Adds test case for old previously crashing resume. Adding for code coverage"""
-    content, status = fetch_resume_post_response(token_fixture, 'GET_626a.doc')
+    content, status = fetch_resume_post_response(access_token_first, 'GET_626a.doc')
     assert_non_create_content_and_status(content, status)
 
 
-def test_626b(token_fixture, user_fixture):
+def test_626b(access_token_first):
     """Adds test case for old previously crashing resume. Adding for code coverage"""
-    content, status = fetch_resume_post_response(token_fixture, 'GET_626b.doc')
+    content, status = fetch_resume_post_response(access_token_first, 'GET_626b.doc')
     assert_non_create_content_and_status(content, status)
 
 
-def test_no_name_defaults_to_email_or_none(token_fixture, user_fixture):
+def test_no_name_defaults_to_email_or_none(access_token_first):
     """Adds test case for old previously crashing resume. Adding for code coverage"""
-    content, status = fetch_resume_post_response(token_fixture, 'noname.doc')
+    content, status = fetch_resume_post_response(access_token_first, 'noname.doc')
     assert_non_create_content_and_status(content, status)
     assert content['candidate']['first_name'] is None
     assert content['candidate']['last_name'] is None
 
 
-def test_troublesome_zip_code(token_fixture, user_fixture):
-    content, status = fetch_resume_post_response(token_fixture, 'zips.pdf')
+def test_troublesome_zip_code(access_token_first):
+    content, status = fetch_resume_post_response(access_token_first, 'zips.pdf')
     assert_non_create_content_and_status(content, status)
 
 
-def test_get_1799(token_fixture, user_fixture):
-    content, status = fetch_resume_post_response(token_fixture, 'get-1799.pdf')
+def test_get_1799(access_token_first):
+    content, status = fetch_resume_post_response(access_token_first, 'get-1799.pdf')
     assert_non_create_content_and_status(content, status)
 
 
-def test_bad_email(token_fixture, user_fixture):
-    content, status = fetch_resume_post_response(token_fixture, 'bad_email.pdf')
+def test_bad_email(access_token_first):
+    content, status = fetch_resume_post_response(access_token_first, 'bad_email.pdf')
     assert_non_create_content_and_status(content, status)
 
 
-def test_email_with_punctuation(token_fixture, user_fixture):
+def test_email_with_punctuation(access_token_first):
     # Burning Glass is currently returning the wrong email so this test will not get expanded.
     # It is returning `Leary@domain.com` instead of `O'Leary@domain.com
-    content, status = fetch_resume_post_response(token_fixture, 'email_with_punctuation.PDF')
+    content, status = fetch_resume_post_response(access_token_first, 'email_with_punctuation.PDF')
     assert_non_create_content_and_status(content, status)
 
 
-def test_non_create_ingram(token_fixture, user_fixture, source_fixture):
-    content, status = fetch_resume_post_response(token_fixture, 'ingram.pdf')
+def test_non_create_ingram(access_token_first):
+    content, status = fetch_resume_post_response(access_token_first, 'ingram.pdf')
     assert_non_create_content_and_status(content, status, {'addresses': 0, 'educations': 0, 'work_experiences': 0})
 
 
-def test_v13_non_create_ingram(token_fixture, user_fixture, source_fixture):
-    content, status = fetch_resume_post_response(token_fixture, 'ingramV13.pdf')
+def test_v13_non_create_ingram(access_token_first):
+    content, status = fetch_resume_post_response(access_token_first, 'ingramV13.pdf')
     assert_non_create_content_and_status(content, status, {'addresses': 0, 'educations': 0, 'work_experiences': 0})
 
 
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################
-def test_v15_pdf_by_post_with_create(token_fixture, user_fixture):
+def test_v15_pdf_by_post_with_create(access_token_first, talent_pool):
     """Test that v1.5 pdf files can be posted."""
-
-    content, status = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
+    content, status = fetch_resume_post_response(access_token_first, 'test_bin.pdf', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_doc_FP_with_create(token_fixture, user_fixture, source_fixture):
+def test_doc_FP_with_create(access_token_first, domain_source, talent_pool):
 
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, DOC_890, create_mode=True)
+    content, status = fetch_resume_fp_key_response(access_token_first, domain_source, DOC_890, create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_985_from_fp_key(token_fixture, user_fixture, source_fixture):
+def test_985_from_fp_key(access_token_first, domain_source, talent_pool):
     """Test that .doc files from S3 can be parsed."""
 
-    content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, "Bruncak.Daren.doc", create_mode=True)
+    content, status = fetch_resume_fp_key_response(
+        access_token_first, domain_source, "Bruncak.Daren.doc", create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_create_candidate_from_resume_without_name(token_fixture, user_fixture):
+def test_create_candidate_from_resume_without_name(access_token_first, talent_pool):
 
-    content, status = fetch_resume_post_response(token_fixture, 'Adams.John.doc', create_mode=True)
+    content, status = fetch_resume_post_response(access_token_first, 'Adams.John.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_create_candidate_from_resume_ben_fred(token_fixture, user_fixture):
+def test_create_candidate_from_resume_ben_fred(access_token_first, talent_pool):
 
-    content, status = fetch_resume_post_response(token_fixture, 'ben.fred.doc', create_mode=True)
+    content, status = fetch_resume_post_response(access_token_first, 'ben.fred.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_create_candidate_from_no_email_resume(token_fixture, user_fixture):
+def test_create_candidate_from_no_email_resume(access_token_first, talent_pool):
 
-    content, status = fetch_resume_post_response(token_fixture, 'no_email_resume.doc', create_mode=True)
+    content, status = fetch_resume_post_response(access_token_first, 'no_email_resume.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_create_candidate_from_no_address_resume(token_fixture, user_fixture):
+def test_create_candidate_from_no_address_resume(access_token_first, talent_pool):
 
-    content, status = fetch_resume_post_response(token_fixture, 'no_address.doc', create_mode=True)
+    content, status = fetch_resume_post_response(access_token_first, 'no_address.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_create_with_references(token_fixture, user_fixture):
-    content, status = fetch_resume_post_response(token_fixture, 'GET_1210.doc', create_mode=True)
+def test_create_with_references(access_token_first, talent_pool):
+    content, status = fetch_resume_post_response(access_token_first, 'GET_1210.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_create_with_long_punc_name(token_fixture, user_fixture):
-    content, status = fetch_resume_post_response(token_fixture, 'GET-1319.pdf', create_mode=True)
+def test_create_with_long_punc_name(access_token_first, talent_pool):
+    content, status = fetch_resume_post_response(access_token_first, 'GET-1319.pdf', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
     assert content['candidate']['last_name'] == u'Weston'
 
 
-def test_create_from_image(token_fixture, user_fixture):
+def test_create_from_image(access_token_first, talent_pool):
     """
     Test for GET-1351. POST'd JSON.
     """
-    content, status = fetch_resume_post_response(token_fixture, 'test_bin.jpg', create_mode=True)
+    content, status = fetch_resume_post_response(access_token_first, 'test_bin.jpg', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_create_from_jpgTxtPdf(token_fixture, user_fixture):
+def test_create_from_jpgTxtPdf(access_token_first, talent_pool):
     """
     Test for GET-1463. POST'd JSON.
     """
-    content, status = fetch_resume_post_response(token_fixture, 'pic_in_encrypted.pdf', create_mode=True)
+    content, status = fetch_resume_post_response(access_token_first, 'pic_in_encrypted.pdf', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_create_poorly_parsed_phonenumber(token_fixture, user_fixture):
+def test_create_poorly_parsed_phonenumber(access_token_first, talent_pool):
     """
     Test for GET-1799. POST'd JSON. Phone number is parsed by BG as 'xxx xxx xxxx *'.
     """
-    content, status = fetch_resume_post_response(token_fixture, 'GET_1799.pdf', create_mode=True)
+    content, status = fetch_resume_post_response(access_token_first, 'GET_1799.pdf', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
-def test_ingram_with_create(token_fixture, user_fixture):
-    content, status = fetch_resume_post_response(token_fixture, 'ingram.pdf', create_mode=True)
+def test_ingram_with_create(access_token_first, talent_pool):
+    content, status = fetch_resume_post_response(access_token_first, 'ingram.pdf', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
     candidate = content['candidate']
     assert len(candidate['addresses']) > 0
@@ -532,7 +519,7 @@ def test_ingram_with_create(token_fixture, user_fixture):
 ####################################################################################################
 # Test Candidate Updating
 ####################################################################################################
-def test_already_exists_candidate(token_fixture, user_fixture):
+def test_already_exists_candidate(access_token_first, talent_pool):
     """Test that multiple resumes can be posted and updated right after."""
     resumes_to_update = [
         'Aleksandr_Tenishev_2016_02.doc', 'Apoorva-Resume_SynergesticIT.pdf', 'Foti Resume May 2016.pdf',
@@ -549,8 +536,8 @@ def test_already_exists_candidate(token_fixture, user_fixture):
     ]
 
     for resume in resumes_to_update:
-        unused_create_response = fetch_resume_post_response(token_fixture, resume, create_mode=True)
-        update_content, status = fetch_resume_post_response(token_fixture, resume, create_mode=True)
+        unused_create_response = fetch_resume_post_response(access_token_first, resume, create_mode=True)
+        update_content, status = fetch_resume_post_response(access_token_first, resume, create_mode=True)
         assert_create_or_update_content_and_status(update_content, status)
 
 
@@ -563,7 +550,7 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=False):
     with open(os.path.join(current_dir, 'files/{}'.format(file_name)), 'rb') as resume_file:
         response = requests.post(
             ResumeApiUrl.PARSE,
-            headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)},
+            headers={'Authorization': 'Bearer {}'.format(token_fixture)},
             data={
                 # 'Local Test Upload' prefix.
                 'resume_file_name': 'LTU_{}'.format(file_name),
@@ -575,18 +562,18 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=False):
     return content, status_code
 
 
-def fetch_resume_fp_key_response(token_fixture, source, fp_key, create_mode=False):
+def fetch_resume_fp_key_response(access_token, source, fp_key, create_mode=False):
     """Posts FilePicker key to local test auth server for json formatted resumes."""
     test_response = requests.post(
         ResumeApiUrl.PARSE,
-        headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+        headers={'Authorization': 'Bearer {}'.format(access_token),
                  'Content-Type': 'application/json'},
         data=json.dumps({
             'filepicker_key': fp_key,
             # 'Local Test Upload' prefix.
             'resume_file_name': 'LTU_{}'.format(fp_key),
             'create_candidate': create_mode,
-            'source_id': source.id
+            'source_id': source['source']['id']
         }))
     content = json.loads(test_response.content)
     status_code = test_response.status_code
