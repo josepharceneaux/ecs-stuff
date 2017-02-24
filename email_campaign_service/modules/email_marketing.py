@@ -8,6 +8,8 @@ This file contains function used by email-campaign-api.
 # Standard Imports
 import re
 import json
+import uuid
+
 import boto3
 import getpass
 from datetime import datetime
@@ -638,7 +640,7 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candi
         email_campaign_blast_id = email_campaign_blast.id
     EmailCampaign.session.commit()
     email_campaign_send = EmailCampaignSend(campaign_id=campaign_id, candidate_id=candidate.id,
-                                            blast_id=email_campaign_blast_id)
+                                            blast_id=email_campaign_blast_id, ses_message_id=uuid.uuid4())
     EmailCampaignSend.save(email_campaign_send)
     # If the campaign is a subscription campaign, its body & subject are
     # candidate-specific and will be set here
