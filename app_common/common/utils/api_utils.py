@@ -155,7 +155,7 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     response = {
         key: items
     }
-    return ApiResponse(response, headers=headers, status= codes.OK)
+    return ApiResponse(response, headers=headers, status=codes.OK)
 
 
 @contract

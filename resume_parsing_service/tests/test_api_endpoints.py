@@ -488,6 +488,14 @@ def test_create_poorly_parsed_phonenumber(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(content, status)
 
 
+def test_ingram_with_create(token_fixture, user_fixture):
+    """
+    Test for GET-1799. POST'd JSON. Phone number is parsed by BG as 'xxx xxx xxxx *'.
+    """
+    content, status = fetch_resume_post_response(token_fixture, 'ingram.pdf', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
 ####################################################################################################
 # Test Candidate Updating
 ####################################################################################################
