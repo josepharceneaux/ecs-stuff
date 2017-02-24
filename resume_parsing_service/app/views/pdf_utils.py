@@ -75,12 +75,19 @@ def detect_pdf_has_form(pdf_file_obj):
     for i in xrange(page_count):
         page = pdf_reader.getPage(i)
         try:
-            xObject = page.get('/Resources', {}).get('/XObject').getObject()
-            for obj in xObject:
-                if xObject[obj].get('/Subtype') == '/Form':
+            resources = page.get('/Resources', {})
+            logger.info('RPS::INFO resources {}'.format(resources))
+            xobject = resources.get('/XObject')
+            logger.info('RPS::INFO XObject {}'.format(xobject))
+            xobject_object = xobject.getObject()
+            logger.info('RPS::INFO xobject_object {}'.format(xobject_object))
+            for obj in xobject_object:
+                sub_object = xobject_object[obj]
+                logger.info('RPS::INFO sub_object {}'.format(sub_object))
+                if sub_object.get('/Subtype') == '/Form':
                     logger.info('RPS::INFO::Form SubType Found')
                     return True
         except AttributeError as e:
-            logger.info('RPS::ERROR::detect_pdf_is_form couldn\'t retrieve Xobject')
+            logger.exception('RPS::ERROR::detect_pdf_is_form couldn\'t retrieve Xobject')
 
     return False
