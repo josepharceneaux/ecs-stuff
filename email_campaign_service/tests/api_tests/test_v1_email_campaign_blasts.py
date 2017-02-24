@@ -85,13 +85,14 @@ class TestEmailCampaignBlasts(object):
         expected_sends_count = 2
         CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_sends_count)
         url = self.URL % sent_campaign.id
+        db.session.commit()
         response = requests.get(url + '?per_page=1',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY]
         assert len(json_resp) == 1
         received_blast_obj = json_resp[0]
-        db.session.commit()
+        # db.session.commit()
         assert received_blast_obj['id'] == sent_campaign.blasts[0].id
         assert received_blast_obj['campaign_id'] == sent_campaign.id
         assert received_blast_obj['sends'] == expected_sends_count
