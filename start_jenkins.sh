@@ -21,6 +21,7 @@ docker images -qf "dangling=true" | xargs docker rmi
 
 # Build the micro service images
 cd base_service_container && tar -czh . | docker build -t gettalent/base-service-container:latest - && cd ../
+pwd
 cd auth_service && tar -czh . | docker build -t gettalent/auth-service:latest - && cd ../
 cd resume_parsing_service && tar -czh . | docker build -t gettalent/resume-parsing-service:latest - && cd ../
 cd activity_service && tar -czh . | docker build -t gettalent/activity-service:latest - && cd ../
