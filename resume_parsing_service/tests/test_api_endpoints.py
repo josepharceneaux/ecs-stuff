@@ -333,6 +333,9 @@ def test_jpg_in_pdf(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'jpg_in_pdf.pdf')
     """Test PDF wrapped images can be parsed."""
     assert_non_create_content_and_status(content, status)
+    candidate = content['candidate']
+    assert len(candidate['addresses']) > 0
+    assert len(candidate['educations']) > 0
 
 
 def test_txt_with_jpg_in_encrypted_pdf(token_fixture, user_fixture):
@@ -401,9 +404,22 @@ def test_email_with_punctuation(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
-def test_ingram(token_fixture, user_fixture, source_fixture):
+def test_non_create_ingram(token_fixture, user_fixture, source_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'ingram.pdf')
     assert_non_create_content_and_status(content, status)
+    candidate = content['candidate']
+    assert len(candidate['addresses']) > 0
+    assert len(candidate['educations']) > 0
+    assert len(candidate['work_experiences']) > 0
+
+
+def test_v13_non_create_ingram(token_fixture, user_fixture, source_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'ingramV13.pdf')
+    assert_non_create_content_and_status(content, status)
+    candidate = content['candidate']
+    assert len(candidate['addresses']) > 0
+    assert len(candidate['educations']) > 0
+    assert len(candidate['work_experiences']) > 0
 
 
 ####################################################################################################
@@ -489,11 +505,12 @@ def test_create_poorly_parsed_phonenumber(token_fixture, user_fixture):
 
 
 def test_ingram_with_create(token_fixture, user_fixture):
-    """
-    Test for GET-1799. POST'd JSON. Phone number is parsed by BG as 'xxx xxx xxxx *'.
-    """
     content, status = fetch_resume_post_response(token_fixture, 'ingram.pdf', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
+    candidate = content['candidate']
+    assert len(candidate['addresses']) > 0
+    assert len(candidate['educations']) > 0
+    assert len(candidate['work_experiences']) > 0
 
 
 ####################################################################################################
