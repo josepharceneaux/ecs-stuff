@@ -47,7 +47,6 @@ This file contains API endpoints related to email_campaign_service.
 import types
 
 # Third Party
-import requests
 from requests import codes
 from flask_restful import Resource
 from werkzeug.utils import redirect
@@ -55,13 +54,12 @@ from flask import request, Blueprint, jsonify
 
 # Service Specific
 from email_campaign_service.email_campaign_app import logger
-from email_campaign_service.modules.utils import get_valid_send_obj, calculate_sends_and_paginate
+from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.validations import validate_and_format_request_data
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
                                                             update_hit_count, send_test_email)
 
 # Common utils
-from email_campaign_service.common.models.email_campaign import db
 from email_campaign_service.common.models.rsvp import RSVP
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignApi
@@ -72,7 +70,7 @@ from email_campaign_service.common.utils.handy_functions import send_request
 from email_campaign_service.common.models.misc import UrlConversion, Activity
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, ActivityApiUrl)
-from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignSend)
+from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignSend, EmailCampaignBlast)
 from email_campaign_service.common.error_handling import (InvalidUsage, MethodNotAllowedError, ResourceNotFound)
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response, get_pagination_params,
                                                            SORT_TYPES)
@@ -360,7 +358,7 @@ class EmailCampaignBlasts(Resource):
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.EMAIL)
         # get paginated response
         page, per_page = get_pagination_params(request)
-        return calculate_sends_and_paginate(campaign.blasts, page, per_page)
+        return get_paginated_response('blasts', campaign.blasts, page, per_page, parser=EmailCampaignBlast.to_json)
 
 
 @api.route(EmailCampaignApi.BLAST)
