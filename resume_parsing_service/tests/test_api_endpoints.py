@@ -250,42 +250,66 @@ def test_posting_mislabeled_pdf(token_fixture):
 def test_doc_from_fp_key(token_fixture, user_fixture, source_fixture):
     """Test that .doc files from S3 can be parsed."""
     content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, DOC_FP_KEY)
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status,
+                                         {'addresses': 1,
+                                          'educations': 0,
+                                          'phones': 0,
+                                          'work_experiences': 5})
 
 
 def test_v15_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
     """Test that v1.5 pdf files from S3 can be parsed."""
     content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, PDF15_FP_KEY)
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status,
+                                         {'addresses': 0,
+                                          'educations': 0,
+                                          'phones': 0,
+                                          'work_experiences': 6})
 
 
 def test_v14_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
     """Test that v1.4 pdf files from S3 can be parsed."""
     content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'test_bin_14.pdf')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status,
+                                         {'addresses': 1,
+                                          'educations': 1,
+                                          'phones': 0,
+                                          'work_experiences': 2})
 
 
 def test_v13_pdf_from_fp_key(token_fixture, user_fixture, source_fixture):
     """Test that v1.3 pdf files from S3 can be parsed."""
     content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'test_bin_13.pdf')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status,
+                                         {'addresses': 0,
+                                          'educations': 0,
+                                          'phones': 0,
+                                          'work_experiences': 1})
 
 
 def test_jpg_from_fp_key(token_fixture, user_fixture, source_fixture):
     """Test that jpg files from S3 can be parsed."""
     content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'test_bin.jpg')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status, {'addresses': 0, 'phones': 1, 'work_experiences': 1})
 
 
 def test_doc_with_texthtml_mime(token_fixture, user_fixture, source_fixture):
     """Test that jpg files from S3 can be parsed."""
     content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'Breland.Bobby.doc')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status,
+                                         {'addresses': 1,
+                                          'educations': 0,
+                                          'phones': 0,
+                                          'work_experiences': 7})
 
 
 def test_web_1341(token_fixture, user_fixture, source_fixture):
     content, status = fetch_resume_fp_key_response(token_fixture, source_fixture, 'WEB-1341.jpg')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status,
+                                         {'addresses': 0,
+                                          'educations': 1,
+                                          'phones': 0,
+                                          'work_experiences': 1})
 
 
 ####################################################################################################
@@ -296,37 +320,37 @@ def test_web_1341(token_fixture, user_fixture, source_fixture):
 def test_doc_by_post(token_fixture, user_fixture):
     """Test that .doc files that are posted to the end point can be parsed."""
     content, status = fetch_resume_post_response(token_fixture, 'test_bin.docx')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status, {'addresses': 1, 'educations': 0, 'work_experiences': 4})
 
 
 def test_HTML_doc_by_post(token_fixture, user_fixture):
     """Test that .doc files that are posted to the end point can be parsed."""
     content, status = fetch_resume_post_response(token_fixture, 'Bridgeport.Ave.doc')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status, {'addresses': 0, 'educations': 1, 'work_experiences': 6})
 
 
 def test_v14_pdf_by_post(token_fixture, user_fixture):
     """Test that v1.4 pdf files can be posted."""
     content, status = fetch_resume_post_response(token_fixture, 'test_bin_14.pdf')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status, {'addresses': 1, 'educations': 1, 'work_experiences': 2})
 
 
 def test_v13_pdf_by_post(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
     content, status = fetch_resume_post_response(token_fixture, 'test_bin_13.pdf')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status, {'addresses': 0, 'educations': 0, 'work_experiences': 2})
 
 
 def test_jpg_by_post(token_fixture, user_fixture):
     """Test that jpg files can be posted."""
     content, status = fetch_resume_post_response(token_fixture, 'test_bin.jpg')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status, {'addresses': 0, 'phones': 1, 'work_experiences': 1})
 
 
 def test_2448_3264_jpg_by_post(token_fixture, user_fixture):
     """Test that large jpgs files can be posted."""
     content, status = fetch_resume_post_response(token_fixture, '2448_3264.jpg')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status, {'addresses': 0, 'phones': 2, 'work_experiences': 4})
 
 
 def test_jpg_in_pdf(token_fixture, user_fixture):
@@ -340,7 +364,7 @@ def test_jpg_in_pdf(token_fixture, user_fixture):
 
 def test_txt_with_jpg_in_encrypted_pdf(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'pic_in_encrypted.pdf')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status, {'addresses': 0})
 
 
 def test_no_multiple_skills(token_fixture, user_fixture):
@@ -359,7 +383,7 @@ def test_no_multiple_skills(token_fixture, user_fixture):
 def test_encrypted_resume(token_fixture, user_fixture):
     """Test that encrypted pdf files that are posted to the end point can be parsed."""
     content, status = fetch_resume_post_response(token_fixture, 'jDiMaria.pdf')
-    assert_non_create_content_and_status(content, status)
+    assert_non_create_content_and_status(content, status, {'addresses': 1, 'educations': 3, 'work_experiences': 7})
 
 
 def test_626a(token_fixture, user_fixture):
@@ -406,20 +430,12 @@ def test_email_with_punctuation(token_fixture, user_fixture):
 
 def test_non_create_ingram(token_fixture, user_fixture, source_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'ingram.pdf')
-    assert_non_create_content_and_status(content, status)
-    candidate = content['candidate']
-    assert len(candidate['addresses']) > 0
-    assert len(candidate['educations']) > 0
-    assert len(candidate['work_experiences']) > 0
+    assert_non_create_content_and_status(content, status, {'addresses': 0, 'educations': 0, 'work_experiences': 0})
 
 
 def test_v13_non_create_ingram(token_fixture, user_fixture, source_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'ingramV13.pdf')
-    assert_non_create_content_and_status(content, status)
-    candidate = content['candidate']
-    assert len(candidate['addresses']) > 0
-    assert len(candidate['educations']) > 0
-    assert len(candidate['work_experiences']) > 0
+    assert_non_create_content_and_status(content, status, {'addresses': 0, 'educations': 0, 'work_experiences': 0})
 
 
 ####################################################################################################
@@ -577,11 +593,15 @@ def fetch_resume_fp_key_response(token_fixture, source, fp_key, create_mode=Fals
     return content, status_code
 
 
-def assert_non_create_content_and_status(content, status):
+def assert_non_create_content_and_status(content, status, candidate_data_checks=None):
     assert 'candidate' in content, "Candidate should be in response content"
     assert 'raw_response' in content and content[
         'raw_response'] is not None, "None create response should return raw content"
     assert status == requests.codes.ok
+    if candidate_data_checks:
+        candidate = content['candidate']
+        for field, count in candidate_data_checks.iteritems():
+            assert len(candidate[field]) > count
 
 
 def assert_create_or_update_content_and_status(content, status):
