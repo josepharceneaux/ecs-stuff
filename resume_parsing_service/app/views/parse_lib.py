@@ -136,7 +136,7 @@ def is_resume_image(file_ext, file_obj):
         if file_ext == '.pdf':
             text = convert_pdf_to_text(file_obj)
             has_form = detect_pdf_has_form(file_obj)
-            if not text.strip() and not has_form:
+            if not text and not has_form:
                 # PDF is likely an image because there is:
                 # NO text extracted
                 # Presence of forms was detected

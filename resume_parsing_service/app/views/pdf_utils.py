@@ -77,7 +77,7 @@ def detect_pdf_has_form(pdf_file_obj):
         try:
             resources = page.get('/Resources', {})
             logger.info('RPS::INFO resources {}'.format(resources))
-            xobject = resources.get('/XObject')
+            xobject = resources.get('/XObject')  # 'IndirectObject' object has no attribute 'get'
             logger.info('RPS::INFO XObject {}'.format(xobject))
             xobject_object = xobject.getObject()
             logger.info('RPS::INFO xobject_object {}'.format(xobject_object))
