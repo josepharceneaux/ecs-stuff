@@ -37,9 +37,9 @@ def access_token_v2():
                 query_params = [query_param for query_param in query_params if query_param]
                 redirect_uri[-2] = '&'.join(query_params)
                 redirect_uri = urlunparse(tuple(redirect_uri))
-                token_dict['redirect_uri'] = redirect_uri
-
-            return jsonify(token_dict)
+                return redirect(redirect_uri, code=302)
+            else:
+                return jsonify(token_dict)
         else:
             raise InvalidUsage("Incorrect username/password")
 
