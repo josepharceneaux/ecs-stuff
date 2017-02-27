@@ -12,7 +12,7 @@ import dateutil.parser
 import phonenumbers
 import pycountry
 import simplejson as json
-from flask import request
+from flask import request, has_request_context
 from nameparser import HumanName
 
 from candidate_service.candidate_app import logger
@@ -122,14 +122,14 @@ def fetch_candidate_info(candidate, fields=None):
 
     social_networks = None
     if get_all_fields or 'social_networks' in fields:
-        if Permission.PermissionNames.CAN_GET_CANDIDATE_SOCIAL_PROFILE in request.user_permissions:
+        if (not has_request_context()) or Permission.PermissionNames.CAN_GET_CANDIDATE_SOCIAL_PROFILE in request.user_permissions:
             social_networks = candidate_social_networks(candidate=candidate)
         else:
             raise ForbiddenError("You are not authorized to get social networks of this candidate")
 
     history = None
     if get_all_fields or 'contact_history' in fields:
-        if Permission.PermissionNames.CAN_GET_CANDIDATE_CONTACT_HISTORY in request.user_permissions:
+        if (not has_request_context()) or Permission.PermissionNames.CAN_GET_CANDIDATE_CONTACT_HISTORY in request.user_permissions:
             history = candidate_contact_history(candidate=candidate)
         else:
             raise ForbiddenError("You are not authorized to get contact history of this candidate")
