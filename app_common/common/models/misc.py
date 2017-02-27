@@ -23,6 +23,7 @@ class Activity(db.Model):
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
     user = relationship('User', backref='activity')
     params = db.Column('Params', db.Text)
+    domain_id = db.Column('DomainId', db.BIGINT, db.ForeignKey('domain.Id'), index=True)
 
     class MessageIds(object):
         """
