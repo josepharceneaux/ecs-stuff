@@ -77,7 +77,8 @@ class CandidatePipelineResource(Resource):
                 search_response = search_candidates_from_params(
                     search_params=format_search_params(talent_pipeline.search_params),
                     access_token=request.oauth_token,
-                    url_args='?id={}&talent_pool_id={}'.format(candidate_id, talent_pipeline.talent_pool_id))
+                    url_args='?id={}&talent_pool_id={}&talent_pipelines={}'.format(
+                            candidate_id, talent_pipeline.talent_pool_id, str(talent_pipeline.id)))
 
                 logger.info("\ncandidate_id: {}\ntalent_pipeline_id: {}\nsearch_params: {}\nsearch_response: {}".format(
                     candidate_id, talent_pipeline.id, search_params, search_response))
