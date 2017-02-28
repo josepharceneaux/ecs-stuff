@@ -156,6 +156,9 @@ class CandidateEdit(db.Model):
             'read': 1702,
             'write': 1703,
             'speak': 1704
+        },
+        'talent_pipeline': {
+            'id': 1801
         }
     }
 
@@ -165,16 +168,16 @@ class CandidateEdit(db.Model):
 
     @classmethod
     def get_field_id(cls, table_name, field_name):
-        for t_name in cls.field_dict.keys():
+        for t_name in cls.field_dict:
             if t_name == table_name:
-                for column_name in cls.field_dict[t_name].keys():
+                for column_name in cls.field_dict[t_name]:
                     if column_name == field_name:
                         return cls.field_dict[t_name][column_name]
 
     @classmethod
     def get_table_and_field_names_from_id(cls, field_id):
-        for table_name in cls.field_dict.keys():
-            for column_name in cls.field_dict[table_name].keys():
+        for table_name in cls.field_dict:
+            for column_name in cls.field_dict[table_name]:
                 if cls.field_dict[table_name][column_name] == field_id:
                     return table_name, column_name
 
