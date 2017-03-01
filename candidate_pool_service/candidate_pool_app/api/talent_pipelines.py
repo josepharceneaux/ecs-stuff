@@ -305,7 +305,7 @@ class TalentPipelineApi(Resource):
             raise InvalidUsage("Request body is empty or not provided")
         posted_data = posted_data['talent_pipeline']
 
-        name = posted_data.get('name', '')
+        name = posted_data.get('name')
         description = posted_data.get('description', '')
         positions = posted_data.get('positions', '')
         date_needed = posted_data.get('date_needed', '')
@@ -313,12 +313,15 @@ class TalentPipelineApi(Resource):
         is_hidden = posted_data.get('is_hidden', 0)
         search_params = posted_data.get('search_params', dict())
 
-        if name:
-            if TalentPipeline.query.join(TalentPipeline.user).filter(
-                    and_(TalentPipeline.name == name, User.domain_id == request.user.domain_id)).first():
-                raise InvalidUsage("Talent pipeline with name {} already exists in domain {}".format(
-                    name, request.user.domain_id))
-            talent_pipeline.name = name
+        if name is not None:
+            if name:
+                if TalentPipeline.query.join(TalentPipeline.user).filter(
+                        and_(TalentPipeline.name == name, User.domain_id == request.user.domain_id)).first():
+                    raise InvalidUsage("Talent pipeline with name {} already exists in domain {}".format(
+                        name, request.user.domain_id))
+                talent_pipeline.name = name
+            else:
+                raise InvalidUsage("Name cannot be an empty string")
 
         if date_needed:
             try:
@@ -602,6 +605,10 @@ class TalentPipelineCandidates(Resource):
                     edit_datetime=datetime.utcnow(),
                     is_custom_field=False
                 ))
+            else:
+                db.session.rollback()
+                raise InvalidUsage("Candidate: %s is already included in pipeline: %s" % (
+                    candidate_id, talent_pipeline.id))
 
         db.session.commit()
 
@@ -669,6 +676,9 @@ class TalentPipelineCandidates(Resource):
                     edit_datetime=datetime.utcnow(),
                     is_custom_field=False
                 ))
+            else:
+                db.session.rollback()
+                raise InvalidUsage("Candidate: %s is not included in pipeline: %s" % (candidate_id, talent_pipeline.id))
 
         db.session.commit()
 
