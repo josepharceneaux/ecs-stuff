@@ -359,7 +359,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
         if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.JENKINS]:
             # Send campaigns via SQS
             logger.info("candidates", candidate_ids_and_emails)
-            boto3_client = boto3.resource('sqs')
+            boto3_client = boto3.resource('sqs', region_name='us-east-1')
             for candidate_id_and_email in candidate_ids_and_emails:
                 candidate_id, candidate_address = candidate_id_and_email
                 try:
