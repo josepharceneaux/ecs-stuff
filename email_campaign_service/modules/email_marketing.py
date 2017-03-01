@@ -356,25 +356,22 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
 
     if candidate_ids_and_emails:
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
-        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA]:
-            # Send campaigns via Lambda triggered by SNS
-            topic_arn, region_name = get_topic_arn_and_region_name()
-            boto3_client = boto3.client('sns', region_name=region_name)
-
-            # Splitting list into chunks to avoid reaching SES send rate
-            ses_send_rate = app.config[TalentConfigKeys.SES_SEND_RATE]
-            ses_delay = app.config[TalentConfigKeys.SES_DELAY_TIME]
-            chunks_of_candidate_ids_list = [candidate_ids_and_emails[x:x + ses_send_rate] for x in
-                                            xrange(0, len(candidate_ids_and_emails), ses_send_rate)]
-            for chunk in chunks_of_candidate_ids_list:
-                for candidate_id_and_email in chunk:
-                    candidate_id, candidate_address = candidate_id_and_email
-                    try:
-                        _publish_to_sns(boto3_client, topic_arn, blast_id, candidate_id, candidate_address)
-                    except Exception as error:
-                        logger.error('Could not publish to SNS topic:%s. Error:%s, blast_id:%s, candidate_id:%s'
-                                     % (topic_arn, error.message, blast_id, candidate_id))
-                sleep(ses_delay)  # Waiting for completion of 90 Lambda functions each functions takes approx 2.3 sec
+        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.PROD]:
+            # Send campaigns via SQS
+            _, region_name = get_topic_arn_and_region_name()
+            try:
+                boto3_client = boto3.resource('sqs', region_name=region_name)
+                queue = boto3_client.get_queue_by_name(QueueName='emailSends')
+            except Exception as error:
+                logger.error("Error occurred while getting SQS queue : %s" % error.message)
+                return
+            for candidate_id_and_email in candidate_ids_and_emails:
+                candidate_id, candidate_address = candidate_id_and_email
+                try:
+                    push_into_sqs(queue, blast_id, candidate_id, candidate_address)
+                except Exception as error:
+                    logger.error('Could not push to SQS. Error:%s, blast_id:%s, candidate_id:%s'
+                                 % (error.message, blast_id, candidate_id))
             _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
             _update_blast_sends(blast_id=blast_id, new_sends=len(subscribed_candidate_ids), campaign=campaign,
                                 new_candidates_only=new_candidates_only, update_blast_sends=False)
@@ -433,6 +430,22 @@ def _publish_to_sns(boto3_client, topic_arn, email_campaign_blast_id, candidate_
 #                         % e.message
 #         logger.exception(error_message)
 #         raise InvalidUsage(error_message)
+
+
+def push_into_sqs(queue, blast_id, candidate_id, candidate_address):
+    """
+    Here we push candidate data to SQS for our Email Lambda Consumer
+    """
+    # Get the queue
+    event = {
+        'candidate_id': candidate_id,
+        'candidate_address': candidate_address,
+        'blast_id': blast_id,
+        'environment': app.config[TalentConfigKeys.ENV_KEY].upper()
+    }
+    # Create a new message
+    response = queue.send_message(MessageBody=json.dumps(event))
+    logger.info("Enqueued candidate data: %s with response: %s" % (event, response))
 
 
 def get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids, new_candidates_only=False):
