@@ -359,11 +359,16 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
         if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.PROD]:
             # Send campaigns via SQS
             _, region_name = get_topic_arn_and_region_name()
-            boto3_client = boto3.resource('sqs', region_name=region_name)
+            try:
+                boto3_client = boto3.resource('sqs', region_name=region_name)
+                queue = boto3_client.get_queue_by_name(QueueName='emailSends')
+            except Exception as error:
+                logger.error("Error occurred while getting SQS queue : %s" % error.message)
+                return
             for candidate_id_and_email in candidate_ids_and_emails:
                 candidate_id, candidate_address = candidate_id_and_email
                 try:
-                    push_into_sqs(boto3_client, blast_id, candidate_id, candidate_address)
+                    push_into_sqs(queue, blast_id, candidate_id, candidate_address)
                 except Exception as error:
                     logger.error('Could not push to SQS. Error:%s, blast_id:%s, candidate_id:%s'
                                  % (error.message, blast_id, candidate_id))
@@ -427,12 +432,11 @@ def _publish_to_sns(boto3_client, topic_arn, email_campaign_blast_id, candidate_
 #         raise InvalidUsage(error_message)
 
 
-def push_into_sqs(boto3_client, blast_id, candidate_id, candidate_address):
+def push_into_sqs(queue, blast_id, candidate_id, candidate_address):
     """
     Here we push candidate data to SQS for our Email Lambda Consumer
     """
     # Get the queue
-    queue = boto3_client.get_queue_by_name(QueueName='emailSends')
     event = {
         'candidate_id': candidate_id,
         'candidate_address': candidate_address,
