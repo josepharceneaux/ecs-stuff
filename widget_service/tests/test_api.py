@@ -74,13 +74,13 @@ def test_corporate_candidate(widget_page, domain_custom_fields, domain_custom_fi
     assert post_response.status_code == 201
 
 
-def test_health_check():
-    response = requests.get(WidgetApiUrl.HEALTH_CHECK)
-    assert response.status_code == 200
-
-    # Testing Health Check URL with trailing slash
-    response = requests.get(WidgetApiUrl.HEALTH_CHECK + '/')
-    assert response.status_code == 200
+# def test_health_check():
+#     response = requests.get(WidgetApiUrl.HEALTH_CHECK)
+#     assert response.status_code == 200
+#
+#     # Testing Health Check URL with trailing slash
+#     response = requests.get(WidgetApiUrl.HEALTH_CHECK + '/')
+#     assert response.status_code == 200
 
 
 def gen_mock_aois(domain_AOIs):
