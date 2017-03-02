@@ -11,19 +11,23 @@ from candidate_service.modules.talent_cloud_search import upload_candidate_docum
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.candidate import CandidateEducation
 from candidate_service.common.models.candidate import CandidateEducationDegree
+from candidate_service.common.models.user import User, Domain
 
 
-def candidates_with_degrees():
+def candidates_with_degrees(domain_ids):
     """
     Function will:
      - Retrieve candidates with missing degree-end-time and available degree-end-year
      - Update degree-end-time's value with degree-end-year & degree-end-month if available
      - Upload updated candidate's docs to Cloud Search
+    :type domain_ids: list
     :rtype: list
     """
     # Retrieve candidates with missing degree-end-time and available degree-end-year
-    candidates = Candidate.query.join(CandidateEducation).join(CandidateEducationDegree).filter(
-        (CandidateEducationDegree.end_year != None) & (CandidateEducationDegree.end_time == None)
+    candidates = Candidate.query.join(User, Domain, CandidateEducation, CandidateEducationDegree).filter(
+        (Domain.id.in_(domain_ids)) &
+        (CandidateEducationDegree.end_year != None) &
+        (CandidateEducationDegree.end_time == None)
     )  # type: Candidate
 
     start = 0
@@ -53,12 +57,14 @@ def candidates_with_degrees():
 if __name__ == '__main__':
     try:
         start_time = time.time()
-
-        candidate_ids = candidates_with_degrees()
+        customer_and_test_domain_ids = [90, 104, 134, 144, 148, 146, 147, 116, 161,
+                                        129, 159, 157, 152, 150, 117, 128, 111]
+        candidate_ids = candidates_with_degrees(customer_and_test_domain_ids)
         print "candidates_with_degrees successful.\tTime: {}".format(time.time() - start_time)
 
-        print "uploading candidate IDs: {}\nCount: {}".format(candidate_ids, len(candidate_ids))
-        upload_candidate_documents(candidate_ids)
+        if candidate_ids:
+            print "uploading candidate IDs: {}\nCount: {}".format(candidate_ids, len(candidate_ids))
+            upload_candidate_documents(candidate_ids)
 
         print "script completed successfully. Time: {}".format(time.time() - start_time)
     except Exception as e:
