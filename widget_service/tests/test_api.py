@@ -75,7 +75,6 @@ def test_corporate_candidate(widget_page, domain_custom_fields, domain_custom_fi
 
 
 def test_health_check():
-    import requests
     response = requests.get(WidgetApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
 
