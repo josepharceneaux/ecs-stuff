@@ -1,22 +1,23 @@
 __author__ = 'erik@gettalent'
-from collections import defaultdict
 import json
-# Third Party
-from flask import jsonify
+from collections import defaultdict
+
 import requests
-# Module Specific
+from flask import jsonify
+
 from widget_service.app import db
-from widget_service.app.views.utils import create_candidate_educations_dict
-from widget_service.app.views.utils import parse_city_and_state_ids_from_form
-from widget_service.app.views.utils import parse_interest_ids_from_form
-from widget_service.app.views.utils import process_city_and_state_from_fields
+from widget_service.app import logger
+from widget_service.app.modules.utils import create_candidate_educations_dict
+from widget_service.app.modules.utils import parse_city_and_state_ids_from_form
+from widget_service.app.modules.utils import parse_interest_ids_from_form
+from widget_service.app.modules.utils import process_city_and_state_from_fields
 from widget_service.common.error_handling import InvalidUsage
 from widget_service.common.models.misc import CustomField
 from widget_service.common.models.talent_pools_pipelines import TalentPool
 from widget_service.common.models.user import User
 from widget_service.common.models.widget import WidgetPage
-from widget_service.app import logger
 from widget_service.common.routes import CandidateApiUrl
+
 
 def create_widget_candidate(form, talent_pool_hash):
     logger.info('WidgetService::FormInfo - {}'.format(form))
