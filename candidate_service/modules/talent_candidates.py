@@ -1672,16 +1672,14 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
             education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_datetime,
                                        list_order=education.get('list_order') or 1))
             # Prevent duplicate entries
-            education_id = get_education_if_exists(candidate_educations, education_dict, education_degrees)
-            if not education_id:
-                candidate_education = CandidateEducation(**education_dict)
-                db.session.add(candidate_education)
-                db.session.flush()
-                education_id = candidate_education.id
+            candidate_education = CandidateEducation(**education_dict)
+            db.session.add(candidate_education)
+            db.session.flush()
+            education_id = candidate_education.id
 
-                if is_updating:  # Track all updates
-                    track_edits(update_dict=education_dict, table_name='candidate_education',
-                                candidate_id=candidate_id, user_id=user_id)
+            if is_updating:  # Track all updates
+                track_edits(update_dict=education_dict, table_name='candidate_education',
+                            candidate_id=candidate_id, user_id=user_id)
 
             # CandidateEducationDegree
             for education_degree in education_degrees:
@@ -1711,7 +1709,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     end_year=end_year if degree_title or degree_type else None,
                     end_month=end_month if degree_title or degree_type else None,
                     gpa_num=education_degree.get('gpa') if degree_title or degree_type else None,
-                    classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
+                    classification_type_id=classification_type_id_from_degree_type(degree_type),
                     start_time=education_degree.get('start_time') if degree_title or degree_type else None,
                     end_time=end_time if degree_title or degree_type else None
                 )
@@ -1726,20 +1724,17 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                 # Update education_degree_dict with added_time
                 education_degree_dict['added_time'] = added_datetime
 
-                # Prevent duplicate entries
-                candidate_education_degree_id = get_education_degree_if_exists(candidate_educations,
-                                                                               education_degree_dict)
-                if not candidate_education_degree_id:
-                    # Update dict with candidate education ID
-                    education_degree_dict['candidate_education_id'] = education_id
-                    candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
-                    db.session.add(candidate_education_degree)  # Add CandidateEducationDegree
-                    db.session.flush()
-                    candidate_education_degree_id = candidate_education_degree.id
+                # Update dict with candidate education ID
+                education_degree_dict['candidate_education_id'] = education_id
+                candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
+                db.session.add(candidate_education_degree)  # Add CandidateEducationDegree
+                db.session.flush()
+                candidate_education_degree_id = candidate_education_degree.id
 
-                    if is_updating:  # Track all updates
-                        track_edits(update_dict=education_degree_dict, table_name='candidate_education_degree',
-                                    candidate_id=candidate_id, user_id=user_id)
+                if is_updating:  # Track all updates
+                    track_edits(update_dict=education_degree_dict,
+                                table_name='candidate_education_degree',
+                                candidate_id=candidate_id, user_id=user_id)
 
                 # CandidateEducationDegreeBullet
                 degree_bullets = education_degree.get('bullets') or []
