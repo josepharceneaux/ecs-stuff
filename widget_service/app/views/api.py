@@ -36,114 +36,115 @@ simplecrypt.EXPANSION_COUNT = (10000, 10000, 10000)
 mod = Blueprint('widget_api', __name__, template_folder='templates')
 
 
-@mod.route(WidgetApi.DOMAIN_WIDGETS, methods=['GET'])
-def show_widget(encrypted_domain_id, encrypted_widget_id):
-    """ Route for testing template rendering/js functions/etc.
-    :param encrypted_widget_id: (string) The encrypted widget_id associated with an html template.
-    :param encrypted_domain_id: (string) The encrypted domain_id associated with domain relations.
-    :return: a rendered HTML page.
-    """
-    b64decoded_url = b64decode(encrypted_widget_id)
-    decrypted_url = simplecrypt.decrypt(app.config['ENCRYPTION_KEY'], b64decoded_url)
-    id = int(decrypted_url.split('.')[0])
-    template = db.session.query(WidgetPage).get(id).widget_name
-    if template:
-        return render_template(template)
-    else:
-        return 'We should have a 404 page here'
+# @mod.route(WidgetApi.DOMAIN_WIDGETS, methods=['GET'])
+# def show_widget(encrypted_domain_id, encrypted_widget_id):
+#     """ Route for testing template rendering/js functions/etc.
+#     :param encrypted_widget_id: (string) The encrypted widget_id associated with an html template.
+#     :param encrypted_domain_id: (string) The encrypted domain_id associated with domain relations.
+#     :return: a rendered HTML page.
+#     """
+#     b64decoded_url = b64decode(encrypted_widget_id)
+#     decrypted_url = simplecrypt.decrypt(app.config['ENCRYPTION_KEY'], b64decoded_url)
+#     id = int(decrypted_url.split('.')[0])
+#     template = db.session.query(WidgetPage).get(id).widget_name
+#     if template:
+#         return render_template(template)
+#     else:
+#         return 'We should have a 404 page here'
 
 
-@mod.route(WidgetApi.DOMAIN_WIDGETS, methods=['POST'])
-def create_candidate_from_widget(encrypted_domain_id, encrypted_widget_id):
+@mod.route(WidgetApi.CREATE_FOR_TALENT_POOL, methods=['GET'])
+def create_candidate_from_widget(talent_pool_hash):
     """ Post receiver for processing widget date.
     :param encrypted_widget_id: (string) the domain_uuid associated with a WidgetPage.
     :return: A success or error message to change the page state of a widget.
     """
-    b64decoded_url = b64decode(encrypted_widget_id)
-    decrypted_url = simplecrypt.decrypt(app.config['ENCRYPTION_KEY'], b64decoded_url)
-    id = int(decrypted_url.split('.')[0])
-    # Get User from domain
-    widget_user_id = db.session.query(WidgetPage).get(id).user_id
-    # Get or Widget Client
-    widget_client_id = app.config['WIDGET_CLIENT_ID']
-    # Check for Token with userId and Client
-    widget_token = get_token_by_client_and_user(widget_client_id, widget_user_id, db)
-    # If expired refresh
-    if widget_token.expires < datetime.now():
-        access_token = refresh_expired_token(widget_token, widget_client_id,
-                                             app.config['WIDGET_CLIENT_SECRET'])
-    else:
-        access_token = widget_token.access_token
-    form = request.form
-    candidate_dict = defaultdict(dict)
-    # Common fields.
-    candidate_single_field_name = form.get('name')
-    candidate_double_field_name = '{} {}'.format(form.get('firstName'), form.get('lastName'))
-    candidate_dict['emails'] = [{'address': form['emailAdd'], 'label': 'Primary'}]
-    candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(form['hidden-tags-aoi'])
-    # Location based fields.
-    candidate_locations = form.get('hidden-tags-location')
-    candidate_city = form.get('city')
-    candidate_state = form.get('state')
-    # Education fields.
-    candidate_university = form.get('university')
-    candidate_degree = form.get('degree')
-    candidate_major = form.get('major')
-    candidate_graduation_date = form.get('graduation')
-    # Kaiser University Only Field.
-    candidate_nuid = form.get('nuid')
-    # Kaiser Military fields.
-    candidate_military_branch = form.get('militaryBranch')
-    candidate_military_status = form.get('militaryStatus')
-    candidate_military_grade = form.get('militaryGrade')
-    candidate_military_to_date = form.get('militaryToDate')
-    candidate_frequency = form.get('jobFrequency')
-    # Common Widget field processing.
-    if candidate_single_field_name:
-        candidate_dict['full_name'] = candidate_single_field_name
-    else:
-        candidate_dict['full_name'] = candidate_double_field_name
-    if candidate_locations:
-        custom_fields = parse_city_and_state_ids_from_form(candidate_locations)
-        candidate_dict.setdefault('custom_fields', []).extend(custom_fields)
-    if candidate_city and candidate_state:
-        city_state_list = process_city_and_state_from_fields(candidate_city, candidate_state)
-        candidate_dict.setdefault('custom_fields', []).extend(city_state_list)
-    if candidate_frequency:
-        frequency_field = db.session.query(CustomField).filter_by(
-            name='Subscription Preference').first()
-        candidate_dict.setdefault('custom_fields', []).append(
-            {'id': frequency_field.id, 'value': candidate_frequency}
-        )
-    # Kaiser University specific processing.
-    if candidate_university and candidate_degree and candidate_major:
-        candidate_dict['educations'] = [create_candidate_educations_dict(candidate_university,
-                                                                        candidate_degree,
-                                                                        candidate_major,
-                                                                        candidate_graduation_date)]
-    if candidate_nuid:
-        nuid_field = db.session.query(CustomField).filter_by(name='NUID').first()
-        candidate_dict.setdefault('custom_fields', []).append(
-            {'id': nuid_field.id, 'value': candidate_nuid}
-        )
-    # Kaiser Military specific processing.
-    military_service_dict = {}
-    if candidate_military_branch:
-        military_service_dict['branch'] = candidate_military_branch
-    if candidate_military_status:
-        military_service_dict['status'] = candidate_military_status
-    if candidate_military_grade:
-        military_service_dict['grade'] = candidate_military_grade
-    if candidate_military_to_date:
-        military_service_dict['to_date'] = candidate_military_to_date
-    candidate_dict['military_services'] = [military_service_dict] if military_service_dict else None
-
-    payload = json.dumps({'candidates': [candidate_dict]})
-    r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
-                      headers={'Authorization': 'bearer {}'.format(access_token)})
-    if r.status_code != 201:
-        return jsonify({'error': {'message': 'unable to create candidate from form'}}), 401
-    return jsonify({'success': {'message': 'candidate successfully created'}}), 201
+    return talent_pool_hash
+    # b64decoded_url = b64decode(encrypted_widget_id)
+    # decrypted_url = simplecrypt.decrypt(app.config['ENCRYPTION_KEY'], b64decoded_url)
+    # id = int(decrypted_url.split('.')[0])
+    # # Get User from domain
+    # widget_user_id = db.session.query(WidgetPage).get(id).user_id
+    # # Get or Widget Client
+    # widget_client_id = app.config['WIDGET_CLIENT_ID']
+    # # Check for Token with userId and Client
+    # widget_token = get_token_by_client_and_user(widget_client_id, widget_user_id, db)
+    # # If expired refresh
+    # if widget_token.expires < datetime.now():
+    #     access_token = refresh_expired_token(widget_token, widget_client_id,
+    #                                          app.config['WIDGET_CLIENT_SECRET'])
+    # else:
+    #     access_token = widget_token.access_token
+    # form = request.form
+    # candidate_dict = defaultdict(dict)
+    # # Common fields.
+    # candidate_single_field_name = form.get('name')
+    # candidate_double_field_name = '{} {}'.format(form.get('firstName'), form.get('lastName'))
+    # candidate_dict['emails'] = [{'address': form['emailAdd'], 'label': 'Primary'}]
+    # candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(form['hidden-tags-aoi'])
+    # # Location based fields.
+    # candidate_locations = form.get('hidden-tags-location')
+    # candidate_city = form.get('city')
+    # candidate_state = form.get('state')
+    # # Education fields.
+    # candidate_university = form.get('university')
+    # candidate_degree = form.get('degree')
+    # candidate_major = form.get('major')
+    # candidate_graduation_date = form.get('graduation')
+    # # Kaiser University Only Field.
+    # candidate_nuid = form.get('nuid')
+    # # Kaiser Military fields.
+    # candidate_military_branch = form.get('militaryBranch')
+    # candidate_military_status = form.get('militaryStatus')
+    # candidate_military_grade = form.get('militaryGrade')
+    # candidate_military_to_date = form.get('militaryToDate')
+    # candidate_frequency = form.get('jobFrequency')
+    # # Common Widget field processing.
+    # if candidate_single_field_name:
+    #     candidate_dict['full_name'] = candidate_single_field_name
+    # else:
+    #     candidate_dict['full_name'] = candidate_double_field_name
+    # if candidate_locations:
+    #     custom_fields = parse_city_and_state_ids_from_form(candidate_locations)
+    #     candidate_dict.setdefault('custom_fields', []).extend(custom_fields)
+    # if candidate_city and candidate_state:
+    #     city_state_list = process_city_and_state_from_fields(candidate_city, candidate_state)
+    #     candidate_dict.setdefault('custom_fields', []).extend(city_state_list)
+    # if candidate_frequency:
+    #     frequency_field = db.session.query(CustomField).filter_by(
+    #         name='Subscription Preference').first()
+    #     candidate_dict.setdefault('custom_fields', []).append(
+    #         {'id': frequency_field.id, 'value': candidate_frequency}
+    #     )
+    # # Kaiser University specific processing.
+    # if candidate_university and candidate_degree and candidate_major:
+    #     candidate_dict['educations'] = [create_candidate_educations_dict(candidate_university,
+    #                                                                     candidate_degree,
+    #                                                                     candidate_major,
+    #                                                                     candidate_graduation_date)]
+    # if candidate_nuid:
+    #     nuid_field = db.session.query(CustomField).filter_by(name='NUID').first()
+    #     candidate_dict.setdefault('custom_fields', []).append(
+    #         {'id': nuid_field.id, 'value': candidate_nuid}
+    #     )
+    # # Kaiser Military specific processing.
+    # military_service_dict = {}
+    # if candidate_military_branch:
+    #     military_service_dict['branch'] = candidate_military_branch
+    # if candidate_military_status:
+    #     military_service_dict['status'] = candidate_military_status
+    # if candidate_military_grade:
+    #     military_service_dict['grade'] = candidate_military_grade
+    # if candidate_military_to_date:
+    #     military_service_dict['to_date'] = candidate_military_to_date
+    # candidate_dict['military_services'] = [military_service_dict] if military_service_dict else None
+    #
+    # payload = json.dumps({'candidates': [candidate_dict]})
+    # r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
+    #                   headers={'Authorization': 'bearer {}'.format(access_token)})
+    # if r.status_code != 201:
+    #     return jsonify({'error': {'message': 'unable to create candidate from form'}}), 401
+    # return jsonify({'success': {'message': 'candidate successfully created'}}), 201
 
 
 @mod.route(WidgetApi.DOMAIN_INTERESTS, methods=['GET'])

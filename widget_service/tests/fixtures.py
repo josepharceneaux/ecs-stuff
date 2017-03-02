@@ -2,6 +2,7 @@
 __author__ = 'erik@getTalent.com'
 # Standard Library
 import datetime
+from time import time
 # Third Party/Module specific.
 from _mysql_exceptions import IntegrityError
 import pytest
@@ -26,7 +27,7 @@ from widget_service.common.models.user import User
 from widget_service.common.models.widget import WidgetPage
 from widget_service.common.utils.db_utils import get_or_create
 from widget_service.common.utils.handy_functions import random_word
-from widget_service.widget_app import app
+from widget_service.app import app
 
 db.init_app(app)
 db.app = app
@@ -68,7 +69,6 @@ def culture_fixture(request):
 @pytest.fixture(autouse=True)
 def domain_fixture(culture_fixture, org_fixture, request):
     domain = Domain(name=random_word(40),
-                         expiration=datetime.datetime(2050, 4, 26),
                          added_time=datetime.datetime.today(),
                          organization_id=org_fixture.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=(random_word(100)),
@@ -87,7 +87,6 @@ def domain_fixture(culture_fixture, org_fixture, request):
 @pytest.fixture(autouse=True)
 def second_domain(culture_fixture, org_fixture, request):
     domain2 = Domain(name=random_word(40),
-                          expiration=datetime.datetime(2050, 4, 26),
                           added_time=datetime.datetime.today(),
                           organization_id=org_fixture.id, is_fair_check_on=False, is_active=1,
                           default_tracking_code=1, default_from_name=(random_word(100)),
@@ -223,7 +222,7 @@ def widget_page_fixture(user_fixture, candidate_source_fixture, request):
                              request_email_html=random_word(40),
                              request_email_subject=random_word(40),
                              email_source=random_word(40), reply_address=random_word(40),
-                             unique_key=random_word(12)
+                             # unique_key=random_word(12)
                              )
     db.session.add(widget_page)
     db.session.commit()

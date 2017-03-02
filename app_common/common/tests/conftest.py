@@ -30,8 +30,10 @@ from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast, SmsCampaignSma
 from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline, TalentPoolCandidate)
 from ..models.user import (Client, Domain, User, UserPhone, Token, Role)
 from ..models.user import UserGroup
+from ..models.widget import WidgetPage
 from ..routes import UserServiceApiUrl, CandidateApiUrl
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER, send_request, random_word
+from ..utils.db_utils import get_or_create
 
 fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
@@ -154,14 +156,25 @@ def test_org():
 
 @pytest.fixture()
 def domain_aois(domain_first):
-    """Will add two areas-of-interest to domain
+    """Will add two parent areas-of-interest to domain and 2 children interests per parent
     :rtype:  list[AreaOfInterest]
     """
-    areas_of_interest = [{'name': fake.job().lower()}, {'name': fake.job().lower()}]
-    for area_of_interest in areas_of_interest:
+    parent_areas_of_interest = [{'name': fake.job().lower()}, {'name': fake.job().lower()}]
+    for area_of_interest in parent_areas_of_interest:
         db.session.add(AreaOfInterest(domain_id=domain_first.id, name=area_of_interest['name']))
 
     db.session.commit()
+    child_interests = []
+    for parent_interest in AreaOfInterest.get_domain_areas_of_interest(domain_id=domain_first.id):
+        child_interests.extend([{'name': fake.job().lower(), 'parent_id': parent_interest.id},
+                                {'name': fake.job().lower(), 'parent_id': parent_interest.id}])
+
+    for area_of_interest in child_interests:
+        db.session.add(AreaOfInterest(domain_id=domain_first.id, name=area_of_interest['name'],
+                                      parent_id=area_of_interest['parent_id']))
+
+    db.session.commit()
+
     return AreaOfInterest.get_domain_areas_of_interest(domain_id=domain_first.id)
 
 
@@ -231,12 +244,14 @@ def domain_source_2(access_token_first, user_first):
 
 
 @pytest.fixture()
-def domain_custom_fields(domain_first):
+def domain_custom_fields(domain_first, domain_custom_field_categories):
     """
     Will add custom fields to domain
     :rtype:  list[CustomField]
     """
-    custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'}]
+    custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'},
+                     {'name': 'State of Interest', 'type': 'string'}, {'name': 'City of Interest', 'type': 'string'},
+                     {'name': 'Subscription Preference', 'type': 'string'}]
     for custom_field in custom_fields:
         db.session.add(CustomField(domain_id=domain_first.id, name=custom_field['name'],
                                    type=custom_field['type'], added_time=datetime.now()))
@@ -430,7 +445,8 @@ def talent_pool(domain_first, first_group, user_first):
     """
     Fixture adds a talent pool in domain_first
     """
-    tp = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, user_id=user_first.id)
+    tp = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, user_id=user_first.id,
+                    simple_hash=random_word(8))
     db.session.add(tp)
     db.session.commit()
 
@@ -855,3 +871,15 @@ def smartlist_with_archived_candidate(user_first, talent_pipeline, access_token_
     del_resp = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_ids[0], access_token_first)
     assert del_resp.status_code == codes.NO_CONTENT, del_resp.text
     return {'id': smartlist_id}
+
+
+@pytest.fixture()
+def widget_page(talent_pool, user_first):
+    widget = WidgetPage(
+        simple_hash=talent_pool.simple_hash,
+        user_id=user_first.id
+    )
+    db.session.add(widget)
+    db.session.commit()
+    return widget
+

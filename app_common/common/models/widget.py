@@ -6,7 +6,7 @@ class WidgetPage(db.Model):
     __tablename__ = 'widget_page'
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_source_id = db.Column('CandidateSourceId', db.Integer, db.ForeignKey('candidate_source.Id'))
-    unique_key = db.Column('UniqueKey', db.String(255))
+    # unique_key = db.Column('UniqueKey', db.String(255))
     email_source = db.Column('EmailSource', db.String(255))
     page_views = db.Column('PageViews', db.Integer)
     reply_address = db.Column('ReplyAddress', db.String(255))
@@ -14,6 +14,7 @@ class WidgetPage(db.Model):
     request_email_subject = db.Column('RequestEmailSubject', db.String(255))
     request_email_text = db.Column('RequestEmailText', db.Text())
     sign_ups = db.Column('SignUps', db.Integer)
+    simple_hash = db.Column('SimpleHash', db.String(8))
     updated_time = db.Column('UpdatedTime', db.DateTime)
     url = db.Column('Url', db.String(500))
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
@@ -21,6 +22,10 @@ class WidgetPage(db.Model):
     welcome_email_text = db.Column('WelcomeEmailText', db.Text())
     welcome_email_html = db.Column('WelcomeEmailHtml', db.Text())
     welcome_email_subject = db.Column('WelcomeEmailSubject', db.String(255))
+
+    @classmethod
+    def get_by_simple_hash(cls, simple_hash):
+        return cls.query.filter(cls.simple_hash == simple_hash).first()
 
     def __repr__(self):
         return "<WidgetPage (id = {})>".format(self.id)
