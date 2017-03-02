@@ -1513,6 +1513,15 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     raise InvalidUsage('Start year of education cannot be later than end year of education',
                                        custom_error.INVALID_USAGE)
 
+                # Degree end_time is necessary for searching. If degree's end-month is not provided, assume it's 1/jan
+                end_month = education_degree.get('end_month')
+                end_time = None
+                if end_year:
+                    if end_month:
+                        end_time = datetime.datetime(end_year, end_month, 1)
+                    else:
+                        end_time = datetime.datetime(end_year, 1, 1)
+
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
                     degree_type=education_degree['type'].strip() if education_degree.get('type') else None,
@@ -1520,12 +1529,12 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     start_year=start_year,
                     start_month=education_degree.get('start_month'),
                     end_year=end_year,
-                    end_month=education_degree.get('end_month'),
+                    end_month=end_month,
                     gpa_num=education_degree.get('gpa'),
                     added_time=added_datetime,
                     classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
                     start_time=education_degree.get('start_time'),
-                    end_time=education_degree.get('end_time')
+                    end_time=end_time
                 )
                 # Remove keys with None values
                 education_degree_dict = purge_dict(education_degree_dict)
@@ -1682,6 +1691,15 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     raise InvalidUsage('Start year of education cannot be later than end year of education',
                                        custom_error.INVALID_USAGE)
 
+                # Degree end_time is necessary for searching. If degree's end-month is not provided, assume it's 1/jan
+                end_month = education_degree.get('end_month')
+                end_time = None
+                if end_year:
+                    if end_month:
+                        end_time = datetime.datetime(end_year, end_month, 1)
+                    else:
+                        end_time = datetime.datetime(end_year, 1, 1)
+
                 degree_type=education_degree['type'].strip() if education_degree.get('type') else None
                 degree_title=education_degree['title'].strip() if education_degree.get('title') else None
                 education_degree_dict = dict(
@@ -1691,11 +1709,11 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     start_year=start_year if degree_title or degree_type else None,
                     start_month=education_degree.get('start_month') if degree_title or degree_type else None,
                     end_year=end_year if degree_title or degree_type else None,
-                    end_month=education_degree.get('end_month') if degree_title or degree_type else None,
+                    end_month=end_month if degree_title or degree_type else None,
                     gpa_num=education_degree.get('gpa') if degree_title or degree_type else None,
                     classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
                     start_time=education_degree.get('start_time') if degree_title or degree_type else None,
-                    end_time=education_degree.get('end_time') if degree_title or degree_type else None
+                    end_time=end_time if degree_title or degree_type else None
                 )
                 # Remove keys with None values
                 education_degree_dict = purge_dict(education_degree_dict)
