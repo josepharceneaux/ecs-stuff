@@ -1524,8 +1524,9 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
         filter_queries.append("(term field=concentration_type '%s')" % request_vars.get('major'))
 
     if request_vars.get('degree_end_year_from') or request_vars.get('degree_end_year_to'):
-        from_datetime_str, to_datetime_str = _convert_date_range_in_cloudsearch_format(request_vars.get(
-            'degree_end_year_from'), request_vars.get('degree_end_year_to'))
+        from_datetime_str, to_datetime_str = _convert_date_range_in_cloudsearch_format(
+            request_vars.get('degree_end_year_from'), request_vars.get('degree_end_year_to')
+        )
         if from_datetime_str and to_datetime_str:
             filter_queries.append("degree_end_date:%s,%s" % (from_datetime_str, to_datetime_str))
 

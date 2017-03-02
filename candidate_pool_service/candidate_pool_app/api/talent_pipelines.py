@@ -10,6 +10,7 @@ from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.user import Permission
+from candidate_pool_service.common.models.candidate_edit import CandidateEdit
 from candidate_pool_service.common.models.misc import Activity
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_permissions
@@ -99,15 +100,15 @@ class TalentPipelineApi(Resource):
 
             if owner_user_id:
                 talent_pipelines_query = TalentPipeline.query.join(User).filter(and_(
-                        TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id,
-                        User.id == int(owner_user_id), or_(TalentPipeline.name.ilike(
-                                '%' + search_keyword + '%'), TalentPipeline.description.ilike(
-                                '%' + search_keyword + '%'))))
+                    TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id,
+                    User.id == int(owner_user_id), or_(TalentPipeline.name.ilike(
+                        '%' + search_keyword + '%'), TalentPipeline.description.ilike(
+                        '%' + search_keyword + '%'))))
             else:
                 talent_pipelines_query = TalentPipeline.query.join(User).filter(and_(
-                        TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id, or_(
-                                TalentPipeline.name.ilike('%' + search_keyword + '%'),
-                                TalentPipeline.description.ilike('%' + search_keyword + '%'))))
+                    TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id, or_(
+                        TalentPipeline.name.ilike('%' + search_keyword + '%'),
+                        TalentPipeline.description.ilike('%' + search_keyword + '%'))))
 
             total_number_of_talent_pipelines = talent_pipelines_query.count()
 
@@ -117,7 +118,8 @@ class TalentPipelineApi(Resource):
                 else:
                     sort_attribute = TalentPipeline.name
                 talent_pipelines = talent_pipelines_query.order_by(
-                        sort_attribute.asc() if sort_type == 'ASC' else sort_attribute.desc()).paginate(page, per_page, False)
+                    sort_attribute.asc() if sort_type == 'ASC' else sort_attribute.desc()).paginate(page, per_page,
+                                                                                                    False)
                 talent_pipelines = talent_pipelines.items
             else:
                 talent_pipelines = talent_pipelines_query.all()
@@ -137,17 +139,17 @@ class TalentPipelineApi(Resource):
 
             if sort_by == 'engagement_score':
                 talent_pipelines_data = sorted(
-                        talent_pipelines_data, key=lambda talent_pipeline_data: talent_pipeline_data[sort_by],
-                        reverse=(False if sort_type == 'ASC' else True))
+                    talent_pipelines_data, key=lambda talent_pipeline_data: talent_pipeline_data[sort_by],
+                    reverse=(False if sort_type == 'ASC' else True))
 
                 talent_pipelines_data = talent_pipelines_data[(page - 1) * per_page:page * per_page]
 
             headers = generate_pagination_headers(total_number_of_talent_pipelines, per_page, page)
 
             response = dict(
-                    talent_pipelines=talent_pipelines_data,
-                    page_number=page, talent_pipelines_per_page=per_page,
-                    total_number_of_talent_pipelines=total_number_of_talent_pipelines
+                talent_pipelines=talent_pipelines_data,
+                page_number=page, talent_pipelines_per_page=per_page,
+                total_number_of_talent_pipelines=total_number_of_talent_pipelines
             )
 
             return ApiResponse(response=response, headers=headers, status=200)
@@ -225,7 +227,8 @@ class TalentPipelineApi(Resource):
 
             if TalentPipeline.query.join(TalentPipeline.user).filter(and_(
                             TalentPipeline.name == name, User.domain_id == request.user.domain_id)).first():
-                raise InvalidUsage("Talent pipeline with name {} already exists in domain {}".format(name, request.user.domain_id))
+                raise InvalidUsage(
+                    "Talent pipeline with name {} already exists in domain {}".format(name, request.user.domain_id))
 
             try:
                 date_needed = parser.parse(date_needed)
@@ -302,7 +305,7 @@ class TalentPipelineApi(Resource):
             raise InvalidUsage("Request body is empty or not provided")
         posted_data = posted_data['talent_pipeline']
 
-        name = posted_data.get('name', '')
+        name = posted_data.get('name')
         description = posted_data.get('description', '')
         positions = posted_data.get('positions', '')
         date_needed = posted_data.get('date_needed', '')
@@ -310,12 +313,15 @@ class TalentPipelineApi(Resource):
         is_hidden = posted_data.get('is_hidden', 0)
         search_params = posted_data.get('search_params', dict())
 
-        if name:
-            if TalentPipeline.query.join(TalentPipeline.user).filter(
-                    and_(TalentPipeline.name == name, User.domain_id == request.user.domain_id)).first():
-                raise InvalidUsage("Talent pipeline with name {} already exists in domain {}".format(
+        if name is not None:
+            if name:
+                if TalentPipeline.query.join(TalentPipeline.user).filter(
+                        and_(TalentPipeline.name == name, User.domain_id == request.user.domain_id)).first():
+                    raise InvalidUsage("Talent pipeline with name {} already exists in domain {}".format(
                         name, request.user.domain_id))
-            talent_pipeline.name = name
+                talent_pipeline.name = name
+            else:
+                raise InvalidUsage("Name cannot be an empty string")
 
         if date_needed:
             try:
@@ -410,7 +416,7 @@ class TalentPipelineSmartListApi(Resource):
 
         total_number_of_smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).count()
         smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).order_by(
-                Smartlist.added_time.desc()).paginate(page, per_page, False)
+            Smartlist.added_time.desc()).paginate(page, per_page, False)
 
         smartlists = smartlists.items
 
@@ -471,15 +477,15 @@ class TalentPipelineSmartListApi(Resource):
 
             if smartlist.user.domain_id != talent_pipeline.user.domain_id:
                 raise ForbiddenError("Smartlist {} and Talent pipeline {} belong to different domain".format(
-                        smartlist_id, talent_pipeline_id))
+                    smartlist_id, talent_pipeline_id))
 
             if smartlist.talent_pipeline_id == talent_pipeline_id:
                 raise InvalidUsage("Smartlist {} already belongs to Talent Pipeline {}".format(
-                        smartlist.name, talent_pipeline_id))
+                    smartlist.name, talent_pipeline_id))
 
             if smartlist.talent_pipeline_id:
                 raise ForbiddenError("smartlist {} is already assigned to talent_pipeline {}".format(
-                        smartlist.name, smartlist.talent_pipeline_id))
+                    smartlist.name, smartlist.talent_pipeline_id))
 
             smartlist.talent_pipeline_id = talent_pipeline_id
 
@@ -536,7 +542,7 @@ class TalentPipelineSmartListApi(Resource):
 
             if smartlist.talent_pipeline_id != talent_pipeline_id:
                 raise ForbiddenError("smartlist {} doesn't belong to talent_pipeline {}".format(
-                        smartlist.name, talent_pipeline_id))
+                    smartlist.name, talent_pipeline_id))
 
             smartlist.talent_pipeline_id = None
 
@@ -578,8 +584,8 @@ class TalentPipelineCandidates(Resource):
             raise InvalidUsage("Some of the candidates don't exist in DB")
 
         TalentPipelineExcludedCandidates.query.filter(
-                TalentPipelineExcludedCandidates.talent_pipeline_id == talent_pipeline.id,
-                TalentPipelineExcludedCandidates.candidate_id.in_(candidate_ids)).delete(synchronize_session='fetch')
+            TalentPipelineExcludedCandidates.talent_pipeline_id == talent_pipeline.id,
+            TalentPipelineExcludedCandidates.candidate_id.in_(candidate_ids)).delete(synchronize_session='fetch')
 
         added_candidate_ids = []
         for candidate_id in candidate_ids:
@@ -588,6 +594,22 @@ class TalentPipelineCandidates(Resource):
                 added_candidate_ids.append(candidate_id)
                 db.session.add(TalentPipelineIncludedCandidates(talent_pipeline_id=talent_pipeline.id,
                                                                 candidate_id=candidate_id))
+
+                # Track updates made to candidate's records
+                db.session.add(CandidateEdit(
+                    user_id=request.user.id,
+                    candidate_id=candidate_id,
+                    field_id=1801,
+                    old_value=None,
+                    new_value=talent_pipeline.name,
+                    edit_datetime=datetime.utcnow(),
+                    is_custom_field=False
+                ))
+            else:
+                db.session.rollback()
+                raise InvalidUsage("Candidate: %s is already included in pipeline: %s" % (
+                    candidate_id, talent_pipeline.id))
+
         db.session.commit()
 
         update_candidates_on_cloudsearch(request.oauth_token, candidate_ids)
@@ -596,7 +618,7 @@ class TalentPipelineCandidates(Resource):
             'name': talent_pipeline.name
         }
         candidates = Candidate.query.with_entities(Candidate.id, Candidate.formatted_name).filter(
-                Candidate.id.in_(added_candidate_ids)).all()
+            Candidate.id.in_(added_candidate_ids)).all()
 
         for candidate_id, formatted_name in candidates:
             activity_data['formattedName'] = formatted_name
@@ -632,16 +654,32 @@ class TalentPipelineCandidates(Resource):
             raise InvalidUsage("Some of the candidates don't exist in DB")
 
         TalentPipelineIncludedCandidates.query.filter(
-                TalentPipelineIncludedCandidates.talent_pipeline_id == talent_pipeline.id,
-                TalentPipelineIncludedCandidates.candidate_id.in_(candidate_ids)).delete(synchronize_session='fetch')
+            TalentPipelineIncludedCandidates.talent_pipeline_id == talent_pipeline.id,
+            TalentPipelineIncludedCandidates.candidate_id.in_(candidate_ids)).delete(synchronize_session='fetch')
 
         removed_candidate_ids = []
         for candidate_id in candidate_ids:
             if not TalentPipelineExcludedCandidates.query.filter_by(talent_pipeline_id=talent_pipeline.id,
                                                                     candidate_id=candidate_id).first():
                 removed_candidate_ids.append(candidate_id)
+
                 db.session.add(TalentPipelineExcludedCandidates(talent_pipeline_id=talent_pipeline.id,
                                                                 candidate_id=candidate_id))
+
+                # Track updates made to candidate's records
+                db.session.add(CandidateEdit(
+                    user_id=request.user.id,
+                    candidate_id=candidate_id,
+                    field_id=1801,
+                    old_value=talent_pipeline.name,
+                    new_value=None,  # inferring deletion
+                    edit_datetime=datetime.utcnow(),
+                    is_custom_field=False
+                ))
+            else:
+                db.session.rollback()
+                raise InvalidUsage("Candidate: %s is not included in pipeline: %s" % (candidate_id, talent_pipeline.id))
+
         db.session.commit()
 
         update_candidates_on_cloudsearch(request.oauth_token, candidate_ids)
@@ -650,7 +688,7 @@ class TalentPipelineCandidates(Resource):
             'name': talent_pipeline.name
         }
         candidates = Candidate.query.with_entities(Candidate.id, Candidate.formatted_name).filter(
-                Candidate.id.in_(removed_candidate_ids)).all()
+            Candidate.id.in_(removed_candidate_ids)).all()
 
         for candidate_id, formatted_name in candidates:
             activity_data['formattedName'] = formatted_name
@@ -719,7 +757,6 @@ class TalentPipelineMostEngagedCandidates(Resource):
 
 
 class CandidateMostEngagedPipelines(Resource):
-
     # Access token decorator
     decorators = [require_oauth()]
 
