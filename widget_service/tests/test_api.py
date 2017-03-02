@@ -61,29 +61,28 @@ def test_military_candidate(widget_page, domain_custom_fields, domain_custom_fie
     url = WidgetApiUrl.CREATE_FOR_TALENT_POOL % widget_page.simple_hash
     post_response = r.post(url, candidate_dict)
     assert post_response.status_code == 201
-#
-#
-# def test_university_candidate(widget_page_fixture, request):
-#     aoi_string = gen_mock_aois()
-#     candidate_dict = {
-#         'name': random_word(12),
-#         'emailAdd': '{}@gmail.com'.format(random_word(12)),
-#         'city': random_word(10),
-#         'state': random_word(10),
-#         'university': random_word(10),
-#         'degree': random_word(10),
-#         'major': random_word(10),
-#         'graduation': '{} {}'.format(random_word(8), 2016),
-#         'hidden-tags-aoi': aoi_string,
-#         'nuid': random_word(8),
-#         'jobFrequency': 'Monthly'
-#     }
-#
-#     post_response = r.post(WidgetApiUrl.DOMAIN_WIDGETS
-#                            % ('potato', gt_url_encrypt(widget_page_fixture.id)), data=candidate_dict)
-#     assert post_response.status_code == 201
-#     # TODO expand to check DB that our fields are there
-#     assert 'success' in post_response.content
+
+
+def test_university_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois):
+    aoi_string = gen_mock_aois(domain_aois)
+    candidate_dict = {
+        'name': random_word(12),
+        'emailAdd': '{}@gmail.com'.format(random_word(12)),
+        'city': random_word(10),
+        'state': random_word(10),
+        'university': random_word(10),
+        'degree': random_word(10),
+        'major': random_word(10),
+        'graduation': '{} {}'.format(random_word(8), 2016),
+        'hidden-tags-aoi': aoi_string,
+        'nuid': random_word(8),
+        'jobFrequency': 'Monthly'
+    }
+
+    url = WidgetApiUrl.CREATE_FOR_TALENT_POOL % widget_page.simple_hash
+    post_response = r.post(url, candidate_dict)
+    assert post_response.status_code == 201
+    # TODO expand to check DB that our fields are there
 #
 #
 # def test_corporate_candidate(widget_page_fixture, request):

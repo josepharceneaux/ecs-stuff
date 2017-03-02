@@ -29,16 +29,13 @@ def create_widget_candidate(form, talent_pool_hash):
         raise InvalidUsage(error_message='Unknown widget page')
     widget_user_id = widget.user_id
     widget_token = User.generate_jw_token(expiration=60, user_id=widget_user_id)
-    logger.debug('WE HAVE MADE IT PAST TOKENS')
 
     candidate_dict = defaultdict(dict)
     # Common fields.
     candidate_single_field_name = form.get('name')
     candidate_double_field_name = '{} {}'.format(form.get('firstName'), form.get('lastName'))
     candidate_dict['emails'] = [{'address': form['emailAdd'], 'label': 'Primary'}]
-    logger.debug('WE HAVE MADE IT PAST EMAILS')
     candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(form['hidden-tags-aoi'], domain_id)
-    logger.debug('WE HAVE MADE IT PAST AOIS')
     # # Location based fields.
     candidate_locations = form.get('hidden-tags-location')
     candidate_city = form.get('city')
@@ -48,14 +45,17 @@ def create_widget_candidate(form, talent_pool_hash):
     candidate_degree = form.get('degree')
     candidate_major = form.get('major')
     candidate_graduation_date = form.get('graduation')
+
     # Kaiser University Only Field.
-    # candidate_nuid = form.get('nuid')
+    candidate_nuid = form.get('nuid')
+
     # Kaiser Military fields.
     candidate_military_branch = form.get('militaryBranch')
     candidate_military_status = form.get('militaryStatus')
     candidate_military_grade = form.get('militaryGrade')
     candidate_military_to_date = form.get('militaryToDate')
     candidate_frequency = form.get('jobFrequency')
+
     # Common Widget field processing.
     if candidate_single_field_name:
         candidate_dict['full_name'] = candidate_single_field_name
@@ -65,7 +65,7 @@ def create_widget_candidate(form, talent_pool_hash):
         custom_fields = parse_city_and_state_ids_from_form(candidate_locations, domain_id)
         candidate_dict.setdefault('custom_fields', []).extend(custom_fields)
     if candidate_city and candidate_state:
-        city_state_list = process_city_and_state_from_fields(candidate_city, candidate_state)
+        city_state_list = process_city_and_state_from_fields(candidate_city, candidate_state, domain_id)
         candidate_dict.setdefault('custom_fields', []).extend(city_state_list)
     if candidate_frequency:
         frequency_field = db.session.query(CustomField).filter_by(
@@ -73,17 +73,18 @@ def create_widget_candidate(form, talent_pool_hash):
         candidate_dict.setdefault('custom_fields', []).append(
             {'custom_field_id': frequency_field.id, 'value': candidate_frequency}
         )
-    # # Kaiser University specific processing.
-    # if candidate_university and candidate_degree and candidate_major:
-    #     candidate_dict['educations'] = [create_candidate_educations_dict(candidate_university,
-    #                                                                     candidate_degree,
-    #                                                                     candidate_major,
-    #                                                                     candidate_graduation_date)]
-    # if candidate_nuid:
-    #     nuid_field = db.session.query(CustomField).filter_by(name='NUID').first()
-    #     candidate_dict.setdefault('custom_fields', []).append(
-    #         {'id': nuid_field.id, 'value': candidate_nuid}
-    #     )
+
+    # Kaiser University specific processing.
+    if candidate_university and candidate_degree and candidate_major:
+        candidate_dict['educations'] = [create_candidate_educations_dict(candidate_university,
+                                                                        candidate_degree,
+                                                                        candidate_major,
+                                                                        candidate_graduation_date)]
+    if candidate_nuid:
+        nuid_field = db.session.query(CustomField).filter_by(name='NUID', domain_id=domain_id).first()
+        candidate_dict.setdefault('custom_fields', []).append(
+            {'custom_field_id': nuid_field.id, 'value': candidate_nuid}
+        )
     # Kaiser Military specific processing.
     military_service_dict = {}
     if candidate_military_branch:
@@ -101,5 +102,4 @@ def create_widget_candidate(form, talent_pool_hash):
                                                                          'Content-Type': 'application/json'})
     if r.status_code != 201:
         return jsonify({'error': {'message': 'unable to create candidate from form'}}), 401
-    logger.debug('About to return')
     return jsonify(candidate_dict), 201

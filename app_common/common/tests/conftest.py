@@ -251,7 +251,7 @@ def domain_custom_fields(domain_first, domain_custom_field_categories):
     """
     custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'},
                      {'name': 'State of Interest', 'type': 'string'}, {'name': 'City of Interest', 'type': 'string'},
-                     {'name': 'Subscription Preference', 'type': 'string'}]
+                     {'name': 'Subscription Preference', 'type': 'string'}, {'name': 'NUID', 'type': 'string'}]
     for custom_field in custom_fields:
         db.session.add(CustomField(domain_id=domain_first.id, name=custom_field['name'],
                                    type=custom_field['type'], added_time=datetime.now()))

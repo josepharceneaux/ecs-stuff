@@ -68,8 +68,7 @@ def create_candidate_educations_dict(major, degree, school_name, grad_date):
             {
                 'type': degree,
                 'title': major,
-                'end_year': grad_date.split(' ')[1],
-                'degree_bullets': []
+                'end_year': int(grad_date.split(' ')[1]),
             }
         ]
     }
