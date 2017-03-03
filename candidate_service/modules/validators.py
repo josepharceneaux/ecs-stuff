@@ -16,7 +16,7 @@ from candidate_service.common.error_handling import InvalidUsage, NotFoundError,
 from candidate_service.common.models.candidate import (
     Candidate, CandidateEmail, CandidateEducation, CandidateExperience, CandidatePhone,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateMilitaryService,
-    CandidateSource
+    CandidateEducationDegree
 )
 from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign
@@ -501,7 +501,7 @@ def does_candidate_cf_exist(candidate, custom_field_id, value):
     Function will return true if custom field already exists for candidate, otherwise false
     :type candidate:  Candidate
     :type custom_field_id: int | long
-    :param value: candidate's custom field value
+    :param value: candidate's custom field valued
     :type value: str
     :rtype:  bool
     """
@@ -511,34 +511,36 @@ def does_candidate_cf_exist(candidate, custom_field_id, value):
     return False
 
 
-def get_education_if_exists(educations, education_dict, education_degrees):
+def get_education_if_exists(existing_educations, education_dict, education_degrees):
     """
     Function will check to see if the requested education information already exists in the database
-    :type educations:  list[CandidateEducation]
-    :param educations:  candidate.educations
+    :type existing_educations:  list[CandidateEducation]
+    :param existing_educations:  candidate.educations
     :param education_degrees:  education-degrees' info from the request
     :type education_degrees:  list[dict[str]]
     :type education_dict: dict[str]
     """
-    for education in educations:
-        school_name = (education.school_name or '').lower()
-        if school_name == (education_dict.get('school_name') or '').lower():
+    for education in existing_educations:
+        existing_school_name = (education.school_name or '').lower()
+        if existing_school_name == (education_dict.get('school_name') or '').lower():
 
             existing_degree_dicts = [
                 {
                     'start_year': existing_degree.start_year,
                     'end_year': existing_degree.end_year,
-                    'title': existing_degree.degree_title
+                    'title': existing_degree.degree_title,
+                    'type': existing_degree.degree_type
                 } for existing_degree in education.degrees
-                ]
+            ]
 
             new_degree_dicts = [
                 {
                     'start_year': new_degree.get('start_year'),
                     'end_year': new_degree.get('end_year'),
-                    'title': new_degree.get('title')
+                    'title': (new_degree.get('title') or '').strip(),
+                    'type': (new_degree.get('type') or '').strip()
                 } for new_degree in education_degrees
-                ]
+            ]
 
             common_dicts = [common for common in existing_degree_dicts if common in new_degree_dicts]
             if common_dicts:
@@ -547,24 +549,26 @@ def get_education_if_exists(educations, education_dict, education_degrees):
     return None  # for readability
 
 
-def get_education_degree_if_exists(educations, education_degree):
+def get_education_degree_if_exists(existing_educations, education_degree):
     """
-    :type educations:  list[CandidateEducation]
+    :type existing_educations:  list[CandidateEducation]
     :type education_degree:  dict[str]
     """
-    for education in educations:
-        for degree in education.degrees:
+    for education in existing_educations:
+        for degree in education.degrees:  # type: CandidateEducationDegree
 
             existing_degree_dicts = {
                 'start_year': degree.start_year,
                 'end_year': degree.end_year,
-                'title': degree.degree_title
+                'title': degree.degree_title,
+                'type': degree.degree_type
             }
 
             new_degree_dicts = {
                 'start_year': education_degree.get('start_year'),
                 'end_year': education_degree.get('end_year'),
-                'title': education_degree.get('degree_title')
+                'title': education_degree.get('degree_title'),
+                'type': education_degree.get('degree_type')
             }
 
             if existing_degree_dicts.values() == new_degree_dicts.values():
