@@ -1,0 +1,2 @@
+insert ignore into product set Name = 'iCIMS', Notes = 'iCIMS ATS';
+insert ignore into product set Name = 'Greenhouse', Notes = 'Greenhouse ATS';
