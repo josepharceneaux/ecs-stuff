@@ -78,13 +78,14 @@ sleep 10
 
 echo "Beginning tests."
 
+# These tests cannot be ran concurrently
 py.test banner_service/tests
+py.test widget_service/tests
 
-py.test -n 48 scheduler_service/tests auth_service/tests candidate_pool_service/tests spreadsheet_import_service/tests app_common/common/tests app_common/common/campaign_services/tests talentbot_service/tests sms_campaign_service/tests email_campaign_service/tests social_network_service/tests widget_service/tests
+py.test -n 48 scheduler_service/tests auth_service/tests candidate_pool_service/tests spreadsheet_import_service/tests app_common/common/tests app_common/common/campaign_services/tests talentbot_service/tests sms_campaign_service/tests email_campaign_service/tests social_network_service/tests
 # Commented out due to failures on jenkins
 # candidate_service/tests user_service/tests
 
-# These tests cannot be ran concurrently
 
 if [ $? -ne 0 ] ; then
     exit 1
