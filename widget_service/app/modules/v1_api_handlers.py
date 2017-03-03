@@ -22,9 +22,9 @@ from widget_service.common.routes import CandidateApiUrl
 def create_widget_candidate(form, talent_pool_hash):
     logger.info('WidgetService::FormInfo - {}'.format(form))
     talent_pool = TalentPool.get_by_simple_hash(talent_pool_hash)
-    domain_id = talent_pool.domain_id
     if not talent_pool:
         raise InvalidUsage(error_message='Unknown talent pool')
+    domain_id = talent_pool.domain_id
     widget = WidgetPage.get_by_simple_hash(talent_pool_hash)
     if not widget:
         raise InvalidUsage(error_message='Unknown widget page')
