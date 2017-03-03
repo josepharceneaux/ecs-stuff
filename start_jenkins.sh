@@ -39,7 +39,7 @@ cd mock_service && tar -czh . | docker build -t gettalent/mock-service:latest - 
 cd talentbot_service && tar -czh . | docker build -t gettalent/talentbot-service:latest - && cd ../
 cd graphql_service && tar -czh . | docker build -t gettalent/graphql-service:latest - && cd ../
 cd banner_service && tar -czh . | docker build -t gettalent/banner-service:latest - && cd ../
-cd widget_service && tar -czh . | docker build -t gettalent/widget_service:latest - && cd ../
+cd widget_service && tar -czh . | docker build -t gettalent/widget-service:latest - && cd ../
 
 # TODO: Move scheduler service admin to another repo
 # cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-service-admin:latest - && cd ../
