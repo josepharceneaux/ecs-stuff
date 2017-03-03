@@ -17,7 +17,7 @@ from widget_service.common.tests.conftest import widget_page
 from widget_service.common.utils.handy_functions import random_word
 
 
-def test_military_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois):
+def test_military_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois, talent_pool):
     aoi_string = gen_mock_aois(domain_aois)
     candidate_dict = {
         'firstName': random_word(12),
@@ -37,7 +37,7 @@ def test_military_candidate(widget_page, domain_custom_fields, domain_custom_fie
     assert post_response.status_code == 201, 'Error in content - {}'.format(post_response.content)
 
 
-def test_university_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois):
+def test_university_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois, talent_pool):
     aoi_string = gen_mock_aois(domain_aois)
     candidate_dict = {
         'name': random_word(12),
@@ -58,7 +58,7 @@ def test_university_candidate(widget_page, domain_custom_fields, domain_custom_f
     assert post_response.status_code == 201, 'Error in content - {}'.format(post_response.content)
 
 
-def test_corporate_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois):
+def test_corporate_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois, talent_pool):
     aoi_string = gen_mock_aois(domain_aois)
     candidate_dict = {
         'firstName': random_word(12),
