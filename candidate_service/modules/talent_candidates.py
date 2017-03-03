@@ -1672,14 +1672,18 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
             education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_datetime,
                                        list_order=education.get('list_order') or 1))
             # Prevent duplicate entries
-            candidate_education = CandidateEducation(**education_dict)
-            db.session.add(candidate_education)
-            db.session.flush()
-            education_id = candidate_education.id
+            education_id = get_education_if_exists(candidate_educations, education_dict, education_degrees)
+            if not education_id:
+                candidate_education = CandidateEducation(**education_dict)
+                db.session.add(candidate_education)
+                db.session.flush()
+                education_id = candidate_education.id
 
-            if is_updating:  # Track all updates
-                track_edits(update_dict=education_dict, table_name='candidate_education',
-                            candidate_id=candidate_id, user_id=user_id)
+                if is_updating:  # Track all updates
+                    track_edits(update_dict=education_dict,
+                                table_name='candidate_education',
+                                candidate_id=candidate_id,
+                                user_id=user_id)
 
             # CandidateEducationDegree
             for education_degree in education_degrees:
