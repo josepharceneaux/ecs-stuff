@@ -34,7 +34,7 @@ def test_military_candidate(widget_page, domain_custom_fields, domain_custom_fie
 
     url = WidgetApiUrl.CREATE_FOR_TALENT_POOL % widget_page.simple_hash
     post_response = requests.post(url, candidate_dict)
-    assert post_response.status_code == 201
+    assert post_response.status_code == 201, 'Error in content - {}'.format(post_response.content)
 
 
 def test_university_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois):
@@ -55,7 +55,7 @@ def test_university_candidate(widget_page, domain_custom_fields, domain_custom_f
 
     url = WidgetApiUrl.CREATE_FOR_TALENT_POOL % widget_page.simple_hash
     post_response = requests.post(url, candidate_dict)
-    assert post_response.status_code == 201
+    assert post_response.status_code == 201, 'Error in content - {}'.format(post_response.content)
 
 
 def test_corporate_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois):
@@ -71,7 +71,7 @@ def test_corporate_candidate(widget_page, domain_custom_fields, domain_custom_fi
 
     url = WidgetApiUrl.CREATE_FOR_TALENT_POOL % widget_page.simple_hash
     post_response = requests.post(url, candidate_dict)
-    assert post_response.status_code == 201
+    assert post_response.status_code == 201, 'Error in content - {}'.format(post_response.content)
 
 
 # def test_health_check():
