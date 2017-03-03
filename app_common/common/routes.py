@@ -494,6 +494,7 @@ class WidgetApi(object):
     """
     VERSION = 'v1'
     URL_PREFIX = '/' + VERSION + '/'
+    CREATE_FOR_TALENT_POOL = 'talent_pool/<path:talent_pool_hash>/'
     DOMAINS = 'domains'
     DOMAIN_WIDGETS = 'domains/<path:encrypted_domain_id>/widgets/<path:encrypted_widget_id>'
     DOMAIN_INTERESTS = 'domains/<path:encrypted_domain_id>/interests'
@@ -508,11 +509,12 @@ class WidgetApiUrl(object):
     VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.WIDGET_SERVICE_NAME, GTApis.WIDGET_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    DOMAINS = HOST_NAME % ('/' + VERSION + '/domains')
-    DOMAIN_WIDGETS = HOST_NAME % ('/' + VERSION + '/domains/%s/widgets/%s')
-    DOMAIN_INTERESTS = HOST_NAME % ('/' + VERSION + '/domains/%s/interests')
-    DOMAIN_MAJORS = HOST_NAME % ('/' + VERSION + '/domains/%s/majors')
-    UNIVERSITIES = HOST_NAME % ('/' + VERSION + '/universities')
+    CREATE_FOR_TALENT_POOL = HOST_NAME % ('/' + VERSION + '/talent_pool/%s/')
+    # DOMAINS = HOST_NAME % ('/' + VERSION + '/domains')
+    # DOMAIN_WIDGETS = HOST_NAME % ('/' + VERSION + '/domains/%s/widgets/%s')
+    # DOMAIN_INTERESTS = HOST_NAME % ('/' + VERSION + '/domains/%s/interests')
+    # DOMAIN_MAJORS = HOST_NAME % ('/' + VERSION + '/domains/%s/majors')
+    # UNIVERSITIES = HOST_NAME % ('/' + VERSION + '/universities')
 
 
 class CandidatePoolApi(object):
