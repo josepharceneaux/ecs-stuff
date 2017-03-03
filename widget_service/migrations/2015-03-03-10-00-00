@@ -10,12 +10,10 @@ try:
     db.session.execute(
         text("ALTER TABLE `widget_page` ADD COLUMN `SimpleHash` varchar(8);")
     )
-    db.session.commit()
 
     db.session.execute(
         text("ALTER TABLE `widget_page` ADD UNIQUE (`SimpleHash`);")
     )
-    db.session.commit()
 except Exception as e:
     print 'widget migration failed {}'.format(e.message)
 
