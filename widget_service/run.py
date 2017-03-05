@@ -1,7 +1,7 @@
 """Local runfile/uWSGI callable"""
 __author__ = 'erikfarmer'
 
-from app import app
+from widget_service.app import app
 from widget_service.common.routes import GTApis
 
 if __name__ == '__main__':

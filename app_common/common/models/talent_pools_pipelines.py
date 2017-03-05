@@ -78,6 +78,11 @@ class TalentPool(db.Model):
         return cls.query.with_entities(cls.name).filter(cls.user_id == user_id).all()
 
 
+    @classmethod
+    def get_by_simple_hash(cls, simple_hash):
+        return cls.query.filter(cls.simple_hash == simple_hash).first()
+
+
 class TalentPoolCandidate(db.Model):
     __tablename__ = 'talent_pool_candidate'
     id = db.Column(db.Integer, primary_key=True)
