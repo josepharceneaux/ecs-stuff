@@ -22,8 +22,9 @@ from candidate_service.common.error_handling import InvalidUsage
 
 # Models
 from candidate_service.common.models.user import Permission, User
-from candidate_service.common.models.candidate import Candidate
-from candidate_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPoolCandidate
+from candidate_service.common.models.talent_pools_pipelines import (
+    TalentPipeline, TalentPoolCandidate, TalentPipelineIncludedCandidates, TalentPipelineExcludedCandidates
+)
 from candidate_service.modules.candidate_engagement import top_most_engaged_pipelines_of_candidate
 from candidate_service.common.inter_service_calls.candidate_service_calls import search_candidates_from_params
 
@@ -59,13 +60,19 @@ class CandidatePipelineResource(Resource):
             raise InvalidUsage('`is_hidden` can be either 0 or 1')
 
         # Candidate's talent pool ID
-        candidate_talent_pool_ids = [tp.talent_pool_id for tp in TalentPoolCandidate.query.
-            filter_by(candidate_id=candidate_id).all()]
+        candidate_talent_pool_ids = [tp.talent_pool_id for tp in TalentPoolCandidate.query.filter_by(
+                candidate_id=candidate_id).all()]
+
+        added_pipelines = TalentPipelineIncludedCandidates.query.filter_by(candidate_id=candidate_id).all()
+
+        removed_pipeline_ids = map(lambda x: x[0], TalentPipelineExcludedCandidates.query.with_entities(
+                TalentPipelineExcludedCandidates.talent_pipeline_id).filter_by(candidate_id=candidate_id).all())
 
         # Get User-domain's 10 most recent talent pipelines in order of added time
         talent_pipelines = TalentPipeline.query.join(User).filter(
             TalentPipeline.is_hidden == is_hidden,
-            TalentPipeline.talent_pool_id.in_(candidate_talent_pool_ids)
+            TalentPipeline.talent_pool_id.in_(candidate_talent_pool_ids),
+            TalentPipeline.id.notin_(removed_pipeline_ids)
         ).order_by(TalentPipeline.added_time.desc()).limit(max_requests).all()
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
@@ -75,10 +82,9 @@ class CandidatePipelineResource(Resource):
             search_params = talent_pipeline.search_params
             if search_params:
                 search_response = search_candidates_from_params(
-                    search_params=format_search_params(talent_pipeline.search_params),
-                    access_token=request.oauth_token,
-                    url_args='?id={}&talent_pool_id={}&talent_pipelines={}'.format(
-                            candidate_id, talent_pipeline.talent_pool_id, str(talent_pipeline.id)))
+                        search_params=format_search_params(talent_pipeline.search_params),
+                        access_token=request.oauth_token,
+                        url_args='?id={}&talent_pool_id={}'.format(candidate_id, talent_pipeline.talent_pool_id))
 
                 logger.info("\ncandidate_id: {}\ntalent_pipeline_id: {}\nsearch_params: {}\nsearch_response: {}".format(
                     candidate_id, talent_pipeline.id, search_params, search_response))
@@ -90,6 +96,9 @@ class CandidatePipelineResource(Resource):
                         break
 
         result = []
+
+        found_talent_pipelines += added_pipelines
+        found_talent_pipelines = list(set(found_talent_pipelines))
 
         logger.info("\nfound_talent_pipelines: {}".format(found_talent_pipelines))
 
