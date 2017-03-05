@@ -64,6 +64,7 @@ class CandidatePipelineResource(Resource):
                 candidate_id=candidate_id).all()]
 
         added_pipelines = TalentPipelineIncludedCandidates.query.filter_by(candidate_id=candidate_id).all()
+        added_pipelines = map(lambda x: x.talent_pipeline, added_pipelines)
 
         removed_pipeline_ids = map(lambda x: x[0], TalentPipelineExcludedCandidates.query.with_entities(
                 TalentPipelineExcludedCandidates.talent_pipeline_id).filter_by(candidate_id=candidate_id).all())
