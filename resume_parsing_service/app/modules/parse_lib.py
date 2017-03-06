@@ -12,10 +12,10 @@ import magic
 from PIL import Image
 from contracts import contract
 from flask import current_app
-from resume_parsing_service.app.views.ocr_lib import ocr_image
-from resume_parsing_service.app.views.pdf_utils import convert_pdf_to_text
-from resume_parsing_service.app.views.pdf_utils import decrypt_pdf
-from resume_parsing_service.app.views.pdf_utils import detect_pdf_has_form
+from resume_parsing_service.app.modules.ocr_lib import ocr_image
+from resume_parsing_service.app.modules.pdf_utils import convert_pdf_to_text
+from resume_parsing_service.app.modules.pdf_utils import decrypt_pdf
+from resume_parsing_service.app.modules.pdf_utils import detect_pdf_has_form
 
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.constants import error_constants
@@ -29,12 +29,12 @@ RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 
 @contract
-def parse_resume(file_obj, filename_str, cache_key):
+def parse_resume(file_obj, filename_str, cache_key=None):
     """Primary resume parsing function.
 
     :param cStringIO file_obj: a StringIO representation of the raw binary.
     :param string filename_str: The file_obj file name.
-    :param string cache_key: A key used to get/store BG data.
+    :param (string, None) cache_key: A key used to get/store BG data.
     :return: Processed candidate data.
     :rtype: dict
     """
@@ -100,8 +100,11 @@ def parse_resume(file_obj, filename_str, cache_key):
                 error_message=error_constants.NO_TEXT_EXTRACTED['message'],
                 error_code=error_constants.NO_TEXT_EXTRACTED['code'])
 
-        redis_store.set(cache_key, optic_response)
-        redis_store.expire(cache_key, RESUME_EXPIRE_TIME)
+        # GET-2170 specifies caching of resumes only occurs in local/test environments.
+        if current_app.config['GT_ENVIRONMENT'] in ('dev', 'jenkins'):
+            redis_store.set(cache_key, optic_response)
+            redis_store.expire(cache_key, RESUME_EXPIRE_TIME)
+
         candidate_data = parse_optic_xml(optic_response)
         return {'raw_response': optic_response, 'candidate': candidate_data}
 

@@ -42,10 +42,19 @@ def process_resume(parse_params):
 
     # We need to obtain/define the file from our params.
     resume_file = resume_file_from_params(parse_params)
-    filename_str = parse_params['filename'] # This is always set by param_builders.py
+    filename_str = parse_params['filename']  # This is always set by param_builders.py
 
-    # Checks to see if we already have BG contents in Redis.
-    parsed_resume = get_or_store_bgxml(resume_file, filename_str)
+    # GET-2170 specifies caching of resumes only occurs in local/test environments.
+    if current_app.config['GT_ENVIRONMENT'] in ('dev', 'jenkins'):
+        cache_key_from_file = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
+        cached_resume = get_cached_resume(resume_file, filename_str)
+        if cached_resume:
+            parsed_resume = cached_resume
+        else:
+            parsed_resume = parse_resume(resume_file, filename_str, cache_key_from_file)
+
+    else:
+        parsed_resume = parse_resume(resume_file, filename_str)
 
     if not create_candidate:
         return parsed_resume
@@ -101,28 +110,22 @@ def process_resume(parse_params):
 
 @upload_failed_IO
 @contract
-def get_or_store_bgxml(resume_file, filename_str):
+def get_cached_resume(resume_file, filename_str, cache_key):
     """
     Tries to retrieve processed resume data from redis or parses it and stores it.
     :param cStringIO resume_file:
     :param string filename_str:
-    :rtype: dict
+    :rtype: (dict, bool)
     """
-    cache_key_from_file = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
-    cached_bg_xml = redis_store.get(cache_key_from_file)
+    cached_bg_xml = redis_store.get(cache_key)
 
     if cached_bg_xml:
         parsed_resume = {
             'candidate': parse_optic_xml(cached_bg_xml),
             'raw_response': cached_bg_xml
         }
-        logger.info('BG data for {} loaded with key {}'.format(
+        logger.info('ResumeParsingService::INFO - BG data for {} loaded with key {}'.format(
             filename_str, cache_key_from_file))
+        return parsed_resume
 
-    else:
-        # Parse the resume if not hashed.
-        logger.info('Couldn\'t find Resume {} in cache with hashed_key: {}'.format(filename_str,
-                                                                                   cache_key_from_file))
-        parsed_resume = parse_resume(resume_file, filename_str, cache_key_from_file)
-
-    return parsed_resume
+    return False
