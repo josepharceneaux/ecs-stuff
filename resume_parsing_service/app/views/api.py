@@ -41,7 +41,7 @@ def resume_post_receiver():
     content_type = request.headers.get('content-type')
 
     # Handle posted JSON data from web app/future clients.
-    # This block should consume filepicker key and filename.
+    # This block should consume FilePicker key and filename.
     if 'application/json' in content_type:
         parse_params = build_params_from_json(request)
     # Handle posted form data. Required for mobile app as it posts a file.
@@ -56,6 +56,7 @@ def resume_post_receiver():
 
     parse_params['oauth'] = oauth
     # If the value is not set retrieve the first ID given by candidate_pool_service.
+    # This will become a required param in the future and eliminate the need for `get_users_talent_pools`.
     if parse_params.get('create_candidate') and not parse_params.get('talent_pool_ids'):
         parse_params['talent_pool_ids'] = get_users_talent_pools(oauth)
 
