@@ -376,6 +376,7 @@ class EmailCampaignSend(db.Model):
                                    cascade='all,delete-orphan',
                                    passive_deletes=True,
                                    backref='send')
+    associated_blast = relationship('EmailCampaignBlast', backref='blast')
 
     @classmethod
     def get_valid_send_object(cls, send_id, requested_campaign_id):
