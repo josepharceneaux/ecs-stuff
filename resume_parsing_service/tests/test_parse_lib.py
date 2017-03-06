@@ -1,7 +1,7 @@
-from cStringIO import StringIO
 import os
+from cStringIO import StringIO
 
-from resume_parsing_service.app.views.parse_lib import is_resume_image
+from resume_parsing_service.app.modules.parse_lib import is_resume_image
 
 
 def test_image_files_are_images():

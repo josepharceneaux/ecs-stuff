@@ -1,9 +1,11 @@
-from resume_parsing_service.app import app
 import json
-import pytest
 from cStringIO import StringIO
-from resume_parsing_service.app.views.param_builders import build_params_from_json
-from resume_parsing_service.app.views.param_builders import build_params_from_form
+
+import pytest
+
+from resume_parsing_service.app import app
+from resume_parsing_service.app.modules.param_builders import build_params_from_form
+from resume_parsing_service.app.modules.param_builders import build_params_from_json
 from resume_parsing_service.common.error_handling import InvalidUsage
 
 

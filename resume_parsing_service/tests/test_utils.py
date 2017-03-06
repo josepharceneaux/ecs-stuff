@@ -1,5 +1,6 @@
-from resume_parsing_service.app.views.utils import string_scrubber, parse_email_from_string
 import phonenumbers
+
+from resume_parsing_service.app.modules.utils import string_scrubber, parse_email_from_string
 
 
 def test_string_scrubber_scrubs_strings():

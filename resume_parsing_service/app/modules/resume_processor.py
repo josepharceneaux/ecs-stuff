@@ -2,25 +2,24 @@
 # pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
 import json
-# Third Party/Framework Specific.
+
 import requests
 from contracts import contract
 from flask import current_app
-# Module Specific
-from resume_parsing_service.app import logger, redis_store
-from resume_parsing_service.app.constants import error_constants
-from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.decorators import upload_failed_IO
-from resume_parsing_service.app.views.parse_lib import parse_resume
-from resume_parsing_service.app.views.utils import update_candidate_from_resume
+from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
-from resume_parsing_service.app.views.utils import send_candidate_references
 from resume_parsing_service.app.views.utils import gen_hash_from_file
 from resume_parsing_service.app.views.utils import resume_file_from_params
+from resume_parsing_service.app.views.utils import send_candidate_references
+from resume_parsing_service.app.views.utils import update_candidate_from_resume
+
+from resume_parsing_service.app import logger, redis_store
+from resume_parsing_service.app.constants import error_constants
+from resume_parsing_service.app.modules.parse_lib import parse_resume
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.routes import CandidateApiUrl
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
-
 
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']

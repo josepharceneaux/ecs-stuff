@@ -2,28 +2,28 @@
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
+import base64
 from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext
 from time import time
-import base64
-# Third Party/Framework Specific.
+
+import magic
+from PIL import Image
 from contracts import contract
 from flask import current_app
-from PIL import Image
-import magic
-# Module Specific
-from resume_parsing_service.app import logger, redis_store
-from resume_parsing_service.app.constants import error_constants
-from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
-from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.ocr_lib import ocr_image
 from resume_parsing_service.app.views.pdf_utils import convert_pdf_to_text
 from resume_parsing_service.app.views.pdf_utils import decrypt_pdf
 from resume_parsing_service.app.views.pdf_utils import detect_pdf_has_form
+
+from resume_parsing_service.app import logger, redis_store
+from resume_parsing_service.app.constants import error_constants
+from resume_parsing_service.app.modules.optic_parse_lib import fetch_optic_response
+from resume_parsing_service.app.modules.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.common.error_handling import InvalidUsage
-from resume_parsing_service.common.utils.talent_s3 import boto3_put
 from resume_parsing_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
+from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
 RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 

@@ -1,9 +1,11 @@
 import os
 from cStringIO import StringIO
+
 import PyPDF2
-from resume_parsing_service.app.views.pdf_utils import convert_pdf_to_text
-from resume_parsing_service.app.views.pdf_utils import decrypt_pdf
-from resume_parsing_service.app.views.pdf_utils import detect_pdf_has_form
+
+from resume_parsing_service.app.modules.pdf_utils import convert_pdf_to_text
+from resume_parsing_service.app.modules.pdf_utils import decrypt_pdf
+from resume_parsing_service.app.modules.pdf_utils import detect_pdf_has_form
 
 CURRENT_DIR = os.path.dirname(__file__)
 

@@ -3,19 +3,19 @@
 __author__ = 'erikfarmer'
 # Framework specific
 from flask import Blueprint
-from flask import request
 from flask import jsonify
+from flask import request
 from flask.ext.cors import CORS
-# Module Specific
-from resume_parsing_service.app import logger
-from resume_parsing_service.common.error_handling import InvalidUsage
-from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.param_builders import build_params_from_form
 from resume_parsing_service.app.views.param_builders import build_params_from_json
-from resume_parsing_service.app.views.resume_processor import process_resume
 from resume_parsing_service.app.views.utils import get_users_talent_pools
-from resume_parsing_service.common.utils.auth_utils import require_oauth
+
+from resume_parsing_service.app import logger
+from resume_parsing_service.app.constants import error_constants
+from resume_parsing_service.app.modules.resume_processor import process_resume
+from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.routes import ResumeApi
+from resume_parsing_service.common.utils.auth_utils import require_oauth
 
 PARSE_MOD = Blueprint('resume_api', __name__)
 
