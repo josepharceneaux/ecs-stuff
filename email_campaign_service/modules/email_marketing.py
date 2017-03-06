@@ -653,7 +653,7 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candi
         email_campaign_blast_id = email_campaign_blast.id
     EmailCampaign.session.commit()
     email_campaign_send = EmailCampaignSend(campaign_id=campaign_id, candidate_id=candidate.id,
-                                            blast_id=email_campaign_blast_id, ses_message_id=uuid.uuid4())
+                                            blast_id=email_campaign_blast_id, ses_message_id=str(uuid.uuid4()))
     EmailCampaignSend.save(email_campaign_send)
     # If the campaign is a subscription campaign, its body & subject are
     # candidate-specific and will be set here
@@ -1151,4 +1151,3 @@ def send_test_email(user, request):
     except Exception as e:
         logger.error('Error occurred while sending test email. Error: %s', e)
         raise InternalServerError('Unable to send emails to test email addresses:%s.' % data['email_address_list'])
-

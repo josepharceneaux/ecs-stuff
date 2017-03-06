@@ -341,7 +341,8 @@ class EmailCampaignBlast(db.Model):
         This returns query object for number of sends
         """
         return EmailCampaignSend.query.filter(EmailCampaignSend.blast_id == self.id,
-                                              EmailCampaignSend.ses_message_id,
+                                              # Only working if comparison with None
+                                              EmailCampaignSend.ses_message_id != None,
                                               EmailCampaignSend.is_ses_bounce == 0)
 
     def to_json(self, include_fields=None):
