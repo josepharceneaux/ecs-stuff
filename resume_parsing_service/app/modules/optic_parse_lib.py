@@ -3,27 +3,27 @@
 # pylint: disable=wrong-import-position, fixme, import-error
 __author__ = 'erik@getTalent.com'
 # Standard Library
-import HTMLParser
+from base64 import b64encode
+from time import time
 import datetime
+import HTMLParser
 import re
 import string
 import sys
 import unicodedata
 import urllib2
-from base64 import b64encode
-from time import time
-
-import phonenumbers
-import pycountry
-import requests
+# Third Party
 from bs4 import BeautifulSoup as bs4
 from contracts import contract
 from flask import current_app
-from resume_parsing_service.app.views.utils import extra_skills_parsing, string_scrubber, parse_email_from_string
-
+import phonenumbers
+import pycountry
+import requests
+# Module Specific
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.modules.oauth_client2 import get_authorization_string
+from resume_parsing_service.app.modules.utils import extra_skills_parsing, string_scrubber, parse_email_from_string
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
