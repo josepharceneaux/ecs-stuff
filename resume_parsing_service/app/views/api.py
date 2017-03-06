@@ -6,9 +6,9 @@ from flask import Blueprint
 from flask import jsonify
 from flask import request
 from flask.ext.cors import CORS
-from resume_parsing_service.app.views.param_builders import build_params_from_form
-from resume_parsing_service.app.views.param_builders import build_params_from_json
-from resume_parsing_service.app.views.utils import get_users_talent_pools
+from resume_parsing_service.app.modules.param_builders import build_params_from_form
+from resume_parsing_service.app.modules.param_builders import build_params_from_json
+from resume_parsing_service.app.modules.utils import get_users_talent_pools
 
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
@@ -20,12 +20,14 @@ from resume_parsing_service.common.utils.auth_utils import require_oauth
 PARSE_MOD = Blueprint('resume_api', __name__)
 
 # Enable CORS
-CORS(PARSE_MOD, resources={
-    r'/v1/{}'.format(ResumeApi.PARSE): {
-        'origins': [r"*.gettalent.com", "http://localhost"],
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
+CORS(
+    PARSE_MOD,
+    resources={
+        r'/v1/{}'.format(ResumeApi.PARSE): {
+            'origins': [r"*.gettalent.com", "http://localhost"],
+            'allow_headers': ['Content-Type', 'Authorization']
+        }
+    })
 
 
 @PARSE_MOD.route(ResumeApi.PARSE, methods=['POST'])
@@ -46,11 +48,11 @@ def resume_post_receiver():
     elif 'multipart/form-data' in content_type:
         parse_params = build_params_from_form(request)
     else:
-        logger.debug("Invalid Header set. Form: {}. Files: {}. JSON: {}".format(
-            request.form, request.files, request.json
-        ))
-        raise InvalidUsage(error_message=error_constants.INVALID_HEADERS['message'],
-                           error_code=error_constants.INVALID_HEADERS['code'])
+        logger.debug(
+            "Invalid Header set. Form: {}. Files: {}. JSON: {}".format(request.form, request.files, request.json))
+        raise InvalidUsage(
+            error_message=error_constants.INVALID_HEADERS['message'],
+            error_code=error_constants.INVALID_HEADERS['code'])
 
     parse_params['oauth'] = oauth
     # If the value is not set retrieve the first ID given by candidate_pool_service.
