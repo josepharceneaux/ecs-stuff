@@ -36,7 +36,9 @@ def create_widget_candidate(form, talent_pool_hash):
     candidate_single_field_name = form.get('name')
     candidate_double_field_name = '{} {}'.format(form.get('firstName'), form.get('lastName'))
     candidate_dict['emails'] = [{'address': form['emailAdd'], 'label': 'Primary'}]
-    candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(form['hidden-tags-aoi'], domain_id)
+    form_aois = form['hidden-tags-aoi']
+    if form_aois:
+        candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(form_aois, domain_id)
     # # Location based fields.
     candidate_locations = form.get('hidden-tags-location')
     candidate_city = form.get('city')
@@ -83,9 +85,10 @@ def create_widget_candidate(form, talent_pool_hash):
                                                                         candidate_graduation_date)]
     if candidate_nuid:
         nuid_field = db.session.query(CustomField).filter_by(name='NUID', domain_id=domain_id).first()
-        candidate_dict.setdefault('custom_fields', []).append(
-            {'custom_field_id': nuid_field.id, 'value': candidate_nuid}
-        )
+        if nuid_field:
+            candidate_dict.setdefault('custom_fields', []).append(
+                {'custom_field_id': nuid_field.id, 'value': candidate_nuid}
+            )
     # Kaiser Military specific processing.
     military_service_dict = {}
     if candidate_military_branch:
