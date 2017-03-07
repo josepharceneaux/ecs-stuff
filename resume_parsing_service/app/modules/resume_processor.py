@@ -47,7 +47,7 @@ def process_resume(parse_params):
     # GET-2170 specifies caching of resumes only occurs in local/test environments.
     if current_app.config['GT_ENVIRONMENT'] in ('dev', 'jenkins'):
         cache_key_from_file = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
-        cached_resume = get_cached_resume(resume_file, filename_str)
+        cached_resume = get_cached_resume(resume_file, filename_str, cache_key_from_file)
         if cached_resume:
             parsed_resume = cached_resume
         else:
@@ -115,7 +115,7 @@ def get_cached_resume(resume_file, filename_str, cache_key):
     Tries to retrieve processed resume data from redis or parses it and stores it.
     :param cStringIO resume_file:
     :param string filename_str:
-    :rtype: (dict, bool)
+    :rtype: dict
     """
     cached_bg_xml = redis_store.get(cache_key)
 
@@ -125,7 +125,7 @@ def get_cached_resume(resume_file, filename_str, cache_key):
             'raw_response': cached_bg_xml
         }
         logger.info('ResumeParsingService::INFO - BG data for {} loaded with key {}'.format(
-            filename_str, cache_key_from_file))
+            filename_str, cache_key))
         return parsed_resume
 
-    return False
+    return {}

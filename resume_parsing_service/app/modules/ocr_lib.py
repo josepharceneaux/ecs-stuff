@@ -28,7 +28,7 @@ def ocr_image(img_file_obj, filename_str):
         ocr_response = requests.post(
             OCR_URL, files={filename_str: img_file_obj}, data=payload)
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-        logger.error("Could not reach OCRSpace.")
+        logger.error("Could not reach OCRSpace. Raw Response: {}".format(ocr_response.content))
         raise InternalServerError(
             error_message=error_constants.OCR_SPACE_UNAVAILABLE['message'],
             error_code=error_constants.OCR_SPACE_UNAVAILABLE['code'])

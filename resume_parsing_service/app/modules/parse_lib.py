@@ -29,12 +29,12 @@ RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 
 @contract
-def parse_resume(file_obj, filename_str, cache_key=None):
+def parse_resume(file_obj, filename_str, cache_key=''):
     """Primary resume parsing function.
 
     :param cStringIO file_obj: a StringIO representation of the raw binary.
     :param string filename_str: The file_obj file name.
-    :param (string, None) cache_key: A key used to get/store BG data.
+    :param string cache_key: A key used to get/store BG data.
     :return: Processed candidate data.
     :rtype: dict
     """
