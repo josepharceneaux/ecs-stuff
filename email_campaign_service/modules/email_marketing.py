@@ -470,7 +470,7 @@ def invoke_lambda_sender(_lambda, blast_id, candidate_id, candidate_address):
     """
     Here we invoke Lambda email sender
     """
-    response = _lambda.invoke(FunctionName='send_via_consumer:%s' % app.config[TalentConfigKeys.ENV_KEY],
+    response = _lambda.invoke(FunctionName='send_via_consumer:%s' % app.config[TalentConfigKeys.ENV_KEY].upper(),
                               InvocationType='Event',
                               Payload=json.dumps({"candidate_id": candidate_id,
                                                   "blast_id": blast_id,
