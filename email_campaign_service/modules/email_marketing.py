@@ -356,7 +356,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
 
     if candidate_ids_and_emails:
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
-        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.PROD]:
+        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA]:
             # Send campaigns via SQS
             _, region_name = get_topic_arn_and_region_name()
             try:
