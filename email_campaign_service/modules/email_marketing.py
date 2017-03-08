@@ -364,8 +364,8 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
             except Exception as error:
                 logger.error("Couldn't get boto3 lambda client Error: %s" % error.message)
                 return
-            chunks_of_candidate_ids_list = [candidate_ids_and_emails[x:x + 100] for x in
-                                            xrange(0, len(candidate_ids_and_emails), 100)]
+            chunks_of_candidate_ids_list = (candidate_ids_and_emails[x:x + 100] for x in
+                                            xrange(0, len(candidate_ids_and_emails), 100))
             for chunk in chunks_of_candidate_ids_list:
                 chunk_of_candidate_ids_and_address = []
                 for candidate_id_and_email in chunk:
