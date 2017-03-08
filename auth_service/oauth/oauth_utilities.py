@@ -103,11 +103,12 @@ def save_token_v2(user):
     )
 
 
-def verify_jwt(token, secret_key_id):
+def verify_jwt(token, secret_key_id, allow_null_user=False):
     """
     This method will authenticate/verify a json web token
     :param secret_key_id: Redis Key for SECRET-KEY
     :param token: JSON Web Token (JWT)
+    :param allow_null_user: If null user is allowed or not
     :return:
     """
 
@@ -122,7 +123,7 @@ def verify_jwt(token, secret_key_id):
     except Exception:
         raise UnauthorizedError("Your Token is not found", error_code=11)
 
-    if data['user_id']:
+    if data.get('user_id'):
         user = User.query.get(data['user_id'])
         if user:
             if user.password_reset_time <= parse(data['created_at']):
@@ -130,6 +131,8 @@ def verify_jwt(token, secret_key_id):
             else:
                 redis_store.delete(secret_key_id)
                 raise UnauthorizedError("Your token has expired due to password reset", error_code=12)
+    elif allow_null_user:
+        return None
 
     raise UnauthorizedError(error_message="Your Token is invalid", error_code=13)
 
@@ -139,6 +142,8 @@ def authenticate_request():
     This method will authenticate jwt in request headers
     :return: None
     """
+    allow_null_user = request.args.get('allow_null_user', False)
+
     try:
         json_web_token = request.headers['Authorization'].replace('Bearer', '').strip()
         json_web_token = json_web_token.split('.')
@@ -150,7 +155,7 @@ def authenticate_request():
     except Exception as e:
         raise InvalidUsage("`Authorization` Header is missing or poorly formatted. Because: %s" % e.message)
 
-    return secret_key_id, verify_jwt(json_web_token, secret_key_id)
+    return secret_key_id, verify_jwt(json_web_token, secret_key_id, allow_null_user)
 
 
 def load_client(client_id):

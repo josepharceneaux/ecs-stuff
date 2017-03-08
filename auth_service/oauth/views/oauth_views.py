@@ -67,7 +67,7 @@ def revoke_token_v2():
 def authorize_v2():
     """ Authorize an access token which is stored in Authorization header """
     secret_key_id, authenticated_user = authenticate_request()
-    return jsonify(user_id=authenticated_user.id)
+    return jsonify(user_id=authenticated_user.id if authenticated_user else None)
 
 
 @app.route(AuthApiV2.TOKEN_OF_ANY_USER)

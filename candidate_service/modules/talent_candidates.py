@@ -1513,6 +1513,15 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     raise InvalidUsage('Start year of education cannot be later than end year of education',
                                        custom_error.INVALID_USAGE)
 
+                # Degree end_time is necessary for searching. If degree's end-month is not provided, assume it's 1/jan
+                end_month = education_degree.get('end_month')
+                end_time = None
+                if end_year:
+                    if end_month:
+                        end_time = datetime.datetime(end_year, end_month, 1)
+                    else:
+                        end_time = datetime.datetime(end_year, 1, 1)
+
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
                     degree_type=education_degree['type'].strip() if education_degree.get('type') else None,
@@ -1520,12 +1529,12 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     start_year=start_year,
                     start_month=education_degree.get('start_month'),
                     end_year=end_year,
-                    end_month=education_degree.get('end_month'),
+                    end_month=end_month,
                     gpa_num=education_degree.get('gpa'),
                     added_time=added_datetime,
                     classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
                     start_time=education_degree.get('start_time'),
-                    end_time=education_degree.get('end_time')
+                    end_time=end_time
                 )
                 # Remove keys with None values
                 education_degree_dict = purge_dict(education_degree_dict)
@@ -1671,8 +1680,10 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                 education_id = candidate_education.id
 
                 if is_updating:  # Track all updates
-                    track_edits(update_dict=education_dict, table_name='candidate_education',
-                                candidate_id=candidate_id, user_id=user_id)
+                    track_edits(update_dict=education_dict,
+                                table_name='candidate_education',
+                                candidate_id=candidate_id,
+                                user_id=user_id)
 
             # CandidateEducationDegree
             for education_degree in education_degrees:
@@ -1681,6 +1692,15 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                 if (start_year and end_year) and (start_year > end_year):
                     raise InvalidUsage('Start year of education cannot be later than end year of education',
                                        custom_error.INVALID_USAGE)
+
+                # Degree end_time is necessary for searching. If degree's end-month is not provided, assume it's 1/jan
+                end_month = education_degree.get('end_month')
+                end_time = None
+                if end_year:
+                    if end_month:
+                        end_time = datetime.datetime(end_year, end_month, 1)
+                    else:
+                        end_time = datetime.datetime(end_year, 1, 1)
 
                 degree_type=education_degree['type'].strip() if education_degree.get('type') else None
                 degree_title=education_degree['title'].strip() if education_degree.get('title') else None
@@ -1691,11 +1711,11 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     start_year=start_year if degree_title or degree_type else None,
                     start_month=education_degree.get('start_month') if degree_title or degree_type else None,
                     end_year=end_year if degree_title or degree_type else None,
-                    end_month=education_degree.get('end_month') if degree_title or degree_type else None,
+                    end_month=end_month if degree_title or degree_type else None,
                     gpa_num=education_degree.get('gpa') if degree_title or degree_type else None,
-                    classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
+                    classification_type_id=classification_type_id_from_degree_type(degree_type),
                     start_time=education_degree.get('start_time') if degree_title or degree_type else None,
-                    end_time=education_degree.get('end_time') if degree_title or degree_type else None
+                    end_time=end_time if degree_title or degree_type else None
                 )
                 # Remove keys with None values
                 education_degree_dict = purge_dict(education_degree_dict)
@@ -1708,20 +1728,17 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                 # Update education_degree_dict with added_time
                 education_degree_dict['added_time'] = added_datetime
 
-                # Prevent duplicate entries
-                candidate_education_degree_id = get_education_degree_if_exists(candidate_educations,
-                                                                               education_degree_dict)
-                if not candidate_education_degree_id:
-                    # Update dict with candidate education ID
-                    education_degree_dict['candidate_education_id'] = education_id
-                    candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
-                    db.session.add(candidate_education_degree)  # Add CandidateEducationDegree
-                    db.session.flush()
-                    candidate_education_degree_id = candidate_education_degree.id
+                # Update dict with candidate education ID
+                education_degree_dict['candidate_education_id'] = education_id
+                candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
+                db.session.add(candidate_education_degree)  # Add CandidateEducationDegree
+                db.session.flush()
+                candidate_education_degree_id = candidate_education_degree.id
 
-                    if is_updating:  # Track all updates
-                        track_edits(update_dict=education_degree_dict, table_name='candidate_education_degree',
-                                    candidate_id=candidate_id, user_id=user_id)
+                if is_updating:  # Track all updates
+                    track_edits(update_dict=education_degree_dict,
+                                table_name='candidate_education_degree',
+                                candidate_id=candidate_id, user_id=user_id)
 
                 # CandidateEducationDegreeBullet
                 degree_bullets = education_degree.get('bullets') or []
