@@ -475,7 +475,7 @@ def invoke_lambda_sender(_lambda, chunk_of_candidate_data):
     """
     response = _lambda.invoke(FunctionName='send_via_consumer:%s' % app.config[TalentConfigKeys.ENV_KEY].upper(),
                               InvocationType='Event',
-                              Payload=json.dumps(chunk_of_candidate_data))
+                              Payload=json.dumps({"chunk": chunk_of_candidate_data}))
     print("Invoked send_via_consumer", response)
 
 
