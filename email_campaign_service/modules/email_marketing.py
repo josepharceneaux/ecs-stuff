@@ -360,18 +360,36 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
             # Send campaigns via SQS
             _, region_name = get_topic_arn_and_region_name()
             try:
-                boto3_client = boto3.resource('sqs', region_name=region_name)
-                queue = boto3_client.get_queue_by_name(QueueName='emailSends')
+                _lambda = boto3.client('lambda', region_name=region_name)
             except Exception as error:
-                logger.error("Error occurred while getting SQS queue : %s" % error.message)
+                logger.error("Couldn't get boto3 lambda client Error: %s" % error.message)
                 return
-            for candidate_id_and_email in candidate_ids_and_emails:
-                candidate_id, candidate_address = candidate_id_and_email
-                try:
-                    push_into_sqs(queue, blast_id, candidate_id, candidate_address)
-                except Exception as error:
-                    logger.error('Could not push to SQS. Error:%s, blast_id:%s, candidate_id:%s'
-                                 % (error.message, blast_id, candidate_id))
+            chunks_of_candidate_ids_list = [candidate_ids_and_emails[x:x + 1000] for x in
+                                            xrange(0, len(candidate_ids_and_emails), 1000)]
+            for chunk in chunks_of_candidate_ids_list:
+                for candidate_id_and_email in chunk:
+                    candidate_id, candidate_address = candidate_id_and_email
+                    try:
+                        invoke_lambda_sender(_lambda, blast_id, candidate_id, candidate_address)
+                    except Exception as error:
+                        logger.error('Could not invoke Lambda. Error:%s, blast_id:%s, candidate_id:%s'
+                                     % (error.message, blast_id, candidate_id))
+                sleep(5)  # Delaying to avoid lambda throttling
+
+            # TODO: Commenting below code for now
+            # try:
+            #     boto3_client = boto3.resource('sqs', region_name=region_name)
+            #     queue = boto3_client.get_queue_by_name(QueueName='emailSends')
+            # except Exception as error:
+            #     logger.error("Error occurred while getting SQS queue : %s" % error.message)
+            #     return
+            # for candidate_id_and_email in candidate_ids_and_emails:
+            #     candidate_id, candidate_address = candidate_id_and_email
+            #     try:
+            #         push_into_sqs(queue, blast_id, candidate_id, candidate_address)
+            #     except Exception as error:
+            #         logger.error('Could not push to SQS. Error:%s, blast_id:%s, candidate_id:%s'
+            #                      % (error.message, blast_id, candidate_id))
             _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
             _update_blast_sends(blast_id=blast_id, new_sends=len(subscribed_candidate_ids), campaign=campaign,
                                 new_candidates_only=new_candidates_only, update_blast_sends=False)
@@ -446,6 +464,18 @@ def push_into_sqs(queue, blast_id, candidate_id, candidate_address):
     # Create a new message
     response = queue.send_message(MessageBody=json.dumps(event))
     logger.info("Enqueued candidate data: %s with response: %s" % (event, response))
+
+
+def invoke_lambda_sender(_lambda, blast_id, candidate_id, candidate_address):
+    """
+    Here we invoke Lambda email sender
+    """
+    response = _lambda.invoke(FunctionName='send_via_consumer:%s' % app.config[TalentConfigKeys.ENV_KEY].upper(),
+                              InvocationType='Event',
+                              Payload=json.dumps({"candidate_id": candidate_id,
+                                                  "blast_id": blast_id,
+                                                  "candidate_address": candidate_address}))
+    print("Invoked send_via_consumer", response)
 
 
 def get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids, new_candidates_only=False):
