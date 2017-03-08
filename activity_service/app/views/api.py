@@ -132,14 +132,15 @@ def post_activity():
 
         return create_activity(valid_user_id, content.get('type'), content.get('source_table'),
                                content.get('source_id'), content.get('params'))
-    source_table = request.args.get('source_table')
-    source_id = request.args.get('source_id')
-    type_id = request.args.get('type')
-    activity = Activity.get_single_activity(valid_user_id, type_id, source_id, source_table)
-    if not activity:
-        raise NotFoundError('Activity not found for given query params.')
-
-    return ApiResponse(json.dumps({"activity": activity.to_json()}), status=STATUS_CODES.OK)
+    # source_table = request.args.get('source_table')
+    # source_id = request.args.get('source_id')
+    # type_id = request.args.get('type')
+    # activity = Activity.get_single_activity(valid_user_id, type_id, source_id, source_table)
+    # if not activity:
+    #     raise NotFoundError('Activity not found for given query params.')
+    #
+    # return ApiResponse(json.dumps({"activity": activity.to_json()}), status=STATUS_CODES.OK)
+    return ApiResponse(json.dumps({"activity": "true"}), status=STATUS_CODES.OK)
 
 
 def create_activity(user_id, type_, source_table=None, source_id=None, params=None):
