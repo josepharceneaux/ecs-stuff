@@ -356,7 +356,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
 
     if candidate_ids_and_emails:
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
-        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.PROD]:
+        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA]:
             # Send campaigns via SQS
             _, region_name = get_topic_arn_and_region_name()
             try:
@@ -364,17 +364,25 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
             except Exception as error:
                 logger.error("Couldn't get boto3 lambda client Error: %s" % error.message)
                 return
-            chunks_of_candidate_ids_list = [candidate_ids_and_emails[x:x + 1000] for x in
-                                            xrange(0, len(candidate_ids_and_emails), 1000)]
+            chunks_of_candidate_ids_list = (candidate_ids_and_emails[x:x + 50] for x in
+                                            xrange(0, len(candidate_ids_and_emails), 50))
             for chunk in chunks_of_candidate_ids_list:
+                chunk_of_candidate_ids_and_address = []
+                number_of_lambda_invocations = 0
                 for candidate_id_and_email in chunk:
                     candidate_id, candidate_address = candidate_id_and_email
-                    try:
-                        invoke_lambda_sender(_lambda, blast_id, candidate_id, candidate_address)
-                    except Exception as error:
-                        logger.error('Could not invoke Lambda. Error:%s, blast_id:%s, candidate_id:%s'
-                                     % (error.message, blast_id, candidate_id))
-                sleep(5)  # Delaying to avoid lambda throttling
+                    chunk_of_candidate_ids_and_address.append({"candidate_id": candidate_id,
+                                                              "candidate_address": candidate_address,
+                                                               "blast_id": blast_id})
+                try:
+                    invoke_lambda_sender(_lambda, chunk_of_candidate_ids_and_address)
+                    number_of_lambda_invocations += 1
+                    if number_of_lambda_invocations % 10 == 0:
+                        # 3 seconds delay after 100 lambda invocations
+                        sleep(150)
+                except Exception as error:
+                    logger.error('Could not invoke Lambda. Error:%s, blast_id:%s, candidate_ids:%s'
+                                 % (error.message, blast_id, chunk_of_candidate_ids_and_address))
 
             # TODO: Commenting below code for now
             # try:
@@ -466,15 +474,13 @@ def push_into_sqs(queue, blast_id, candidate_id, candidate_address):
     logger.info("Enqueued candidate data: %s with response: %s" % (event, response))
 
 
-def invoke_lambda_sender(_lambda, blast_id, candidate_id, candidate_address):
+def invoke_lambda_sender(_lambda, chunk_of_candidate_data):
     """
     Here we invoke Lambda email sender
     """
     response = _lambda.invoke(FunctionName='send_via_consumer:%s' % app.config[TalentConfigKeys.ENV_KEY].upper(),
                               InvocationType='Event',
-                              Payload=json.dumps({"candidate_id": candidate_id,
-                                                  "blast_id": blast_id,
-                                                  "candidate_address": candidate_address}))
+                              Payload=json.dumps({"chunk": chunk_of_candidate_data}))
     print("Invoked send_via_consumer", response)
 
 
@@ -854,7 +860,7 @@ def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only, upda
     Marketing email batch completed.
     :param blast_id: Id of blast object.
     :param new_sends: Number of new sends.
-    :param campaign: EMail Campaign.
+    :param campaign: Email Campaign.
     :param new_candidates_only: True if campaign is to be sent to new candidates only.
     :type blast_id: int | long
     :type new_sends: int
@@ -869,7 +875,7 @@ def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only, upda
 
     blast_obj = EmailCampaignBlast.get_by_id(blast_id)
     if update_blast_sends:
-        blast_obj.update(sends=blast_obj.sends + new_sends)
+        blast_obj.update(sends=new_sends)
     # This will be needed later
     # update_candidate_document_on_cloud(user, candidate_ids_and_emails)
     logger.info("Marketing email batch completed, emails sent=%s, "
@@ -881,7 +887,7 @@ def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only, upda
     campaign_type = campaign_type.title()
     celery_create_activity.delay(campaign.user.id, Activity.MessageIds.CAMPAIGN_SEND, campaign,
                                  dict(id=campaign.id, name=campaign.name,
-                                      num_candidates=blast_obj.sends, campaign_type=campaign_type),
+                                      num_candidates=new_sends, campaign_type=campaign_type),
                                  'Error occurred while creating activity for email-campaign(id:%s) batch send.'
                                  % campaign.id)
 
@@ -998,7 +1004,7 @@ def get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, n
     Takes campaign and all candidate ids as arguments and process them to return
     the ids of subscribed and unsubscribed candidates.
     :param campaign: email campaign
-    :param all_candidate_ids: ids of all candidates to whome we are going to send campaign
+    :param all_candidate_ids: ids of all candidates to whom we are going to send campaign
     :param new_candidates_only: if campaign is to be sent only to new candidates
     :type campaign: EmailCampaign
     :type all_candidate_ids: list

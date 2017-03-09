@@ -331,19 +331,14 @@ class EmailCampaignBlast(db.Model):
         This returns query object for number of bounced emails
         """
         return EmailCampaignSend.query.filter(EmailCampaignSend.blast_id == self.id,
-                                              or_(EmailCampaignSend.is_ses_bounce == 1,
-                                                  # Only working if comparison with None
-                                                  EmailCampaignSend.ses_message_id == None))
+                                              EmailCampaignSend.is_ses_bounce == 1)
 
     @property
     def email_sends(self):
         """
         This returns query object for number of sends
         """
-        return EmailCampaignSend.query.filter(EmailCampaignSend.blast_id == self.id,
-                                              # Only working if comparison with None
-                                              EmailCampaignSend.ses_message_id != None,
-                                              EmailCampaignSend.is_ses_bounce == 0)
+        return EmailCampaignSend.query.filter(EmailCampaignSend.blast_id == self.id)
 
     def to_json(self, include_fields=None):
         """
