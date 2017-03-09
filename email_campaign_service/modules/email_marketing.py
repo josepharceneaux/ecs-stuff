@@ -364,17 +364,20 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
             except Exception as error:
                 logger.error("Couldn't get boto3 lambda client Error: %s" % error.message)
                 return
-            chunks_of_candidate_ids_list = [candidate_ids_and_emails[x:x + 1000] for x in
-                                            xrange(0, len(candidate_ids_and_emails), 1000)]
+            chunks_of_candidate_ids_list = (candidate_ids_and_emails[x:x + 100] for x in
+                                            xrange(0, len(candidate_ids_and_emails), 100))
             for chunk in chunks_of_candidate_ids_list:
+                chunk_of_candidate_ids_and_address = []
                 for candidate_id_and_email in chunk:
                     candidate_id, candidate_address = candidate_id_and_email
-                    try:
-                        invoke_lambda_sender(_lambda, blast_id, candidate_id, candidate_address)
-                    except Exception as error:
-                        logger.error('Could not invoke Lambda. Error:%s, blast_id:%s, candidate_id:%s'
-                                     % (error.message, blast_id, candidate_id))
-                sleep(5)  # Delaying to avoid lambda throttling
+                    chunk_of_candidate_ids_and_address.append({"candidate_id": candidate_id,
+                                                              "candidate_address": candidate_address,
+                                                               "blast_id": blast_id})
+                try:
+                    invoke_lambda_sender(_lambda, chunk_of_candidate_ids_and_address)
+                except Exception as error:
+                    logger.error('Could not invoke Lambda. Error:%s, blast_id:%s, candidate_ids:%s'
+                                 % (error.message, blast_id, chunk_of_candidate_ids_and_address))
 
             # TODO: Commenting below code for now
             # try:
@@ -466,15 +469,13 @@ def push_into_sqs(queue, blast_id, candidate_id, candidate_address):
     logger.info("Enqueued candidate data: %s with response: %s" % (event, response))
 
 
-def invoke_lambda_sender(_lambda, blast_id, candidate_id, candidate_address):
+def invoke_lambda_sender(_lambda, chunk_of_candidate_data):
     """
     Here we invoke Lambda email sender
     """
     response = _lambda.invoke(FunctionName='send_via_consumer:%s' % app.config[TalentConfigKeys.ENV_KEY].upper(),
                               InvocationType='Event',
-                              Payload=json.dumps({"candidate_id": candidate_id,
-                                                  "blast_id": blast_id,
-                                                  "candidate_address": candidate_address}))
+                              Payload=json.dumps({"chunk": chunk_of_candidate_data}))
     print("Invoked send_via_consumer", response)
 
 
