@@ -24,19 +24,19 @@ from activity_service.tests import constants as C
 
 
 @pytest.fixture(autouse=True)
-def activities_fixture(user_fixture, candidate_source_fixture, request):
+def activities_fixture(user_fixture, candidate_source_fixture, domain_fixture, request):
     activities = []
     TODAY = datetime.today()
     first_name, last_name = user_fixture.first_name, user_fixture.last_name
     activities.append(Activity(added_time=TODAY + timedelta(hours=-2), source_table=User.__tablename__,
-                               source_id=1, type=12, user_id=user_fixture.id,
+                               source_id=1, type=12, user_id=user_fixture.id, domain_id=domain_fixture.id,
                                params=json.dumps({'lastName': last_name, 'firstName': first_name})))
     # USER_CREATE type activities.
     # The test suite also bulk creates CANDIDATE_CREATE_WEB (1).
     for i in xrange(3):
         activities.append(
             Activity(added_time=TODAY, source_table=User.__tablename__, source_id=1,
-                     type=12, user_id=user_fixture.id, params=json.dumps({'lastName': last_name,
+                     type=12, user_id=user_fixture.id, domain_id=domain_fixture.id, params=json.dumps({'lastName': last_name,
                                                                           'firstName': first_name}))
         )
 
@@ -44,25 +44,25 @@ def activities_fixture(user_fixture, candidate_source_fixture, request):
         activities.append(
             Activity(added_time=C.CANDIDATE_UPDATE_START + timedelta(days=i),
                      source_table=Candidate.__tablename__, source_id=i, type=2,
-                     user_id=user_fixture.id, params=json.dumps(
+                     user_id=user_fixture.id, domain_id=domain_fixture.id, params=json.dumps(
                          {'id': 1337, 'name': first_name}))
         )
         activities.append(
             Activity(added_time=C.SMARTLIST_DELETE_START + timedelta(days=i),
                      source_table='smartlist', source_id=i,
-                     type=9, user_id=user_fixture.id, params=json.dumps({'name': 'a SL',
+                     type=9, user_id=user_fixture.id, domain_id=domain_fixture.id, params=json.dumps({'name': 'a SL',
                                                                          'is_smartlist': 1}))
         )
         activities.append(
             Activity(added_time=C.EVENT_CREATE_START + timedelta(days=i),
                      source_table='smartlist', source_id=i,
-                     type=28, user_id=user_fixture.id, params=json.dumps(
+                     type=28, user_id=user_fixture.id, domain_id=domain_fixture.id, params=json.dumps(
                          {'event_title': 'Event {}'.format(i), 'name': first_name}))
         )
         activities.append(
             Activity(added_time=C.CAMPAIGN_EMAIL_OPEN_START + timedelta(days=i),
                      source_table='campaign', source_id=i,
-                     type=16, user_id=user_fixture.id, params=json.dumps(
+                     type=16, user_id=user_fixture.id, domain_id=domain_fixture.id, params=json.dumps(
                          {'campaign_name': 'Camp: {}'.format(i),
                          'candidate_name': 'Candidate {}'.format(i)})
                      )
