@@ -1,26 +1,26 @@
 """Main resume parsing logic & functions."""
 # pylint: disable=wrong-import-position, fixme, import-error
+__author__ = 'erik@gettalent.com'
 # Standard library
 import json
-# Third Party/Framework Specific.
+# Thid party
 import requests
 from contracts import contract
+# Module specific
 from flask import current_app
-# Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.constants import error_constants
-from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
-from resume_parsing_service.app.views.decorators import upload_failed_IO
-from resume_parsing_service.app.views.parse_lib import parse_resume
-from resume_parsing_service.app.views.utils import update_candidate_from_resume
-from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
-from resume_parsing_service.app.views.utils import send_candidate_references
-from resume_parsing_service.app.views.utils import gen_hash_from_file
-from resume_parsing_service.app.views.utils import resume_file_from_params
+from resume_parsing_service.app.modules.decorators import upload_failed_IO
+from resume_parsing_service.app.modules.optic_parse_lib import parse_optic_xml
+from resume_parsing_service.app.modules.parse_lib import parse_resume
+from resume_parsing_service.app.modules.utils import create_parsed_resume_candidate
+from resume_parsing_service.app.modules.utils import gen_hash_from_file
+from resume_parsing_service.app.modules.utils import resume_file_from_params
+from resume_parsing_service.app.modules.utils import send_candidate_references
+from resume_parsing_service.app.modules.utils import update_candidate_from_resume
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.routes import CandidateApiUrl
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
-
 
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
@@ -42,10 +42,19 @@ def process_resume(parse_params):
 
     # We need to obtain/define the file from our params.
     resume_file = resume_file_from_params(parse_params)
-    filename_str = parse_params['filename'] # This is always set by param_builders.py
+    filename_str = parse_params['filename']  # This is always set by param_builders.py
 
-    # Checks to see if we already have BG contents in Redis.
-    parsed_resume = get_or_store_bgxml(resume_file, filename_str)
+    # GET-2170 specifies caching of resumes only occurs in local/test environments.
+    if current_app.config['GT_ENVIRONMENT'] in ('dev', 'jenkins'):
+        cache_key_from_file = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
+        cached_resume = get_cached_resume(resume_file, filename_str, cache_key_from_file)
+        if cached_resume:
+            parsed_resume = cached_resume
+        else:
+            parsed_resume = parse_resume(resume_file, filename_str, cache_key_from_file)
+
+    else:
+        parsed_resume = parse_resume(resume_file, filename_str)
 
     if not create_candidate:
         return parsed_resume
@@ -101,28 +110,22 @@ def process_resume(parse_params):
 
 @upload_failed_IO
 @contract
-def get_or_store_bgxml(resume_file, filename_str):
+def get_cached_resume(resume_file, filename_str, cache_key):
     """
     Tries to retrieve processed resume data from redis or parses it and stores it.
     :param cStringIO resume_file:
     :param string filename_str:
     :rtype: dict
     """
-    cache_key_from_file = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
-    cached_bg_xml = redis_store.get(cache_key_from_file)
+    cached_bg_xml = redis_store.get(cache_key)
 
     if cached_bg_xml:
         parsed_resume = {
             'candidate': parse_optic_xml(cached_bg_xml),
             'raw_response': cached_bg_xml
         }
-        logger.info('BG data for {} loaded with key {}'.format(
-            filename_str, cache_key_from_file))
+        logger.info('ResumeParsingService::INFO - BG data for {} loaded with key {}'.format(
+            filename_str, cache_key))
+        return parsed_resume
 
-    else:
-        # Parse the resume if not hashed.
-        logger.info('Couldn\'t find Resume {} in cache with hashed_key: {}'.format(filename_str,
-                                                                                   cache_key_from_file))
-        parsed_resume = parse_resume(resume_file, filename_str, cache_key_from_file)
-
-    return parsed_resume
+    return {}

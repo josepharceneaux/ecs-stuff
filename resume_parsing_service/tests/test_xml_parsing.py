@@ -3,10 +3,29 @@
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position
 from base64 import b64encode
-# Third party.
+
 from bs4 import BeautifulSoup as bs4
 from jsonschema import validate, FormatChecker
-# JSON outputs.
+from resume_parsing_service.app.views.utils import extra_skills_parsing
+
+import contact_combinations
+import edu_combinations
+import job_combinations
+import skill_combinations
+from json_schemas import (EMAIL_SCHEMA, PHONE_SCHEMA, EXPERIENCE_SCHEMA, EDU_SCHEMA,\
+                          SKILL_SCHEMA, ADDRESS_SCHEMA)
+from resume_parsing_service.app import app
+from resume_parsing_service.app.modules.optic_parse_lib import is_experience_already_exists
+from resume_parsing_service.app.modules.optic_parse_lib import parse_candidate_addresses
+from resume_parsing_service.app.modules.optic_parse_lib import parse_candidate_educations
+from resume_parsing_service.app.modules.optic_parse_lib import parse_candidate_emails
+from resume_parsing_service.app.modules.optic_parse_lib import parse_candidate_experiences
+from resume_parsing_service.app.modules.optic_parse_lib import parse_candidate_linkedin_urls
+from resume_parsing_service.app.modules.optic_parse_lib import parse_candidate_name
+from resume_parsing_service.app.modules.optic_parse_lib import parse_candidate_phones
+from resume_parsing_service.app.modules.optic_parse_lib import parse_candidate_reference
+from resume_parsing_service.app.modules.optic_parse_lib import parse_candidate_skills
+from resume_parsing_service.app.modules.optic_parse_lib import trunc_text
 from .resume_xml import DOCX
 from .resume_xml import DUPED_EXPERIENCE
 from .resume_xml import GET_1301
@@ -17,31 +36,8 @@ from .resume_xml import GET_646
 from .resume_xml import PDF
 from .resume_xml import PDF_13
 from .resume_xml import PDF_14
-from .resume_xml import SQUARE_BULLETS
 from .resume_xml import REFERENCE_XML
-# Modules being tested.
-from resume_parsing_service.app import app
-from resume_parsing_service.app.views.optic_parse_lib import is_experience_already_exists
-from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_addresses
-from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_educations
-from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_emails
-from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_experiences
-from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_linkedin_urls
-from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_name
-from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_phones
-from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_reference
-from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
-from resume_parsing_service.app.views.optic_parse_lib import trunc_text
-from resume_parsing_service.app.views.utils import extra_skills_parsing
-# JSON Schemas
-from json_schemas import (EMAIL_SCHEMA, PHONE_SCHEMA, EXPERIENCE_SCHEMA, EDU_SCHEMA,\
-                          SKILL_SCHEMA, ADDRESS_SCHEMA)
-# XML Combinations:
-import edu_combinations
-import contact_combinations
-import job_combinations
-import skill_combinations
-
+from .resume_xml import SQUARE_BULLETS
 
 DOCX_ADDRESS = {'city': u'Lansdale', 'state': u'Pennsylvania', 'country_code': None, 'zip_code': '19446',
                 'address_line_1': u'466 Tailor Way'}

@@ -1,10 +1,10 @@
 from cStringIO import StringIO
 
-from boto3 import client
 import pytest
+from boto3 import client
 
 from resume_parsing_service.app import app
-from resume_parsing_service.app.views.decorators import upload_failed_IO
+from resume_parsing_service.app.modules.decorators import upload_failed_IO
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.talent_s3 import boto3_get_file
 
