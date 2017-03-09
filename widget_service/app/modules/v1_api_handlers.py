@@ -73,22 +73,24 @@ def create_widget_candidate(form, talent_pool_hash):
     if candidate_frequency:
         frequency_field = db.session.query(CustomField).filter_by(
             name='Subscription Preference', domain_id=domain_id).first()
-        candidate_dict.setdefault('custom_fields', []).append(
-            {'custom_field_id': frequency_field.id, 'value': candidate_frequency}
-        )
+        candidate_dict.setdefault('custom_fields', []).append({
+            'custom_field_id': frequency_field.id,
+            'value': candidate_frequency
+        })
 
     # Kaiser University specific processing.
     if candidate_university and candidate_degree and candidate_major:
-        candidate_dict['educations'] = [create_candidate_educations_dict(candidate_university,
-                                                                        candidate_degree,
-                                                                        candidate_major,
-                                                                        candidate_graduation_date)]
+        candidate_dict['educations'] = [
+            create_candidate_educations_dict(candidate_university, candidate_degree, candidate_major,
+                                             candidate_graduation_date)
+        ]
     if candidate_nuid:
         nuid_field = db.session.query(CustomField).filter_by(name='NUID', domain_id=domain_id).first()
         if nuid_field:
-            candidate_dict.setdefault('custom_fields', []).append(
-                {'custom_field_id': nuid_field.id, 'value': candidate_nuid}
-            )
+            candidate_dict.setdefault('custom_fields', []).append({
+                'custom_field_id': nuid_field.id,
+                'value': candidate_nuid
+            })
     # Kaiser Military specific processing.
     military_service_dict = {}
     if candidate_military_branch:
@@ -102,8 +104,12 @@ def create_widget_candidate(form, talent_pool_hash):
     candidate_dict['military_services'] = [military_service_dict] if military_service_dict else None
     candidate_dict['talent_pool_ids']['add'] = [talent_pool.id]
     payload = json.dumps({'candidates': [candidate_dict]})
-    r = requests.post(CandidateApiUrl.CANDIDATES, data=payload, headers={'Authorization': widget_token,
-                                                                         'Content-Type': 'application/json'})
+    r = requests.post(
+        CandidateApiUrl.CANDIDATES,
+        data=payload,
+        headers={'Authorization': widget_token,
+                 'Content-Type': 'application/json'})
     if r.status_code != 201:
+        logger.error("WidgetService::Error::CandidateResponse - {}".format(r.content))
         return jsonify({'error': {'message': 'unable to create candidate from form'}}), 401
     return jsonify(candidate_dict), 201
