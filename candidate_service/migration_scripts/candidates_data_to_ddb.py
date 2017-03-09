@@ -339,12 +339,13 @@ if __name__ == '__main__':
         print "~~~~~ STARTING MIGRATION SCRIPT ~~~~~"
         start_time = time.time()
         input_domain_ids = raw_input("enter comma separated domain IDs: ")
+        number_of_candidates = raw_input("enter number of candidates to process: ")
         if len(input_domain_ids) < 2:
             domain_ids = [int(input_domain_ids)]
         domain_ids = [int(n) for n in input_domain_ids.split(',')]
         for d_id in domain_ids:
             with app.app_context():
-                r = post_domain_candidates_to_gql_service(domain_id=d_id, number_of_candidates=10)
+                r = post_domain_candidates_to_gql_service(domain_id=d_id, number_of_candidates=number_of_candidates)
                 print "DomainID: {}\nresponse: {}".format(d_id, r)
         print "SUCCESS. Time: {}".format(time.time() - start_time)
     except Exception as e:
