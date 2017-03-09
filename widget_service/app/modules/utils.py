@@ -1,9 +1,8 @@
 __author__ = 'erikfarmer'
-
-from widget_service.common.models.misc import CustomField
 from widget_service.app import db
-from widget_service.common.models.misc import AreaOfInterest
 from widget_service.app import logger
+from widget_service.common.models.misc import AreaOfInterest
+from widget_service.common.models.misc import CustomField
 
 
 def parse_interest_ids_from_form(interests_string, domain_id):
@@ -24,8 +23,8 @@ def parse_interest_ids_from_form(interests_string, domain_id):
         if aoi:
             processed_interest_ids.append({'area_of_interest_id': aoi.id})
         else:
-            logger.error("WidgetService::Error:: Interest id for {} not found within domain {} ".format(
-                interest_to_query, domain_id))
+            logger.error("WidgetService::Error Interest id for {} not found within domain {} ".format(interest_to_query,
+                                                                                                      domain_id))
     return processed_interest_ids
 
 
@@ -48,7 +47,7 @@ def parse_city_and_state_ids_from_form(locations_string, domain_id):
         city_custom_field_id = city_field.id
 
     if not state_field or not city_field:
-        logger.error('Could not locate City or State fields in domain {}'.format(domain_id))
+        logger.error('WidgetService::Error Could not locate City or State fields in domain {}'.format(domain_id))
         return processed_location_ids
 
     raw_locations = locations_string.split('|')
@@ -75,7 +74,7 @@ def process_city_and_state_from_fields(city, state, domain_id):
         city_custom_field_id = city_field.id
 
     if not state_field or not city_field:
-        logger.error('Could not locate City or State fields in domain')
+        logger.error('WidgetService::Error Could not locate City or State fields in domain {}'.format(domain_id))
         return processed_location_ids
     if state_custom_field_id:
         processed_location_ids.append({'custom_field_id': state_custom_field_id, 'value': state})
