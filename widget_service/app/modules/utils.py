@@ -1,7 +1,6 @@
 __author__ = 'erikfarmer'
 
 from widget_service.common.models.misc import CustomField
-from widget_service.common.models.widget import WidgetPage
 from widget_service.app import db
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.app import logger
@@ -21,11 +20,12 @@ def parse_interest_ids_from_form(interests_string, domain_id):
         subcategory = subcategory.lstrip()
         interest_to_query = category if subcategory == 'All Subcategories' else subcategory
         aoi = db.session.query(AreaOfInterest.id).filter(AreaOfInterest.name == interest_to_query,
-                                                   AreaOfInterest.domain_id == domain_id).first()
+                                                         AreaOfInterest.domain_id == domain_id).first()
         if aoi:
-            processed_interest_ids.append({
-                'area_of_interest_id': aoi.id
-            })
+            processed_interest_ids.append({'area_of_interest_id': aoi.id})
+        else:
+            logger.error("WidgetService::Error:: Interest id for {} not found within domain {} ".format(
+                interest_to_query, domain_id))
     return processed_interest_ids
 
 
@@ -38,17 +38,17 @@ def parse_city_and_state_ids_from_form(locations_string, domain_id):
     """
     processed_location_ids = []
     state_field = db.session.query(CustomField).filter(CustomField.name == 'State of Interest',
-                                                                 CustomField.domain_id == domain_id).first()
+                                                       CustomField.domain_id == domain_id).first()
     if state_field:
         state_custom_field_id = state_field.id
 
     city_field = db.session.query(CustomField).filter(CustomField.name == 'City of Interest',
-                                                                CustomField.domain_id == domain_id).first()
+                                                      CustomField.domain_id == domain_id).first()
     if city_field:
         city_custom_field_id = city_field.id
 
     if not state_field or not city_field:
-        logger.error('Could not locate City or State fields in domain')
+        logger.error('Could not locate City or State fields in domain {}'.format(domain_id))
         return processed_location_ids
 
     raw_locations = locations_string.split('|')
