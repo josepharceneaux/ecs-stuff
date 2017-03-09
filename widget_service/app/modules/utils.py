@@ -82,14 +82,3 @@ def process_city_and_state_from_fields(city, state, domain_id):
     if city_custom_field_id:
         processed_location_ids.append({'custom_field_id': city_custom_field_id, 'value': city})
     return processed_location_ids
-
-
-def create_candidate_educations_dict(major, degree, school_name, grad_date):
-    return {
-        'school_name': school_name,
-        'degrees': [{
-            'type': degree,
-            'title': major,
-            'end_year': int(grad_date.split(' ')[1]),
-        }]
-    }
