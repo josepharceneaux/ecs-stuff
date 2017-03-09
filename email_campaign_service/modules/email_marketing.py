@@ -364,8 +364,8 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
             except Exception as error:
                 logger.error("Couldn't get boto3 lambda client Error: %s" % error.message)
                 return
-            chunks_of_candidate_ids_list = (candidate_ids_and_emails[x:x + 100] for x in
-                                            xrange(0, len(candidate_ids_and_emails), 100))
+            chunks_of_candidate_ids_list = (candidate_ids_and_emails[x:x + 50] for x in
+                                            xrange(0, len(candidate_ids_and_emails), 50))
             for chunk in chunks_of_candidate_ids_list:
                 chunk_of_candidate_ids_and_address = []
                 number_of_lambda_invocations = 0
@@ -379,7 +379,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                     number_of_lambda_invocations += 1
                     if number_of_lambda_invocations % 10 == 0:
                         # 3 seconds delay after 100 lambda invocations
-                        sleep(3)
+                        sleep(150)
                 except Exception as error:
                     logger.error('Could not invoke Lambda. Error:%s, blast_id:%s, candidate_ids:%s'
                                  % (error.message, blast_id, chunk_of_candidate_ids_and_address))
