@@ -39,10 +39,14 @@ class TwitterSubscription(Resource):
         Here we create object of Twitter class defined in social_network/twitter.py and call its method authenticate().
         This redirects the user to Twitter website to enter credentials and grant access to getTalent app.
 
+        Response is like
+
+                {'redirect_url': 'https://api.twitter.com/oauth/authorize?oauth_token=Dr2z8QAAAAAAvnskAAABWqj22-E}
+
         **See Also**
             .. seealso:: authenticate() method defined in Twitter class inside social_network/twitter.py.
 
         """
         user_id = request.user.id
         twitter_obj = Twitter(user_id=user_id, validate_credentials=False)
-        return twitter_obj.authenticate()
+        return {'redirect_url': twitter_obj.authenticate()}
