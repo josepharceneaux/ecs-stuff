@@ -123,9 +123,9 @@ def format_candidate_data_for_gql(candidate_data):
     cleaned_candidate_data = change_to_iso3166(cleaned_candidate_data)
 
     # Work preference must be a list of dict
-    if cleaned_candidate_data.get('work_preference') is not None:
+    if cleaned_candidate_data.get('work_preference'):
         cleaned_candidate_data['work_preferences'] = [cleaned_candidate_data['work_preference']]
-        del cleaned_candidate_data['work_preference']
+    cleaned_candidate_data.pop('work_preference', None)
 
     # Remove all ID fields except candidate's ID
     cleaned_candidate_data = remove_ids(cleaned_candidate_data)
@@ -334,12 +334,6 @@ def set_empty_data_to_null(obj):
         return obj
 
 
-# def test_post_candidates_from_mysql_to_ddb():
-#     with app.app_context():
-#         r = post_domain_candidates_to_gql_service(domain_id=1, number_of_candidates=1000)
-#         print "r: {}".format(r)
-
-
 if __name__ == '__main__':
     try:
         print "~~~~~ STARTING MIGRATION SCRIPT ~~~~~"
@@ -349,8 +343,9 @@ if __name__ == '__main__':
             domain_ids = [int(input_domain_ids)]
         domain_ids = [int(n) for n in input_domain_ids.split(',')]
         for d_id in domain_ids:
-            r = post_domain_candidates_to_gql_service(domain_id=d_id, number_of_candidates=10)
-            print "DomainID: {}\nresponse: {}".format(d_id, r)
+            with app.app_context():
+                r = post_domain_candidates_to_gql_service(domain_id=d_id, number_of_candidates=10)
+                print "DomainID: {}\nresponse: {}".format(d_id, r)
         print "SUCCESS. Time: {}".format(time.time() - start_time)
     except Exception as e:
         print "ERROR: {}".format(e.message)
