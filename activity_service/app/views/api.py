@@ -123,26 +123,27 @@ def get_activity_messages():
     return jsonify(dict(messages=TalentActivityManager.MESSAGES))
 
 
-@mod.route(ActivityApi.ACTIVITIES, methods=['GET', 'POST'])
+@mod.route(ActivityApi.ACTIVITIES, methods=['POST'])
 @require_oauth()
 def post_activity():
     valid_user_id = request.user.id
+    domain_id = request.user.domain_id
     if request.method == 'POST':
         content = request.get_json()
 
-        return create_activity(valid_user_id, content.get('type'), content.get('source_table'),
+        return create_activity(valid_user_id, content.get('type'), domain_id, content.get('source_table'),
                                content.get('source_id'), content.get('params'))
-    source_table = request.args.get('source_table')
-    source_id = request.args.get('source_id')
-    type_id = request.args.get('type')
-    activity = Activity.get_single_activity(valid_user_id, type_id, source_id, source_table)
-    if not activity:
-        raise NotFoundError('Activity not found for given query params.')
+    # source_table = request.args.get('source_table')
+    # source_id = request.args.get('source_id')
+    # type_id = request.args.get('type')
+    # activity = Activity.get_single_activity(valid_user_id, type_id, source_id, source_table)
+    # if not activity:
+    #     raise NotFoundError('Activity not found for given query params.')
 
-    return ApiResponse(json.dumps({"activity": activity.to_json()}), status=STATUS_CODES.OK)
+    # return ApiResponse(json.dumps({"activity": activity.to_json()}), status=STATUS_CODES.OK)
 
-
-def create_activity(user_id, type_, source_table=None, source_id=None, params=None):
+# TODO move this is a module
+def create_activity(user_id, type_, domain_id, source_table=None, source_id=None, params=None):
     """Method for creating a DB entry in the activity table.
     :param int user_id: ID of the authenticated user.
     :param int type_: Integer corresponding to TalentActivityAPI attributes.
@@ -157,13 +158,14 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
         source_table=source_table,
         source_id=source_id,
         params=json.dumps(params) if params else None,
-        added_time=datetime.utcnow()
+        added_time=datetime.utcnow(),
+        domain_id=domain_id
     )
     try:
         db.session.add(activity)
         db.session.commit()
         return json.dumps({'activity': {'id': activity.id}}), STATUS_CODES.created
-    except Exception:
-        # TODO logging
+    except Exception as e:
+        logger.exception('ActivityService::Error::CreationError - {}'.format(e))
         return json.dumps({'error': 'There was an error saving your log entry'}), STATUS_CODES.internal_server_error
 
