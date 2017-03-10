@@ -850,12 +850,14 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     # Adding facet fields parameters
     if not count_only:
-        params['facet'] = "{area_of_interest_id:{size:500},source_id:{size:50},total_months_experience:{size:50}," \
-                          "user_id:{size:50},status_id:{size:50},skill_description:{size:500}," \
-                          "position:{size:50},organization:{size:50},school_name:{size:500},degree_type:{size:50}," \
-                          "concentration_type:{size:50},military_service_status:{size:50},tags:{size:1000}," \
-                          "military_branch:{size:50},military_highest_grade:{size:50},tag_ids:{size:500}," \
-                          "custom_field_id_and_value:{size:1000},candidate_engagement_score:{size:50}}"
+        request_facets = {
+            'area_of_interest_id': 500, 'source_id': 50, 'total_months_experience': 50,
+            'user_id': 50, 'status_id': 50, 'skill_description': 500, 'position': 50, 'organization': 50,
+            'school_name': 500, 'degree_type': 50, 'concentration_type': 50, 'military_service_status': 50,
+            'tags': 1000, 'military_branch': 50, 'military_highest_grade': 50, 'tag_ids': 500,
+            'custom_field_id_and_value': 1000, 'candidate_engagement_score': 50, 'source_details': 100
+        }
+        params['facet'] = "{" + ','.join(["%s:{size:%s}" % (facet_name, size) for (facet_name, size) in request_facets.items()]) + "}"
     else:
         params['facet'] = "{added_time_hour:{size:24}}"
 
@@ -937,11 +939,13 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
 # Get the facet information from database with given ids
 def get_faceting_information(facets):
+    logger.info("talent_cloud_search.get_faceting_information: facets: %s" % facets)
     search_facets_values = {}
     # cache = SimpleCache()
     facet_aoi = facets.get('area_of_interest_id').get('buckets')  # db area_of_interest_id
     facet_owner = facets.get('user_id').get('buckets')  # db user
     facet_source = facets.get('source_id').get('buckets')  # db candidate_source
+    facet_source_details = facets.get('source_details').get('buckets')  # db candidate.source_detail
     facet_status = facets.get('status_id').get('buckets')  # db candidate_status
     facet_skills = facets.get('skill_description').get('buckets')  # skills
     facet_position = facets.get('position').get('buckets')  # position = job_title
@@ -965,6 +969,9 @@ def get_faceting_information(facets):
 
     if facet_source:
         search_facets_values['source'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
+
+    if facet_source_details:
+        search_facets_values['source_details'] = get_bucket_facet_value_count(facet_source_details)
 
     if facet_status:
         search_facets_values['status'] = get_facet_info_with_ids(CandidateStatus, facet_status, 'description')
@@ -1107,6 +1114,13 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
                                      'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{source_id: {size:50}}"}
             result_source_id_facet = search_service.search(**query_source_id_facet)
             facet_source = result_source_id_facet['facets']['source_id']['buckets']
+            existing_facets['source'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
+        if 'source_details' in filter_query:
+            fq_without_source_id = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
+            query_source_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_source_id,
+                                     'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{source_details: {size:50}}"}
+            result_source_id_facet = search_service.search(**query_source_id_facet)
+            facet_source = result_source_id_facet['facets']['source_details']['buckets']
             existing_facets['source'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
         if 'school_name' in filter_query:
             fq_without_school_name = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
