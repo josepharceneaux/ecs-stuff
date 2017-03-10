@@ -1,7 +1,7 @@
 
 __author__ = 'ufarooqi'
-
 from flask import redirect
+from dateutil.parser import parse
 from werkzeug.security import gen_salt
 from urlparse import urlparse, urlunparse
 from auth_service.oauth import app, logger
@@ -21,7 +21,6 @@ def access_token_v2():
     body = request.form.to_dict()
     username = body.get('username', '')
     password = body.get('password', '')
-    redirect_uri = body.get('redirect_uri', '')
 
     if not username or not password:
         raise InvalidUsage("Username or password is missing")
@@ -29,19 +28,34 @@ def access_token_v2():
         authenticated_user = authenticate_user(username, password)
         if authenticated_user:
             token_dict = save_token_v2(authenticated_user)
-            if redirect_uri:
-                redirect_uri = list(urlparse(redirect_uri))
-                query_params = redirect_uri[-2].split('&')
-                query_params.append('access_token={}'.format(token_dict.get('access_token')))
-                query_params.append('expires_at={}'.format(token_dict.get('expires_at')))
-                query_params = [query_param for query_param in query_params if query_param]
-                redirect_uri[-2] = '&'.join(query_params)
-                redirect_uri = urlunparse(tuple(redirect_uri))
-                return redirect(redirect_uri, code=302)
-            else:
-                return jsonify(token_dict)
+            return jsonify(token_dict)
         else:
             raise InvalidUsage("Incorrect username/password")
+
+
+@app.route(AuthApiV2.REDIRECT)
+def token_redirect_v2():
+    """ Redirect Browser to redirect_url """
+    token = request.args.get('token', '')
+    expires_at = request.args.get('expires_at', '')
+    redirect_uri = request.args.get('redirect_uri', '')
+
+    if not redirect_uri or not token or not expires_at:
+        raise InvalidUsage("Either redirect_url, token or expires_at arguments are missing")
+
+    try:
+        parse(expires_at)
+    except Exception as e:
+        raise InvalidUsage("Expires_at argument is not a valid DateTime")
+
+    redirect_uri = list(urlparse(redirect_uri))
+    query_params = redirect_uri[-2].split('&')
+    query_params.append('token={}'.format(token))
+    query_params.append('expires_at={}'.format(expires_at))
+    query_params = [query_param for query_param in query_params if query_param]
+    redirect_uri[-2] = '&'.join(query_params)
+
+    return redirect(urlunparse(tuple(redirect_uri)))
 
 
 @app.route(AuthApiV2.TOKEN_REFRESH, methods=['POST'])
