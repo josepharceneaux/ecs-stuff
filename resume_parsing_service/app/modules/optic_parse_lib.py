@@ -15,15 +15,15 @@ import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
 from contracts import contract
-import requests
+from flask import current_app
 import phonenumbers
 import pycountry
+import requests
 # Module Specific
-from flask import current_app
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
-from resume_parsing_service.app.views.oauth_client2 import get_authorization_string
-from resume_parsing_service.app.views.utils import extra_skills_parsing, string_scrubber, parse_email_from_string
+from resume_parsing_service.app.modules.oauth_client2 import get_authorization_string
+from resume_parsing_service.app.modules.utils import extra_skills_parsing, string_scrubber, parse_email_from_string
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 

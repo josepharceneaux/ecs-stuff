@@ -2,34 +2,34 @@
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
+import base64
 from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext
 from time import time
-import base64
-# Third Party/Framework Specific.
+
+import magic
+from PIL import Image
 from contracts import contract
 from flask import current_app
-from PIL import Image
-import magic
-# Module Specific
+from resume_parsing_service.app.modules.ocr_lib import ocr_image
+from resume_parsing_service.app.modules.pdf_utils import convert_pdf_to_text
+from resume_parsing_service.app.modules.pdf_utils import decrypt_pdf
+from resume_parsing_service.app.modules.pdf_utils import detect_pdf_has_form
+
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.constants import error_constants
-from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
-from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
-from resume_parsing_service.app.views.ocr_lib import ocr_image
-from resume_parsing_service.app.views.pdf_utils import convert_pdf_to_text
-from resume_parsing_service.app.views.pdf_utils import decrypt_pdf
-from resume_parsing_service.app.views.pdf_utils import detect_pdf_has_form
+from resume_parsing_service.app.modules.optic_parse_lib import fetch_optic_response
+from resume_parsing_service.app.modules.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.common.error_handling import InvalidUsage
-from resume_parsing_service.common.utils.talent_s3 import boto3_put
 from resume_parsing_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
+from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
 RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 
 @contract
-def parse_resume(file_obj, filename_str, cache_key):
+def parse_resume(file_obj, filename_str, cache_key=''):
     """Primary resume parsing function.
 
     :param cStringIO file_obj: a StringIO representation of the raw binary.
@@ -100,8 +100,11 @@ def parse_resume(file_obj, filename_str, cache_key):
                 error_message=error_constants.NO_TEXT_EXTRACTED['message'],
                 error_code=error_constants.NO_TEXT_EXTRACTED['code'])
 
-        redis_store.set(cache_key, optic_response)
-        redis_store.expire(cache_key, RESUME_EXPIRE_TIME)
+        # GET-2170 specifies caching of resumes only occurs in local/test environments.
+        if current_app.config['GT_ENVIRONMENT'] in ('dev', 'jenkins'):
+            redis_store.set(cache_key, optic_response)
+            redis_store.expire(cache_key, RESUME_EXPIRE_TIME)
+
         candidate_data = parse_optic_xml(optic_response)
         return {'raw_response': optic_response, 'candidate': candidate_data}
 
