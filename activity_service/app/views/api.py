@@ -120,12 +120,14 @@ def get_activity_messages():
         }
     :return:
     """
+    logger.info("ActivityService::Info:: Call to `get_activity_messages`")
     return jsonify(dict(messages=TalentActivityManager.MESSAGES))
 
 
 @mod.route(ActivityApi.ACTIVITIES, methods=['POST'])
 @require_oauth()
 def post_activity():
+    logger.info("ActivityService::Info:: Call to `post_activity`")
     valid_user_id = request.user.id
     domain_id = request.user.domain_id
     if request.method == 'POST':
