@@ -366,9 +366,9 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 return
             chunks_of_candidate_ids_list = (candidate_ids_and_emails[x:x + 50] for x in
                                             xrange(0, len(candidate_ids_and_emails), 50))
+            number_of_lambda_invocations = 0
             for chunk in chunks_of_candidate_ids_list:
                 chunk_of_candidate_ids_and_address = []
-                number_of_lambda_invocations = 0
                 for candidate_id_and_email in chunk:
                     candidate_id, candidate_address = candidate_id_and_email
                     chunk_of_candidate_ids_and_address.append({"candidate_id": candidate_id,
@@ -377,8 +377,9 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 try:
                     invoke_lambda_sender(_lambda, chunk_of_candidate_ids_and_address)
                     number_of_lambda_invocations += 1
-                    if number_of_lambda_invocations % 10 == 0:
+                    if number_of_lambda_invocations % 100 == 0:
                         # 3 seconds delay after 100 lambda invocations
+                        logger.info("Delaying Lambda invoker at %d" % number_of_lambda_invocations)
                         sleep(150)
                 except Exception as error:
                     logger.error('Could not invoke Lambda. Error:%s, blast_id:%s, candidate_ids:%s'
