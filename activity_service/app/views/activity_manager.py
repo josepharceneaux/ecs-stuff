@@ -272,7 +272,7 @@ class TalentActivityManager(object):
         if finishing_time > TIMEOUT_THRESHOLD:
             logger.info(
                 'ActivityService::INFO::Timeout -  {} exceeded desired timeout'.format(self.activity_params.api_call))
-        return aggregated_activities
+        return aggregated_activities, 200
 
     def activity_text(self, activity, count, current_user):
         if activity.user_id != current_user.id:
