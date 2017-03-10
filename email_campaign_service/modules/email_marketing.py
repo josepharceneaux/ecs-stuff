@@ -377,7 +377,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 try:
                     invoke_lambda_sender(_lambda, chunk_of_candidate_ids_and_address)
                     number_of_lambda_invocations += 1
-                    if number_of_lambda_invocations % 100 == 0:
+                    if number_of_lambda_invocations % 50 == 0:
                         # 3 seconds delay after 100 lambda invocations
                         logger.info("Delaying Lambda invoker at %d" % number_of_lambda_invocations)
                         sleep(150)
