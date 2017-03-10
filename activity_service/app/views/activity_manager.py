@@ -193,7 +193,7 @@ class TalentActivityManager(object):
                 'readable_text': self.activity_text(activity, 1, current_user)
             } for activity in activities.items]
         }
-        return activities_response
+        return activities_response, 200
 
     # Like 'get' but gets the last 200 consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self):
