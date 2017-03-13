@@ -13,7 +13,7 @@ from widget_service.app.modules.utils import parse_city_and_state_ids_from_form
 from widget_service.app.modules.utils import parse_interest_ids_from_form
 from widget_service.app.modules.utils import process_city_and_state_from_fields
 from widget_service.common.error_handling import InvalidUsage
-from widget_service.common.models.misc import CustomField
+from widget_service.common.models.misc import CustomField, Frequency
 from widget_service.common.models.talent_pools_pipelines import TalentPool
 from widget_service.common.models.user import User
 from widget_service.common.models.widget import WidgetPage
@@ -67,23 +67,14 @@ def create_widget_candidate(form, talent_pool_hash):
     # Location based fields.
     candidate_locations = form.get('hidden-tags-location')
     if candidate_locations:
-        custom_fields = parse_city_and_state_ids_from_form(candidate_locations)
-        candidate_dict.setdefault('custom_fields', []).extend(custom_fields)
+        locations_list = parse_city_and_state_ids_from_form(candidate_locations)
+        candidate_dict.setdefault('preferred_locations', []).extend(locations_list)
 
     candidate_city = form.get('city')
     candidate_state = form.get('state')
     if candidate_city and candidate_state:
-        city_state_list = process_city_and_state_from_fields(candidate_city, candidate_state)
-        candidate_dict.setdefault('custom_fields', []).extend(city_state_list)
-
-    candidate_frequency = form.get('jobFrequency')
-    if candidate_frequency:
-        frequency_field = db.session.query(CustomField).filter_by(
-            name='Subscription Preference', domain_id=domain_id).first()
-        candidate_dict.setdefault('custom_fields', []).append({
-            'custom_field_id': frequency_field.id,
-            'value': candidate_frequency
-        })
+        locations_list = process_city_and_state_from_fields(candidate_city, candidate_state)
+        candidate_dict.setdefault('preferred_locations', []).extend(locations_list)
 
     # Education fields.
     candidate_graduation_date = form.get('graduation')
@@ -115,15 +106,28 @@ def create_widget_candidate(form, talent_pool_hash):
     logger.info("WidgetService::Info - {} - Finished Candidate {}".format(api_tracker, candidate_dict))
     payload = json.dumps({'candidates': [candidate_dict]})
 
-    response = requests.post(
+    post_response = requests.post(
         CandidateApiUrl.CANDIDATES,
         data=payload,
         headers={'Authorization': widget_token,
                  'Content-Type': 'application/json'})
 
-    if response.status_code != 201:
-        logger.error("WidgetService::Error::CandidateResponse - {}".format(response.content))
+    if post_response.status_code != 201:
+        logger.error("WidgetService::Error::CandidatePost - {}".format(post_response.content))
         # Todo return error page
         raise InvalidUsage(error_message='Error creating candidate via Widget')
+
+    candidate_id = json.loads(post_response.content)['candidates'][0]['id']
+    candidate_frequency = form.get('jobFrequency')
+    if candidate_frequency:
+        frequency_field = db.session.query(Frequency).filter_by(name=candidate_frequency).first()
+        response = requests.post(
+            CandidateApiUrl.CANDIDATES + '{}/preferences'.format(candidate_id),
+            data={'frequency_id': frequency_field.id},
+            headers={'Authorization': widget_token,
+                     'Content-Type': 'application/json'})
+        if response.status_code != 204:
+            logger.error('WidgetService::Error::CandidatePatch {}'.format(response.content))
+
     # TODO return success template
     return jsonify(candidate_dict), 201

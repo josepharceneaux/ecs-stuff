@@ -17,7 +17,8 @@ from widget_service.common.tests.conftest import widget_page
 from widget_service.common.utils.handy_functions import random_word
 
 
-def test_military_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois, talent_pool):
+def test_military_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois,
+                            talent_pool):
     aoi_string = gen_mock_aois(domain_aois)
     candidate_dict = {
         'firstName': random_word(12),
@@ -37,7 +38,8 @@ def test_military_candidate(widget_page, domain_custom_fields, domain_custom_fie
     assert post_response.status_code == 201, 'Error in content - {}'.format(post_response.content)
 
 
-def test_university_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois, talent_pool):
+def test_university_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois,
+                              talent_pool):
     aoi_string = gen_mock_aois(domain_aois)
     candidate_dict = {
         'name': random_word(12),
@@ -58,7 +60,8 @@ def test_university_candidate(widget_page, domain_custom_fields, domain_custom_f
     assert post_response.status_code == 201, 'Error in content - {}'.format(post_response.content)
 
 
-def test_corporate_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois, talent_pool):
+def test_corporate_candidate(widget_page, domain_custom_fields, domain_custom_field_categories, domain_aois,
+                             talent_pool):
     aoi_string = gen_mock_aois(domain_aois)
     candidate_dict = {
         'firstName': random_word(12),
@@ -72,15 +75,6 @@ def test_corporate_candidate(widget_page, domain_custom_fields, domain_custom_fi
     url = WidgetApiUrl.CREATE_FOR_TALENT_POOL % widget_page.simple_hash
     post_response = requests.post(url, candidate_dict)
     assert post_response.status_code == 201, 'Error in content - {}'.format(post_response.content)
-
-
-# def test_health_check():
-#     response = requests.get(WidgetApiUrl.HEALTH_CHECK)
-#     assert response.status_code == 200
-#
-#     # Testing Health Check URL with trailing slash
-#     response = requests.get(WidgetApiUrl.HEALTH_CHECK + '/')
-#     assert response.status_code == 200
 
 
 def gen_mock_aois(domain_AOIs):
