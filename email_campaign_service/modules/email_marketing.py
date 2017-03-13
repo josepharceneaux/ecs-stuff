@@ -353,32 +353,35 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     subscribed_candidate_ids, unsubscribed_candidate_ids = \
         get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
     candidate_ids_and_emails = get_priority_emails(campaign.user, subscribed_candidate_ids)
-
+    logger.info("subscribed_candidates_count:%s, filtered_candidates_count:%s, campaign_name=%s, "
+                "campaign_id=%s, user=%s" % (len(subscribed_candidate_ids), len(candidate_ids_and_emails),
+                                             campaign.name, campaign.id, campaign.user.email))
     if candidate_ids_and_emails:
+        concurrent_lambdas = 50
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
         if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA]:
-            # Send campaigns via SQS
+            # Get AWS region name
             _, region_name = get_topic_arn_and_region_name()
             try:
                 _lambda = boto3.client('lambda', region_name=region_name)
             except Exception as error:
                 logger.error("Couldn't get boto3 lambda client Error: %s" % error.message)
                 return
-            chunks_of_candidate_ids_list = (candidate_ids_and_emails[x:x + 50] for x in
-                                            xrange(0, len(candidate_ids_and_emails), 50))
+            chunks_of_candidate_ids_list = (candidate_ids_and_emails[x:x + concurrent_lambdas] for x in
+                                            xrange(0, len(candidate_ids_and_emails), concurrent_lambdas))
             number_of_lambda_invocations = 0
             for chunk in chunks_of_candidate_ids_list:
                 chunk_of_candidate_ids_and_address = []
                 for candidate_id_and_email in chunk:
                     candidate_id, candidate_address = candidate_id_and_email
                     chunk_of_candidate_ids_and_address.append({"candidate_id": candidate_id,
-                                                              "candidate_address": candidate_address,
+                                                               "candidate_address": candidate_address,
                                                                "blast_id": blast_id})
                 try:
                     invoke_lambda_sender(_lambda, chunk_of_candidate_ids_and_address)
                     number_of_lambda_invocations += 1
-                    if number_of_lambda_invocations % 50 == 0:
-                        # 3 seconds delay after 100 lambda invocations
+                    if number_of_lambda_invocations % concurrent_lambdas == 0:
+                        # 3 seconds delay after 50 lambda invocations
                         logger.info("Delaying Lambda invoker at %d" % number_of_lambda_invocations)
                         sleep(150)
                 except Exception as error:
@@ -400,7 +403,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
             #         logger.error('Could not push to SQS. Error:%s, blast_id:%s, candidate_id:%s'
             #                      % (error.message, blast_id, candidate_id))
             _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
-            _update_blast_sends(blast_id=blast_id, new_sends=len(subscribed_candidate_ids), campaign=campaign,
+            _update_blast_sends(blast_id=blast_id, new_sends=len(candidate_ids_and_emails), campaign=campaign,
                                 new_candidates_only=new_candidates_only, update_blast_sends=False)
         else:  # TODO: Cutting off Celery for now and sending campaigns via Lambda on staging
             _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
@@ -482,7 +485,7 @@ def invoke_lambda_sender(_lambda, chunk_of_candidate_data):
     response = _lambda.invoke(FunctionName='send_via_consumer:%s' % app.config[TalentConfigKeys.ENV_KEY].upper(),
                               InvocationType='Event',
                               Payload=json.dumps({"chunk": chunk_of_candidate_data}))
-    print("Invoked send_via_consumer", response)
+    logger.info("Invoked send_via_consumer Lambda for:%s", (response, chunk_of_candidate_data))
 
 
 def get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids, new_candidates_only=False):
@@ -1110,7 +1113,6 @@ def notify_admins(campaign, new_candidates_only, candidate_ids_and_emails):
     :type campaign: EmailCampaign
     :type new_candidates_only: bool
     :type candidate_ids_and_emails: list
-    :return:
     """
     if not isinstance(campaign, EmailCampaign):
         raise InternalServerError('Valid EmailCampaign object must be provided.')
