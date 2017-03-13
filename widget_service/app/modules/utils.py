@@ -2,7 +2,6 @@ __author__ = 'erikfarmer'
 from widget_service.app import db
 from widget_service.app import logger
 from widget_service.common.models.misc import AreaOfInterest
-from widget_service.common.models.misc import CustomField
 
 
 def parse_interest_ids_from_form(interests_string, domain_id):
