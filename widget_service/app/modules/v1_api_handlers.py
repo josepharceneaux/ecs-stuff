@@ -67,13 +67,13 @@ def create_widget_candidate(form, talent_pool_hash):
     # Location based fields.
     candidate_locations = form.get('hidden-tags-location')
     if candidate_locations:
-        custom_fields = parse_city_and_state_ids_from_form(candidate_locations, domain_id)
+        custom_fields = parse_city_and_state_ids_from_form(candidate_locations)
         candidate_dict.setdefault('custom_fields', []).extend(custom_fields)
 
     candidate_city = form.get('city')
     candidate_state = form.get('state')
     if candidate_city and candidate_state:
-        city_state_list = process_city_and_state_from_fields(candidate_city, candidate_state, domain_id)
+        city_state_list = process_city_and_state_from_fields(candidate_city, candidate_state)
         candidate_dict.setdefault('custom_fields', []).extend(city_state_list)
 
     candidate_frequency = form.get('jobFrequency')

@@ -28,56 +28,23 @@ def parse_interest_ids_from_form(interests_string, domain_id):
     return processed_interest_ids
 
 
-def parse_city_and_state_ids_from_form(locations_string, domain_id):
+def parse_city_and_state_ids_from_form(locations_string):
     """Converts tag-manager input string into usable format for candidate dict.
     :param locations_string: (string) String in format:
         "<Region>: <sub_region or 'All Cities'>|
          <Region>: <sub_region or 'All Cities'>"
     :return: a list of dictionaries containing usable location ids for a candidate object
     """
-    processed_location_ids = []
-    state_field = db.session.query(CustomField).filter(CustomField.name == 'State of Interest',
-                                                       CustomField.domain_id == domain_id).first()
-    if state_field:
-        state_custom_field_id = state_field.id
-
-    city_field = db.session.query(CustomField).filter(CustomField.name == 'City of Interest',
-                                                      CustomField.domain_id == domain_id).first()
-    if city_field:
-        city_custom_field_id = city_field.id
-
-    if not state_field or not city_field:
-        logger.error('WidgetService::Error Could not locate City or State fields in domain {}'.format(domain_id))
-        return processed_location_ids
-
+    processed_locations = []
     raw_locations = locations_string.split('|')
     for location in raw_locations:
         state, city = location.split(':')
         city = city.lstrip()
-        if city == 'All Cities':
-            processed_location_ids.append({'custom_field_id': state_custom_field_id, 'value': state})
-        else:
-            processed_location_ids.append({'custom_field_id': city_custom_field_id, 'value': city})
-    return processed_location_ids
+        processed_locations.append({'city': city, 'state': state})
+    return processed_locations
 
 
-def process_city_and_state_from_fields(city, state, domain_id):
-    processed_location_ids = []
-    state_field = db.session.query(CustomField).filter(CustomField.name == 'State of Interest',
-                                                       CustomField.domain_id == domain_id).first()
-    if state_field:
-        state_custom_field_id = state_field.id
-
-    city_field = db.session.query(CustomField).filter(CustomField.name == 'City of Interest',
-                                                      CustomField.domain_id == domain_id).first()
-    if city_field:
-        city_custom_field_id = city_field.id
-
-    if not state_field or not city_field:
-        logger.error('WidgetService::Error Could not locate City or State fields in domain {}'.format(domain_id))
-        return processed_location_ids
-    if state_custom_field_id:
-        processed_location_ids.append({'custom_field_id': state_custom_field_id, 'value': state})
-    if city_custom_field_id:
-        processed_location_ids.append({'custom_field_id': city_custom_field_id, 'value': city})
-    return processed_location_ids
+def process_city_and_state_from_fields(city, state):
+    processed_locations = []
+    processed_locations.append({'city': city, 'state': state})
+    return processed_locations
