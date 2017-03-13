@@ -88,7 +88,8 @@ def create_widget_candidate(form, talent_pool_hash):
     # Education fields.
     candidate_graduation_date = form.get('graduation')
     if candidate_graduation_date:
-        candidate_graduation_date = candidate_graduation_date.split(' ')[1]
+        # Candidate Service JSON schema requires int type.
+        candidate_graduation_date = int(candidate_graduation_date.split(' ')[1])
 
     candidate_dict['educations'] = [{
         'school_name':
