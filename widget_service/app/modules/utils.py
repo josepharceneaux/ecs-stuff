@@ -76,7 +76,7 @@ def get_domain_state_and_city_custom_fields(domain_id):
                                                              CustomField.name == 'City of Interest').first()
     if state_custom_field is None or city_custom_field is None:
         logger.error(
-            'WidgetService::Error Domain - {} is missing CustomField City/State of interesrt'.format(domain_id))
+            'WidgetService::Error Domain - {} is missing CustomField City/State of interest'.format(domain_id))
         return None, None
 
     return state_custom_field.id, city_custom_field.id
