@@ -1115,13 +1115,7 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
             result_source_id_facet = search_service.search(**query_source_id_facet)
             facet_source = result_source_id_facet['facets']['source_id']['buckets']
             existing_facets['source'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
-        if 'source_details' in filter_query:
-            fq_without_source_id = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
-            query_source_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_source_id,
-                                     'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{source_details: {size:50}}"}
-            result_source_id_facet = search_service.search(**query_source_id_facet)
-            facet_source = result_source_id_facet['facets']['source_details']['buckets']
-            existing_facets['source'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
+
         if 'school_name' in filter_query:
             fq_without_school_name = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
             query_school_name_facet = {'query': query_string, 'size':0, 'filter_query': fq_without_school_name,
