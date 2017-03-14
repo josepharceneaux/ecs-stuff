@@ -13,7 +13,8 @@ from widget_service.app.modules.utils import parse_city_and_state_ids_from_form
 from widget_service.app.modules.utils import parse_interest_ids_from_form
 from widget_service.app.modules.utils import process_city_and_state_from_fields
 from widget_service.common.error_handling import InvalidUsage
-from widget_service.common.models.misc import CustomField, Frequency
+from widget_service.common.models.misc import CustomField
+from widget_service.common.models.misc import Frequency
 from widget_service.common.models.talent_pools_pipelines import TalentPool
 from widget_service.common.models.user import User
 from widget_service.common.models.widget import WidgetPage
@@ -50,9 +51,9 @@ def create_widget_candidate(form, talent_pool_hash):
     if candidate_email:
         candidate_dict['emails'] = [{'address': candidate_email, 'label': 'Primary'}]
 
-    form_aois = form['hidden-tags-aoi']
-    if form_aois:
-        candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(form_aois, domain_id)
+    areas_of_interest = form.get('hidden-tags-aoi')
+    if areas_of_interest:
+        candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(areas_of_interest, domain_id)
 
     # Kaiser University Only Field.
     candidate_nuid = form.get('nuid')
