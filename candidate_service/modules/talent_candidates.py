@@ -371,7 +371,7 @@ def _candidate_degrees(education):
              'start_month': str(degree.start_month) if degree.start_month else None,
              'end_year': str(degree.end_year) if degree.start_year else None,
              'end_month': str(degree.end_month) if degree.start_month else None,
-             'gpa': json.dumps(degree.gpa_num, use_decimal=True),
+             'gpa': json.dumps(degree.gpa_num, use_decimal=True) if degree.gpa_num else None,
              'start_date': degree.start_time.date().isoformat() if degree.start_time else None,
              'end_date': degree.end_time.date().isoformat() if degree.end_time else None,
              'bullets': _candidate_degree_bullets(degree=degree),
