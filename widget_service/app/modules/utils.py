@@ -44,10 +44,10 @@ def parse_city_and_state_ids_from_form(locations_string, domain_id):
         state, city = location.split(':')
         city = city.lstrip()
         processed_locations.extend([{
-            'custom_field_id': state_cf_id.id,
+            'custom_field_id': state_cf_id,
             'value': state
         }, {
-            'custom_field_id': city_cf_id.id,
+            'custom_field_id': city_cf_id,
             'value': city
         }])
     return processed_locations
@@ -60,10 +60,10 @@ def process_city_and_state_from_fields(city, state, domain_id):
         return processed_locations
 
     processed_locations.extend([{
-        'custom_field_id': state_cf_id.id,
+        'custom_field_id': state_cf_id,
         'value': state
     }, {
-        'custom_field_id': city_cf_id.id,
+        'custom_field_id': city_cf_id,
         'value': city
     }])
     return processed_locations
