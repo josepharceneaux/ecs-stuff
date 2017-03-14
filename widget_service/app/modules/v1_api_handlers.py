@@ -66,15 +66,16 @@ def create_widget_candidate(form, talent_pool_hash):
 
     # Location based fields.
     candidate_locations = form.get('hidden-tags-location')
+    locations_list = None
     if candidate_locations:
-        locations_list = parse_city_and_state_ids_from_form(candidate_locations)
-        candidate_dict.setdefault('preferred_locations', []).extend(locations_list)
+        locations_list = parse_city_and_state_ids_from_form(candidate_locations, domain_id)
 
     candidate_city = form.get('city')
     candidate_state = form.get('state')
     if candidate_city and candidate_state:
-        locations_list = process_city_and_state_from_fields(candidate_city, candidate_state)
-        candidate_dict.setdefault('preferred_locations', []).extend(locations_list)
+        locations_list = process_city_and_state_from_fields(candidate_city, candidate_state, domain_id)
+
+    candidate_dict.setdefault('custom_fields', []).extend(locations_list)
 
     # Education fields.
     candidate_graduation_date = form.get('graduation')
