@@ -87,11 +87,10 @@ def get_activities(page):
 
         return jsonify({
             'activities': tam.get_recent_readable()
-        })
+        }), 200
 
     else:
         logger.info('Individual call made with id: {}'.format(api_id))
-
         return jsonify(tam.get_activities())
 
 
