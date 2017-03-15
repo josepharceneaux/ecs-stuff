@@ -10,6 +10,7 @@ from activity_service.common.utils.handy_functions import random_word
 from activity_service.common.models.misc import Activity
 from activity_service.common.routes import ActivityApiUrl
 from activity_service.tests import constants as C
+# TODO change this to test conf
 from .fixtures import activities_fixture
 from .fixtures import candidate_fixture
 from .fixtures import candidate_source_fixture

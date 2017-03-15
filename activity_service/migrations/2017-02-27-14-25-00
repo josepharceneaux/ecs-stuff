@@ -1,0 +1,28 @@
+"""
+This script adds new field `domain_id` in table `activity`.
+This will allow for better querying on the activity table by the domain.
+"""
+from activity_service.common.models.db import db
+from activity_service.common.models.user import User
+from activity_service.common.models.misc import Activity
+
+from sqlalchemy import text
+
+db.session.execute(
+    text("ALTER TABLE `activity` ADD DomainId INT NOT NULL;")
+)
+db.session.commit()
+
+db.session.execute(
+    text("ALTER TABLE `activity` ADD INDEX `DomainId` (`DomainId`);")
+)
+db.session.commit()
+
+activities = Activity.query.all()
+db.session.commit()
+
+for activity in activities:
+    user = User.get(activity.user_id)
+    activity.domain_id = user.domain_id
+    db.session.add(activity)
+    db.session.commit()
