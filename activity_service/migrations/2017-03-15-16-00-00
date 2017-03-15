@@ -2,9 +2,9 @@
 This script performs a massive migration for activities.
 """
 
-from resume_parsing_service.app import db
-from resume_parsing_service.common.models.user import User
-from resume_parsing_service.common.models.misc import Activity
+from activity_service.app import db
+from activity_service.common.models.user import User
+from activity_service.common.models.misc import Activity
 
 slice = 5000000/100000
 for i in xrange(slice):
