@@ -9,6 +9,7 @@ from requests import codes as http_status_codes
 
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from candidate_service.common.models.candidate import CandidateCustomField
+from candidate_service.common.models.candidate_edit import CandidateEdit
 from candidate_service.common.models.db import db
 from candidate_service.common.models.misc import CustomField
 from candidate_service.common.models.user import Permission
@@ -182,9 +183,31 @@ class CandidateCustomFieldResource(Resource):
 
             db.session.delete(candidate_custom_field)
 
+            # Track change
+            db.session.add(CandidateEdit(
+                user_id=authed_user.id,
+                candidate_id=candidate_id,
+                field_id=CandidateEdit.field_dict['candidate_custom_field']['value'],
+                old_value=candidate_custom_field.value,
+                new_value=None,
+                edit_datetime=datetime.datetime.utcnow(),
+                is_custom_field=True
+            ))
+
         else:  # Delete all of Candidate's custom fields
-            for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id):
+            for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id):  # type: CandidateCustomField
                 db.session.delete(ccf)
+
+                # Track change
+                db.session.add(CandidateEdit(
+                    user_id=authed_user.id,
+                    candidate_id=candidate_id,
+                    field_id=CandidateEdit.field_dict['candidate_custom_field']['value'],
+                    old_value=ccf.value,
+                    new_value=None,
+                    edit_datetime=datetime.datetime.utcnow(),
+                    is_custom_field=True
+                ))
 
         db.session.commit()
 
