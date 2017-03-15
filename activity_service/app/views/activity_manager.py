@@ -193,7 +193,7 @@ class TalentActivityManager(object):
                 'readable_text': self.activity_text(activity, 1, current_user)
             } for activity in activities.items]
         }
-        return activities_response, 200
+        return activities_response
 
     # Like 'get' but gets the last 200 consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self):
@@ -272,7 +272,7 @@ class TalentActivityManager(object):
         if finishing_time > TIMEOUT_THRESHOLD:
             logger.info(
                 'ActivityService::INFO::Timeout -  {} exceeded desired timeout'.format(self.activity_params.api_call))
-        return aggregated_activities, 200
+        return aggregated_activities
 
     def activity_text(self, activity, count, current_user):
         if activity.user_id != current_user.id:

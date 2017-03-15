@@ -23,14 +23,14 @@ from activity_service.common.utils.api_utils import ApiResponse
 from activity_service.common.utils.auth_utils import require_oauth
 from activity_service.app.views.activity_manager import TalentActivityManager
 
-
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 POSTS_PER_PAGE = 20
 mod = Blueprint('activities_api', __name__)
 
-ACTIVITY_REQUIREMENTS = ['api_call', 'user_id','exclude_current_user', 'start_datetime',
-                         'end_datetime', 'is_aggregate_request', 'aggregate_limit', 'post_qty',
-                         'page']
+ACTIVITY_REQUIREMENTS = [
+    'api_call', 'user_id', 'exclude_current_user', 'start_datetime', 'end_datetime', 'is_aggregate_request',
+    'aggregate_limit', 'post_qty', 'page'
+]
 ActivityParams = namedtuple('ActivityParams', ACTIVITY_REQUIREMENTS)
 
 
@@ -53,7 +53,6 @@ def get_activities(page):
     end_param = rargs.get('end_datetime')
     exclude_current_user = True if rargs.get('exclude_current_user') == '1' else False
 
-
     if start_param:
         start_datetime = datetime.strptime(start_param, DATE_FORMAT)
 
@@ -65,33 +64,26 @@ def get_activities(page):
             aggregate_limit = int(aggregate_limit)
             aggregate_limit = 5 if aggregate_limit > 5 else aggregate_limit
         except ValueError:
-            return jsonify(
-                {'error': {
-                    'message': 'aggregate_limit must be an integer'}}), STATUS_CODES.bad
+            return jsonify({'error': {'message': 'aggregate_limit must be an integer'}}), STATUS_CODES.bad
 
     if page:
         try:
             request_page = int(page)
         except ValueError:
-            return jsonify(
-                {'error': {
-                    'message': 'page parameter must be an integer'}}), STATUS_CODES.bad
+            return jsonify({'error': {'message': 'page parameter must be an integer'}}), STATUS_CODES.bad
 
-    activity_params = ActivityParams(api_id, valid_user_id, exclude_current_user, start_datetime,
-                                     end_datetime, aggregate, aggregate_limit, post_qty, request_page)
+    activity_params = ActivityParams(api_id, valid_user_id, exclude_current_user, start_datetime, end_datetime,
+                                     aggregate, aggregate_limit, post_qty, request_page)
 
     tam = TalentActivityManager(activity_params)
 
     if aggregate:
         logger.info('Aggregate call made with id: {}'.format(api_id))
 
-        return jsonify({
-            'activities': tam.get_recent_readable()
-        })
+        return jsonify({'activities': tam.get_recent_readable()}), 200
 
     else:
         logger.info('Individual call made with id: {}'.format(api_id))
-
         return jsonify(tam.get_activities())
 
 
@@ -133,8 +125,9 @@ def post_activity():
     if request.method == 'POST':
         content = request.get_json()
 
-        return create_activity(valid_user_id, content.get('type'), domain_id, content.get('source_table'),
-                               content.get('source_id'), content.get('params'))
+        return create_activity(valid_user_id,
+                               content.get('type'), domain_id,
+                               content.get('source_table'), content.get('source_id'), content.get('params'))
     # source_table = request.args.get('source_table')
     # source_id = request.args.get('source_id')
     # type_id = request.args.get('type')
@@ -144,7 +137,8 @@ def post_activity():
 
     # return ApiResponse(json.dumps({"activity": activity.to_json()}), status=STATUS_CODES.OK)
 
-# TODO move this is a module
+
+    # TODO move this is a module
 def create_activity(user_id, type_, domain_id, source_table=None, source_id=None, params=None):
     """Method for creating a DB entry in the activity table.
     :param int user_id: ID of the authenticated user.
@@ -161,8 +155,7 @@ def create_activity(user_id, type_, domain_id, source_table=None, source_id=None
         source_id=source_id,
         params=json.dumps(params) if params else None,
         added_time=datetime.utcnow(),
-        domain_id=domain_id
-    )
+        domain_id=domain_id)
     try:
         db.session.add(activity)
         db.session.commit()
@@ -170,4 +163,3 @@ def create_activity(user_id, type_, domain_id, source_table=None, source_id=None
     except Exception as e:
         logger.exception('ActivityService::Error::CreationError - {}'.format(e))
         return json.dumps({'error': 'There was an error saving your log entry'}), STATUS_CODES.internal_server_error
-
