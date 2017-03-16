@@ -11,7 +11,7 @@ from activity_service.app import logger
 EXCLUSIONS = (15, 16, 17, 1201, 1202, 1203)
 EPOCH = datetime(year=1970, month=1, day=1)
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
-TIMEOUT_THRESHOLD = 8
+TIMEOUT_THRESHOLD = 5
 
 
 class TalentActivityManager(object):
@@ -251,7 +251,6 @@ class TalentActivityManager(object):
                 logger.info('{} new activity type hit'.format(self.activity_params.api_call))
                 activity_aggregate = {
                     'count': current_activity_count,
-                    'image': self.MESSAGES[activity.type][2],
                     'start': aggregate_start.strftime(DATE_FORMAT),
                     'end': aggregate_end.strftime(DATE_FORMAT)
                 }
@@ -270,8 +269,8 @@ class TalentActivityManager(object):
         finishing_time = time() - start_time
         logger.info("{} finished making readable in {} seconds".format(self.activity_params.api_call, finishing_time))
         if finishing_time > TIMEOUT_THRESHOLD:
-            logger.info(
-                'ActivityService::INFO::Timeout -  {} exceeded desired timeout'.format(self.activity_params.api_call))
+            logger.info('ActivityService::INFO::Timeout -  {} exceeded desired timeout at {}s'.format(
+                self.activity_params.api_call, finishing_time))
         return aggregated_activities
 
     def activity_text(self, activity, count, current_user):
