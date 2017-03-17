@@ -307,3 +307,22 @@ def boto3_put(file_contents, bucket, key, key_path):
         app.logger.exception('Error uploading resume to S3 with boto3. Path: {}. Filename: {}'.format(
             key_path, key
         ))
+
+
+def create_bucket_using_boto3(bucket_name):
+    s3 = boto3.client('s3')
+    try:
+        s3.head_bucket(Bucket=bucket_name)
+        return
+    except Exception as error:
+        s3.create_bucket(Bucket=bucket_name)
+        return
+
+
+def delete_from_filepicker_using_boto3(file_picker):
+    try:
+        s3 = boto3.client('s3')
+        s3.delete_object(Bucket=app.config['S3_FILEPICKER_BUCKET_NAME'], Key=file_picker)
+        print("Successfully deleted file")
+    except Exception as error:
+        pass

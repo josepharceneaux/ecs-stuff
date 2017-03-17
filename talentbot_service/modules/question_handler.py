@@ -25,6 +25,7 @@ from urlparse import urlparse
 from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
+from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.utils.talentbot_utils import DOMAIN_SPECIFIC, OWNED
 from talentbot_service.common.error_handling import NotFoundError, InvalidUsage, InternalServerError
 from talentbot_service.common.models.user import User
@@ -37,7 +38,8 @@ from talentbot_service.common.models.push_campaign import PushCampaign
 from talentbot_service.common.routes import ResumeApiUrl, CandidateApiUrl
 from talentbot_service.common.utils.handy_functions import send_request
 from talentbot_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
-from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, delete_from_filepicker_s3
+from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket_using_boto3,\
+    delete_from_filepicker_using_boto3
 from talentbot_service.common.redis_cache import redis_store
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
@@ -728,7 +730,7 @@ class QuestionHandler(object):
             object if it does not exist create_bucket() creates the bucket with a predefined name (stored in cfg file).
             If some error occurs while creating bucket create_bucket() raises InternalServerError
             '''
-            create_bucket()
+            create_bucket_using_boto3(app.config['S3_FILEPICKER_BUCKET_NAME'])
             # saving resume in S3 bucket
             filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id, extension)
             return cls.parse_resume_and_add_candidate(user_id, filepicker_key)
@@ -791,7 +793,7 @@ class QuestionHandler(object):
         response = requests.post(ResumeApiUrl.PARSE, headers=header, data=json.dumps(
             {'filepicker_key': filepicker_key, 'talent_pools': [], 'create_candidate': True}))
         try:
-            delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
+            delete_from_filepicker_using_boto3(filepicker_key)  # Deleting saved resume from S3
             if response.status_code == codes.OK:
                 candidate = response.json()
                 first_name = candidate["candidate"]["first_name"]
