@@ -717,7 +717,6 @@ class QuestionHandler(object):
                                                 or SUPPORTED_SOCIAL_SITES[LINKEDIN] in hostname \
                                                 or SUPPORTED_SOCIAL_SITES[FACEBOOK] in hostname
             # If it is social profile link it wont have an extension
-            logger.info("resume url result", extension, hostname, resume_size_in_bytes)
             if not extension and is_hostname_in_supported_social_sites:
                 response_message = cls.get_candidate_from_openweb_and_add(user_id, resume_url)
                 if response_message:
@@ -745,7 +744,8 @@ class QuestionHandler(object):
             return INVALID_RESUME_URL_MSG
         except InternalServerError as error:
             logger.error("Internal Server Error occured while adding candidate from URL Error: %s" % error.message)
-            return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
+            # return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
+            return error.message
         except InvalidUsage as error:
             return error.message
         except urllib.ContentTooShortError as error:
@@ -753,7 +753,8 @@ class QuestionHandler(object):
             return "File size too small"
         except Exception as error:
             logger.error("Error occured while addinf candidate Error: %s" % error.message)
-            return SOMETHING_WENT_WRONG
+            # return SOMETHING_WENT_WRONG
+            return error.message
 
     @classmethod
     @contract
