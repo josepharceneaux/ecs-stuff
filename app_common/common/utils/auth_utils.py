@@ -52,7 +52,7 @@ def require_oauth(allow_null_user=False, allow_candidate=False):
             elif not response.ok:
                 error_body = response.json()
                 if error_body['error']:
-                    raise UnauthorizedError(error_message=error_body['error'].get('message', ''),
+                    raise UnauthorizedError(error_message=error_body['error'].get('messagek', 'kamal'),
                                             error_code=error_body['error'].get('code', ''))
                 else:
                     raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
