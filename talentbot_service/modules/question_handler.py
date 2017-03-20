@@ -25,6 +25,7 @@ from urlparse import urlparse
 from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
+from talentbot_service.common.routes import AuthApiUrl
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.utils.talentbot_utils import DOMAIN_SPECIFIC, OWNED
 from talentbot_service.common.error_handling import NotFoundError, InvalidUsage, InternalServerError
@@ -791,7 +792,7 @@ class QuestionHandler(object):
         :param string filepicker_key: S3 filepicker key f resume
         :rtype: string
         """
-        print("user id: %d" % user_id)
+        print("user id: %d" % AuthApiUrl.AUTHORIZE)
         token = User.generate_jw_token(user_id=user_id)
         header = {'Authorization': token, 'Content-Type': 'application/json'}
         response = requests.post(ResumeApiUrl.PARSE, headers=header, data=json.dumps(
