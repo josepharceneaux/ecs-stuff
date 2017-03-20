@@ -116,6 +116,7 @@ def verify_jwt(token, secret_key_id, allow_null_user=False):
 
     try:
         data = s.loads(token)
+        print("data %r" % data)
     except BadSignature:
         raise UnauthorizedError("Your Token is not found", error_code=11)
     except SignatureExpired:
