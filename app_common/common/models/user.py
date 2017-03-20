@@ -128,8 +128,8 @@ class User(db.Model):
             request.user = None
             request.candidate = None
             return
-
-        raise UnauthorizedError("Your Token is invalid %s" % data, error_code=13)
+        user = User.query.get(data['user_id'])
+        raise UnauthorizedError("Your Token is invalid %s %s" % (data, user), error_code=13)
 
     def to_dict(self):
         """
