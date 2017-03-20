@@ -706,6 +706,7 @@ class QuestionHandler(object):
         :rtype: string
         """
         try:
+            logger.info("Starting candidate insertion")
             resume_url = re.search("(?P<url>((https?)|(ftps?))://[^\s]+)", ' '.join(message_tokens)).group("url")
             resume_url = resume_url.strip('>')
             extension, hostname, resume_size_in_bytes = cls.parse_resume_url(resume_url)
@@ -716,6 +717,7 @@ class QuestionHandler(object):
                                                 or SUPPORTED_SOCIAL_SITES[LINKEDIN] in hostname \
                                                 or SUPPORTED_SOCIAL_SITES[FACEBOOK] in hostname
             # If it is social profile link it wont have an extension
+            logger.info("resume url result", extension, hostname, resume_size_in_bytes)
             if not extension and is_hostname_in_supported_social_sites:
                 response_message = cls.get_candidate_from_openweb_and_add(user_id, resume_url)
                 if response_message:
@@ -730,17 +732,19 @@ class QuestionHandler(object):
             object if it does not exist create_bucket() creates the bucket with a predefined name (stored in cfg file).
             If some error occurs while creating bucket create_bucket() raises InternalServerError
             '''
+            logger.info("creating buckert")
             create_bucket_using_boto3(app.config['S3_FILEPICKER_BUCKET_NAME'])
             # saving resume in S3 bucket
             filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id, extension)
             return cls.parse_resume_and_add_candidate(user_id, filepicker_key)
         except AttributeError as error:
-            logger.error(error.message)
+            logger.error("Attribute error occurred while resolving resume url Error: %s" % error.message)
             return NO_RESUME_URL_FOUND_MSG
-        except (urllib2.HTTPError, urllib2.URLError):
+        except (urllib2.HTTPError, urllib2.URLError) as error:
+            logger.error("HTTPError occurred while resolving resume url Error: %s" % error.message)
             return INVALID_RESUME_URL_MSG
         except InternalServerError as error:
-            logger.error(error.message)
+            logger.error("Internal Server Error occured while adding candidate from URL Error: %s" % error.message)
             return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
         except InvalidUsage as error:
             return error.message
@@ -748,7 +752,7 @@ class QuestionHandler(object):
             logger.error("Error occurred downloading resume and saving in bucket: %s" % error.message)
             return "File size too small"
         except Exception as error:
-            logger.error(error.message)
+            logger.error("Error occured while addinf candidate Error: %s" % error.message)
             return SOMETHING_WENT_WRONG
 
     @classmethod
@@ -860,6 +864,7 @@ class QuestionHandler(object):
         :return: Returns saved resume's key
         :rtype: string
         """
+        logger.info("downloading resume", extension in IMAGE_FORMATS or extension in DOC_FORMATS)
         if extension in IMAGE_FORMATS or extension in DOC_FORMATS:
             current_datetime = datetime.utcnow()
             filename = '%d-%s%s%s' % (user_id, current_datetime.date(), current_datetime.time(), extension)
@@ -867,6 +872,7 @@ class QuestionHandler(object):
             with open(filename, 'r') as file_reader:
                 boto3_put(file_reader.read(), app.config['S3_FILEPICKER_BUCKET_NAME'], filename, 'UploadedResumes')
                 os.remove(filename)  # Removing file from directory
+                logger.info("returning filepicker key")
                 return '{}/{}'.format('UploadedResumes', filename)
         else:
             raise InvalidUsage("Unsupported Resume Type")
