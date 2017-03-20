@@ -99,6 +99,7 @@ class User(db.Model):
     def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
 
         s = Serializer(redis_store.get(secret_key_id) or '')
+        print("in redis: %r" % s)
         try:
             data = s.loads(token)
         except BadSignature:
@@ -111,9 +112,9 @@ class User(db.Model):
         if 'user_id' in data and data['user_id']:
             user = User.query.get(data['user_id'])
             if user:
-                # if 'created_at' in data and user.password_reset_time > parse(data['created_at']):
-                #     redis_store.delete(secret_key_id)
-                #     raise UnauthorizedError("Your token has expired due to password reset", error_code=12)
+                if 'created_at' in data and user.password_reset_time > parse(data['created_at']):
+                    redis_store.delete(secret_key_id)
+                    raise UnauthorizedError("Your token has expired due to password reset", error_code=12)
 
                 request.user = user
                 request.candidate = None
