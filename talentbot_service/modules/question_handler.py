@@ -797,7 +797,7 @@ class QuestionHandler(object):
             {'filepicker_key': filepicker_key, 'talent_pools': [], 'create_candidate': True}))
         try:
             delete_from_filepicker_using_boto3(filepicker_key)  # Deleting saved resume from S3
-            print("response from RPS %s" % response)
+            print("response from RPS %s" % response.content)
             if response.status_code == codes.OK:
                 candidate = response.json()
                 first_name = candidate["candidate"]["first_name"]
