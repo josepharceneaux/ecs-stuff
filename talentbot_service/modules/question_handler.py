@@ -706,7 +706,6 @@ class QuestionHandler(object):
         :rtype: string
         """
         try:
-            logger.info("Starting candidate insertion")
             resume_url = re.search("(?P<url>((https?)|(ftps?))://[^\s]+)", ' '.join(message_tokens)).group("url")
             resume_url = resume_url.strip('>')
             extension, hostname, resume_size_in_bytes = cls.parse_resume_url(resume_url)
@@ -731,7 +730,6 @@ class QuestionHandler(object):
             object if it does not exist create_bucket() creates the bucket with a predefined name (stored in cfg file).
             If some error occurs while creating bucket create_bucket() raises InternalServerError
             '''
-            logger.info("creating buckert")
             create_bucket_using_boto3(app.config['S3_FILEPICKER_BUCKET_NAME'])
             # saving resume in S3 bucket
             filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id, extension)
@@ -865,7 +863,6 @@ class QuestionHandler(object):
         :return: Returns saved resume's key
         :rtype: string
         """
-        logger.info("downloading resume", extension in IMAGE_FORMATS or extension in DOC_FORMATS)
         if extension in IMAGE_FORMATS or extension in DOC_FORMATS:
             current_datetime = datetime.utcnow()
             filename = '%d-%s%s%s' % (user_id, current_datetime.date(), current_datetime.time(), extension)
@@ -873,7 +870,6 @@ class QuestionHandler(object):
             with open(filename, 'r') as file_reader:
                 boto3_put(file_reader.read(), app.config['S3_FILEPICKER_BUCKET_NAME'], filename, 'UploadedResumes')
                 os.remove(filename)  # Removing file from directory
-                logger.info("returning filepicker key")
                 return '{}/{}'.format('UploadedResumes', filename)
         else:
             raise InvalidUsage("Unsupported Resume Type")
