@@ -129,7 +129,7 @@ class User(db.Model):
             request.candidate = None
             return
 
-        raise UnauthorizedError("Your Token is invalid kamal", error_code=13)
+        raise UnauthorizedError("Your Token is invalid %s" % data, error_code=13)
 
     def to_dict(self):
         """
