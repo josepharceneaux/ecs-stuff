@@ -793,13 +793,15 @@ class QuestionHandler(object):
         """
         print("user id: %d" % user_id)
         token = User.generate_jw_token(user_id=user_id)
-
-        if len(token.replace('Bearer', '').strip().split('.')) == 4:
-            json_web_token = token.replace('Bearer', '').strip()
-            json_web_token = json_web_token.split('.')
-            secret_key_id = json_web_token.pop()
-            json_web_token = '.'.join(json_web_token)
-            User.verify_jw_token(secret_key_id, json_web_token, False, False)
+        try:
+            if len(token.replace('Bearer', '').strip().split('.')) == 4:
+                json_web_token = token.replace('Bearer', '').strip()
+                json_web_token = json_web_token.split('.')
+                secret_key_id = json_web_token.pop()
+                json_web_token = '.'.join(json_web_token)
+                User.verify_jw_token(secret_key_id, json_web_token, False, False)
+        except Exception as error:
+            print("Exception :%s" % error.message)
         header = {'Authorization': token, 'Content-Type': 'application/json'}
         response = requests.post(ResumeApiUrl.PARSE, headers=header, data=json.dumps(
             {'filepicker_key': filepicker_key, 'talent_pools': [], 'create_candidate': True}))
