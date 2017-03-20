@@ -110,9 +110,11 @@ class User(db.Model):
         except Exception:
             raise UnauthorizedError("Your Token is not found", error_code=11)
 
-        print("user id exists %r" % 'user_id' in data and data['user_id'])
+        con = 'user_id' in data and data['user_id']
+        print("user id exists %r" % con)
         if 'user_id' in data and data['user_id']:
             user = User.query.get(data['user_id'])
+            print("user: %r" % user)
             if user:
                 if 'created_at' in data and user.password_reset_time > parse(data['created_at']):
                     redis_store.delete(secret_key_id)
