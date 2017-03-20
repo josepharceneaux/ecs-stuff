@@ -792,7 +792,7 @@ class QuestionHandler(object):
         :param string filepicker_key: S3 filepicker key f resume
         :rtype: string
         """
-        print("user id: %d" % AuthApiUrl.AUTHORIZE)
+        print("URL: %s" % AuthApiUrl.AUTHORIZE)
         token = User.generate_jw_token(user_id=user_id)
         header = {'Authorization': token, 'Content-Type': 'application/json'}
         response = requests.post(ResumeApiUrl.PARSE, headers=header, data=json.dumps(
