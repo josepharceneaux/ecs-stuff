@@ -109,7 +109,8 @@ class User(db.Model):
             raise UnauthorizedError("Your Token is not found", error_code=11)
 
         if 'user_id' in data and data['user_id']:
-            user = User.query.get(data['user_id'])
+            # user = User.query.get(data['user_id'])
+            user = User.get_by_id(data['user_id'])
             if user:
                 if 'created_at' in data and user.password_reset_time > parse(data['created_at']):
                     redis_store.delete(secret_key_id)
@@ -128,7 +129,7 @@ class User(db.Model):
             request.user = None
             request.candidate = None
             return
-        user = User.query.get(data['user_id'])
+        user = User.get_by_id(data['user_id'])
         raise UnauthorizedError("Your Token is invalid %s %s" % (data, user), error_code=13)
 
     def to_dict(self):
