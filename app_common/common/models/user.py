@@ -99,7 +99,6 @@ class User(db.Model):
     def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
 
         s = Serializer(redis_store.get(secret_key_id) or '')
-        print("in redis: %r" % s)
         try:
             data = s.loads(token)
         except BadSignature:
