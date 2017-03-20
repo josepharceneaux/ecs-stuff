@@ -104,7 +104,7 @@ class User(db.Model):
         except BadSignature:
             raise UnauthorizedError("Your Token is not found", error_code=11)
         except SignatureExpired:
-                raise UnauthorizedError("Your Token has expired", error_code=12)
+            raise UnauthorizedError("Your Token has expired", error_code=12)
         except Exception:
             raise UnauthorizedError("Your Token is not found", error_code=11)
 
