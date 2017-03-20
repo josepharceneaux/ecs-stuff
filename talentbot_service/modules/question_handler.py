@@ -794,6 +794,8 @@ class QuestionHandler(object):
         """
         print("URL: %s" % AuthApiUrl.AUTHORIZE)
         token = User.generate_jw_token(user_id=user_id)
+        response = requests.get(AuthApiUrl.AUTHORIZE, headers={'Authorization': token})
+        print response.content
         header = {'Authorization': token, 'Content-Type': 'application/json'}
         response = requests.post(ResumeApiUrl.PARSE, headers=header, data=json.dumps(
             {'filepicker_key': filepicker_key, 'talent_pools': [], 'create_candidate': True}))
