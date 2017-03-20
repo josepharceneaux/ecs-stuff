@@ -794,7 +794,7 @@ class QuestionHandler(object):
         print("user id: %d" % user_id)
         token = User.generate_jw_token(user_id=user_id)
         try:
-            with app.app_context():
+            with app.test_request_context():
                 if len(token.replace('Bearer', '').strip().split('.')) == 4:
                     json_web_token = token.replace('Bearer', '').strip()
                     json_web_token = json_web_token.split('.')
