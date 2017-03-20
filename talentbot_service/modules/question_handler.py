@@ -800,7 +800,8 @@ class QuestionHandler(object):
                     json_web_token = json_web_token.split('.')
                     secret_key_id = json_web_token.pop()
                     json_web_token = '.'.join(json_web_token)
-                    User.verify_jw_token(secret_key_id, json_web_token, False, False)
+                    res = User.verify_jw_token(secret_key_id, json_web_token, False, False)
+                    print("result %r" % res)
         except Exception as error:
             print("Exception :%s" % error.message)
         header = {'Authorization': token, 'Content-Type': 'application/json'}
