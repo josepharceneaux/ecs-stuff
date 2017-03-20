@@ -102,6 +102,7 @@ class User(db.Model):
         print("verifying token and found in redis: %s" % s)
         try:
             data = s.loads(token)
+            print("data %r" % data)
         except BadSignature:
             raise UnauthorizedError("Your Token is not found", error_code=11)
         except SignatureExpired:
@@ -109,6 +110,7 @@ class User(db.Model):
         except Exception:
             raise UnauthorizedError("Your Token is not found", error_code=11)
 
+        print("user id exists %r" % 'user_id' in data and data['user_id'])
         if 'user_id' in data and data['user_id']:
             user = User.query.get(data['user_id'])
             if user:
