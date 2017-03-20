@@ -793,10 +793,11 @@ class QuestionHandler(object):
         """
         token = User.generate_jw_token(user_id=user_id)
         header = {'Authorization': token, 'Content-Type': 'application/json'}
+        print("filepicker key %s" % filepicker_key)
         response = requests.post(ResumeApiUrl.PARSE, headers=header, data=json.dumps(
             {'filepicker_key': filepicker_key, 'talent_pools': [], 'create_candidate': True}))
         try:
-            delete_from_filepicker_using_boto3(filepicker_key)  # Deleting saved resume from S3
+            # delete_from_filepicker_using_boto3(filepicker_key)  # Deleting saved resume from S3
             print("response from RPS %s" % response.content)
             if response.status_code == codes.OK:
                 candidate = response.json()

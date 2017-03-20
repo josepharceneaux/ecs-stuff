@@ -107,7 +107,7 @@ class User(db.Model):
             raise UnauthorizedError("Your Token has expired", error_code=12)
         except Exception:
             raise UnauthorizedError("Your Token is not found", error_code=11)
-        return 
+        return
 
         if 'user_id' in data and data['user_id']:
             user = User.query.get(data['user_id'])
