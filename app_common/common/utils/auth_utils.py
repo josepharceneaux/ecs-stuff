@@ -27,7 +27,6 @@ def require_oauth(allow_null_user=False, allow_candidate=False):
     def auth_wrapper(func):
         @wraps(func)
         def authenticate(*args, **kwargs):
-            print("authenticating")
             try:
                 oauth_token = request.headers['Authorization']
             except KeyError:
