@@ -792,9 +792,6 @@ class QuestionHandler(object):
         :rtype: string
         """
         token = User.generate_jw_token(user_id=user_id)
-        print("length of token: %d" % len(token.replace('Bearer', '').strip().split('.')))
-        response = requests.get(AuthApiUrl.AUTHORIZE, headers={'Authorization': token})
-        print response.content
         header = {'Authorization': token, 'Content-Type': 'application/json'}
         response = requests.post(ResumeApiUrl.PARSE, headers=header, data=json.dumps(
             {'filepicker_key': filepicker_key, 'talent_pools': [], 'create_candidate': True}))
