@@ -4,11 +4,13 @@ Product ids for iCIMS and Greenhouse ATS'
 
 
 from sqlalchemy import text
-
 from candidate_service.common.models.db import db
 
-db.session.execute(text("insert ignore into product set Name = 'iCIMS', Notes = 'iCIMS ATS'"))
 
-db.session.execute(text("insert ignore into product set Name = 'Greenhouse', Notes = 'Greenhouse ATS'"))
+# This apparently does not work in MySQL
+# "insert ignore into product set Name = 'iCIMS', Notes = 'iCIMS ATS'"
 
+
+db.session.execute(text("insert ignore into product (Name, Notes) select * from (select 'iCIMS', 'iCIMS ATS') as tmp where not exists (select Name from product where Name ='iCIMS') limit 1"))
+db.session.execute(text("insert ignore into product (Name, Notes) select * from (select 'Greenhouse', 'Greenhouse ATS') as tmp where not exists (select Name from product where Name ='Greenhouse') limit 1)")
 db.session.commit()
