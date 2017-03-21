@@ -113,6 +113,7 @@ def verify_jwt(token, secret_key_id, allow_null_user=False):
     """
 
     s = Serializer(redis_store.get(secret_key_id) or '')
+
     try:
         data = s.loads(token)
     except BadSignature:

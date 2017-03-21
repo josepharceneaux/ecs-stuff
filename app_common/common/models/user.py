@@ -97,6 +97,7 @@ class User(db.Model):
 
     @staticmethod
     def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
+        
         db.session.commit()
         s = Serializer(redis_store.get(secret_key_id) or '')
         try:
@@ -104,7 +105,7 @@ class User(db.Model):
         except BadSignature:
             raise UnauthorizedError("Your Token is not found", error_code=11)
         except SignatureExpired:
-            raise UnauthorizedError("Your Token has expired", error_code=12)
+                raise UnauthorizedError("Your Token has expired", error_code=12)
         except Exception:
             raise UnauthorizedError("Your Token is not found", error_code=11)
 
@@ -128,8 +129,8 @@ class User(db.Model):
             request.user = None
             request.candidate = None
             return
-        user = User.query.all()
-        raise UnauthorizedError("Your Token is invalid %s %s" % (data, user), error_code=13)
+
+        raise UnauthorizedError("Your Token is invalid", error_code=13)
 
     def to_dict(self):
         """
