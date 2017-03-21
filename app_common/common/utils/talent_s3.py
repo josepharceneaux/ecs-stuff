@@ -310,19 +310,24 @@ def boto3_put(file_contents, bucket, key, key_path):
 
 
 def create_bucket_using_boto3(bucket_name):
+    """
+    This method creates a bucket on S3 if it is doesn't already exist
+    :param string bucket_name: Desired bucket name
+    """
     s3 = boto3.client('s3')
     try:
         s3.head_bucket(Bucket=bucket_name)
-        return
-    except Exception as error:
+    except Exception:
         s3.create_bucket(Bucket=bucket_name)
-        return
 
 
 def delete_from_filepicker_using_boto3(file_picker):
+    """
+    This method deletes a file from an S3 bucket using filepicker key
+    :param string file_picker: Filepicker key
+    """
     try:
         s3 = boto3.client('s3')
         s3.delete_object(Bucket=app.config['S3_FILEPICKER_BUCKET_NAME'], Key=file_picker)
-        print("Successfully deleted file")
     except Exception as error:
-        pass
+        app.logger.exception('Unable to delete resume from filepicker key Error: %s' % error.message)

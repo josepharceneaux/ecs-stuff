@@ -97,7 +97,7 @@ class User(db.Model):
 
     @staticmethod
     def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
-        
+
         db.session.commit()
         s = Serializer(redis_store.get(secret_key_id) or '')
         try:
