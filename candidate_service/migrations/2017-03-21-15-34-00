@@ -1,0 +1,14 @@
+"""
+Product ids for iCIMS and Greenhouse ATS'
+"""
+
+
+from sqlalchemy import text
+
+from candidate_service.common.models.db import db
+
+db.session.execute(text("insert ignore into product set Name = 'iCIMS', Notes = 'iCIMS ATS'"))
+
+db.session.execute(text("insert ignore into product set Name = 'Greenhouse', Notes = 'Greenhouse ATS'"))
+
+db.session.commit()
