@@ -247,6 +247,14 @@ class User(db.Model):
             filter(cls.domain_id == domain_id).all()
 
 
+class AuthClient(db.Model):
+    __tablename__ = 'auth_client'
+    id = db.Column(db.BIGINT, primary_key=True)
+    name = db.Column(db.String(50), nullable=True)
+    client_id = db.Column(db.String(40), nullable=False, unique=True)
+    redirect_uris = db.Column(db.TEXT, nullable=False)
+
+
 class UserPhone(db.Model):
     __tablename__ = 'user_phone'
     id = db.Column(db.Integer, primary_key=True)

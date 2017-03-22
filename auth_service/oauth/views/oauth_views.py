@@ -8,8 +8,7 @@ from auth_service.oauth import app, logger
 from auth_service.oauth import gt_oauth
 from auth_service.common.error_handling import *
 from auth_service.common.routes import AuthApi, AuthApiV2
-from auth_service.common.models.user import Permission
-from auth_service.common.models.user import User
+from auth_service.common.models.user import Permission, User, AuthClient
 from auth_service.common.utils.auth_utils import require_jwt_oauth
 from auth_service.oauth.oauth_utilities import (authenticate_user, save_token_v2,
                                                 redis_store, authenticate_request, load_client, save_token_v1)
@@ -36,12 +35,23 @@ def access_token_v2():
 @app.route(AuthApiV2.REDIRECT)
 def token_redirect_v2():
     """ Redirect Browser to redirect_url """
-    token = request.args.get('token', '')
-    expires_at = request.args.get('expires_at', '')
-    redirect_uri = request.args.get('redirect_uri', '')
+    token = request.args.get('token', '').strip()
+    client_id = request.args.get('client_id', '').strip()
+    expires_at = request.args.get('expires_at', '').strip()
+    redirect_uri = request.args.get('redirect_uri', '').strip()
 
-    if not redirect_uri or not token or not expires_at:
-        raise InvalidUsage("Either redirect_url, token or expires_at arguments are missing")
+    if not client_id or not redirect_uri or not token or not expires_at:
+        raise InvalidUsage("Either client_id, redirect_url, token or expires_at arguments are missing")
+
+    auth_client = AuthClient.query.filter_by(client_id=client_id).first()
+
+    if not auth_client:
+        raise UnauthorizedError("Client Id is invalid")
+
+    redirect_uris = map(lambda x: x.strip().lower(), auth_client.redirect_uris.split(','))
+
+    if redirect_uri.lower() not in redirect_uris:
+        raise UnauthorizedError("Redirect URI is not registered in system")
 
     try:
         parse(expires_at)
