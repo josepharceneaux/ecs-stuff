@@ -175,8 +175,11 @@ class TalentActivityManager(object):
 
         page, post_qty = self.activity_params.page, self.activity_params.post_qty
 
-        activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc()).paginate(page, post_qty,
-                                                                                                   False)
+        if self.activity_params.is_aggregate_request:
+            activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc())
+        else:
+            activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc()).paginate(page, post_qty,
+                                                                                                       False)
 
         activities_response = {
             'total_count':
