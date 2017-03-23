@@ -17,12 +17,3 @@ db.session.execute(
     text("ALTER TABLE `activity` ADD INDEX `DomainId` (`DomainId`);")
 )
 db.session.commit()
-
-activities = Activity.query.all()
-db.session.commit()
-
-for activity in activities:
-    user = User.get(activity.user_id)
-    activity.domain_id = user.domain_id
-    db.session.add(activity)
-    db.session.commit()
