@@ -13,9 +13,9 @@ app, logger = init_talent_app(__name__)
 
 try:
     from views import api
-    from views import api_v2
+    # from views import api_v2
     app.register_blueprint(api.mod)
-    app.register_blueprint(api_v2.api_v2, url_prefix='/v2')
+    # app.register_blueprint(api_v2.api_v2, url_prefix='/v2')
 
     logger.info("Starting activity_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
