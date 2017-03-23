@@ -18,14 +18,12 @@ from requests import codes as STATUS_CODES
 from activity_service.app import db, logger
 from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
-from activity_service.common.error_handling import NotFoundError
-from activity_service.common.utils.api_utils import ApiResponse
 from activity_service.common.utils.auth_utils import require_oauth
 from activity_service.app.views.activity_manager import TalentActivityManager
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 POSTS_PER_PAGE = 20
-mod = Blueprint('activities_api', __name__)
+mod = Blueprint('activities_api_v1', __name__)
 
 ACTIVITY_REQUIREMENTS = [
     'api_call', 'user_id', 'exclude_current_user', 'start_datetime', 'end_datetime', 'is_aggregate_request',
