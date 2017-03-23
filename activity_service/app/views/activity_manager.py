@@ -1,3 +1,4 @@
+from activity_service.app import db
 from activity_service.common.models.misc import Activity
 from activity_service.common.models.user import User
 from activity_service.common.campaign_services.campaign_utils import CampaignUtils
@@ -176,7 +177,7 @@ class TalentActivityManager(object):
         page, post_qty = self.activity_params.page, self.activity_params.post_qty
 
         if self.activity_params.is_aggregate_request:
-            activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc())
+            activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc()).all()
         else:
             activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc()).paginate(page, post_qty,
                                                                                                        False)
@@ -223,8 +224,8 @@ class TalentActivityManager(object):
         if end:
             filters.append(Activity.added_time <= end)
 
-        activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc()).limit(200)
-        activities_count = activities.count()
+        activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc()).limit(200).all()
+        activities_count = len(activities)
 
         logger.info("{} fetched {} activities in {} seconds".format(self.activity_params.api_call, activities_count,
                                                                     time() - start_time))
