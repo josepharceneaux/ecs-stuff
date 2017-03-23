@@ -254,8 +254,13 @@ class TalentActivityManager(object):
                     'start': aggregate_start.strftime(DATE_FORMAT),
                     'end': aggregate_end.strftime(DATE_FORMAT)
                 }
+                activity_text_time = time()
                 activity_aggregate['readable_text'] = self.activity_text(activity, activity_aggregate['count'],
                                                                          current_user)
+                if i % 5 == 0:
+                    logger.info('ActivityService::INFO {} activity_text performed in {}s'.format(
+                        self.activity_params.api_call, time() - activity_text_time))
+
                 logger.info('{} generated aggregate in {}s'.format(self.activity_params.api_call, time() - start_time))
 
                 aggregate_start, aggregate_end = datetime.today(), EPOCH
@@ -274,6 +279,8 @@ class TalentActivityManager(object):
         return aggregated_activities
 
     def activity_text(self, activity, count, current_user):
+        start = time()
+        single_count = count == 1
         if activity.user_id != current_user.id:
             username = User.query.filter_by(id=activity.user_id).value('firstName')
         else:
@@ -311,4 +318,6 @@ class TalentActivityManager(object):
             # To fix "You's recurring campaign has expired"
             formatted_string = formatted_string.replace("You's", "Your")
 
+        if single_count:
+            logger.info('ActivityService::INFO activity_text performed in {}s'.format(time() - start))
         return formatted_string
