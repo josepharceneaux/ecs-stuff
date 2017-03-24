@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "Jenkins start script"
+
 # Upgrade pip if needed
 pip install --upgrade pip
 
