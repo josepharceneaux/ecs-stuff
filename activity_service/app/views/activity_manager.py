@@ -237,26 +237,16 @@ class TalentActivityManager(object):
 
         logger.info('Beginning enumerate loop for {}'.format(self.activity_params.api_call))
         for i, activity in enumerate(activities):
-            if i % 5 == 0:
-                profiling_ts = time()
             if activity.added_time < aggregate_start:
                 aggregate_start = activity.added_time
             if activity.added_time > aggregate_end:
                 aggregate_end = activity.added_time
-
-            if i % 5 == 0:
-                logger.info('ActivityService:Profiling {} loop {} date compare in {}s'.format(
-                    self.activity_params.api_call, i, time() - profiling_ts))
 
             current_activity_count += 1
             if activity.type not in self.MESSAGES:
                 logger.error('Given Campaign Type (%s) not found.' % activity.type)
                 continue
             next_activity_type = activities[i + 1].type if (i < activities_count - 1) else None
-
-            if i % 5 == 0:
-                logger.info('ActivityService:Profiling {} loop {} next assessment in {}s'.format(
-                    self.activity_params.api_call, i, time() - profiling_ts))
 
             # next activity is new, or the very last one, so aggregate these ones
             if activity.type != next_activity_type:
@@ -268,9 +258,6 @@ class TalentActivityManager(object):
                 }
                 activity_aggregate['readable_text'] = self.activity_text(activity, activity_aggregate['count'],
                                                                          current_user)
-                if i % 5 == 0:
-                    logger.info('ActivityService:Profiling {} activity_text performed in {}s'.format(
-                        self.activity_params.api_call, time() - profiling_ts))
 
                 logger.info('{} generated aggregate in {}s'.format(self.activity_params.api_call, time() - start_time))
 
@@ -278,9 +265,6 @@ class TalentActivityManager(object):
                 aggregated_activities.append(activity_aggregate)
                 aggregated_activities_count += 1
 
-                if i % 5 == 0:
-                    logger.info('ActivityService:Profiling {} reset performed in {}s'.format(
-                        self.activity_params.api_call, time() - profiling_ts))
                 if aggregated_activities_count == limit:  # if we've got enough activity groups, quit
                     break
 
