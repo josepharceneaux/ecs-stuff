@@ -25,6 +25,7 @@ from urlparse import urlparse
 from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
+from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.utils.talentbot_utils import DOMAIN_SPECIFIC, OWNED
 from talentbot_service.common.error_handling import NotFoundError, InvalidUsage, InternalServerError
 from talentbot_service.common.models.user import User
@@ -729,18 +730,18 @@ class QuestionHandler(object):
             create_bucket_using_boto3() method checks if resume bucket exists on S3 if it doesn't it creates the bucket
              with a predefined name (stored in cfg file).
             '''
-            create_bucket_using_boto3(app.config['S3_FILEPICKER_BUCKET_NAME'])
+            create_bucket_using_boto3(app.config[TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY])
             # saving resume in S3 bucket
             filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id, extension)
             return cls.parse_resume_and_add_candidate(user_id, filepicker_key)
         except AttributeError as error:
-            logger.error("Attribute error occurred while resolving resume url Error: %s" % error.message)
+            logger.error("Attribute error occurred while resolving resume URL. Error: %s" % error.message)
             return NO_RESUME_URL_FOUND_MSG
         except (urllib2.HTTPError, urllib2.URLError) as error:
             logger.error("HTTPError occurred while resolving resume url Error: %s" % error.message)
             return INVALID_RESUME_URL_MSG
         except InternalServerError as error:
-            logger.error("Internal Server Error occured while adding candidate from URL Error: %s" % error.message)
+            logger.error("Internal Server Error occured while adding candidate from URL. Error: %s" % error.message)
             # return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
             return error.message
         except InvalidUsage as error:
@@ -749,7 +750,7 @@ class QuestionHandler(object):
             logger.error("Error occurred downloading resume and saving in bucket: %s" % error.message)
             return "File size too small"
         except Exception as error:
-            logger.error("Error occurred while adding candidate Error: %s" % error.message)
+            logger.error("Error occurred while adding candidate. Error: %s" % error.message)
             # return SOMETHING_WENT_WRONG
             return error.message
 

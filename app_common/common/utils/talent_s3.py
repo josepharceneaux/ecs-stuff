@@ -314,11 +314,18 @@ def create_bucket_using_boto3(bucket_name):
     This method creates a bucket on S3 if it is doesn't already exist
     :param string bucket_name: Desired bucket name
     """
+    assert isinstance(bucket_name, basestring), "Invalid bucket_name type"
     s3 = boto3.client('s3')
     try:
         s3.head_bucket(Bucket=bucket_name)
-    except Exception:
+        return
+    except ClientError:
+        app.logger.info("Bucket does not exist, creating a new one!")
+    try:
         s3.create_bucket(Bucket=bucket_name)
+    except Exception as error:
+        app.logger.exception("Could not create bucket %s Error: %s" % (bucket_name, error.message))
+        raise InternalServerError("Something went wrong. Could not create bucket")
 
 
 def delete_from_filepicker_using_boto3(file_picker):
@@ -328,6 +335,6 @@ def delete_from_filepicker_using_boto3(file_picker):
     """
     try:
         s3 = boto3.client('s3')
-        s3.delete_object(Bucket=app.config['S3_FILEPICKER_BUCKET_NAME'], Key=file_picker)
+        s3.delete_object(Bucket=app.config[TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY], Key=file_picker)
     except Exception as error:
         app.logger.exception('Unable to delete resume from filepicker key Error: %s' % error.message)

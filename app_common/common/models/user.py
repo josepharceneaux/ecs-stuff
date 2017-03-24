@@ -99,6 +99,10 @@ class User(db.Model):
     def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
 
         db.session.commit()
+        '''Updating DB Session because when I generated a Bearer token using User.generate_jw_token()
+        in Talentbot Service and I requested /parse[POST]. Method verify_jw_token() didn't find any user in database
+        and raised UnauthorizedError .So I fixed it by manually updating DB Session.
+        '''
         s = Serializer(redis_store.get(secret_key_id) or '')
         try:
             data = s.loads(token)
