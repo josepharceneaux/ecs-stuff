@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "PYTHONPATH: $PYTHONPATH"
+
+echo -n "FOO: "
 python foo.py
 
 # Upgrade pip if needed
