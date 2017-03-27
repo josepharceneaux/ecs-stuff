@@ -2,16 +2,14 @@
 
 echo "START Jenkins"
 
-which python
-python --version
-which pip
-pip --version
-
 # Upgrade pip if needed
 pip install --upgrade pip
 
 # Install Requirements
 pip install -r requirements.txt
+
+echo -n "GREP loggly: "
+pip freeze | grep loggly
 
 # Build Docker Images
 sudo service docker restart
@@ -28,7 +26,6 @@ docker images -qf "dangling=true" | xargs docker rmi
 
 # Build the micro service images
 cd base_service_container && tar -czh . | docker build -t gettalent/base-service-container:latest - && cd ../
-pwd
 cd auth_service && tar -czh . | docker build -t gettalent/auth-service:latest - && cd ../
 cd resume_parsing_service && tar -czh . | docker build -t gettalent/resume-parsing-service:latest - && cd ../
 cd activity_service && tar -czh . | docker build -t gettalent/activity-service:latest - && cd ../
