@@ -1,0 +1,3 @@
+import loggly
+
+print "Success"
