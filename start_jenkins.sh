@@ -1,5 +1,12 @@
 #!/bin/bash
 
+echo "START Jenkins"
+
+which python
+python --version
+which pip
+pip --version
+
 # Upgrade pip if needed
 pip install --upgrade pip
 
