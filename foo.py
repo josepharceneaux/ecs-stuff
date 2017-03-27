@@ -1,3 +1,0 @@
-import loggly
-
-print "Success"
