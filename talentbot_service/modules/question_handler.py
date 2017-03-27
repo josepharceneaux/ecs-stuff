@@ -25,6 +25,7 @@ from urlparse import urlparse
 from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
+from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.utils.talentbot_utils import DOMAIN_SPECIFIC, OWNED
 from talentbot_service.common.error_handling import NotFoundError, InvalidUsage, InternalServerError
 from talentbot_service.common.models.user import User
@@ -37,14 +38,15 @@ from talentbot_service.common.models.push_campaign import PushCampaign
 from talentbot_service.common.routes import ResumeApiUrl, CandidateApiUrl
 from talentbot_service.common.utils.handy_functions import send_request
 from talentbot_service.common.utils.resume_utils import IMAGE_FORMATS, DOC_FORMATS
-from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket, delete_from_filepicker_s3
+from talentbot_service.common.utils.talent_s3 import boto3_put, create_bucket_using_boto3,\
+    delete_from_filepicker_using_boto3
 from talentbot_service.common.redis_cache import redis_store
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN,\
     SOMETHING_WENT_WRONG, TEN_MB, INVALID_RESUME_URL_MSG, NO_RESUME_URL_FOUND_MSG, TOO_LARGE_RESUME_MSG, \
-    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN, INVALID_INPUT, CANDIDATE_ALREADY_EXISTS, TWITTER, FACEBOOK, \
-    CLASSES, USER_CLIENTS
+    SUPPORTED_SOCIAL_SITES, GITHUB, STACK_OVERFLOW, LINKEDIN, INVALID_INPUT, CANDIDATE_ALREADY_EXISTS, TWITTER, \
+    FACEBOOK, CLASSES, USER_CLIENTS
 from talentbot_service import logger, app
 # 3rd party imports
 from flask import json
@@ -562,7 +564,7 @@ class QuestionHandler(object):
             asking_about_all_pools and not asking_about_his_pool
         # Appending suitable response header
         response = ["Campaigns in your domain are following:"] if (is_asking_for_campaigns_in_pool
-                                                                       and asking_about_all_campaigns) else \
+                                                                   and asking_about_all_campaigns) else \
             ["Your Campaigns are following:"] if not asking_about_all_campaigns and is_asking_for_campaigns_in_pool\
             else ["Campaigns in all Talent pools"] if asking_about_all_pools else ["Campaigns in your Talent pools"] \
             if asking_about_his_pool else ["Campaigns in your group are following:"] if len(response) == 0 else response
@@ -699,6 +701,7 @@ class QuestionHandler(object):
     def add_candidate_handler(cls, message_tokens, user_id, user_client=None):
         """
         Adds candidate from a resume url mentioned in message by user
+        :param positive|None user_client: User client weather Slack, Facebook, SMS or Email
         :param list message_tokens: Tokens of User message
         :param positive user_id: User Id
         :rtype: string
@@ -710,9 +713,9 @@ class QuestionHandler(object):
             # Supported social sites' array
             supported_social_sites_array = [SUPPORTED_SOCIAL_SITES[GITHUB], SUPPORTED_SOCIAL_SITES[TWITTER],
                                             SUPPORTED_SOCIAL_SITES[STACK_OVERFLOW]]
-            is_hostname_in_supported_social_sites = hostname in supported_social_sites_array \
-                                                or SUPPORTED_SOCIAL_SITES[LINKEDIN] in hostname \
-                                                or SUPPORTED_SOCIAL_SITES[FACEBOOK] in hostname
+            is_hostname_in_supported_social_sites = (hostname in supported_social_sites_array or
+                                                     SUPPORTED_SOCIAL_SITES[LINKEDIN] in hostname or
+                                                     SUPPORTED_SOCIAL_SITES[FACEBOOK] in hostname)
             # If it is social profile link it wont have an extension
             if not extension and is_hostname_in_supported_social_sites:
                 response_message = cls.get_candidate_from_openweb_and_add(user_id, resume_url)
@@ -724,30 +727,32 @@ class QuestionHandler(object):
                 resume_size_in_mbs = float(resume_size_in_bytes)/(1024*1024)
                 return TOO_LARGE_RESUME_MSG % resume_size_in_mbs
             '''
-            create_bucket() method checks if resume bucket exists on S3 if it does create_bucket() returns bucket
-            object if it does not exist create_bucket() creates the bucket with a predefined name (stored in cfg file).
-            If some error occurs while creating bucket create_bucket() raises InternalServerError
+            create_bucket_using_boto3() method checks if resume bucket exists on S3 if it doesn't it creates the bucket
+             with a predefined name (stored in cfg file).
             '''
-            create_bucket()
+            create_bucket_using_boto3(app.config[TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY])
             # saving resume in S3 bucket
             filepicker_key = cls.download_resume_and_save_in_bucket(resume_url, user_id, extension)
             return cls.parse_resume_and_add_candidate(user_id, filepicker_key)
         except AttributeError as error:
-            logger.error(error.message)
+            logger.error("Attribute error occurred while resolving resume URL. Error: %s" % error.message)
             return NO_RESUME_URL_FOUND_MSG
-        except (urllib2.HTTPError, urllib2.URLError):
+        except (urllib2.HTTPError, urllib2.URLError) as error:
+            logger.error("HTTPError occurred while resolving resume url Error: %s" % error.message)
             return INVALID_RESUME_URL_MSG
         except InternalServerError as error:
-            logger.error(error.message)
-            return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
+            logger.error("Internal Server Error occured while adding candidate from URL. Error: %s" % error.message)
+            # return SOMETHING_WENT_WRONG  # Replying user with a response message for internal server error
+            return error.message
         except InvalidUsage as error:
             return error.message
         except urllib.ContentTooShortError as error:
             logger.error("Error occurred downloading resume and saving in bucket: %s" % error.message)
             return "File size too small"
         except Exception as error:
-            logger.error(error.message)
-            return SOMETHING_WENT_WRONG
+            logger.error("Error occurred while adding candidate. Error: %s" % error.message)
+            # return SOMETHING_WENT_WRONG
+            return error.message
 
     @classmethod
     @contract
@@ -791,7 +796,8 @@ class QuestionHandler(object):
         response = requests.post(ResumeApiUrl.PARSE, headers=header, data=json.dumps(
             {'filepicker_key': filepicker_key, 'talent_pools': [], 'create_candidate': True}))
         try:
-            delete_from_filepicker_s3(filepicker_key)  # Deleting saved resume from S3
+            delete_from_filepicker_using_boto3(filepicker_key)  # Deleting saved resume from S3
+            print("response from RPS %s" % response.content)
             if response.status_code == codes.OK:
                 candidate = response.json()
                 first_name = candidate["candidate"]["first_name"]
