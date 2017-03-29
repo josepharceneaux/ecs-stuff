@@ -9,6 +9,7 @@ from flask import jsonify, request
 # Module Specific
 from banner_service.app import redis_store
 from banner_service.common.error_handling import InvalidUsage
+from banner_service.common.error_handling import NotFoundError
 
 BANNER_REDIS_KEY = 'gt_global_banner'
 REQUIRED_DATA = ('title', 'text', 'style')
@@ -37,7 +38,7 @@ def create_banner(json_data):
 def read_banner():
     existing_banner = redis_store.hgetall(BANNER_REDIS_KEY)
     if not existing_banner:
-        raise InvalidUsage(error_message='No banner currently set.')
+        raise NotFoundError(error_message='No banner currently set.')
 
     return existing_banner
 
@@ -45,7 +46,7 @@ def read_banner():
 def delete_banner():
     existing_banner = redis_store.hgetall(BANNER_REDIS_KEY)
     if not existing_banner:
-        raise InvalidUsage(error_message='No banner currently set.')
+        raise NotFoundError(error_message='No banner currently set.')
 
     successful_delete = redis_store.delete(BANNER_REDIS_KEY) == 1
     if successful_delete:
