@@ -120,6 +120,7 @@ def post_activity():
     logger.info("ActivityService::Info:: Call to `post_activity`")
     valid_user_id = request.user.id
     domain_id = request.user.domain_id
+    logger.info("ActivityService::Info:: UserInfo UserId: {} DomainId: {}".format(valid_user_id, domain_id))
     if request.method == 'POST':
         content = request.get_json()
 
