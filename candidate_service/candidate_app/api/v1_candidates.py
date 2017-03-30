@@ -336,6 +336,7 @@ class CandidatesResource(Resource):
                                         'formatted_name': candidate_data.get('formatted_name') or 'Unknown'},
                     'activity_type': 'CANDIDATE_CREATE_WEB',
                     'activity_type_id': Activity.MessageIds.CANDIDATE_CREATE_WEB,
+                    'domain_id': domain_id,
                     'source_id': resp_dict['candidate_id'],
                     'source_table': 'candidate',
                     'user_id': user_id,
