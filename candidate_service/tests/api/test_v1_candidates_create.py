@@ -128,14 +128,11 @@ class TestCreateCandidateSuccessfully(object):
         assert educations[0]['degrees'][0]['type'] == data_sent_in['educations'][0]['degrees'][0]['type']
         assert educations[0]['degrees'][0]['gpa'] == '{0:.2f}'.format(
             data_sent_in['educations'][0]['degrees'][0]['gpa'])
-        assert educations[0]['degrees'][0]['start_year'] == str(
-            data_sent_in['educations'][0]['degrees'][0]['start_year'])
-        assert educations[0]['degrees'][0]['start_year'] == str(
-            data_sent_in['educations'][0]['degrees'][0]['start_year'])
-        assert educations[0]['degrees'][0]['start_month'] == str(
-            data_sent_in['educations'][0]['degrees'][0]['start_month'])
-        assert educations[0]['degrees'][0]['end_year'] == str(data_sent_in['educations'][0]['degrees'][0]['end_year'])
-        assert educations[0]['degrees'][0]['end_month'] == str(data_sent_in['educations'][0]['degrees'][0]['end_month'])
+        assert educations[0]['degrees'][0]['start_year'] == data_sent_in['educations'][0]['degrees'][0]['start_year']
+        assert educations[0]['degrees'][0]['start_year'] == data_sent_in['educations'][0]['degrees'][0]['start_year']
+        assert educations[0]['degrees'][0]['start_month'] == data_sent_in['educations'][0]['degrees'][0]['start_month']
+        assert educations[0]['degrees'][0]['end_year'] == data_sent_in['educations'][0]['degrees'][0]['end_year']
+        assert educations[0]['degrees'][0]['end_month'] == data_sent_in['educations'][0]['degrees'][0]['end_month']
         assert educations[0]['degrees'][0]['bullets'][0]['id']
         assert educations[0]['degrees'][0]['bullets'][0]['major'] == \
                data_sent_in['educations'][0]['degrees'][0]['bullets'][0]['major']
@@ -153,14 +150,11 @@ class TestCreateCandidateSuccessfully(object):
         assert educations[1]['degrees'][0]['type'] == data_sent_in['educations'][1]['degrees'][0]['type']
         assert educations[1]['degrees'][0]['gpa'] == '{0:.2f}'.format(
             data_sent_in['educations'][1]['degrees'][0]['gpa'])
-        assert educations[1]['degrees'][0]['start_year'] == str(
-            data_sent_in['educations'][1]['degrees'][0]['start_year'])
-        assert educations[1]['degrees'][0]['start_year'] == str(
-            data_sent_in['educations'][1]['degrees'][0]['start_year'])
-        assert educations[1]['degrees'][0]['start_month'] == str(
-            data_sent_in['educations'][1]['degrees'][0]['start_month'])
-        assert educations[1]['degrees'][0]['end_year'] == str(data_sent_in['educations'][1]['degrees'][0]['end_year'])
-        assert educations[1]['degrees'][0]['end_month'] == str(data_sent_in['educations'][1]['degrees'][0]['end_month'])
+        assert educations[1]['degrees'][0]['start_year'] == data_sent_in['educations'][1]['degrees'][0]['start_year']
+        assert educations[1]['degrees'][0]['start_year'] == data_sent_in['educations'][1]['degrees'][0]['start_year']
+        assert educations[1]['degrees'][0]['start_month'] == data_sent_in['educations'][1]['degrees'][0]['start_month']
+        assert educations[1]['degrees'][0]['end_year'] == data_sent_in['educations'][1]['degrees'][0]['end_year']
+        assert educations[1]['degrees'][0]['end_month'] == data_sent_in['educations'][1]['degrees'][0]['end_month']
         assert educations[1]['degrees'][0]['bullets'][0]['id']
         assert educations[1]['degrees'][0]['bullets'][0]['major'] == \
                data_sent_in['educations'][1]['degrees'][0]['bullets'][0]['major']
