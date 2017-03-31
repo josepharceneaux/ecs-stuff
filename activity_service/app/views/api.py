@@ -120,8 +120,8 @@ def post_activity():
     valid_user_id = request.user.id
     domain_id = request.user.domain_id
     content = request.get_json()
-    logger.info("ActivityService::Info:: Call to `post_activity` UserId: {} DomainId: {} Content: {}").format(
-        valid_user_id, domain_id, content)
+    logger.info("ActivityService::Info:: Call to `post_activity` UserId: {} DomainId: {} Content: {}".format(
+        valid_user_id, domain_id, content))
 
     return create_activity(valid_user_id,
                            content.get('type'), domain_id,
