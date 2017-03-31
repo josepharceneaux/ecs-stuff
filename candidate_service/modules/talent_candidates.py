@@ -2662,10 +2662,6 @@ class CandidateTitle(object):
                 self.experiences.append(candidates_most_recent_exp)
                 self.title = self._set_title(self.experiences)
 
-            # If candidate exists but no additional experiences are provided, set its title to candidate's
-            # most recent position retrieved from database
-            elif not self.experiences and candidates_most_recent_exp:
-                self.title = candidates_most_recent_exp.get('position')
         # Set title to null if candidate is not being updated, and no title or experiences are provided
         elif not self.title:
             self.title = None
@@ -2677,59 +2673,20 @@ class CandidateTitle(object):
         :type experiences: list
         :rtype: basestring | None
         """
-        found = None
-        for i, exp in enumerate(experiences):
-            is_current = exp.get('is_current')
-            if is_current is True:
+        for exp in experiences:
+            if exp.get('is_current') is True:
                 return exp.get('position')
 
-            exp_start_year = exp.get('start_year')
-            exp_end_year = exp.get('end_year')
-            if exp_start_year or exp_end_year:
-                found = i
+        def sort_keys(keys):
+            def get_values(dict_):
+                return [dict_[k] for k in keys if k in dict_]
+            return get_values
 
-        # At least one of the experience data must have start year or end year
-        if found is None:
-            return None
-        else:
-            start_year = experiences[found].get('start_year')
-            start_month = experiences[found].get('start_month')
-            end_year = experiences[found].get('end_year')
-            end_month = experiences[found].get('end_month')
+        ordered_experiences = sorted(
+            experiences, key=sort_keys(['start_year', 'end_year', 'start_month', 'end_month']), reverse=True
+        )
 
-            for index, experience in enumerate(experiences):
-                experience_start_year = experience.get('start_year')
-                experience_start_month = experience.get('start_month')
-                experience_end_year = experience.get('end_year')
-                experience_end_month = experience.get('end_month')
-
-                # Ignore position if start year and end year of experience are not provided
-                if not experience_start_year and not experience_end_year:
-                    continue
-
-                # If start years are equal, compare start months
-                if experience_start_year == start_year and experience_start_month > start_month:
-                    found = index
-
-                if experience_start_year > start_year:
-                    start_year = experience_start_year
-                    found = index
-                    if experience_start_month > start_month:
-                        start_month = experience_start_month
-                        found = index
-
-                # If end years are equal, compare end months
-                if experience_end_year == end_year and experience_end_month > end_month:
-                    found = index
-
-                if experience_end_year > end_year:
-                    end_year = experience_end_year
-                    found = index
-                    if experience_end_month > end_month:
-                        end_month = experience_end_month
-                        found = index
-
-            return experiences[found].get('position')
+        return ordered_experiences[0].get('position')
 
     @staticmethod
     def _get_candidates_most_recent_experience(candidate_id):
