@@ -539,6 +539,13 @@ class CandidatesResource(Resource):
             aforementioned fields will be treated as "delete the record"
             """
             candidate_id = candidate_dict.get('id') or candidate_id_from_url
+
+            title = candidate_dict.get('title', '')
+            if 'work_experiences' in candidate_dict:
+                title = CandidateTitle(experiences=candidate_dict['work_experiences'],
+                                       title=candidate_dict.get('title', ''),
+                                       candidate_id=candidate_id).title
+
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
                 is_updating=True,
@@ -570,10 +577,7 @@ class CandidatesResource(Resource):
                 talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url', ''),
                 resume_text=candidate_dict.get('resume_text', ''),
-                title=CandidateTitle(
-                    experiences=candidate_dict.get('work_experiences'),
-                    title=candidate_dict.get('title', ''),
-                    candidate_id=candidate_id).title
+                title=title
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
