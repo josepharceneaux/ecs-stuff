@@ -16,6 +16,8 @@ from ..routes import AuthApiUrl
 from ..models.user import User, Role
 from ..talent_config_manager import TalentConfigKeys, TalentEnvs
 
+
+# TODO: This should be set depending upon the environment.
 LAMBDA_AUTHORIZATION_URL = 'https://vzzjklg21e.execute-api.us-east-1.amazonaws.com/staging/oauth2/authorize'
 
 
