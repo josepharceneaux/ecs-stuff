@@ -2,6 +2,13 @@ Jenkins build:
 
 [![Build Status](http://jenkins.gettalent.com:8080/buildStatus/icon?job=talent-flask-services)](http://jenkins.gettalent.com:8080/job/talent-flask-services)
 
+Current ECS Servers: (5x) m4.2xlarge - 8 Cores 32GB memory
+
+A container instance has 1,024 cpu units for every CPU core (8192 CPU Units)
+
+Capacity ~40 containers
+
+
 getTalent Flask Micro Services
 ==============================
 

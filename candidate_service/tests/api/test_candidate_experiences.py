@@ -225,3 +225,167 @@ class TestUpdateWorkExperience(object):
 
         assert candidate_experience_bullet_count == len(updated_exp_bullet_dict)
         assert updated_exp_bullet_dict[0]['description'] == exp_bullet_dict_from_data['description']
+
+
+class TestCandidateTitle(object):
+    def test_create_candidate_with_no_title(self, access_token_first, talent_pool):
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'first_name': fake.first_name(),
+             'work_experiences': [
+                 {'position': 'engineerIII', 'start_year': 2015, 'end_year': 2016},
+                 {'position': 'engineerII'}
+             ]}
+        ]}
+        r = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(r)
+
+        candidate_id = r.json()['candidates'][0]['id']
+
+        # Candidate's title should be set to its most recent work experience since title is not provided
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == data['candidates'][0]['work_experiences'][0]['position']
+
+        # Update candidate's title
+        update_data = {'candidates': [
+            {'id': candidate_id, 'work_experiences': [{'position': 'lawyer', 'is_current': True}]}
+        ]}
+        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, update_data)
+
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == update_data['candidates'][0]['work_experiences'][0]['position']
+
+    def test_set_candidate_title(self, access_token_first, talent_pool):
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'first_name': fake.first_name(), 'title': 'engineerI'}
+        ]}
+        r = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(r)
+
+        candidate_id = r.json()['candidates'][0]['id']
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == data['candidates'][0]['title']
+
+    def test_set_title_from_experiences(self, access_token_first, talent_pool):
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'first_name': fake.first_name(), 'work_experiences': [
+                {'position': 'engineerI', 'is_current': True},
+                {'position': 'engineerII', 'start_year': 2015, 'end_year': 2016}
+            ]}
+        ]}
+        r = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(r)
+
+        candidate_id = r.json()['candidates'][0]['id']
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == data['candidates'][0]['work_experiences'][0]['position']
+
+    def test_set_title_from_experiences_and_title(self, access_token_first, talent_pool):
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'first_name': fake.first_name(), 'title': 'engineerI',
+             'work_experiences': [
+                 {'position': 'engineerII', 'is_current': True},
+                 {'position': 'engineerIII', 'start_year': 2015, 'end_year': 2016}
+             ]}
+        ]}
+        r = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(r)
+
+        candidate_id = r.json()['candidates'][0]['id']
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == data['candidates'][0]['title']
+
+    def test_update_title_from_title(self, access_token_first, talent_pool):
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'first_name': fake.first_name(), 'title': 'engineerI',
+             'work_experiences': [
+                 {'position': 'engineerII', 'is_current': True},
+                 {'position': 'engineerIII', 'start_year': 2015, 'end_year': 2016}
+             ]}
+        ]}
+        r = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+
+        candidate_id = r.json()['candidates'][0]['id']
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == data['candidates'][0]['title']
+
+        # Update candidate's title
+        update_data = {'candidates': [
+            {'id': candidate_id, 'title': 'farmerI'}
+        ]}
+        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, update_data)
+
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == update_data['candidates'][0]['title']
+
+    def test_update_title_from_experiences(self, access_token_first, talent_pool):
+        data = {'candidates': [
+            {
+                'talent_pool_ids': {'add': [talent_pool.id]}, 'first_name': fake.first_name(), 'title': 'engineerI',
+                'work_experiences': [
+                    {'position': 'engineerII', 'start_year': 2012, 'end_year': 2014},
+                    {'position': 'engineerIII', 'start_year': 2015, 'end_year': 2016}
+                ]
+            }
+        ]}
+        r = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+
+        candidate_id = r.json()['candidates'][0]['id']
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == data['candidates'][0]['title']
+
+        # Candidate's title should remain the same since its title had been explicitly defined
+        update_data = {'candidates': [
+            {'id': candidate_id, 'work_experiences': [{'position': 'engineerIV'}]}
+        ]}
+        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, update_data)
+
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == data['candidates'][0]['title']
+
+        # Update candidate's title should change since title is explicitly defined below
+        update_data = {'candidates': [
+            {'id': candidate_id, 'title': 'pediatrician'}
+        ]}
+        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, update_data)
+
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == update_data['candidates'][0]['title']
+
+    def test_update_experience_position(self, access_token_first, talent_pool):
+        data = {'candidates': [
+            {
+                'talent_pool_ids': {'add': [talent_pool.id]}, 'first_name': fake.first_name(), 'title': 'engineerI',
+                'work_experiences': [
+                    {'position': 'engineerII', 'start_year': 2012, 'end_year': 2014},
+                    {'position': 'engineerIII', 'start_year': 2015, 'end_year': 2016}
+                ]
+            }
+        ]}
+        r = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+
+        candidate_id = r.json()['candidates'][0]['id']
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == data['candidates'][0]['title']
+
+        # Update experience position
+        experience_id = r.json()['candidate']['work_experiences'][0]['id']
+        update_data = {'candidates': [
+            {'id': candidate_id, 'work_experiences': [{'id': experience_id, 'position': 'New Position'}]}
+        ]}
+        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, update_data)
+
+        r = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(r)
+        assert r.json()['candidate']['title'] == data['candidates'][0]['title']
+

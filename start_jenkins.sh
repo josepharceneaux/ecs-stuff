@@ -13,10 +13,12 @@ pip freeze | grep loggly
 
 # Build Docker Images
 sudo service docker restart
+
 # New Jenkins uses Aurora
 if [ `hostname` != "aws-jenkins.gettalent.com" ]; then
     sudo service mysql restart
 fi
+
 sudo usermod -aG docker jenkins
 
 # Stopping all containers and removing all dangling images from Jenkins container

@@ -18,14 +18,12 @@ from requests import codes as STATUS_CODES
 from activity_service.app import db, logger
 from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
-from activity_service.common.error_handling import NotFoundError
-from activity_service.common.utils.api_utils import ApiResponse
 from activity_service.common.utils.auth_utils import require_oauth
 from activity_service.app.views.activity_manager import TalentActivityManager
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 POSTS_PER_PAGE = 20
-mod = Blueprint('activities_api', __name__)
+mod = Blueprint('activities_api_v1', __name__)
 
 ACTIVITY_REQUIREMENTS = [
     'api_call', 'user_id', 'exclude_current_user', 'start_datetime', 'end_datetime', 'is_aggregate_request',
@@ -119,26 +117,18 @@ def get_activity_messages():
 @mod.route(ActivityApi.ACTIVITIES, methods=['POST'])
 @require_oauth()
 def post_activity():
-    logger.info("ActivityService::Info:: Call to `post_activity`")
     valid_user_id = request.user.id
     domain_id = request.user.domain_id
-    if request.method == 'POST':
-        content = request.get_json()
+    content = request.get_json()
+    logger.info("ActivityService::Info:: Call to `post_activity` UserId: {} DomainId: {} Content: {}".format(
+        valid_user_id, domain_id, content))
 
-        return create_activity(valid_user_id,
-                               content.get('type'), domain_id,
-                               content.get('source_table'), content.get('source_id'), content.get('params'))
-    # source_table = request.args.get('source_table')
-    # source_id = request.args.get('source_id')
-    # type_id = request.args.get('type')
-    # activity = Activity.get_single_activity(valid_user_id, type_id, source_id, source_table)
-    # if not activity:
-    #     raise NotFoundError('Activity not found for given query params.')
-
-    # return ApiResponse(json.dumps({"activity": activity.to_json()}), status=STATUS_CODES.OK)
+    return create_activity(valid_user_id,
+                           content.get('type'), domain_id,
+                           content.get('source_table'), content.get('source_id'), content.get('params'))
 
 
-    # TODO move this is a module
+# TODO move this is a module
 def create_activity(user_id, type_, domain_id, source_table=None, source_id=None, params=None):
     """Method for creating a DB entry in the activity table.
     :param int user_id: ID of the authenticated user.

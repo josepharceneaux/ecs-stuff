@@ -5,7 +5,6 @@ from activity_constants import ACTIVTY_PARAMS
 
 
 class TalentActivityManager(object):
-
     def __init__(self, db, activity_model, logger=None):
         """
         Allows flask-app/service to set flask-sqlalchemy db and Activity Models.
@@ -61,29 +60,20 @@ class TalentActivityManager(object):
             if not params['activity_params'].get(item):
                 if self.logger:
                     self.logger.error('ActivityCreationError::MissingParam::{}'.format(item))
-                return {
-                    'committed': False,
-                    'error': 'Missing param {}'.format(item)
-                }
+                return {'committed': False, 'error': 'Missing param {}'.format(item)}
 
         activity = self.activity_model(
-            user_id=int(params.get('user_id')),
-            type=params.get('activity_type_id'),
-            source_table=params.get('source_table'),
-            source_id=params.get('source_id'),
+            added_time=datetime.utcnow(),
+            domain_id=params.get('domain_id'),
             params=json.dumps(params.get('activity_params')),
-            added_time=datetime.utcnow()
-        )
+            source_id=params.get('source_id'),
+            source_table=params.get('source_table'),
+            type=params.get('activity_type_id'),
+            user_id=int(params.get('user_id')), )
 
         try:
             self.db.session.add(activity)
             self.db.session.commit()
-            return {
-                'committed': True,
-                'id': activity.id
-            }
+            return {'committed': True, 'id': activity.id}
         except Exception as e:
-            return {
-                'committed': False,
-                'error': e.message
-            }
+            return {'committed': False, 'error': e.message}

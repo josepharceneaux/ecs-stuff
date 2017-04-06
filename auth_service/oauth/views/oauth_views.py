@@ -17,6 +17,7 @@ from auth_service.oauth.oauth_utilities import (authenticate_user, save_token_v2
 @app.route(AuthApiV2.TOKEN_CREATE, methods=['POST'])
 def access_token_v2():
     """ Create a new access_token for a user """
+
     body = request.form.to_dict()
     username = body.get('username', '')
     password = body.get('password', '')

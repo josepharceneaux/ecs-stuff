@@ -268,7 +268,9 @@ class CandidatesResource(Resource):
             work_experiences = candidate_dict.get('work_experiences')
 
             # Set candidate's title
-            title = CandidateTitle(experiences=work_experiences, title=candidate_dict.get('title')).title
+            title = (candidate_dict.get('title') or '').strip()
+            if not title and work_experiences:
+                title = CandidateTitle(experiences=work_experiences).title
 
             user_id = authed_user.id
             emails = [
@@ -336,6 +338,7 @@ class CandidatesResource(Resource):
                                         'formatted_name': candidate_data.get('formatted_name') or 'Unknown'},
                     'activity_type': 'CANDIDATE_CREATE_WEB',
                     'activity_type_id': Activity.MessageIds.CANDIDATE_CREATE_WEB,
+                    'domain_id': domain_id,
                     'source_id': resp_dict['candidate_id'],
                     'source_table': 'candidate',
                     'user_id': user_id,
@@ -538,6 +541,26 @@ class CandidatesResource(Resource):
             aforementioned fields will be treated as "delete the record"
             """
             candidate_id = candidate_dict.get('id') or candidate_id_from_url
+
+            # Set profile title if title is provided
+            title = (candidate_dict.get('title') or '').strip()
+            if title:
+                candidate.title = title
+
+            # if title is not provided but additional work experiences' information are provided:
+            #  - if candidate already has a profile title, compare it with its most recent experience position
+            #    and update its value accordingly
+            #  - if candidate does not have a profile title, set its value to the most recent experience's position
+            elif 'work_experiences' in candidate_dict and not title:
+                if candidate.title:
+                    most_recent_exp = CandidateTitle.get_candidates_most_recent_experience(candidate_id)
+                    if most_recent_exp and most_recent_exp.get('position') == candidate.title:
+                        title = CandidateTitle(candidate_dict['work_experiences'], candidate_id).title
+                else:
+                    title = CandidateTitle(candidate_dict['work_experiences'], candidate_id).title
+            else:
+                title = ''
+
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
                 is_updating=True,
@@ -569,10 +592,7 @@ class CandidatesResource(Resource):
                 talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url', ''),
                 resume_text=candidate_dict.get('resume_text', ''),
-                title=CandidateTitle(
-                    experiences=candidate_dict.get('work_experiences'),
-                    title=candidate_dict.get('title', ''),
-                    candidate_id=candidate_id).title
+                title=title
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
