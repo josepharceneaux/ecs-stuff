@@ -109,6 +109,29 @@ class TestEmailTemplateFolders(object):
         CampaignsTestsHelpers.request_for_forbidden_error('post', EmailCampaignApiUrl.TEMPLATE_FOLDERS,
                                                           access_token_other, data)
 
+    def test_get_email_template_folders_in_domain(self, headers):
+        """
+        In this test, we get email-template-folders in a domain
+        """
+        # Check without creating any template-folder
+        response = requests.get(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, headers=headers)
+        assert response.ok
+        json_response = response.json()
+        assert 'template_folders' in json_response
+        assert len(json_response['template_folders']) == 0
+
+        # Check with creating 5 template-folders
+        for _ in xrange(5):
+            data = {'name': fake.name(), 'is_immutable': 1}
+            response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
+                                     headers=headers)
+            assert response.ok
+        response = requests.get(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, headers=headers)
+        assert response.ok
+        json_response = response.json()
+        assert 'template_folders' in json_response
+        assert len(json_response['template_folders']) == 5
+
 
 class TestEmailTemplates(object):
     """
