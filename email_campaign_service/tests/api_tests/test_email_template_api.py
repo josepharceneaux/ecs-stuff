@@ -115,7 +115,7 @@ class TestEmailTemplateFolders(object):
         """
         # Check without creating any template-folder
         response = requests.get(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, headers=headers)
-        assert response.ok
+        assert response.status_code == codes.OK, response.text
         json_response = response.json()
         assert 'template_folders' in json_response
         assert len(json_response['template_folders']) == 0
@@ -125,9 +125,9 @@ class TestEmailTemplateFolders(object):
             data = {'name': fake.name(), 'is_immutable': 1}
             response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
                                      headers=headers)
-            assert response.ok
+            assert response.status_code == codes.CREATED, response.text
         response = requests.get(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, headers=headers)
-        assert response.ok
+        assert response.status_code == codes.OK, response.text
         json_response = response.json()
         assert 'template_folders' in json_response
         assert len(json_response['template_folders']) == 5
