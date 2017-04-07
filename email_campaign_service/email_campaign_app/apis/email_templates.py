@@ -91,6 +91,36 @@ class TemplateFolders(Resource):
         EmailTemplateFolder.save(template_folder)
         return {'id': template_folder.id}, codes.CREATED
 
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CAMPAIGNS)
+    def get(self):
+        """
+            GET /v1/email-template-folders
+            Returns all email-template folders in a user's domain
+                {
+                      "template_folders": [
+                        {
+                          "name": "My Template Folder",
+                          "updated_datetime": "2016-08-23 18:04:45",
+                          "is_immutable": 1,
+                          "id": 8,
+                          "parent_id": "",
+                          "domain_id": 1
+                        },
+                        {
+                          "name": "My Template123456",
+                          "updated_datetime": "2016-09-06 15:03:51",
+                          "is_immutable": 1,
+                          "id": 347,
+                          "parent_id": "",
+                          "domain_id": 1
+                        }
+                     ]
+                    }
+        """
+        domain_id = request.user.domain_id
+        template_folders = EmailTemplateFolder.filter_by_keywords(domain_id=domain_id)
+        return {"template_folders": [template_folder.to_json() for template_folder in template_folders]}, codes.OK
+
 
 @api.route(EmailCampaignApi.TEMPLATE_FOLDER)
 class TemplateFolder(Resource):
