@@ -3,17 +3,22 @@
 __author__ = 'erikfarmer'
 
 # Standard Library
+import os
 import json
 from functools import wraps
 # Third Party
 import requests
 # Application/Module Specific
 from ..utils.handy_functions import random_letter_digit_string
-from flask import current_app as app
 from ..models.user import *
 from ..error_handling import *
-from ..routes import AuthApiUrl, AuthApiUrlV2
+from ..routes import AuthApiUrl
 from ..models.user import User, Role
+from ..talent_config_manager import TalentConfigKeys, TalentEnvs
+
+
+# TODO: This should be set depending upon the environment.
+LAMBDA_AUTHORIZATION_URL = 'https://vzzjklg21e.execute-api.us-east-1.amazonaws.com/staging/oauth2/authorize'
 
 
 def require_oauth(allow_null_user=False, allow_candidate=False):
@@ -38,7 +43,14 @@ def require_oauth(allow_null_user=False, allow_candidate=False):
                 json_web_token = json_web_token.split('.')
                 secret_key_id = json_web_token.pop()
                 json_web_token = '.'.join(json_web_token)
-                User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
+                if (os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV) == TalentEnvs.QA:
+                    try:
+                        User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
+                    except UnauthorizedError:
+                        authorize_jwt_over_lambda(oauth_token)
+                else:
+                    User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
+
                 request.oauth_token = oauth_token
                 return func(*args, **kwargs)
 
@@ -243,6 +255,15 @@ def refresh_token(access_token):
         return response.json()['access_token']
 
     raise InvalidUsage('access_token must be instance of Token model or a string.')
+
+
+def authorize_jwt_over_lambda(access_token):
+    response = requests.get(LAMBDA_AUTHORIZATION_URL, headers={'Authorization': access_token})
+    if response.status_code != 200:
+        raise UnauthorizedError("Your Token is invalid", error_code=13)
+
+    response = response.json()
+    request.user = User.query.get(response['user_id'])
 
 
 def gettalent_generate_password_hash(new_password):

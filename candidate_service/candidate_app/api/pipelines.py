@@ -93,8 +93,8 @@ class CandidatePipelineResource(Resource):
                 # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
                 if search_response.get('candidates'):
                     found_talent_pipelines.append(talent_pipeline)
-                    if number_of_requests >= 5:
-                        break
+                    # if number_of_requests >= 5:
+                    #     break
 
         result = []
 

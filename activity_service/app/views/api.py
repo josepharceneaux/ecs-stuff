@@ -117,27 +117,18 @@ def get_activity_messages():
 @mod.route(ActivityApi.ACTIVITIES, methods=['POST'])
 @require_oauth()
 def post_activity():
-    logger.info("ActivityService::Info:: Call to `post_activity`")
     valid_user_id = request.user.id
     domain_id = request.user.domain_id
-    logger.info("ActivityService::Info:: UserInfo UserId: {} DomainId: {}".format(valid_user_id, domain_id))
-    if request.method == 'POST':
-        content = request.get_json()
+    content = request.get_json()
+    logger.info("ActivityService::Info:: Call to `post_activity` UserId: {} DomainId: {} Content: {}".format(
+        valid_user_id, domain_id, content))
 
-        return create_activity(valid_user_id,
-                               content.get('type'), domain_id,
-                               content.get('source_table'), content.get('source_id'), content.get('params'))
-    # source_table = request.args.get('source_table')
-    # source_id = request.args.get('source_id')
-    # type_id = request.args.get('type')
-    # activity = Activity.get_single_activity(valid_user_id, type_id, source_id, source_table)
-    # if not activity:
-    #     raise NotFoundError('Activity not found for given query params.')
-
-    # return ApiResponse(json.dumps({"activity": activity.to_json()}), status=STATUS_CODES.OK)
+    return create_activity(valid_user_id,
+                           content.get('type'), domain_id,
+                           content.get('source_table'), content.get('source_id'), content.get('params'))
 
 
-    # TODO move this is a module
+# TODO move this is a module
 def create_activity(user_id, type_, domain_id, source_table=None, source_id=None, params=None):
     """Method for creating a DB entry in the activity table.
     :param int user_id: ID of the authenticated user.
