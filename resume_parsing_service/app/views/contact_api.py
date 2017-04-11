@@ -108,18 +108,19 @@ def parse_contact_info(params):
     print contact_details
     return resume_text
 
+
 def get_human_names(text):
     tokens = nltk.tokenize.word_tokenize(text)
     filtered_words = [word for word in tokens if word not in stopwords.words('english')]
     pos = nltk.pos_tag(filtered_words)
-    sentt = nltk.ne_chunk(pos, binary = False)
+    sentt = nltk.ne_chunk(pos, binary=False)
     person_list = []
     person = []
     name = ""
     for subtree in sentt.subtrees(filter=lambda t: t.label() == 'PERSON'):
         for leaf in subtree.leaves():
             person.append(leaf[0])
-        if len(person) > 1: #avoid grabbing lone surnames
+        if len(person) > 1:  #avoid grabbing lone surnames
             for part in person:
                 name += part + ' '
             if name[:-1] not in person_list:
