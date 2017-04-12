@@ -46,7 +46,7 @@ def get_activities(page):
     valid_user_id = request.user.id
     aggregate = rargs.get('aggregate') == '1'  # TODO see if int arg can be used
     aggregate_limit = rargs.get('aggregate_limit', '5')
-    post_qty = rargs.get('post_qty') if rargs.get('post_qty') else POSTS_PER_PAGE
+    post_qty = int(rargs.get('post_qty')) if rargs.get('post_qty') else POSTS_PER_PAGE
     start_param = rargs.get('start_datetime')
     end_param = rargs.get('end_datetime')
     exclude_current_user = True if rargs.get('exclude_current_user') == '1' else False
