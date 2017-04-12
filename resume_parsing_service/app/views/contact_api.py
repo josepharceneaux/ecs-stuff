@@ -52,6 +52,13 @@ def get_contact_info():
 
 
 def parse_contact_info(params):
+    """
+     - Sends a file to Burning Glass
+     - Extracts the text using BeautifulSoup
+     - Parses relevant information using util functions
+    :param params: Dictionary of params 
+    :return: Dictionay of parsed values
+    """
     file_obj = resume_file_from_params(params)
     filename_str = params['filename']
     file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
@@ -110,6 +117,12 @@ def parse_contact_info(params):
 
 
 def get_human_names(text):
+    """
+    - Uses NLTK to remove stopwords from resume
+    - Attempts to gather words pairs that are identified as 'Person Names'
+    :param text: String 
+    :return: tuple of names
+    """
     tokens = nltk.tokenize.word_tokenize(text)
     filtered_words = [word for word in tokens if word not in stopwords.words('english')]
     pos = nltk.pos_tag(filtered_words)
@@ -127,4 +140,4 @@ def get_human_names(text):
                 person_list.append(name[:-1])
             name = ''
         person = []
-    return (person_list)
+    return person_list

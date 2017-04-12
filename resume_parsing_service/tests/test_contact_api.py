@@ -17,7 +17,7 @@ def test_doc_by_post(access_token_first):
     """Test that .doc files that are posted to the end point can be parsed."""
     content, status = fetch_resume_post_response(access_token_first, 'test_bin.docx')
     print content
-    assert status is 200
+    assert status == requests.codes.ok
 
 
 def fetch_resume_post_response(token_fixture, file_name):
