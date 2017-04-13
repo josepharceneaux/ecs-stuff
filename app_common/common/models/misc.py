@@ -53,6 +53,11 @@ class Activity(db.Model):
         CANDIDATE_CREATE_WIDGET = 19
         CANDIDATE_CREATE_MOBILE = 20  # TODO add in
 
+        # Candidate De-Duping Activities
+        CANDIDATE_AUTO_MERGED = 31
+        CANDIDATE_USER_MERGED = 32
+        CANDIDATE_SENT_TO_MERGE_HUB = 33
+
         # Params may include/require:
         # id, username, name (old), campaign_name (new), campaign_type, candidate_name,
         # num_candidates
