@@ -41,6 +41,7 @@ PyPDF2==1.26.0
 phonenumbers==7.0.8
 Pillow==2.9.0
 six==1.9.0
+nltk==3.2.2
 
 # Logging
 loggly-handler==0.1.2

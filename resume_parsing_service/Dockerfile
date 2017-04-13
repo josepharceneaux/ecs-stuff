@@ -5,6 +5,9 @@ WORKDIR /root/base_service_container
 ADD . resume_parsing_service
 WORKDIR /root/base_service_container/resume_parsing_service
 
+# Download required NLTK files
+RUN python -m nltk.downloader averaged_perceptron_tagger punkt maxent_ne_chunker words stopwords
+
 # Replace app name in config Loggly and NewRelic config files
 RUN sed -i -e 's/APP_NAME/resume_parsing_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
 
