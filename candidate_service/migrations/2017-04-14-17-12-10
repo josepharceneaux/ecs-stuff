@@ -1,5 +1,5 @@
 """
-Truncate existing document table and add a column for keypath
+Altering names and types of update/added time.
 """
 
 
