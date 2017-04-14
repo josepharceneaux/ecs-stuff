@@ -672,6 +672,7 @@ class CandidateDocument(db.Model):
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     filename = db.Column('Filename', db.String(260))
+    key_path = db.Column('KeyPath', db.String(255))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
