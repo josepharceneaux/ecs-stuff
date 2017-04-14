@@ -1,0 +1,18 @@
+"""
+Truncate existing document table and add a column for keypath
+"""
+
+
+from sqlalchemy import text
+from candidate_service.common.models.db import db
+
+
+db.session.execute(
+    text("ALTER TABLE `candidate_document` CHANGE AddedTime AddedDateTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
+)
+db.session.commit()
+
+db.session.execute(
+    text("ALTER TABLE `candidate_document` CHANGE UpdatedTime UpdatedDateTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
+)
+db.session.commit()
