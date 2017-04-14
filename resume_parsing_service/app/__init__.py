@@ -16,8 +16,9 @@ app, logger = init_talent_app(__name__)
 try:
     redis_store = FlaskRedis(app)
 
-    from views import api
+    from views import api, contact_api
     app.register_blueprint(api.PARSE_MOD, url_prefix=ResumeApi.URL_PREFIX)
+    app.register_blueprint(contact_api.CONTACT_MOD, url_prefix='/v1')
 
     logger.info("Starting resume_parsing_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
