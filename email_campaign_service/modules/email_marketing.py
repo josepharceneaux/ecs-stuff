@@ -357,9 +357,9 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 "campaign_id=%s, user=%s" % (len(subscribed_candidate_ids), len(candidate_ids_and_emails),
                                              campaign.name, campaign.id, campaign.user.email))
     if candidate_ids_and_emails:
-        concurrent_lambdas = 50
+        concurrent_lambdas = 60
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
-        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA]:
+        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.DEV]:
             # Get AWS region name
             _, region_name = get_topic_arn_and_region_name()
             try:
@@ -375,13 +375,13 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 for candidate_id_and_email in chunk:
                     candidate_id, candidate_address = candidate_id_and_email
                     chunk_of_candidate_ids_and_address.append({"candidate_id": candidate_id,
-                                                               "candidate_address": candidate_address,
-                                                               "blast_id": blast_id})
+                                                               "candidate_address": candidate_address})
+                event_data = {"blast_id": blast_id,
+                              "candidates_data": chunk_of_candidate_ids_and_address}
                 try:
-                    invoke_lambda_sender(_lambda, chunk_of_candidate_ids_and_address)
+                    invoke_lambda_sender(_lambda, event_data)
                     number_of_lambda_invocations += 1
                     if number_of_lambda_invocations % concurrent_lambdas == 0:
-                        # 3 seconds delay after 50 lambda invocations
                         logger.info("Delaying Lambda invoker at %d" % number_of_lambda_invocations)
                         sleep(concurrent_lambdas)
                 except Exception as error:
@@ -433,15 +433,15 @@ def get_lambda_prefix():
     return 'prod' if app.config[TalentConfigKeys.ENV_KEY] == TalentEnvs.PROD else 'staging'
 
 
-def invoke_lambda_sender(_lambda, chunk_of_candidate_data):
+def invoke_lambda_sender(_lambda, event_data):
     """
     Here we invoke Lambda email sender
     """
     response = _lambda.invoke(FunctionName='%s-emailCampaignToCandidates:%s'
                                            % (get_lambda_prefix(), app.config[TalentConfigKeys.ENV_KEY].upper()),
                               InvocationType='Event',
-                              Payload=json.dumps({"chunk": chunk_of_candidate_data}))
-    logger.info("Invoked send_via_consumer Lambda for:%s", (response, chunk_of_candidate_data))
+                              Payload=json.dumps(event_data))
+    logger.info("Invoked `emailCampaignToCandidates` Lambda for event:{}.\nResponse:{}".format(event_data, response))
 
 
 def get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids, new_candidates_only=False):
