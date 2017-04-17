@@ -39,7 +39,7 @@ from candidate_service.common.models.candidate import (
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateDevice,
     CandidateSubscriptionPreference, CandidatePhoto, CandidateSource,
-    CandidateStatus
+    CandidateStatus, CandidateDocument
 )
 from candidate_service.common.models.db import db
 from candidate_service.common.models.language import CandidateLanguage
@@ -2097,19 +2097,36 @@ class CandidateLanguageResource(Resource):
 
 class CandidateDocumentResource(Resource):
     decorators = [require_oauth()]
+    REQUIRED_POST_KEYS = ('filename', 'key_path')
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
-        pass
+        # kwargs are {'candidate_id': 489}
+        request_json = request.json
+        print request_json
+        if not all(key in self.REQUIRED_POST_KEYS for key in request_json.keys()):
+            return 'Missing required json keys', 400
+        candidate_document = CandidateDocument(
+            candidate_id=kwargs['candidate_id'], filename=request_json['filename'], key_path=request_json['key_path'])
+        db.session.add(candidate_document)
+        try:
+            db.session.commit()
+        except Exception as e:
+            logger.exception('Error recording Candidate Document')
+            raise InternalServerError('Error Saving Candidate Document')
+        return json.dumps({'document_id': candidate_document.id}), 201
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def get(self, **kwargs):
-        pass
+        candidate_id = kwargs['candidate_id']
+        documents = CandidateDocument.query.filter_by(candidate_id=candidate_id)
+        documents = [{'filename': d.filename, 'key_path': d.key_path} for d in documents]
+        return json.dumps({'documents': documents}), 200
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
-        pass
+        raise NotImplementedError
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
-        pass
+        raise NotImplementedError

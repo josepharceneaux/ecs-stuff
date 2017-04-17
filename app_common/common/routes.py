@@ -438,6 +438,8 @@ class CandidateApiUrl(object):
     DEVICES = HOST_NAME % ('/' + VERSION + '/candidates/%s/devices')
     DEVICE = HOST_NAME % ('/' + VERSION + '/candidates/%s/devices/%s')
 
+    DOCUMENT = HOST_NAME % ('/' + VERSION + '/candidates/%s/documents/')
+
     EMAILS = HOST_NAME % ('/' + VERSION + '/candidates/%s/emails')
     EMAIL = HOST_NAME % ('/' + VERSION + '/candidates/%s/emails/%s')
 
