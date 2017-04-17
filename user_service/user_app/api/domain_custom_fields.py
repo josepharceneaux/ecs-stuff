@@ -79,7 +79,8 @@ class DomainCustomFieldsResource(Resource):
                     'domain_id': custom_field.domain_id,
                     'category_id': custom_field.category_id,
                     'name': custom_field.name,
-                    'added_datetime': str(custom_field.added_time)
+                    'added_datetime': str(custom_field.added_time),
+                    "type": custom_field.type,
                 }
             }
 
@@ -90,7 +91,8 @@ class DomainCustomFieldsResource(Resource):
                 "domain_id": custom_field.domain_id,
                 'category_id': custom_field.category_id,
                 "name": custom_field.name,
-                "added_datetime": str(custom_field.added_time)
+                "added_datetime": str(custom_field.added_time),
+                "type": custom_field.type,
             } for custom_field in CustomField.get_domain_custom_fields(request.user.domain_id)]}
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAIN_CUSTOM_FIELDS)
