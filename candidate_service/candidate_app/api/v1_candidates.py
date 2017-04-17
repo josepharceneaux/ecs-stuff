@@ -2109,9 +2109,8 @@ class CandidateDocumentResource(Resource):
         candidate_id = kwargs['candidate_id']
         if not does_candidate_belong_to_users_domain(request.user, candidate_id):
             raise InvalidUsage('Candidate does not belong to User\'s domain')
-
-        candidate_document = CandidateDocument(
-            candidate_id=candidate_id, filename=request_json['filename'], key_path=request_json['key_path'])
+        request_json['candidate_id'] = candidate_id
+        candidate_document = CandidateDocument(**request_json)
         db.session.add(candidate_document)
 
         try:
