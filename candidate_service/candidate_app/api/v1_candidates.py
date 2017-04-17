@@ -2093,3 +2093,23 @@ class CandidateLanguageResource(Resource):
 
         upload_candidate_documents.delay([candidate_id])
         return '', 204
+
+
+class CandidateDocumentResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
+    def post(self, **kwargs):
+        pass
+
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
+    def get(self, **kwargs):
+        pass
+
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
+    def patch(self, **kwargs):
+        pass
+
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
+    def delete(self, **kwargs):
+        pass
