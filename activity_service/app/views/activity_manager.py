@@ -47,6 +47,18 @@ class TalentActivityManager(object):
                                                "<b>%(username)s</b> updated %(count)s candidates", "candidate.png"),
         Activity.MessageIds.CANDIDATE_DELETE: ("<b>%(username)s</b> deleted the candidate <b>%(formattedName)s</b>",
                                                "<b>%(username)s</b> deleted %(count)s candidates", "candidate.png"),
+
+        # Candidate De-Duping Activities
+        Activity.MessageIds.CANDIDATE_AUTO_MERGED: ("Candidate <b>%(formattedName)s</b> was automatically merged with "
+                                                    "a duplicated profile.",
+                                                    "%(count)s candidates were updated", "candidate.png"),
+        Activity.MessageIds.CANDIDATE_USER_MERGED: ("<b>%(username)s</b> (User) merged candidate "
+                                                    "<b>%(formattedName)s</b> with a duplicated profiles.",
+                                                    "%(count)s candidates were updated", "candidate.png"),
+        Activity.MessageIds.CANDIDATE_SENT_TO_MERGE_HUB: ("<b>%(formattedName)s</b> was identified as a possible match."
+                                                          " View in <a>Merge Hub</a> to resolve.",
+                                                          "%(count)s candidates were updated", "candidate.png"),
+
         Activity.MessageIds.CAMPAIGN_CREATE: (
             "<b>%(username)s</b> created an %(campaign_type)s campaign: <b>%(name)s</b>",
             "<b>%(username)s</b> created %(count)s campaigns", "campaign.png"),
