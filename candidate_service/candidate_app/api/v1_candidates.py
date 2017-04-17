@@ -2103,22 +2103,31 @@ class CandidateDocumentResource(Resource):
     def post(self, **kwargs):
         # kwargs are {'candidate_id': 489}
         request_json = request.json
-        print request_json
         if not all(key in self.REQUIRED_POST_KEYS for key in request_json.keys()):
             return 'Missing required json keys', 400
+
+        candidate_id = kwargs['candidate_id']
+        if not does_candidate_belong_to_users_domain(request.user, candidate_id):
+            raise InvalidUsage('Candidate does not belong to User\'s domain')
+
         candidate_document = CandidateDocument(
-            candidate_id=kwargs['candidate_id'], filename=request_json['filename'], key_path=request_json['key_path'])
+            candidate_id=candidate_id, filename=request_json['filename'], key_path=request_json['key_path'])
         db.session.add(candidate_document)
+
         try:
             db.session.commit()
         except Exception as e:
             logger.exception('Error recording Candidate Document')
             raise InternalServerError('Error Saving Candidate Document')
+
         return json.dumps({'document_id': candidate_document.id}), 201
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def get(self, **kwargs):
         candidate_id = kwargs['candidate_id']
+        if not does_candidate_belong_to_users_domain(request.user, candidate_id):
+            raise InvalidUsage('Candidate does not belong to User\'s domain')
+
         documents = CandidateDocument.query.filter_by(candidate_id=candidate_id)
         documents = [{'filename': d.filename, 'key_path': d.key_path} for d in documents]
         return json.dumps({'documents': documents}), 200
