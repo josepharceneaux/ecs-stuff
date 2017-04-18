@@ -46,7 +46,7 @@ from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
     do_phones_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
-    get_education_degree_if_exists, does_military_service_exist, do_emails_exist, remove_duplicates
+    get_education_degree_if_exists, do_emails_exist, remove_duplicates
 )
 from track_changes import track_edits, track_areas_of_interest_edits
 
@@ -2234,7 +2234,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, is_u
     """
     Function will update CandidateMilitaryService or create new one(s).
     """
-    candidate_id, candidate_military_services = candidate.id, candidate.military_services
+    candidate_id = candidate.id
     for military_service in remove_duplicates(military_services):
 
         # Convert ISO 8061 date object to datetime object
@@ -2289,12 +2289,10 @@ def _add_or_update_military_services(candidate, military_services, user_id, is_u
 
         else:  # Add
             military_service_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
-            if not does_military_service_exist(candidate_military_services, military_service_dict):
-                db.session.add(CandidateMilitaryService(**military_service_dict))
-
-                if is_updating:  # Track all updates
-                    track_edits(update_dict=military_service_dict, table_name='candidate_military_service',
-                                candidate_id=candidate_id, user_id=user_id)
+            db.session.add(CandidateMilitaryService(**military_service_dict))
+            if is_updating:  # Track all updates
+                track_edits(update_dict=military_service_dict, table_name='candidate_military_service',
+                            candidate_id=candidate_id, user_id=user_id)
 
 
 def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, is_updating):

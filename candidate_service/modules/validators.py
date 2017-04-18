@@ -698,19 +698,6 @@ def does_social_network_exist(social_networks, social_network_dict):
     return False
 
 
-def does_military_service_exist(military_services, military_service_dict):
-    """
-    :type military_services:  list[CandidateMilitaryService]
-    :type military_service_dict:  dict[str]
-    :rtype:  bool
-    """
-    for military_service in military_services:
-        from_date, to_date = military_service_dict.get('from_date'), military_service_dict.get('to_date')
-        if military_service.from_date == from_date or military_service.to_date == to_date:
-            return True
-    return False
-
-
 def get_json_data_if_validated(request_body, json_schema, format_checker=True):
     """
     Function will compare requested json data with provided json schema
