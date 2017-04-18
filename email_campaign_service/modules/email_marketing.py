@@ -357,7 +357,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 "campaign_id=%s, user=%s" % (len(subscribed_candidate_ids), len(candidate_ids_and_emails),
                                              campaign.name, campaign.id, campaign.user.email))
     if candidate_ids_and_emails:
-        concurrent_lambdas = 60
+        concurrent_lambdas = 55
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
         if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.DEV]:
             # Get AWS region name
@@ -993,17 +993,16 @@ def get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, n
     else:
         # Otherwise, just filter out unsubscribed candidates:
         # their subscription preference's frequencyId is NULL, which means 'Never'
+        logger.info('Getting subscription preference for candidates of email-campaign(id:{})'.format(campaign.id))
         for candidate_id in all_candidate_ids:
             subscription_preference = {}
             try:
                 # Call candidate API to get candidate's subscription preference.
                 subscription_preference = get_candidate_subscription_preference(candidate_id, campaign.user.id, app=app)
                 # campaign_subscription_preference = get_subscription_preference(candidate_id)
-                logger.info("subscription_preference: %s, candidate_id:%s, email_campaign_id:%s"
-                            % (subscription_preference, candidate_id, campaign.id))
             except Exception as error:
                 logger.error('Could not get subscription preference for candidate(id:%s). '
-                             'email_campaign(id:%s). Error:%s' % (candidate_id, campaign.id, error.message))
+                             'email-campaign(id:%s). Error:%s' % (candidate_id, campaign.id, error.message))
             if subscription_preference and not subscription_preference.get('frequency_id'):
                 unsubscribed_candidate_ids.append(candidate_id)
 
