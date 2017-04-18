@@ -993,6 +993,7 @@ def get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, n
     else:
         # Otherwise, just filter out unsubscribed candidates:
         # their subscription preference's frequencyId is NULL, which means 'Never'
+        logger.info('Getting subscription preference for candidates of email-campaign(id:{})'.format(campaign.id))
         for candidate_id in all_candidate_ids:
             subscription_preference = {}
             try:
@@ -1001,7 +1002,7 @@ def get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, n
                 # campaign_subscription_preference = get_subscription_preference(candidate_id)
             except Exception as error:
                 logger.error('Could not get subscription preference for candidate(id:%s). '
-                             'email_campaign(id:%s). Error:%s' % (candidate_id, campaign.id, error.message))
+                             'email-campaign(id:%s). Error:%s' % (candidate_id, campaign.id, error.message))
             if subscription_preference and not subscription_preference.get('frequency_id'):
                 unsubscribed_candidate_ids.append(candidate_id)
 
