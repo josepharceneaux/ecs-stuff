@@ -4,6 +4,7 @@ from app_common.common.constants import CUSTOM_FIELD_TYPES
 from db import db
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import DOUBLE
+from contracts import contract
 
 from ..error_handling import InvalidUsage
 from candidate import CandidateMilitaryService
@@ -12,6 +13,9 @@ from email_campaign import EmailCampaign
 from push_campaign import (PushCampaign, PushCampaignBlast,
                            PushCampaignSend, PushCampaignSendUrlConversion)
 from ..utils.scheduler_utils import SchedulerUtils
+from app_common.common.custom_contracts import define_custom_contracts
+
+define_custom_contracts()
 
 
 class Activity(db.Model):
@@ -458,15 +462,16 @@ class CustomField(db.Model):
         return cls.query.filter(CustomField.domain_id == domain_id).all()
 
     @classmethod
-    def get_by_domain_id_and_filter_by_name(cls, domain_id, search_keyword, sort_by, sort_type, cf_type):
+    @contract
+    def get_by_domain_id_and_filter_by_name_and_type(cls, domain_id, search_keyword, sort_by, sort_type, cf_type):
         """
-        This method will return custom fields of a domain filtered by name against seach_keyword
-        :param int|long domain_id: User Domain Id
-        :param str search_keyword: Search keyword
-        :param str sort_by: Sort by name or added_time
-        :param sort_type: Sort Type ASC or DSC
+        This method will return custom fields of a domain filtered by name against search_keyword
+        :param positive domain_id: User Domain Id
+        :param string search_keyword: Search keyword
+        :param string sort_by: Sort by name or added_time
+        :param string sort_type: Sort Type ASC or DSC
+        :param string cf_type: Custom Field Type input or pre-defined
         """
-        assert isinstance(domain_id, (int, long)), 'Invalid domain id type'
         if sort_by == 'name':
             sort_by_object = cls.name
         else:

@@ -26,8 +26,8 @@ class SearchDomainCustomFieldResource(Resource):
         sort_by = request.args.get('sort_by', 'added_time')
         cf_type = request.args.get('type', '')
 
-        query_object = CustomField.get_by_domain_id_and_filter_by_name(authed_user.domain.id, search_query, sort_by,
-                                                                       sort_type, cf_type)
+        query_object = CustomField.get_by_domain_id_and_filter_by_name_and_type(authed_user.domain.id, search_query,
+                                                                                sort_by, sort_type, cf_type)
         items = [field.to_json() for field in query_object]
         response = {'custom_fields': items}
         return ApiResponse(response)
