@@ -259,6 +259,7 @@ class UserServiceApi(object):
     # Domain Custom Fields
     DOMAIN_CUSTOM_FIELDS = '/' + VERSION + '/custom_fields'
     DOMAIN_CUSTOM_FIELD = DOMAIN_CUSTOM_FIELDS + '/<int:id>'
+    DOMAIN_CUSTOM_FIELD_SEARCH = DOMAIN_CUSTOM_FIELDS + '/search'
 
     # Domain Custom Field Categories
     DOMAIN_CUSTOM_FIELD_CATEGORIES = URL_PREFIX + 'custom_field_categories'
