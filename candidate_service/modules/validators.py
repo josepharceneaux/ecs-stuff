@@ -227,7 +227,13 @@ def validate_id_list(key, values):
 
 
 def validate_string_list(key, values):
-    if ',' in values or isinstance(values, list):
+    # Some custom fields' values may be comma separated and we must ensure the string is not always split on the comma
+    # Ex: "40|san jose, CA"
+    if key == 'custom_fields':
+        values = re.findall(r'\d+\D+', values)
+        values = [i[:-1] if i.endswith(',') else i for i in values]
+        return values[0] if values.__len__() == 1 else values
+    elif ',' in values or isinstance(values, list):
         if ',' in values:
             values = re.split(r'(?<!\\),', values)
             values = [value.replace('\\', '') for value in values]
