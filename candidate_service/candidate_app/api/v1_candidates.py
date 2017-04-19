@@ -2123,7 +2123,7 @@ class CandidateDocumentResource(Resource):
             logger.exception('Error recording Candidate Document')
             raise InternalServerError('Error Saving Candidate Document: {}'.format(str(request_json)))
 
-        return json.dumps({'document_id': candidate_document.id}), 201
+        return {'document_id': candidate_document.id}, 201
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def get(self, **kwargs):
@@ -2135,13 +2135,53 @@ class CandidateDocumentResource(Resource):
             raise InvalidUsage('Candidate does not belong to User\'s domain')
 
         documents = CandidateDocument.query.filter_by(candidate_id=candidate_id)
-        documents = [{'filename': d.filename, 'key_path': d.key_path} for d in documents]
-        return json.dumps({'documents': documents}), 200
+        documents = [{'id': d.id, 'filename': d.filename, 'key_path': d.key_path} for d in documents]
+        return {'documents': documents}, 200
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
-        raise NotImplementedError
+        """
+        Updates a CandidateDocument object after being passed an id and json payload of:
+            {
+                'filename': <new_filename>
+            }
+        :param kwargs: dict like {'candidate_id': 511, 'id': 17} where id is the document id
+        """
+        request_json = request.json
+        if 'filename' not in request_json:
+            raise InvalidUsage('Missing required JSON keys')
+
+        candidate_id = kwargs['candidate_id']
+        if not does_candidate_belong_to_users_domain(request.user, candidate_id):
+            raise InvalidUsage('Candidate does not belong to User\'s domain')
+
+        document_id = kwargs['id']
+
+        document = CandidateDocument.query.get(document_id)
+        if not document:
+            logger.error('CandidateDocument PATCH not found with: {}'.format(str(kwargs)))
+            return NotFoundError('CandidateDocument not found')
+
+        document.filename = request_json['filename']
+        db.session.add(document)
+        db.session.commit()
+
+        return '', 204
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
-        raise NotImplementedError
+        candidate_id = kwargs['candidate_id']
+        if not does_candidate_belong_to_users_domain(request.user, candidate_id):
+            raise InvalidUsage('Candidate does not belong to User\'s domain')
+
+        document_id = kwargs['id']
+
+        document = CandidateDocument.query.get(document_id)
+        if not document:
+            logger.error('CandidateDocument Delete not found with: {}'.format(str(kwargs)))
+            return NotFoundError('CandidateDocument not found')
+
+        db.session.delete(document)
+        db.session.commit()
+
+        return '', 204

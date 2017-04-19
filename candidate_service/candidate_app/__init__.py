@@ -220,7 +220,8 @@ try:
     api.add_resource(CandidateStatusesResources, CandidateApi.STATUSES, endpoint='candidate_statuses')
 
     # ****** CandidateDocumentResource *******
-    api.add_resource(CandidateDocumentResource, CandidateApi.DOCUMENTS, endpoint='candidate_document')
+    api.add_resource(CandidateDocumentResource, CandidateApi.DOCUMENTS, endpoint='candidate_documents')
+    api.add_resource(CandidateDocumentResource, CandidateApi.DOCUMENT, endpoint='candidate_document')
 
     db.create_all()
     db.session.commit()
