@@ -15,8 +15,6 @@ from user_service.common.models.user import User
 # Error handling
 from user_service.common.error_handling import NotFoundError, ForbiddenError, InvalidUsage
 
-from user_service.common.utils.handy_functions import normalize_value
-
 
 def get_custom_field_if_validated(custom_field_id, user):
     """
@@ -53,29 +51,56 @@ def create_custom_fields(custom_fields, domain_id):
 
         cf_category_id = custom_field.get('category_id')
 
+        # If custom field category ID is provided, we must link custom field with its category
         # Custom field category ID must be recognized
         if cf_category_id:
             cf_category_obj = CustomFieldCategory.get(cf_category_id)
             if not cf_category_obj:
                 raise NotFoundError("Custom field category ID ({}) not recognized.".format(cf_category_id))
+            else:
+                custom_field_obj = CustomField.query.filter_by(
+                    domain_id=domain_id,
+                    category_id=cf_category_id,
+                    name=cf_name
+                ).first()  # type: CustomField
+
+                # Prevent duplicates
+                if custom_field_obj:
+                    raise InvalidUsage(error_message='Domain Custom Field already exists',
+                                       additional_error_info={'id': custom_field_obj.id,
+                                                              'domain_id': domain_id,
+                                                              'category_id': custom_field_obj.category_id})
+                else:
+                    created_custom_fields.append(dict(id=add_custom_field(domain_id, cf_category_id, cf_name)))
 
         # Prevent duplicate entries for the same domain
-        custom_field_obj = CustomField.query.filter_by(domain_id=domain_id,
-                                                       name=cf_name).first()
+        custom_field_obj = CustomField.query.filter_by(domain_id=domain_id, name=cf_name).first()
         if custom_field_obj:
             raise InvalidUsage(error_message='Domain Custom Field already exists',
                                additional_error_info={'id': custom_field_obj.id})
 
-        cf = CustomField(
-            domain_id=domain_id,
-            category_id=cf_category_id,
-            name=cf_name,
-            type="string",
-            added_time=datetime.datetime.utcnow()
-        )
-        db.session.add(cf)
-        db.session.flush()
-        created_custom_fields.append(dict(id=cf.id))
+        # This is for legacy purpose, ideally we should not be saving custom-fields w/o its category ID
+        created_custom_fields.append(dict(id=add_custom_field(domain_id, cf_category_id, cf_name)))
 
     db.session.commit()
     return created_custom_fields
+
+
+def add_custom_field(domain_id, cf_category_id, cf_name):
+    """
+    Function will create domain custom field
+    :param domain_id: int
+    :param cf_category_id: int | custom field category ID
+    :param cf_name: str | custom field name
+    :return: int | ID of created custom field
+    """
+    cf = CustomField(
+        domain_id=domain_id,
+        category_id=cf_category_id,
+        name=cf_name,
+        type="string",
+        added_time=datetime.datetime.utcnow()
+    )
+    db.session.add(cf)
+    db.session.flush()
+    return cf.id

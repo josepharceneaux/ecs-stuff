@@ -201,7 +201,7 @@ def get_cloud_search_connection():
 
     return _cloud_search_connection_layer_2
 
-#
+
 # def create_domain(domain_name=None):
 #     """
 #     Creates the given domain if doesn't exist
