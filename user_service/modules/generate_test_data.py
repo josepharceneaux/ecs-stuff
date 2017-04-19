@@ -11,8 +11,6 @@ from datetime import datetime
 from werkzeug.security import gen_salt
 
 # Application specific imports
-from user_service.common.error_handling import InternalServerError
-from user_service.common.models import db
 from user_service.common.models.misc import CustomField
 from user_service.common.models.user import Domain, User, UserGroup, Token, Client, Role
 from user_service.common.tests.fake_testing_data_generator import fake
@@ -177,4 +175,3 @@ def create_test_data():
         'tokens': [token.to_json() for token in tokens],
         'custom_fields': custom_fields
     }
-
