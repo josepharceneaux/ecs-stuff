@@ -1,6 +1,6 @@
 import datetime
 
-from app_common.common.constants import CUSTOM_FIELD_TYPES
+from ..constants import CUSTOM_FIELD_TYPES
 from db import db
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import DOUBLE
@@ -13,9 +13,6 @@ from email_campaign import EmailCampaign
 from push_campaign import (PushCampaign, PushCampaignBlast,
                            PushCampaignSend, PushCampaignSendUrlConversion)
 from ..utils.scheduler_utils import SchedulerUtils
-from app_common.common.custom_contracts import define_custom_contracts
-
-define_custom_contracts()
 
 
 class Activity(db.Model):
