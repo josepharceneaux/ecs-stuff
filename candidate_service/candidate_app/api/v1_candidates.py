@@ -2108,11 +2108,11 @@ class CandidateDocumentResource(Resource):
         """
         request_json = request.json
         if not all(key in self.REQUIRED_POST_KEYS for key in request_json):
-            raise InvalidUsage('Missing required JSON keys')
+            raise InvalidUsage('Missing required JSON keys', custom_error.INVALID_DOCUMENT_PARAMS)
 
         candidate_id = kwargs['candidate_id']
         if not does_candidate_belong_to_users_domain(request.user, candidate_id):
-            raise InvalidUsage('Candidate does not belong to User\'s domain')
+            raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
         request_json['candidate_id'] = candidate_id
         candidate_document = CandidateDocument(**request_json)
         db.session.add(candidate_document)
@@ -2121,7 +2121,8 @@ class CandidateDocumentResource(Resource):
             db.session.commit()
         except Exception as e:
             logger.exception('Error recording Candidate Document')
-            raise InternalServerError('Error Saving Candidate Document: {}'.format(str(request_json)))
+            raise InternalServerError(
+                'Error Saving Candidate Document: {}'.format(str(request_json)), custom_error.DOCUMENT_SAVING_ERROR)
 
         return {'document_id': candidate_document.id}, 201
 
@@ -2132,7 +2133,7 @@ class CandidateDocumentResource(Resource):
         """
         candidate_id = kwargs['candidate_id']
         if not does_candidate_belong_to_users_domain(request.user, candidate_id):
-            raise InvalidUsage('Candidate does not belong to User\'s domain')
+            raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
 
         documents = CandidateDocument.query.filter_by(candidate_id=candidate_id)
         documents = [{'id': d.id, 'filename': d.filename, 'key_path': d.key_path} for d in documents]
@@ -2149,18 +2150,18 @@ class CandidateDocumentResource(Resource):
         """
         request_json = request.json
         if 'filename' not in request_json:
-            raise InvalidUsage('Missing required JSON keys')
+            raise InvalidUsage('Missing required JSON keys', custom_error.INVALID_DOCUMENT_PARAMS)
 
         candidate_id = kwargs['candidate_id']
         if not does_candidate_belong_to_users_domain(request.user, candidate_id):
-            raise InvalidUsage('Candidate does not belong to User\'s domain')
+            raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
 
         document_id = kwargs['id']
 
         document = CandidateDocument.query.get(document_id)
         if not document:
             logger.error('CandidateDocument PATCH not found with: {}'.format(str(kwargs)))
-            return NotFoundError('CandidateDocument not found')
+            return NotFoundError('CandidateDocument not found', custom_error.DOCUMENT_NOT_FOUND)
 
         document.filename = request_json['filename']
         db.session.add(document)
@@ -2176,14 +2177,14 @@ class CandidateDocumentResource(Resource):
         """
         candidate_id = kwargs['candidate_id']
         if not does_candidate_belong_to_users_domain(request.user, candidate_id):
-            raise InvalidUsage('Candidate does not belong to User\'s domain')
+            raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
 
         document_id = kwargs['id']
 
         document = CandidateDocument.query.get(document_id)
         if not document:
             logger.error('CandidateDocument Delete not found with: {}'.format(str(kwargs)))
-            return NotFoundError('CandidateDocument not found')
+            return NotFoundError('CandidateDocument not found', custom_error.DOCUMENT_NOT_FOUND)
 
         db.session.delete(document)
         db.session.commit()
