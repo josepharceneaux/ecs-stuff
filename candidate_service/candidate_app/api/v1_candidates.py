@@ -2170,6 +2170,10 @@ class CandidateDocumentResource(Resource):
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
+        """
+        Delete a CandidateDocument provided by the id in the url:
+        :param kwargs: dict like {'candidate_id': 511, 'id': 17} where id is the document id
+        """
         candidate_id = kwargs['candidate_id']
         if not does_candidate_belong_to_users_domain(request.user, candidate_id):
             raise InvalidUsage('Candidate does not belong to User\'s domain')
