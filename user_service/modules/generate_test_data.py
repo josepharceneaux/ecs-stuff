@@ -12,7 +12,10 @@ from werkzeug.security import gen_salt
 
 # Application specific imports
 from user_service.common.error_handling import InternalServerError
+from user_service.common.models import db
+from user_service.common.models.misc import CustomField
 from user_service.common.models.user import Domain, User, UserGroup, Token, Client, Role
+from user_service.common.tests.fake_testing_data_generator import fake
 from user_service.user_app import logger
 
 TEST_PASSWORD = "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6"
@@ -68,6 +71,20 @@ def create_test_user(email, domain_id, group_id):
     return user
 
 
+def create_user_with_domain_admin_role(domain_id, group_id):
+    """
+    This function creates a test user with given domain and group with `TEST_ADMIN` as role.
+    :param int | long domain_id: user's domain id
+    :param int | long group_id: user's group id
+    :rtype: User
+    """
+    role = Role.get_by_name('DOMAIN_ADMIN')
+    user = User(email=fake.word(), domain_id=domain_id, user_group_id=group_id, password=TEST_PASSWORD, role_id=role.id)
+    User.save(user)
+    logger.debug('create_test_user: Created a test user: %s', user.name)
+    return user
+
+
 def create_test_client(client_id, client_secret):
     """
     This function creates a test client.
@@ -91,6 +108,20 @@ def create_test_token(user_id, client_id):
                   access_token=gen_salt(60),
                   refresh_token=gen_salt(60), expires=datetime(2020, 12, 31))
     return Token.save(token)
+
+
+def create_test_custom_fields(domain_id):
+    custom_fields = [{'name': fake.word(), 'type': 'input'}, {'name': fake.word(), 'type': 'input'},
+                     {'name': 'State of Interest', 'type': 'input'},
+                     {'name': 'City of Interest', 'type': 'pre-defined'},
+                     {'name': 'Subscription Preference', 'type': 'pre-defined'}, {'name': 'NUID', 'type': 'input'}]
+    for custom_field in custom_fields:
+        custom_field = CustomField(domain_id=domain_id, name=custom_field['name'], type=custom_field['type'],
+                                   added_time=datetime.now())
+        CustomField.save(custom_field)
+    custom_fields = CustomField.get_domain_custom_fields(domain_id)
+    items = [custom_field.to_json() for custom_field in custom_fields]
+    return {'custom_fields': items}
 
 
 def create_test_data():
@@ -119,6 +150,9 @@ def create_test_data():
     for emails, domain_id, group_id in user_data:
         for email in emails:
             users.append(create_test_user(email, domain_id, group_id))
+
+    # Creating user with domain_admin role
+    users.append(create_user_with_domain_admin_role(domain_ids[0], group_ids[0]))
     user_ids = [user.id for user in users]
 
     # Create client
@@ -131,12 +165,16 @@ def create_test_data():
     for user_id in user_ids:
         tokens.append(create_test_token(user_id, client_id))
 
+    # Creating Custom Fields
+    custom_fields = create_test_custom_fields(users[0].domain_id)
+
     return {
         'domains': [domain.to_json() for domain in domains],
         'users': [user.to_json(include_fields=('id', 'domain_id', 'email', 'role_id',
                                                'user_group_id')) for user in users],
         'groups_ids': group_ids,
         'client': client.to_json(),
-        'tokens': [token.to_json() for token in tokens]
+        'tokens': [token.to_json() for token in tokens],
+        'custom_fields': custom_fields
     }
 

@@ -281,4 +281,3 @@ class TestDeleteDomainCustomFields(object):
         del_resp = send_request('delete', self.CF_URL % non_existing_cf_id, access_token_first)
         print response_info(del_resp)
         assert del_resp.status_code == requests.codes.NOT_FOUND
-
