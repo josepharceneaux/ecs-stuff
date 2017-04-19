@@ -334,6 +334,8 @@ class CandidateApi(object):
     CUSTOM_FIELDS = '/' + VERSION + '/candidates/<int:candidate_id>/custom_fields'
     CUSTOM_FIELD = '/' + VERSION + '/candidates/<int:candidate_id>/custom_fields/<int:id>'
 
+    DOCUMENTS = '/' + VERSION + '/candidates/<int:candidate_id>/documents'
+
     EDUCATIONS = '/' + VERSION + '/candidates/<int:candidate_id>/educations'
     EDUCATION = '/' + VERSION + '/candidates/<int:candidate_id>/educations/<int:id>'
 
@@ -435,6 +437,8 @@ class CandidateApiUrl(object):
 
     DEVICES = HOST_NAME % ('/' + VERSION + '/candidates/%s/devices')
     DEVICE = HOST_NAME % ('/' + VERSION + '/candidates/%s/devices/%s')
+
+    DOCUMENT = HOST_NAME % ('/' + VERSION + '/candidates/%s/documents/')
 
     EMAILS = HOST_NAME % ('/' + VERSION + '/candidates/%s/emails')
     EMAIL = HOST_NAME % ('/' + VERSION + '/candidates/%s/emails/%s')
