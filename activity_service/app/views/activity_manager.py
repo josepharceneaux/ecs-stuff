@@ -153,7 +153,6 @@ class TalentActivityManager(object):
 
     def __init__(self, activity_params):
         self.activity_params = activity_params
-        logger.info('ACTIVITY::INFO::apiParams: {}'.format(vars(self.activity_params).items()))
 
     def get_activities(self):
         """Method for retrieving activity logs based on a domain ID that is extracted via an
@@ -213,24 +212,21 @@ class TalentActivityManager(object):
     # Like 'get' but gets the last 200 consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self):
         logs = [
-            "{} getting recent readable for {} - {}\n".format(self.activity_params.api_call,
-                                                              self.activity_params.start_datetime or 'N/A',
-                                                              self.activity_params.end_datetime or 'N/A')
+            "Getting recent readable for {} - {}\n".format(self.activity_params.start_datetime or 'N/A',
+                                                           self.activity_params.end_datetime or 'N/A')
         ]
 
         limit = self.activity_params.aggregate_limit
         start_time = time()
         current_user = User.query.filter_by(id=self.activity_params.user_id).first()
-        logs.append(
-            "{} fetched current user in {} seconds\n".format(self.activity_params.api_call, time() - start_time))
+        logs.append("Fetched current user in {} seconds\n".format(time() - start_time))
 
         # Get the last 200 activities and aggregate them by type, with order.
         user_domain_id = current_user.domain_id
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
-        logs.append("{} fetched domain IDs in {} seconds\n".format(self.activity_params.api_call, time() - start_time))
+        logs.append("Fetched domain IDs in {} seconds\n".format(time() - start_time))
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
-        logs.append(
-            "{} flattened domain IDs in {} seconds\n".format(self.activity_params.api_call, time() - start_time))
+        logs.append("Flattened domain IDs in {} seconds\n".format(time() - start_time))
         filters = [Activity.user_id.in_(flattened_user_ids)]
 
         start, end = self.activity_params.start_datetime, self.activity_params.end_datetime
@@ -242,8 +238,7 @@ class TalentActivityManager(object):
         activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc()).limit(200).all()
         activities_count = len(activities)
 
-        logs.append("{} fetched {} activities in {} seconds\n".format(self.activity_params.api_call, activities_count,
-                                                                      time() - start_time))
+        logs.append("Fetched {} activities in {} seconds\n".format(activities_count, time() - start_time))
 
         aggregated_activities = []
         aggregated_activities_count = 0
@@ -282,7 +277,7 @@ class TalentActivityManager(object):
                 current_activity_count = 0
 
         finishing_time = time() - start_time
-        logs.append("{} finished making readable in {} seconds\n".format(self.activity_params.api_call, finishing_time))
+        logs.append("Finished making readable in {} seconds\n".format(finishing_time))
         if finishing_time > TIMEOUT_THRESHOLD:
             logs.append('ActivityService::INFO::Timeout -  {} exceeded desired timeout at {}s'.format(
                 self.activity_params, finishing_time))
@@ -332,6 +327,4 @@ class TalentActivityManager(object):
             # To fix "You's recurring campaign has expired"
             formatted_string = formatted_string.replace("You's", "Your")
 
-        if single_count:
-            logger.info('ActivityService::INFO activity_text performed in {}s'.format(time() - start))
         return formatted_string
