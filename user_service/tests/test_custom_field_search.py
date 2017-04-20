@@ -24,7 +24,9 @@ class TestDomainCustomFieldSearch(object):
 
     def test_search_result_order(self, token_domain_admin):
         """
-        Test: Searches custom fields with param sort_by and sort_type
+        Test: Searches custom fields with param sort_by and sort_type, first we get custom_fields sorted by name
+        in descending order and saved the top item, then we make another call but with sort_type ascending and
+        we compare that the previous first item is at the end now since sorting type is ascending now.
         """
         response = send_request('get', self.URL, token_domain_admin, params={'sort_by': 'name'})
         assert response.status_code == requests.codes.ok
