@@ -1,16 +1,17 @@
 """
 This module contains tests for custom field search endpoint
 """
+# 3rd party imports
 import requests
-
+# Common imports
 from user_service.common.constants import CUSTOM_FIELD_TYPES, PRE_DEFINED, INPUT
 from user_service.common.tests.api_conftest import *
-
+# Service specific imports
 from user_service.modules.constants import NUMBER_OF_SAVED_CUSTOM_FIELDS
 
 
 class TestDomainCustomFieldSearch(object):
-    URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELD_SEARCH
+    URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELDS
 
     def test_search_custom_fields_with_no_keyword(self, token_domain_admin):
         """
