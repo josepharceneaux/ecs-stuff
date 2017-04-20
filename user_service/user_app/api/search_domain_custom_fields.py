@@ -1,12 +1,11 @@
-from user_service.common.models.misc import CustomField
-from user_service.common.routes import UserServiceApi
-from user_service.common.talent_api import TalentApi
-
+# 3rd party imports
 from flask import Blueprint
 from flask import request
 from flask_restful import Resource
-
-# Decorators
+# Common imports
+from user_service.common.models.misc import CustomField
+from user_service.common.routes import UserServiceApi
+from user_service.common.talent_api import TalentApi
 from user_service.common.utils.api_utils import ApiResponse
 from user_service.common.utils.auth_utils import require_oauth, require_all_permissions, Permission
 

@@ -55,7 +55,7 @@ try:
     from api.domain_v1 import domain_blueprint
     from api.test_setup import test_setup_blueprint
     from api.roles_and_groups_v1 import groups_and_roles_blueprint
-    from api.search_domain_cf import cf_search_blueprint
+    from api.search_domain_custom_fields import cf_search_blueprint
 
     app.register_blueprint(users_blueprint, url_prefix=UserServiceApi.URL_PREFIX)
     app.register_blueprint(domain_blueprint, url_prefix=UserServiceApi.URL_PREFIX)
