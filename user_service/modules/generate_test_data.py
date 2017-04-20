@@ -11,9 +11,11 @@ from datetime import datetime
 from werkzeug.security import gen_salt
 
 # Application specific imports
+from user_service.common.constants import INPUT, PRE_DEFINED
 from user_service.common.models.misc import CustomField
 from user_service.common.models.user import Domain, User, UserGroup, Token, Client, Role
 from user_service.common.tests.fake_testing_data_generator import fake
+from user_service.modules.constants import NUMBER_OF_SAVED_CUSTOM_FIELDS, TEST_CUSTOM_FIELDS
 from user_service.user_app import logger
 
 TEST_PASSWORD = "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6"
@@ -109,11 +111,7 @@ def create_test_token(user_id, client_id):
 
 
 def create_test_custom_fields(domain_id):
-    custom_fields = [{'name': fake.word(), 'type': 'input'}, {'name': fake.word(), 'type': 'input'},
-                     {'name': 'State of Interest', 'type': 'input'},
-                     {'name': 'City of Interest', 'type': 'pre-defined'},
-                     {'name': 'Subscription Preference', 'type': 'pre-defined'}, {'name': 'NUID', 'type': 'input'}]
-    for custom_field in custom_fields:
+    for custom_field in TEST_CUSTOM_FIELDS:
         custom_field = CustomField(domain_id=domain_id, name=custom_field['name'], type=custom_field['type'],
                                    added_time=datetime.now())
         CustomField.save(custom_field)

@@ -478,10 +478,11 @@ class CustomField(db.Model):
             sort_by_object = sort_by_object.asc()
         else:
             sort_by_object = sort_by_object.desc()
-        if cf_type not in CUSTOM_FIELD_TYPES:
-            cf_type = 'input'
-        return cls.query.filter(cls.domain_id == domain_id, cls.name.ilike('%' + search_keyword + '%'),
-                                cls.type == cf_type).order_by(sort_by_object)
+        filtered_query = cls.query.filter(cls.domain_id == domain_id, cls.name.ilike('%' + search_keyword + '%'))
+
+        return filtered_query.filter(cls.type == cf_type).order_by(sort_by_object) if cf_type in\
+                                                                                      CUSTOM_FIELD_TYPES.values()\
+            else filtered_query.order_by(sort_by_object)
 
 
 class CustomFieldCategory(db.Model):

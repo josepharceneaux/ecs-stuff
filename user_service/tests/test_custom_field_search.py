@@ -1,9 +1,12 @@
 """
 This module contains tests for custom field search endpoint
 """
+import requests
+
+from user_service.common.constants import CUSTOM_FIELD_TYPES, PRE_DEFINED, INPUT
 from user_service.common.tests.api_conftest import *
 
-import requests
+from user_service.modules.constants import NUMBER_OF_SAVED_CUSTOM_FIELDS
 
 
 class TestDomainCustomFieldSearch(object):
@@ -16,7 +19,7 @@ class TestDomainCustomFieldSearch(object):
         response = send_request('get', self.URL, token_domain_admin)
         assert response.status_code == requests.codes.ok
         data = response.json()['custom_fields']
-        assert len(data) == 4
+        assert len(data) == NUMBER_OF_SAVED_CUSTOM_FIELDS[INPUT] + NUMBER_OF_SAVED_CUSTOM_FIELDS[PRE_DEFINED]
 
     def test_search_result_order(self, token_domain_admin):
         """
@@ -44,7 +47,17 @@ class TestDomainCustomFieldSearch(object):
         """
         Test: Search a custom field against type
         """
-        response = send_request('get', self.URL, token_domain_admin, params={'type': 'pre-defined'})
+        response = send_request('get', self.URL, token_domain_admin, params={'type': CUSTOM_FIELD_TYPES[PRE_DEFINED]})
         assert response.status_code == requests.codes.ok
         data = response.json()['custom_fields']
-        assert len(data) == 2
+        assert len(data) == NUMBER_OF_SAVED_CUSTOM_FIELDS[PRE_DEFINED]
+
+        response = send_request('get', self.URL, token_domain_admin, params={'type': CUSTOM_FIELD_TYPES[INPUT]})
+        assert response.status_code == requests.codes.ok
+        data = response.json()['custom_fields']
+        assert len(data) == NUMBER_OF_SAVED_CUSTOM_FIELDS[INPUT]
+
+        response = send_request('get', self.URL, token_domain_admin, params={'type': 'all'})
+        assert response.status_code == requests.codes.ok
+        data = response.json()['custom_fields']
+        assert len(data) == NUMBER_OF_SAVED_CUSTOM_FIELDS[INPUT] + NUMBER_OF_SAVED_CUSTOM_FIELDS[PRE_DEFINED]

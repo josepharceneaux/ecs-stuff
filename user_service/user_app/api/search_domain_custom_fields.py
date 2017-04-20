@@ -23,7 +23,7 @@ class SearchDomainCustomFieldResource(Resource):
         search_query = request.args.get('query', '')
         sort_type = request.args.get('sort_type', 'DESC')
         sort_by = request.args.get('sort_by', 'added_time')
-        cf_type = request.args.get('type', '')
+        cf_type = request.args.get('type', 'all')
 
         query_object = CustomField.get_by_domain_id_and_filter_by_name_and_type(authed_user.domain.id, search_query,
                                                                                 sort_by, sort_type, cf_type)

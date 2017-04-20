@@ -35,5 +35,8 @@ class HttpMethods(object):
     PATCH = 'PATCH'
     DELETE = 'DELETE'
 
-# Custom Field Types
-CUSTOM_FIELD_TYPES = ['input', 'pre-defined']
+# Custom Field Constants
+INPUT = 'input'
+PRE_DEFINED = 'pre-defined'
+ALL = 'all'
+CUSTOM_FIELD_TYPES = {INPUT: 'input', PRE_DEFINED: 'pre-defined'}
