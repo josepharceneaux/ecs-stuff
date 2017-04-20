@@ -18,8 +18,8 @@ class TestCandidateDocument(object):
         test_post_response = requests.post(
             CandidateApiUrl.DOCUMENTS % candidate_first.id,
             data=json.dumps({
-                'filename': 'bar',
-                'key_path': 'foo'
+                'filename': 'GET_626b.doc',
+                'key_path': 'OriginalFiles'
             }),
             headers={'Content-Type': 'application/json',
                      'Authorization': 'Bearer {}'.format(access_token_first)})

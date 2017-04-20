@@ -86,6 +86,7 @@ from candidate_service.common.utils.handy_functions import normalize_value, time
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
 from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
+from candidate_service.common.utils.talent_s3 import get_s3_url
 
 
 class CandidatesResource(Resource):
@@ -2136,7 +2137,12 @@ class CandidateDocumentResource(Resource):
             raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
 
         documents = CandidateDocument.query.filter_by(candidate_id=candidate_id)
-        documents = [{'id': d.id, 'filename': d.filename, 'key_path': d.key_path} for d in documents]
+        documents = [{
+            'id': d.id,
+            'filename': d.filename,
+            'key_path': d.key_path,
+            'url': get_s3_url(d.key_path, d.filename)
+        } for d in documents]
         return {'documents': documents}, 200
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
