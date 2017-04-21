@@ -1,5 +1,5 @@
 #!/bin/bash
-# Comment to auto deploy
+
 echo "START Jenkins"
 
 # Upgrade pip if needed
