@@ -8,9 +8,6 @@ This file contains fixtures for tests of email-campaign-service
 # Standard Library
 from datetime import timedelta
 
-# Third Party
-from requests import codes
-
 # Application Specific
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.modules.email_clients import SMTP

@@ -133,6 +133,43 @@ class TestEmailTemplateFolders(object):
         assert len(json_response['template_folders']) == 5
 
 
+class TestEmailTemplatesInFolders(object):
+    """
+    Here are the tests of /v1/email-template-folders/:id/email-templates
+    """
+    URL = EmailCampaignApiUrl.TEMPLATES_IN_FOLDER
+
+    def test_get_template_in_a_folder(self, create_email_template_folder, headers, headers_same, user_first,
+                                      headers_other):
+        """
+        Test for getting email-templates associated with a template folder.
+        """
+        template_folder_id, _ = create_email_template_folder
+        for auth_header in (headers, headers_same):
+            response = requests.get(url=self.URL % template_folder_id, headers=auth_header)
+            assert response.status_code == requests.codes.OK, response.text
+            email_templates = response.json()['email_templates']
+            assert len(email_templates) == 0
+
+        for _ in xrange(5):
+            # Create an email-template in the template-folder
+            template_data = data_to_create_email_template(headers, user_first, body_html=EMAIL_TEMPLATE_BODY,
+                                                          template_folder_id=template_folder_id)
+            response = post_to_email_template_resource(headers, data=template_data)
+            assert response.status_code == codes.CREATED
+
+        for auth_header in (headers, headers_same):
+            response = requests.get(url=self.URL % template_folder_id, headers=auth_header)
+            assert response.status_code == requests.codes.OK, response.text
+            email_templates = response.json()['email_templates']
+            assert len(email_templates) == 5
+
+        # Request with user of some other domain
+        response = requests.get(url=self.URL % template_folder_id, headers=headers_other)
+        assert response.status_code == requests.codes.FORBIDDEN, response.text
+
+
+
 class TestEmailTemplates(object):
     """
     Here are the tests of /v1/email-templates

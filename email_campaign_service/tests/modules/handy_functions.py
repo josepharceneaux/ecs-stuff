@@ -354,13 +354,14 @@ def get_template_folder(headers):
     return template_folder_id, template_folder_name
 
 
-def data_to_create_email_template(headers, template_owner, body_html='', body_text=''):
+def data_to_create_email_template(headers, template_owner, body_html='', body_text='', template_folder_id=None):
     """
     This returns data to create an email-template with params provided
     :rtype: dict
     """
     # Get Template Folder Id
-    template_folder_id, template_folder_name = get_template_folder(headers)
+    if not template_folder_id:
+        template_folder_id, _ = get_template_folder(headers)
     template_name = 'test_email_template_%i' % datetime.utcnow().microsecond
     is_immutable = ON
     data = dict(
