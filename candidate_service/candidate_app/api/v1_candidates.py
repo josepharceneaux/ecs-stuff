@@ -15,6 +15,7 @@ from time import time
 
 # Flask Specific
 from flask import request
+from flask import current_app as app
 from flask_restful import Resource
 
 # Validators
@@ -86,7 +87,6 @@ from candidate_service.common.utils.handy_functions import normalize_value, time
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
 from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
-from candidate_service.common.utils.talent_s3 import get_s3_url
 
 
 class CandidatesResource(Resource):
@@ -2098,7 +2098,7 @@ class CandidateLanguageResource(Resource):
 
 class CandidateDocumentResource(Resource):
     decorators = [require_oauth()]
-    REQUIRED_POST_KEYS = ('filename', 'key_path')
+    REQUIRED_POST_KEYS = ('filename')
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
@@ -2115,6 +2115,7 @@ class CandidateDocumentResource(Resource):
         if not does_candidate_belong_to_users_domain(request.user, candidate_id):
             raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
         request_json['candidate_id'] = candidate_id
+        request_json['key_path'] = TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY
         candidate_document = CandidateDocument(**request_json)
         db.session.add(candidate_document)
 
@@ -2122,8 +2123,8 @@ class CandidateDocumentResource(Resource):
             db.session.commit()
         except Exception as e:
             logger.exception('Error recording Candidate Document')
-            raise InternalServerError(
-                'Error Saving Candidate Document: {}'.format(str(request_json)), custom_error.DOCUMENT_SAVING_ERROR)
+            raise InternalServerError('Error Saving Candidate Document: {}'.format(str(request_json)),
+                                      custom_error.DOCUMENT_SAVING_ERROR)
 
         return {'document_id': candidate_document.id}, 201
 
@@ -2141,7 +2142,8 @@ class CandidateDocumentResource(Resource):
             'id': d.id,
             'filename': d.filename,
             'key_path': d.key_path,
-            'url': get_s3_url(d.key_path, d.filename)
+            'url': sign_url_for_filepicker_bucket(
+                "{}/{}".format(TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY, d.filename))
         } for d in documents]
         return {'documents': documents}, 200
 

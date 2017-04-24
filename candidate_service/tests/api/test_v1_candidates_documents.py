@@ -18,16 +18,18 @@ class TestCandidateDocument(object):
         test_post_response = requests.post(
             CandidateApiUrl.DOCUMENTS % candidate_first.id,
             data=json.dumps({
-                'filename': 'GET_626b.doc',
-                'key_path': 'OriginalFiles'
+                'filename': '00TmHVKDRfu2yIxAbA0B_Ashwin_Reddy_Kondapalli.pdf',
             }),
             headers={'Content-Type': 'application/json',
                      'Authorization': 'Bearer {}'.format(access_token_first)})
         assert test_post_response.status_code == 201
+
         test_get_response = requests.get(
             CandidateApiUrl.DOCUMENTS % candidate_first.id,
             headers={'Authorization': 'Bearer {}'.format(access_token_first)})
         assert test_get_response.status_code == 200
+        print test_get_response.content
+
         document_id = json.loads(test_get_response.content)['documents'][0]['id']
         test_patch_response = requests.patch(
             CandidateApiUrl.DOCUMENT % (candidate_first.id, document_id),
@@ -37,6 +39,7 @@ class TestCandidateDocument(object):
             headers={'Content-Type': 'application/json',
                      'Authorization': 'Bearer {}'.format(access_token_first)})
         assert test_patch_response.status_code == 204
+
         test_del_response = requests.delete(
             CandidateApiUrl.DOCUMENT % (candidate_first.id, document_id),
             headers={'Content-Type': 'application/json',
