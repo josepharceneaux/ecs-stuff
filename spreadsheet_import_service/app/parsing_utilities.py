@@ -335,8 +335,9 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                             len(response_candidate_ids), response_candidate_ids)
             else:
                 # Continue with the rest of the spreadsheet imports despite errors returned from candidate-service
-                logger.info("SpreadSheet Import Service: Could not import candidate row %s: `%s` in file: `%s`",
-                            i, row, get_s3_url('CSVResumes', spreadsheet_filename))
+                logger.info("SpreadSheet Import Service: Could not import candidate row %s: `%s` in file: `%s`;"
+                            "error: %s",
+                            i, row, get_s3_url('CSVResumes', spreadsheet_filename), response.json())
                 row.insert(0, i + 1)  # Make row number first element in array
                 erroneous_data.append(row)
                 continue
