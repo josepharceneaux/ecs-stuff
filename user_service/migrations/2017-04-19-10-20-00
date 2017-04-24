@@ -1,0 +1,38 @@
+"""
+Script will add new table CustomFieldSubCategory and it will update existing tables: CustomField & CustomFieldCategory
+"""
+from user_service.common.models.user import db
+from sqlalchemy import text
+
+db.session.execute("SET foreign_key_checks = 0;")
+
+# Remove custom-field's link to cf-categories. The relationship needs to be reversed
+db.session.execute("ALTER TABLE custom_field DROP FOREIGN KEY custom_field_custom_field_category;")
+db.session.execute("ALTER TABLE custom_field DROP CategoryId;")
+
+# Create relationship between custom-fields and custom-field-categories
+db.session.execute("ALTER TABLE custom_field_category ADD custom_field_id INT UNSIGNED NOT NULL;")
+
+db.session.execute("""ALTER TABLE custom_field_category
+                      ADD CONSTRAINT fk_cf_cat_custom_field
+                      FOREIGN KEY (custom_field_id) REFERENCES custom_field(id);""")
+
+# Add added_datetime fields to custom-field-category
+db.session.execute("ALTER TABLE custom_field_category ADD added_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
+
+# Custom field categories are no longer domain bound
+db.session.execute("ALTER TABLE custom_field_category DROP FOREIGN KEY custom_field_category_domain_id;")
+db.session.execute("ALTER TABLE custom_field_category DROP domainId;")
+
+# Create custom-field-subcategory table and link it to custom-field-category
+db.session.execute("""CREATE TABLE custom_field_subcategory(
+                      id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                      custom_field_category_id INT UNSIGNED NOT NULL,
+                      name VARCHAR(255) NOT NULL,
+                      added_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                      updated_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                      FOREIGN KEY fk_subcategory_cf_category(custom_field_category_id)
+                      REFERENCES custom_field_category(id)
+                      ON DELETE CASCADE);""")
+
+db.session.execute("SET foreign_key_checks = 1;")
