@@ -244,7 +244,7 @@ def domain_source_2(access_token_first, user_first):
 
 
 @pytest.fixture()
-def domain_custom_fields(domain_first, domain_custom_field_categories):
+def domain_custom_fields(domain_first):
     """
     Will add custom fields to domain
     :rtype:  list[CustomField]
@@ -260,7 +260,7 @@ def domain_custom_fields(domain_first, domain_custom_field_categories):
 
 
 @pytest.fixture()
-def domain_custom_field_categories(domain_first):
+def domain_custom_field_categories(domain_first, domain_custom_fields):
     """
     Will add three custom field categories to domain_first
     :rtype:  list[CustomFieldCategory]
@@ -270,7 +270,8 @@ def domain_custom_field_categories(domain_first):
     for custom_field_category in custom_field_categories:
         db.session.add(CustomFieldCategory(
             domain_id=domain_first.id,
-            name=custom_field_category['name']
+            name=custom_field_category['name'],
+            custom_field_id=domain_custom_fields[0].id
         ))
     db.session.commit()
     return CustomFieldCategory.get_all_in_domain(domain_first.id)
