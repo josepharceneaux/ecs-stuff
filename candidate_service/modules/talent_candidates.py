@@ -949,7 +949,7 @@ def create_or_update_candidate_from_params(
         if candidate_id_from_dice_profile:
             raise InvalidUsage(error_message='Candidate already exists, creation failed',
                                error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
-                               additional_error_info={'id': candidate_id})
+                               additional_error_info={'id': candidate_id_from_dice_profile})
 
         # Figure out first_name, last_name, middle_name, and formatted_name from inputs
         if first_name or last_name or middle_name or formatted_name:
