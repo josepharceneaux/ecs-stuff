@@ -15,7 +15,6 @@ from time import time
 
 # Flask Specific
 from flask import request
-from flask import current_app as app
 from flask_restful import Resource
 
 # Validators
