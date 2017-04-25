@@ -6,6 +6,7 @@ This file contains helpers functions for
 """
 
 # Models
+from sqlalchemy.exc import SQLAlchemyError
 from user_service.common.models.db import db
 from user_service.common.models.misc import CustomField, CustomFieldCategory, CustomFieldSubCategory
 
