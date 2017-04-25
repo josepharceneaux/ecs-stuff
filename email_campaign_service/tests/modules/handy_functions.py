@@ -335,7 +335,7 @@ def request_to_email_template_resource(access_token, request, email_template_id,
     return define_and_send_request(access_token, request, url, data)
 
 
-def get_template_folder(headers):
+def create_template_folder(headers):
     """
     Function will create and retrieve template folder
     :type headers: dict
@@ -361,7 +361,7 @@ def data_to_create_email_template(headers, template_owner, body_html='', body_te
     """
     # Get Template Folder Id
     if not template_folder_id:
-        template_folder_id, _ = get_template_folder(headers)
+        template_folder_id, _ = create_template_folder(headers)
     template_name = 'test_email_template_%i' % datetime.utcnow().microsecond
     is_immutable = ON
     data = dict(
@@ -404,12 +404,13 @@ def update_email_template(email_template_id, request, token, user_id, template_n
     return create_resp
 
 
-def add_email_template(headers, template_owner):
+def add_email_template(headers, template_owner, template_folder_id=None):
     """
     This function will create email template with valid data.
     :rtype: dict
     """
-    data = data_to_create_email_template(headers, template_owner, EMAIL_TEMPLATE_BODY)
+    data = data_to_create_email_template(headers, template_owner, EMAIL_TEMPLATE_BODY,
+                                         template_folder_id=template_folder_id)
     response = post_to_email_template_resource(headers, data=data)
     json_response = response.json()
     assert response.status_code == codes.CREATED, response.text

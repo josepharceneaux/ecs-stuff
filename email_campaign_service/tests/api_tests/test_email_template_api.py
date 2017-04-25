@@ -139,10 +139,11 @@ class TestEmailTemplatesInFolders(object):
     """
     URL = EmailCampaignApiUrl.TEMPLATES_IN_FOLDER
 
-    def test_get_template_in_a_folder(self, create_email_template_folder, headers, headers_same, user_first,
-                                      headers_other):
+    def test_get_templates_in_a_folder(self, create_email_template_folder, headers,
+                                                    headers_same, headers_other):
         """
         Test for getting email-templates associated with a template folder.
+        We have not created any email-templates, so there should not exist any email-template in template-folder
         """
         template_folder_id, _ = create_email_template_folder
         for auth_header in (headers, headers_same):
@@ -151,23 +152,26 @@ class TestEmailTemplatesInFolders(object):
             email_templates = response.json()['email_templates']
             assert len(email_templates) == 0
 
-        for _ in xrange(5):
-            # Create an email-template in the template-folder
-            template_data = data_to_create_email_template(headers, user_first, body_html=EMAIL_TEMPLATE_BODY,
-                                                          template_folder_id=template_folder_id)
-            response = post_to_email_template_resource(headers, data=template_data)
-            assert response.status_code == codes.CREATED
-
-        for auth_header in (headers, headers_same):
-            response = requests.get(url=self.URL % template_folder_id, headers=auth_header)
-            assert response.status_code == requests.codes.OK, response.text
-            email_templates = response.json()['email_templates']
-            assert len(email_templates) == 5
-
         # Request with user of some other domain
         response = requests.get(url=self.URL % template_folder_id, headers=headers_other)
         assert response.status_code == requests.codes.FORBIDDEN, response.text
 
+    def test_get_saved_templates_in_a_folder(self, create_email_template_folder, headers, headers_same,
+                                      headers_other, email_templates_bulk):
+        """
+        Test for getting saved email-templates associated with a template folder.
+        Here we are using fixture "email_templates_bulk" to create 10 email-templates in template folder.
+        """
+        template_folder_id, _ = create_email_template_folder
+        for auth_header in (headers, headers_same):
+            response = requests.get(url=self.URL % template_folder_id, headers=auth_header)
+            assert response.status_code == requests.codes.OK, response.text
+            email_templates = response.json()['email_templates']
+            assert len(email_templates) == 10
+
+        # Request with user of some other domain
+        response = requests.get(url=self.URL % template_folder_id, headers=headers_other)
+        assert response.status_code == requests.codes.FORBIDDEN, response.text
 
 
 class TestEmailTemplates(object):
