@@ -6,11 +6,11 @@ This file contains helpers functions for
 """
 
 # Models
-from sqlalchemy.exc import SQLAlchemyError
 from user_service.common.models.db import db
 from user_service.common.models.misc import CustomField, CustomFieldCategory, CustomFieldSubCategory
 
 # Error handling
+from sqlalchemy.exc import SQLAlchemyError
 from user_service.common.error_handling import NotFoundError, ForbiddenError, InvalidUsage
 from user_service.user_app import logger
 

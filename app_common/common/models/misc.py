@@ -489,6 +489,7 @@ class CustomFieldCategory(db.Model):
     __tablename__ = 'custom_field_category'
     id = db.Column(db.Integer, primary_key=True)
     custom_field_id = db.Column(db.Integer, db.ForeignKey('custom_field.id'))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(255))
     added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)

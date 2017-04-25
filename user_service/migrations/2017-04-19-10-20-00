@@ -21,8 +21,8 @@ db.session.execute("""ALTER TABLE custom_field_category
 db.session.execute("ALTER TABLE custom_field_category ADD added_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
 
 # Custom field categories are no longer domain bound
-db.session.execute("ALTER TABLE custom_field_category DROP FOREIGN KEY custom_field_category_domain_id;")
-db.session.execute("ALTER TABLE custom_field_category DROP domainId;")
+# db.session.execute("ALTER TABLE custom_field_category DROP FOREIGN KEY custom_field_category_domain_id;")
+# db.session.execute("ALTER TABLE custom_field_category DROP domainId;")
 
 # Create custom-field-subcategory table and link it to custom-field-category
 db.session.execute("""CREATE TABLE custom_field_subcategory(
@@ -34,5 +34,11 @@ db.session.execute("""CREATE TABLE custom_field_subcategory(
                       FOREIGN KEY fk_subcategory_cf_category(custom_field_category_id)
                       REFERENCES custom_field_category(id)
                       ON DELETE CASCADE);""")
+
+# Create relationship between candidate-custom-field and custom-field-subcategory
+db.session.execute("ALTER TABLE candidate_custom_field ADD cf_subcategory_id INT UNSIGNED;")
+db.session.execute("""ALTER TABLE candidate_custom_field
+                      ADD CONSTRAINT fk_ccf_cf_subcategory
+                      FOREIGN KEY (custom_field_subcategory_id) REFERENCES custom_field_subcategory(id);""")
 
 db.session.execute("SET foreign_key_checks = 1;")

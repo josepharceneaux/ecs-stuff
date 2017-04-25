@@ -32,7 +32,7 @@ from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
     EmailCampaignSendUrlConversion
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product
+from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product, CustomFieldSubCategory
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.user import User, Permission
@@ -480,14 +480,30 @@ def candidate_military_services(candidate_id):
 
 def candidate_custom_fields(candidate):
     """
+    Function will return custom field information linked to the candidate, which include:
+      - candidate's domain custom field ID
+      - candidate's custom field value
+      - candidate's domain custom field subcategory
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    return [{'id': custom_field.id,
-             'custom_field_id': custom_field.custom_field_id,
-             'value': custom_field.value,
-             'created_at_datetime': custom_field.added_time.isoformat()
-             } for custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id).all()]
+
+    candidate_custom_fields_data = []
+
+    for candidate_custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id):
+        sub_cat = CustomFieldSubCategory.get(
+            candidate_custom_field.custom_field_subcategory_id)  # type: CustomFieldSubCategory
+        candidate_custom_fields_data.append(
+            {
+                'id': candidate_custom_field.id,
+                'custom_field_id': candidate_custom_field.custom_field_id,
+                'value': candidate_custom_field.value,
+                'created_at_datetime': candidate_custom_field.added_time.isoformat(),
+                'custom_field_subcategory': {'id': sub_cat.id, 'name': sub_cat.name}
+            }
+        )
+
+    return candidate_custom_fields_data
 
 
 def candidate_social_networks(candidate):
@@ -1373,14 +1389,15 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
 
     candidate_id = candidate.id
 
-    for custom_field in custom_fields:
+    for custom_field in custom_fields:  # type: dict
 
         # In case a list of custom field values are provided, we must remove all white spaces and all empty/none values
         values = filter(None, [value.strip() for value in (custom_field.get('values') or []) if value])
 
         custom_field_dict = dict(
             values=values or [(custom_field.get('value') or '').strip()],
-            custom_field_id=custom_field.get('custom_field_id')
+            custom_field_id=custom_field.get('custom_field_id'),
+            custom_field_subcategory_id=custom_field.get('custom_field_subcategory_id')
         )
 
         candidate_custom_field_id = custom_field.get('id')

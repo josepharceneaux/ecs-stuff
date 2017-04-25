@@ -164,6 +164,9 @@ candidates_resource_schema_post = {
                                 "custom_field_id": {
                                     "type": ["integer", "null"]
                                 },
+                                "custom_field_subcategory_id": {
+                                    "type": ["integer", "null"]
+                                },
                                 "value": {
                                     "type": ["string", "null"]
                                 },
@@ -774,6 +777,9 @@ candidates_resource_schema_patch = {
                                     "type": ["integer", "null"]
                                 },
                                 "custom_field_id": {
+                                    "type": ["integer", "null"]
+                                },
+                                "custom_field_subcategory_id": {
                                     "type": ["integer", "null"]
                                 },
                                 "value": {

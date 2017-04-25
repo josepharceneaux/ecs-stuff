@@ -3,9 +3,10 @@ from user_service.user_app import app
 
 # Conftest
 from user_service.common.tests.conftest import *
+from user_service.common.tests.sample_data import sample_cf_data, sample_cf_categories
 
 # Helper functions
-from user_service.common.routes import UserServiceApiUrl
+from user_service.common.routes import UserServiceApiUrl, CandidateApiUrl
 from user_service.common.utils.test_utils import send_request, response_info
 
 # Models
@@ -288,50 +289,13 @@ class TestDeleteDomainCustomFields(object):
         assert del_resp.status_code == requests.codes.NOT_FOUND
 
 
-def sample_cf_data(count=1):
-    """
-    Function creates n-number of custom fields sample data
-    :param count: int | number of custom fields' data
-    """
-
-    def _maker():
-        return {
-            "name": fake.name(),
-            "categories": [
-                {
-                    "name": fake.name(),
-                    "subcategories": [{"name": fake.name()}, {"name": fake.name()}]
-                },
-                {
-                    "name": "red",
-                    "subcategories": [{"name": fake.name()}, {"name": fake.name()}]
-                }
-            ]
-        }
-
-    return {"custom_fields": [_maker() for _ in xrange(count)]}
-
-
-def sample_cf_categories(count=1):
-    def _maker():
-        return {"name": fake.name(), "subcategories": [{"name": fake.name()}, {"name": fake.name()}]}
-
-    return [_maker() for _ in xrange(count)]
-
-
-def sample_subcategories(count=1):
-    def _maker():
-        return {"name": fake.name()}
-
-    return [_maker() for _ in xrange(count)]
-
-
 class TestDomainCustomField(object):
     """
     Class contains methods for creating/retrieving/updating domain custom-fields and its attributes
     """
+
     # TODO: split up tests into smaller functional/unit tests
-    def test_create_custom_fields(self, user_first, access_token_first):
+    def test_create_custom_fields(self, user_first, access_token_first, candidate_first):
         user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
         db.session.commit()
 
@@ -369,3 +333,25 @@ class TestDomainCustomField(object):
         # Retrieve domain custom field and assert that is has two more categories
         r = send_request('get', CFC_URL % custom_field_id, access_token_first)
         print response_info(r)
+
+        # Link candidate to custom field subcategory
+        subcategory = r.json()['custom_field']['categories'][0]['subcategories'][0]
+        update_data = {'candidates': [
+            {
+                'id': candidate_first.id,
+                'custom_fields': [
+                    {
+                        'custom_field_id': custom_field_id,
+                        'custom_field_subcategory_id': subcategory['id']
+                    }
+                ]
+            }
+        ]}
+        r = send_request('patch', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first, update_data)
+        print response_info(r)
+
+        # Retrieve candidate
+        r = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(r)
+        candidate_data = r.json()['candidate']
+        assert candidate_data['custom_fields'][0]['custom_field_subcategory']
