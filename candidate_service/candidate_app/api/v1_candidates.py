@@ -2098,7 +2098,7 @@ class CandidateLanguageResource(Resource):
 
 class CandidateDocumentResource(Resource):
     decorators = [require_oauth()]
-    REQUIRED_POST_KEYS = ('filename')
+    REQUIRED_POST_KEYS = ('filename', 'key_path')
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
@@ -2115,7 +2115,6 @@ class CandidateDocumentResource(Resource):
         if not does_candidate_belong_to_users_domain(request.user, candidate_id):
             raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
         request_json['candidate_id'] = candidate_id
-        request_json['key_path'] = TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY
         candidate_document = CandidateDocument(**request_json)
         db.session.add(candidate_document)
 
@@ -2142,8 +2141,7 @@ class CandidateDocumentResource(Resource):
             'id': d.id,
             'filename': d.filename,
             'key_path': d.key_path,
-            'url': sign_url_for_filepicker_bucket(
-                "{}/{}".format(TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY, d.filename))
+            'url': sign_url_for_filepicker_bucket("{}/{}".format('gettalent-filepicker', d.key_path))
         } for d in documents]
         return {'documents': documents}, 200
 
