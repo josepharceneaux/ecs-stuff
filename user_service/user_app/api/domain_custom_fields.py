@@ -78,7 +78,6 @@ class DomainCustomFieldsResource(Resource):
                 'custom_field': {
                     'id': custom_field.id,
                     'domain_id': custom_field.domain_id,
-                    'category_id': custom_field.category_id,
                     'name': custom_field.name,
                     'added_datetime': str(custom_field.added_time),
                     "type": custom_field.type,

@@ -1,0 +1,21 @@
+"""
+Script will:
+ 1. Enable nullable domain ID for custom field category
+ 2. Update custom field category's foreign key's referential action
+"""
+from user_service.common.models.user import db
+
+
+db.session.execute("ALTER TABLE custom_field_category MODIFY domainid INT DEFAULT NULL;")
+db.session.commit()
+
+
+db.session.execute("SET FOREIGN_KEY_CHECKS = 0;")
+db.session.execute("ALTER TABLE custom_field_category DROP FOREIGN KEY fk_cf_cat_custom_field;")
+db.session.execute("""ALTER TABLE custom_field_category
+                      ADD CONSTRAINT fk_cf_cat_custom_field
+                      FOREIGN KEY (custom_field_id)
+                      REFERENCES custom_field(id)
+                      ON UPDATE CASCADE ON DELETE CASCADE;""")
+db.session.execute("SET FOREIGN_KEY_CHECKS = 1;")
+db.session.commit()

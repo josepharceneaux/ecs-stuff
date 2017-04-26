@@ -491,15 +491,20 @@ def candidate_custom_fields(candidate):
     candidate_custom_fields_data = []
 
     for candidate_custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id):
-        sub_cat = CustomFieldSubCategory.get(
-            candidate_custom_field.custom_field_subcategory_id)  # type: CustomFieldSubCategory
+        subcategory_id = candidate_custom_field.custom_field_subcategory_id
+        if subcategory_id:
+            sub_cat = CustomFieldSubCategory.get(subcategory_id)  # type: CustomFieldSubCategory
+            sub_cat_data = {'id': sub_cat.id, 'name': sub_cat.name}
+        else:
+            sub_cat_data = None
+
         candidate_custom_fields_data.append(
             {
                 'id': candidate_custom_field.id,
                 'custom_field_id': candidate_custom_field.custom_field_id,
                 'value': candidate_custom_field.value,
                 'created_at_datetime': candidate_custom_field.added_time.isoformat(),
-                'custom_field_subcategory': {'id': sub_cat.id, 'name': sub_cat.name}
+                'custom_field_subcategory': sub_cat_data
             }
         )
 
