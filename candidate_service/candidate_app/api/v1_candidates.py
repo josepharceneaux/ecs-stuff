@@ -86,7 +86,6 @@ from candidate_service.common.utils.handy_functions import normalize_value, time
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
 from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
-from candidate_service.common.utils.talent_s3 import get_s3_url
 
 
 class CandidatesResource(Resource):
@@ -2122,8 +2121,8 @@ class CandidateDocumentResource(Resource):
             db.session.commit()
         except Exception as e:
             logger.exception('Error recording Candidate Document')
-            raise InternalServerError(
-                'Error Saving Candidate Document: {}'.format(str(request_json)), custom_error.DOCUMENT_SAVING_ERROR)
+            raise InternalServerError('Error Saving Candidate Document: {}'.format(str(request_json)),
+                                      custom_error.DOCUMENT_SAVING_ERROR)
 
         return {'document_id': candidate_document.id}, 201
 
@@ -2141,7 +2140,7 @@ class CandidateDocumentResource(Resource):
             'id': d.id,
             'filename': d.filename,
             'key_path': d.key_path,
-            'url': get_s3_url(d.key_path, d.filename)
+            'url': sign_url_for_filepicker_bucket("{}/{}".format('gettalent-filepicker', d.key_path))
         } for d in documents]
         return {'documents': documents}, 200
 
