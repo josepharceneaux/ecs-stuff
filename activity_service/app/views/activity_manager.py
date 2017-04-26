@@ -56,7 +56,8 @@ class TalentActivityManager(object):
                                                     "<b>%(formatted_name)s</b> with a duplicated profiles.",
                                                     "%(count)s candidates were updated", "candidate.png"),
         Activity.MessageIds.CANDIDATE_SENT_TO_MERGE_HUB: ("<b>%(formatted_name)s</b> was identified as a possible "
-                                                          "match. View in <a>Merge Hub</a> to resolve.",
+                                                          "match. View in <a href='/candidates/mergehub'>Merge Hub</a> "
+                                                          "to resolve.",
                                                           "%(count)s candidates were updated", "candidate.png"),
         Activity.MessageIds.CAMPAIGN_CREATE: (
             "<b>%(username)s</b> created an %(campaign_type)s campaign: <b>%(name)s</b>",
