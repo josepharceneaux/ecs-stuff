@@ -338,7 +338,7 @@ class EmailCampaignBlast(db.Model):
         """
         This returns query object for number of sends
         """
-        # Strange behavior, is None is not working, only working with = operator
+        # Strange behavior, "not None" isn't working, only working with != operator
         return EmailCampaignSend.query.filter(EmailCampaignSend.blast_id == self.id,
                                               EmailCampaignSend.ses_message_id != None)
 
