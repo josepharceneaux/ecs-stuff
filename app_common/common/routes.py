@@ -898,6 +898,7 @@ class EmailCampaignApi(object):
     TEMPLATE = '/' + VERSION + '/email-templates/<int:template_id>'
     TEMPLATE_FOLDERS = '/' + VERSION + '/email-template-folders'
     TEMPLATE_FOLDER = '/' + VERSION + '/email-template-folders/<int:folder_id>'
+    TEMPLATES_IN_FOLDER = '/' + VERSION + '/email-template-folders/<int:folder_id>/email-templates'
 
     """ URLs for email-clients """
     EMAIL_CLIENTS = '/' + VERSION + '/email-clients'
@@ -932,6 +933,7 @@ class EmailCampaignApiUrl(object):
     TEMPLATE = HOST_NAME % ('/' + VERSION + '/email-templates/%s')
     TEMPLATE_FOLDERS = HOST_NAME % ('/' + VERSION + '/email-template-folders')
     TEMPLATE_FOLDER = HOST_NAME % ('/' + VERSION + '/email-template-folders/%s')
+    TEMPLATES_IN_FOLDER = HOST_NAME % ('/' + VERSION + '/email-template-folders/%s/email-templates')
 
     """ URLs for email-clients """
     EMAIL_CLIENTS = HOST_NAME % ('/' + VERSION + '/email-clients')
