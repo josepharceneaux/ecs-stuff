@@ -1587,7 +1587,7 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     custom_fields = request_vars.get('custom_fields')
     if isinstance(custom_fields, list):
         custom_fields_facets = ["custom_field_id_and_value: '{}'".format(custom_field) for custom_field in custom_fields]
-        filter_queries.append("(or {})".format(" ".join(custom_fields_facets)))
+        filter_queries.append("(and {})".format(" ".join(custom_fields_facets)))
     elif custom_fields:
         filter_queries.append("(term field=custom_field_id_and_value'{}')".format(custom_fields))
 
