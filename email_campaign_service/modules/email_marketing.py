@@ -357,9 +357,9 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 "campaign_id=%s, user=%s" % (len(subscribed_candidate_ids), len(candidate_ids_and_emails),
                                              campaign.name, campaign.id, campaign.user.email))
     if candidate_ids_and_emails:
-        concurrent_lambdas = 50
+        concurrent_lambdas = 55
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
-        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA]:
+        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.DEV]:
             # Get AWS region name
             _, region_name = get_topic_arn_and_region_name()
             try:
@@ -375,33 +375,19 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 for candidate_id_and_email in chunk:
                     candidate_id, candidate_address = candidate_id_and_email
                     chunk_of_candidate_ids_and_address.append({"candidate_id": candidate_id,
-                                                               "candidate_address": candidate_address,
-                                                               "blast_id": blast_id})
+                                                               "candidate_address": candidate_address})
+                event_data = {"blast_id": blast_id,
+                              "candidates_data": chunk_of_candidate_ids_and_address}
                 try:
-                    invoke_lambda_sender(_lambda, chunk_of_candidate_ids_and_address)
+                    invoke_lambda_sender(_lambda, event_data)
                     number_of_lambda_invocations += 1
                     if number_of_lambda_invocations % concurrent_lambdas == 0:
-                        # 3 seconds delay after 50 lambda invocations
                         logger.info("Delaying Lambda invoker at %d" % number_of_lambda_invocations)
-                        sleep(150)
+                        sleep(concurrent_lambdas)
                 except Exception as error:
                     logger.error('Could not invoke Lambda. Error:%s, blast_id:%s, candidate_ids:%s'
                                  % (error.message, blast_id, chunk_of_candidate_ids_and_address))
 
-            # TODO: Commenting below code for now
-            # try:
-            #     boto3_client = boto3.resource('sqs', region_name=region_name)
-            #     queue = boto3_client.get_queue_by_name(QueueName='emailSends')
-            # except Exception as error:
-            #     logger.error("Error occurred while getting SQS queue : %s" % error.message)
-            #     return
-            # for candidate_id_and_email in candidate_ids_and_emails:
-            #     candidate_id, candidate_address = candidate_id_and_email
-            #     try:
-            #         push_into_sqs(queue, blast_id, candidate_id, candidate_address)
-            #     except Exception as error:
-            #         logger.error('Could not push to SQS. Error:%s, blast_id:%s, candidate_id:%s'
-            #                      % (error.message, blast_id, candidate_id))
             _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
             _update_blast_sends(blast_id=blast_id, new_sends=len(candidate_ids_and_emails), campaign=campaign,
                                 new_candidates_only=new_candidates_only, update_blast_sends=False)
@@ -412,28 +398,6 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                             (campaign.id, email_campaign_blast.id))
             send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_id, campaign, new_candidates_only)
 
-
-def _publish_to_sns(boto3_client, topic_arn, email_campaign_blast_id, candidate_id, candidate_address):
-    """
-    Here we publish to SNS topic for each candidate to send email-campaign via Lambda.
-    """
-    event = {
-        'candidate_id': candidate_id,
-        'candidate_address': candidate_address,
-        'blast_id': email_campaign_blast_id
-    }
-    response = boto3_client.publish(
-        TopicArn=topic_arn,
-        Message=json.dumps(event),
-        Subject='EmailMarketing',
-        MessageStructure='string'
-    )
-    logger.info('''
-                    Publish to SNS topic.
-                    Topic ARN: %s,
-                    Environment: %s,
-                    Response: %s,
-                ''' % (topic_arn, app.config[TalentConfigKeys.ENV_KEY], response))
 
 # This will be used in later version
 # def update_candidate_document_on_cloud(user, candidate_ids_and_emails):
@@ -461,31 +425,23 @@ def _publish_to_sns(boto3_client, topic_arn, email_campaign_blast_id, candidate_
 #         logger.exception(error_message)
 #         raise InvalidUsage(error_message)
 
-
-def push_into_sqs(queue, blast_id, candidate_id, candidate_address):
+def get_lambda_prefix():
     """
-    Here we push candidate data to SQS for our Email Lambda Consumer
+    Returns 'prod' if environment is Prod else returns 'staging'.
+    :rtype: str
     """
-    # Get the queue
-    event = {
-        'candidate_id': candidate_id,
-        'candidate_address': candidate_address,
-        'blast_id': blast_id,
-        'environment': app.config[TalentConfigKeys.ENV_KEY].upper()
-    }
-    # Create a new message
-    response = queue.send_message(MessageBody=json.dumps(event))
-    logger.info("Enqueued candidate data: %s with response: %s" % (event, response))
+    return 'prod' if app.config[TalentConfigKeys.ENV_KEY] == TalentEnvs.PROD else 'staging'
 
 
-def invoke_lambda_sender(_lambda, chunk_of_candidate_data):
+def invoke_lambda_sender(_lambda, event_data):
     """
     Here we invoke Lambda email sender
     """
-    response = _lambda.invoke(FunctionName='send_via_consumer:%s' % app.config[TalentConfigKeys.ENV_KEY].upper(),
+    response = _lambda.invoke(FunctionName='%s-emailCampaignToCandidates:%s'
+                                           % (get_lambda_prefix(), app.config[TalentConfigKeys.ENV_KEY].upper()),
                               InvocationType='Event',
-                              Payload=json.dumps({"chunk": chunk_of_candidate_data}))
-    logger.info("Invoked send_via_consumer Lambda for:%s", (response, chunk_of_candidate_data))
+                              Payload=json.dumps(event_data))
+    logger.info("Invoked `emailCampaignToCandidates` Lambda for event:{}.\nResponse:{}".format(event_data, response))
 
 
 def get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids, new_candidates_only=False):
@@ -1037,17 +993,16 @@ def get_subscribed_and_unsubscribed_candidate_ids(campaign, all_candidate_ids, n
     else:
         # Otherwise, just filter out unsubscribed candidates:
         # their subscription preference's frequencyId is NULL, which means 'Never'
+        logger.info('Getting subscription preference for candidates of email-campaign(id:{})'.format(campaign.id))
         for candidate_id in all_candidate_ids:
             subscription_preference = {}
             try:
                 # Call candidate API to get candidate's subscription preference.
                 subscription_preference = get_candidate_subscription_preference(candidate_id, campaign.user.id, app=app)
                 # campaign_subscription_preference = get_subscription_preference(candidate_id)
-                logger.info("subscription_preference: %s, candidate_id:%s, email_campaign_id:%s"
-                            % (subscription_preference, candidate_id, campaign.id))
             except Exception as error:
                 logger.error('Could not get subscription preference for candidate(id:%s). '
-                             'email_campaign(id:%s). Error:%s' % (candidate_id, campaign.id, error.message))
+                             'email-campaign(id:%s). Error:%s' % (candidate_id, campaign.id, error.message))
             if subscription_preference and not subscription_preference.get('frequency_id'):
                 unsubscribed_candidate_ids.append(candidate_id)
 

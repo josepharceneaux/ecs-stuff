@@ -15,6 +15,7 @@ from user_service.common.models.candidate import CandidateCustomField
 from user_service.common.models.user import Permission
 
 # Decorators
+from user_service.common.utils.api_utils import ApiResponse
 from user_service.common.utils.auth_utils import require_oauth, require_all_permissions
 
 # Validators
@@ -79,19 +80,24 @@ class DomainCustomFieldsResource(Resource):
                     'domain_id': custom_field.domain_id,
                     'category_id': custom_field.category_id,
                     'name': custom_field.name,
-                    'added_datetime': str(custom_field.added_time)
+                    'added_datetime': str(custom_field.added_time),
+                    "type": custom_field.type,
                 }
             }
 
-        # Return all of domain's custom fields
-        return {"custom_fields": [
-            {
-                "id": custom_field.id,
-                "domain_id": custom_field.domain_id,
-                'category_id': custom_field.category_id,
-                "name": custom_field.name,
-                "added_datetime": str(custom_field.added_time)
-            } for custom_field in CustomField.get_domain_custom_fields(request.user.domain_id)]}
+        # Return all or filtered domain's custom fields
+        # Authenticated user
+        authed_user = request.user
+        search_query = request.args.get('query', '')
+        sort_type = request.args.get('sort_type', 'DESC')
+        sort_by = request.args.get('sort_by', 'added_time')
+        cf_type = request.args.get('type', 'all')
+
+        query_object = CustomField.get_by_domain_id_and_filter_by_name_and_type(authed_user.domain.id, search_query,
+                                                                                sort_by, sort_type, cf_type)
+        items = [field.to_json() for field in query_object]
+        response = {'custom_fields': items}
+        return ApiResponse(response)
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAIN_CUSTOM_FIELDS)
     def put(self, **kwargs):

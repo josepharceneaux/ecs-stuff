@@ -83,7 +83,6 @@ class TestGetDomainCustomFields(object):
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.UNAUTHORIZED
 
-
     def test_get_domains_custom_fields(self, access_token_first, user_first, domain_custom_fields):
         """
         Test:  Retrieve domain custom fields
@@ -171,9 +170,12 @@ class TestUpdateDomainCustomFields(object):
         update_resp = send_request('put', self.CFS_URL, access_token_first, data)
         print response_info(update_resp)
         assert update_resp.status_code == requests.codes.OK
-        assert len(update_resp.json()['custom_fields']) == len(domain_custom_fields)
-        assert set([cf['id'] for cf in update_resp.json()['custom_fields']]).issubset(
-            [cf.id for cf in domain_custom_fields])
+
+        created_cfs = update_resp.json()['custom_fields']
+        domain_cf_ids = [cf.id for cf in domain_custom_fields]
+
+        assert len(created_cfs) == len(data['custom_fields'])
+        assert len([cf['id'] for cf in created_cfs if cf['id'] in domain_cf_ids]) == len(data['custom_fields'])
 
     def test_update_custom_field_by_id(self, user_first, access_token_first, domain_custom_fields):
         """
@@ -281,4 +283,3 @@ class TestDeleteDomainCustomFields(object):
         del_resp = send_request('delete', self.CF_URL % non_existing_cf_id, access_token_first)
         print response_info(del_resp)
         assert del_resp.status_code == requests.codes.NOT_FOUND
-

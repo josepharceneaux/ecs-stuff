@@ -1,8 +1,10 @@
 import datetime
 
+from ..constants import CUSTOM_FIELD_TYPES
 from db import db
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import DOUBLE
+from contracts import contract
 
 from ..error_handling import InvalidUsage
 from candidate import CandidateMilitaryService
@@ -454,7 +456,33 @@ class CustomField(db.Model):
         :type domain_id:  int|long
         :rtype:  list[CustomField]
         """
-        return cls.query.filter(CustomField.domain_id==domain_id).all()
+        return cls.query.filter(CustomField.domain_id == domain_id).all()
+
+    @classmethod
+    @contract
+    def get_by_domain_id_and_filter_by_name_and_type(cls, domain_id, search_keyword, sort_by, sort_type, cf_type):
+        """
+        This method will return custom fields of a domain filtered by name against search_keyword
+        :param positive domain_id: User Domain Id
+        :param string search_keyword: Search keyword
+        :param string sort_by: Sort by name or added_time
+        :param string sort_type: Sort Type ASC or DSC
+        :param string cf_type: Custom Field Type input or pre-defined
+        """
+        if sort_by == 'name':
+            sort_by_object = cls.name
+        else:
+            sort_by_object = cls.added_time
+
+        if sort_type == 'ASC':
+            sort_by_object = sort_by_object.asc()
+        else:
+            sort_by_object = sort_by_object.desc()
+        filtered_query = cls.query.filter(cls.domain_id == domain_id, cls.name.ilike('%' + search_keyword + '%'))
+
+        return filtered_query.filter(cls.type == cf_type).order_by(sort_by_object) if cf_type in\
+                                                                                      CUSTOM_FIELD_TYPES.values()\
+            else filtered_query.order_by(sort_by_object)
 
 
 class CustomFieldCategory(db.Model):

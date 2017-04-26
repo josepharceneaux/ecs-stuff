@@ -39,7 +39,7 @@ from candidate_service.common.models.candidate import (
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateDevice,
     CandidateSubscriptionPreference, CandidatePhoto, CandidateSource,
-    CandidateStatus
+    CandidateStatus, CandidateDocument
 )
 from candidate_service.common.models.db import db
 from candidate_service.common.models.language import CandidateLanguage
@@ -86,6 +86,7 @@ from candidate_service.common.utils.handy_functions import normalize_value, time
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
 from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
+from candidate_service.common.utils.talent_s3 import get_s3_url
 
 
 class CandidatesResource(Resource):
@@ -2092,4 +2093,106 @@ class CandidateLanguageResource(Resource):
         db.session.commit()
 
         upload_candidate_documents.delay([candidate_id])
+        return '', 204
+
+
+class CandidateDocumentResource(Resource):
+    decorators = [require_oauth()]
+    REQUIRED_POST_KEYS = ('filename', 'key_path')
+
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Consumes a json dict containing class defined keys and creates a CandidateDocument entry for them.
+        S3 upload is handled by FilePicker.
+        :param kwargs: dict like {'candidate_id': 489}
+        """
+        request_json = request.json
+        if not all(key in self.REQUIRED_POST_KEYS for key in request_json):
+            raise InvalidUsage('Missing required JSON keys', custom_error.INVALID_DOCUMENT_PARAMS)
+
+        candidate_id = kwargs['candidate_id']
+        if not does_candidate_belong_to_users_domain(request.user, candidate_id):
+            raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
+        request_json['candidate_id'] = candidate_id
+        candidate_document = CandidateDocument(**request_json)
+        db.session.add(candidate_document)
+
+        try:
+            db.session.commit()
+        except Exception as e:
+            logger.exception('Error recording Candidate Document')
+            raise InternalServerError(
+                'Error Saving Candidate Document: {}'.format(str(request_json)), custom_error.DOCUMENT_SAVING_ERROR)
+
+        return {'document_id': candidate_document.id}, 201
+
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Returns CandidateDocuments associated with a candidate from the users domain 
+        """
+        candidate_id = kwargs['candidate_id']
+        if not does_candidate_belong_to_users_domain(request.user, candidate_id):
+            raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
+
+        documents = CandidateDocument.query.filter_by(candidate_id=candidate_id)
+        documents = [{
+            'id': d.id,
+            'filename': d.filename,
+            'key_path': d.key_path,
+            'url': get_s3_url(d.key_path, d.filename)
+        } for d in documents]
+        return {'documents': documents}, 200
+
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
+    def patch(self, **kwargs):
+        """
+        Updates a CandidateDocument object after being passed an id and json payload of:
+            {
+                'filename': <new_filename>
+            }
+        :param kwargs: dict like {'candidate_id': 511, 'id': 17} where id is the document id
+        """
+        request_json = request.json
+        if 'filename' not in request_json:
+            raise InvalidUsage('Missing required JSON keys', custom_error.INVALID_DOCUMENT_PARAMS)
+
+        candidate_id = kwargs['candidate_id']
+        if not does_candidate_belong_to_users_domain(request.user, candidate_id):
+            raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
+
+        document_id = kwargs['id']
+
+        document = CandidateDocument.query.get(document_id)
+        if not document:
+            logger.error('CandidateDocument PATCH not found with: {}'.format(str(kwargs)))
+            return NotFoundError('CandidateDocument not found', custom_error.DOCUMENT_NOT_FOUND)
+
+        document.filename = request_json['filename']
+        db.session.add(document)
+        db.session.commit()
+
+        return '', 204
+
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
+    def delete(self, **kwargs):
+        """
+        Delete a CandidateDocument provided by the id in the url:
+        :param kwargs: dict like {'candidate_id': 511, 'id': 17} where id is the document id
+        """
+        candidate_id = kwargs['candidate_id']
+        if not does_candidate_belong_to_users_domain(request.user, candidate_id):
+            raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
+
+        document_id = kwargs['id']
+
+        document = CandidateDocument.query.get(document_id)
+        if not document:
+            logger.error('CandidateDocument Delete not found with: {}'.format(str(kwargs)))
+            return NotFoundError('CandidateDocument not found', custom_error.DOCUMENT_NOT_FOUND)
+
+        db.session.delete(document)
+        db.session.commit()
+
         return '', 204

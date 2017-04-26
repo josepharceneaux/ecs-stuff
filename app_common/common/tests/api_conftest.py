@@ -29,6 +29,7 @@ from ..utils.test_utils import (create_candidate, create_smartlist, create_talen
 FIRST = 0
 SAME_DOMAIN = 1
 SECOND = 2
+DOMAIN_ADMIN = 3
 
 test_config = load_test_config()
 
@@ -47,12 +48,36 @@ def test_data():
 
 
 @pytest.fixture(scope='session')
+def custom_fields(test_data):
+    """
+     This fixture creates custom fields
+    """
+    return test_data['custom_fields']
+
+
+@pytest.fixture(scope='session')
+def domain_admin_user(test_data):
+    """
+    This fixture creates user with role domain admin
+    """
+    return test_data['users'][DOMAIN_ADMIN]
+
+
+@pytest.fixture(scope='session')
 def token_first(test_data):
     """
     Authentication token for user_first.
     :param dict test_data: a collection of test users, domains, groups, tokens data.
     """
     return test_data['tokens'][FIRST]['access_token']
+
+
+@pytest.fixture(scope='session')
+def token_domain_admin(test_data):
+    """
+    Authentication token for domain_admin_user.
+    """
+    return test_data['tokens'][DOMAIN_ADMIN]['access_token']
 
 
 @pytest.fixture(scope='session')

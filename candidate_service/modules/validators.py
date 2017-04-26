@@ -227,7 +227,13 @@ def validate_id_list(key, values):
 
 
 def validate_string_list(key, values):
-    if ',' in values or isinstance(values, list):
+    # Some custom fields' values may be comma separated and we must ensure the string is not always split on the comma
+    # Ex: "40|san jose, CA"
+    if key == 'custom_fields':
+        values = re.findall(r'\d+\D+', values)
+        values = [i[:-1] if i.endswith(',') else i for i in values]
+        return values[0] if values.__len__() == 1 else values
+    elif ',' in values or isinstance(values, list):
         if ',' in values:
             values = re.split(r'(?<!\\),', values)
             values = [value.replace('\\', '') for value in values]
@@ -694,19 +700,6 @@ def does_social_network_exist(social_networks, social_network_dict):
     for social_network in social_networks:
         profile_url = (social_network_dict.get('social_profile_url') or '').lower()
         if (social_network.social_profile_url or '').lower() == profile_url:
-            return True
-    return False
-
-
-def does_military_service_exist(military_services, military_service_dict):
-    """
-    :type military_services:  list[CandidateMilitaryService]
-    :type military_service_dict:  dict[str]
-    :rtype:  bool
-    """
-    for military_service in military_services:
-        from_date, to_date = military_service_dict.get('from_date'), military_service_dict.get('to_date')
-        if military_service.from_date == from_date or military_service.to_date == to_date:
             return True
     return False
 

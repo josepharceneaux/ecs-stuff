@@ -552,7 +552,7 @@ candidates_resource_schema_post = {
                                 },
                                 "end_year": {
                                     "type": ["integer", "null"],
-                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                    "minimum": 1950, "maximum": CURRENT_YEAR + 50
                                 },
                                 "end_month": {
                                     "type": ["integer", "null"],
