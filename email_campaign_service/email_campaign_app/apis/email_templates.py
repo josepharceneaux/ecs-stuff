@@ -198,6 +198,56 @@ class TemplateFolder(Resource):
         return '', codes.NO_CONTENT
 
 
+@api.route(EmailCampaignApi.TEMPLATES_IN_FOLDER)
+class TemplatesInFolder(Resource):
+    """
+    Endpoint looks like /v1/email-template-folders/:id/email-templates.
+    """
+    decorators = [require_oauth()]
+
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CAMPAIGNS)
+    def get(self, folder_id):
+        """
+        GET /v1/email-template-folders/:id/email-templates
+        Required parameters:
+        :param int|long folder_id: ID of of email template
+        :return: template-folder object in dict format, status 200
+
+        :Example:
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> template_folder_id = 1
+        >>> response = requests.get(EmailCampaignApiUrl.TEMPLATES_IN_FOLDER % template_folder_id,
+        >>>                         headers=headers)
+
+        ..Response::
+
+                {
+                  "email_templates": [
+                    {
+                      "user_id": 1,
+                      "name": "My Template",
+                      "body_text": "This is the text part of the email",
+                      "template_folder_id": 8,
+                      "updated_datetime": "2016-09-05 15:11:22",
+                      "body_html": "<html><body>Email Body</body></html>",
+                      "is_immutable": 1,
+                      "type": 0,
+                      "id": 41
+                    }
+                  ]
+                }
+        .. Status:: 200 (Resource found)
+                    401 (Unauthorized to access getTalent)
+                    403 (Requested email-template-folder does not belong to user's domain)
+                    404 (Requested email-template-folder not found)
+                    500 (Internal server error)
+        """
+        template_folder = EmailTemplateFolder.get_valid_template_folder(folder_id, request.user)
+        return {"email_templates": [template.to_json() for template in template_folder.user_email_template]}, codes.OK
+
+
 @api.route(EmailCampaignApi.TEMPLATES)
 class EmailTemplates(Resource):
     """

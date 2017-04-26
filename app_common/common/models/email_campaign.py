@@ -338,7 +338,9 @@ class EmailCampaignBlast(db.Model):
         """
         This returns query object for number of sends
         """
-        return EmailCampaignSend.query.filter(EmailCampaignSend.blast_id == self.id)
+        # Strange behavior, "not None" isn't working, only working with != operator
+        return EmailCampaignSend.query.filter(EmailCampaignSend.blast_id == self.id,
+                                              EmailCampaignSend.ses_message_id != None)
 
     def to_json(self, include_fields=None):
         """
