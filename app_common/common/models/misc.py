@@ -434,7 +434,11 @@ class CustomField(db.Model):
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     name = db.Column('Name', db.String(255))
     type = db.Column('Type', db.String(127))
+<<<<<<< Updated upstream
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+=======
+    added_time = db.Column('AddedTime', db.DateTime)
+>>>>>>> Stashed changes
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationship
