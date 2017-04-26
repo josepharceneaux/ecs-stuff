@@ -3,15 +3,19 @@ from user_service.user_app import app
 
 # Conftest
 from user_service.common.tests.conftest import *
+from user_service.common.tests.sample_data import sample_cf_data, sample_cf_categories
 
 # Helper functions
-from user_service.common.routes import UserServiceApiUrl
+from user_service.common.routes import UserServiceApiUrl, CandidateApiUrl
 from user_service.common.utils.test_utils import send_request, response_info
 
 # Models
 from user_service.common.models.user import Role
 
 import sys
+
+CFCS_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELD_CATEGORIES
+CFC_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELD_CATEGORY
 
 
 class TestCreateDomainCustomFields(object):
@@ -283,3 +287,71 @@ class TestDeleteDomainCustomFields(object):
         del_resp = send_request('delete', self.CF_URL % non_existing_cf_id, access_token_first)
         print response_info(del_resp)
         assert del_resp.status_code == requests.codes.NOT_FOUND
+
+
+class TestDomainCustomField(object):
+    """
+    Class contains methods for creating/retrieving/updating domain custom-fields and its attributes
+    """
+
+    # TODO: split up tests into smaller functional/unit tests
+    def test_create_custom_fields(self, user_first, access_token_first, candidate_first):
+        user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
+        db.session.commit()
+
+        number_of_custom_fields = 5
+        data = sample_cf_data(number_of_custom_fields)
+
+        # Create 5 domain custom fields
+        r = send_request('post', CFCS_URL, access_token_first, data)
+        print response_info(r)
+        assert r.status_code == requests.codes.created
+        custom_field_id = r.json()['custom_fields'][0]
+
+        # Retrieve one of domain's custom fields
+        r = send_request('get', CFC_URL % custom_field_id, access_token_first)
+        assert r.status_code == requests.codes.ok
+        assert isinstance((r.json()['custom_field']), dict)  # since we're only retrieving one custom field
+        # TODO: check integrity of data
+        print response_info(r)
+
+        # Retrieve all domain custom fields
+        r = send_request('get', CFCS_URL, access_token_first)
+        assert r.status_code == requests.codes.ok
+        assert isinstance(r.json()['custom_fields'], list)  # domain custom fields must be returned as a collection
+        assert len(r.json()['custom_fields']) == number_of_custom_fields  # since we're retrieving all domain cfs
+        # TODO: check integrity of data
+        print response_info(r)
+
+        # Add more custom fields categories to a domain custom field
+        update_data = {"custom_fields": [{"id": custom_field_id, "categories": sample_cf_categories(2)}]}
+        r = send_request('patch', CFCS_URL, access_token_first, update_data)
+        print response_info(r)
+        assert r.status_code == requests.codes.ok
+        assert r.json()['custom_fields'][0]['id'] == custom_field_id
+
+        # Retrieve domain custom field and assert that is has two more categories
+        r = send_request('get', CFC_URL % custom_field_id, access_token_first)
+        print response_info(r)
+
+        # Link candidate to custom field subcategory
+        subcategory = r.json()['custom_field']['categories'][0]['subcategories'][0]
+        update_data = {'candidates': [
+            {
+                'id': candidate_first.id,
+                'custom_fields': [
+                    {
+                        'custom_field_id': custom_field_id,
+                        'custom_field_subcategory_id': subcategory['id']
+                    }
+                ]
+            }
+        ]}
+        r = send_request('patch', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first, update_data)
+        print response_info(r)
+
+        # Retrieve candidate
+        r = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
+        print response_info(r)
+        candidate_data = r.json()['candidate']
+        assert candidate_data['custom_fields'][0]['custom_field_subcategory']

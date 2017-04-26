@@ -1269,6 +1269,7 @@ class CandidateCustomField(db.Model):
     value = db.Column('Value', db.Text)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     custom_field_id = db.Column('CustomFieldId', db.Integer, db.ForeignKey('custom_field.id', ondelete='CASCADE'))
+    custom_field_subcategory_id = db.Column(db.Integer, db.ForeignKey('custom_field_subcategory.id'))
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 

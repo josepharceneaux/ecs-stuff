@@ -82,54 +82,97 @@ custom_field_schema = {
     ]
 }
 
-cf_categories_schema_post = {
+cf_schema_post = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "properties": {
-        "custom_field_categories": {
+        "custom_fields": {
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
+                    "categories": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "subcategories": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     "name": {
                         "type": "string"
                     }
-                },
-                "required": [
-                    "name"
-                ]
+                }
             }
         }
     },
     "required": [
-        "custom_field_categories"
+        "custom_fields"
     ]
 }
 
-cf_categories_schema_put = {
-    "type": "object",
+cf_schema_patch = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
     "properties": {
-        "custom_field_categories": {
-            "type": "array",
+        "custom_fields": {
             "items": {
-                "type": "object",
+                "id": "/properties/custom_fields/items",
                 "properties": {
-                    "name": {
-                        "type": "string"
+                    "categories": {
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "subcategories": {
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "type": "array"
                     },
                     "id": {
                         "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
                     }
                 },
-                "required": [
-                    "name",
-                    "id"
-                ]
-            }
+                "type": "object"
+            },
+            "type": "array"
         }
     },
-    "required": [
-        "custom_field_categories"
-    ]
+    "type": "object"
 }
 
 cf_category_schema_put = {
