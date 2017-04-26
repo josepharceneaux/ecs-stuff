@@ -96,7 +96,6 @@ def add_custom_field(domain_id, cf_category_id, cf_name):
     """
     cf = CustomField(
         domain_id=domain_id,
-        category_id=cf_category_id,
         name=cf_name,
         type="string",
         added_time=datetime.datetime.utcnow()
