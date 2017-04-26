@@ -36,7 +36,7 @@ db.session.execute("""CREATE TABLE custom_field_subcategory(
                       ON DELETE CASCADE);""")
 
 # Create relationship between candidate-custom-field and custom-field-subcategory
-db.session.execute("ALTER TABLE candidate_custom_field ADD cf_subcategory_id INT UNSIGNED;")
+db.session.execute("ALTER TABLE candidate_custom_field ADD custom_field_subcategory_id INT UNSIGNED;")
 db.session.execute("""ALTER TABLE candidate_custom_field
                       ADD CONSTRAINT fk_ccf_cf_subcategory
                       FOREIGN KEY (custom_field_subcategory_id) REFERENCES custom_field_subcategory(id);""")
