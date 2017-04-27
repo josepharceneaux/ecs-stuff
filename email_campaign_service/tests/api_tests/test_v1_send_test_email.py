@@ -30,9 +30,8 @@ __author__ = 'basit'
 
 def test_send_test_email_with_valid_data(access_token_first, user_first):
     """
-    In this test, we will send a test email to out test email account and then we will confirm by getting that email
+    In this test, we will send a test email to our test email account and then we will confirm by getting that email
     from inbox with that specific subject.
-    :param access_token_first: access token
     """
     data = TEST_MAIL_DATA.copy()
     del data['reply_to']  # user's email should be used as default value
@@ -41,6 +40,17 @@ def test_send_test_email_with_valid_data(access_token_first, user_first):
     assert retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1, args=(data['subject'],),
                  kwargs=dict(search_criteria='(HEADER REPLY-TO "{}")'.format(user_first.email)),
                  retry_exceptions=(AssertionError,))
+
+
+def test_send_test_email_with_invalid_reply_to_email_address(access_token_first):
+    """
+    In this test, we will try send a test email with invalid format of reply_to email-address. It should result
+    in Bad Request error.
+    """
+    data = TEST_MAIL_DATA.copy()
+    data['reply_to'] = fake.word()
+    response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
+    assert response.status_code == requests.codes.BAD_REQUEST
 
 
 def test_send_test_mail_without_optional_parameter(access_token_first):
