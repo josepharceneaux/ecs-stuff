@@ -148,10 +148,6 @@ def get_cloud_search_connection():
         if not _cloud_search_domain:
             _cloud_search_connection_layer_2.create_domain(app.config[TalentConfigKeys.CS_DOMAIN_KEY])
 
-        print("Connection to CloudSearch domain {} in region us-west-1 established".format(
-            app.config[TalentConfigKeys.CS_DOMAIN_KEY])
-        )
-
     return _cloud_search_connection_layer_2
 
 
@@ -262,11 +258,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
     ;
     """
 
-    sql_query_for_candidate_engagement = """
-        # Candidate Engagement Score
-        SELECT GROUP_CONCAT(DISTINCT(email_campaign_send.CandidateId)) AS `candidate_engagement` FROM email_campaign_send WHERE email_campaign_send.CandidateId IN :candidate_ids_string;
-    """
-
     action_dicts = []
     with OneTimeSQLConnection(app) as session:
 
@@ -297,11 +288,10 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             action_dict['fields'] = field_name_to_sql_value
             action_dicts.append(action_dict)
 
-    print("created action_dicts: {}".format(action_dicts))
     return action_dicts
 
 
-def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_candidate=10):
+def upload_candidate_documents_to_us_west(candidate_ids, domain_id=None, max_number_of_candidate=10):
     """
     Upload all the candidate documents to cloud search
     :param candidate_ids: id of candidates for documents to be uploaded
@@ -314,7 +304,7 @@ def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_cand
 
     for i in xrange(0, len(candidate_ids), max_number_of_candidate):
         try:
-            print("Uploading {} candidate documents {}. Generating action dicts...".format(
+            logger.info("Uploading {} candidate documents {}. Generating action dicts...".format(
                 len(candidate_ids[i:i + max_number_of_candidate]), candidate_ids[i:i + max_number_of_candidate])
             )
 
@@ -327,11 +317,11 @@ def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_cand
                 logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s "
                              "deletes.candidate_ids: %s", deletes, candidate_ids[i:i + max_number_of_candidate])
             if adds:
-                print("{} Candidate documents {} have been uploaded".format(
+                logger.info("{} Candidate documents {} have been uploaded".format(
                     len(candidate_ids[i:i + max_number_of_candidate]), candidate_ids[i:i + max_number_of_candidate])
                 )
         except TimeoutException:
-            print("Time Limit Exceeded for Candidate Upload for following Candidates: {}".format(
+            logger.exception("Time Limit Exceeded for Candidate Upload for following Candidates: {}".format(
                 candidate_ids[i:i + max_number_of_candidate]))
 
 
@@ -386,14 +376,14 @@ def _send_batch_request(action_dicts):
     return adds, deletes
 
 
-if __name__ == '__main__':
-    print "~~~~~ STARTING UPLOAD CANDIDATE DOCS SCRIPT ~~~~~"
-    start_time = time.time()
-    try:
-        from candidate_service.common.models.candidate import Candidate
-        kaiser_candidates = Candidate.query.filter_by(source_id=6739)
-        candidate_ids = [2881510, 2881509, 2881508, 2881506]
-        upload_candidate_documents(candidate_ids)
-        print "~~~~~ UPLOAD SUCCESSFUL ~~~~~"
-    except Exception as e:
-        print("ERROR: {}".format(e.message))
+# if __name__ == '__main__':
+#     print "~~~~~ STARTING UPLOAD CANDIDATE DOCS SCRIPT ~~~~~"
+#     start_time = time.time()
+#     try:
+#         from candidate_service.common.models.candidate import Candidate
+#         kaiser_candidates = Candidate.query.filter_by(source_id=6739)
+#         candidate_ids = [2881510, 2881509, 2881508, 2881506]
+#         upload_candidate_documents(candidate_ids)
+#         print "~~~~~ UPLOAD SUCCESSFUL ~~~~~"
+#     except Exception as e:
+#         print("ERROR: {}".format(e.message))
