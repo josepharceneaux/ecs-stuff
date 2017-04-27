@@ -28,18 +28,19 @@ from email_campaign_service.tests.modules.handy_functions import (TEST_MAIL_DATA
 __author__ = 'basit'
 
 
-def test_test_email_with_valid_data(access_token_first):
+def test_send_test_email_with_valid_data(access_token_first, user_first):
     """
     In this test, we will send a test email to out test email account and then we will confirm by getting that email
     from inbox with that specific subject.
     :param access_token_first: access token
     """
     data = TEST_MAIL_DATA.copy()
+    del data['reply_to']  # user's email should be used as default value
     response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
     assert response.status_code == requests.codes.OK
-    # TODO: Emails are being delayed, commenting for now
-    # assert retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1, args=(subject,),
-    #              retry_exceptions=(AssertionError,))
+    assert retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1, args=(data['subject'],),
+                 kwargs=dict(search_criteria='(HEADER REPLY-TO "{}")'.format(user_first.email)),
+                 retry_exceptions=(AssertionError,))
 
 
 def test_send_test_mail_without_optional_parameter(access_token_first):
@@ -71,21 +72,22 @@ def test_send_test_email_with_merge_tags(user_first, access_token_first):
     assert response.status_code == requests.codes.OK
     [modified_subject] = do_mergetag_replacements([email_campaign.subject], user_first,
                                                   requested_object=user_first)
-    # TODO: Commenting for now as emails are being delayed
-    # msg_ids = retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1,
-    #                 args=(modified_subject,), kwargs=dict(delete_email=False),
-    #                 retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.error))
-    # mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
-    #                                       app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
-    # email_bodies = fetch_emails(mail_connection, msg_ids)
-    # assert len(email_bodies) == 1
-    # assert user_first.first_name in email_bodies[0]
-    # assert user_first.last_name in email_bodies[0]
-    # assert TEST_PREFERENCE_URL in email_bodies[0]
-    # try:
-    #     delete_emails(mail_connection, msg_ids, modified_subject)
-    # except Exception:
-    #     pass
+    msg_ids = retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1,
+                    args=(modified_subject,),
+                    kwargs=dict(delete_email=False,
+                                search_criteria='(HEADER REPLY-TO "{}")'.format(data['reply_to'])),
+                    retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.error))
+    mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
+                                          app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
+    email_bodies = fetch_emails(mail_connection, msg_ids)
+    assert len(email_bodies) == 1
+    assert user_first.first_name in email_bodies[0]
+    assert user_first.last_name in email_bodies[0]
+    assert TEST_PREFERENCE_URL in email_bodies[0]
+    try:
+        delete_emails(mail_connection, msg_ids, modified_subject)
+    except Exception:
+        pass
 
 
 def test_test_email_with_invalid_email_address(access_token_first):
