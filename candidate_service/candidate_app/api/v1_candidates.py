@@ -347,6 +347,16 @@ class CandidatesResource(Resource):
         # Add candidates to cloud search
         upload_candidate_documents.delay(created_candidate_ids)
 
+        # If candidate belongs to Kaiser, upload its document to us-west cloud search instance
+        # this is temporary; once Kaiser migrates to the new app, we should remove below code
+        if authed_user.domain_id in (90, 104):
+            try:
+                from candidate_service.modules.web2py_cloud_search import upload_candidate_documents_to_us_west
+                upload_candidate_documents_to_us_west(candidate_ids=created_candidate_ids)
+            except Exception as e:
+                logger.exception("Error while trying to upload candidate's docs to us-west CS."
+                                 "candidate_ids: %s; error message: %s", (created_candidate_ids, e.message))
+
         return {
                    'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids],
                    'errors': response_errors
