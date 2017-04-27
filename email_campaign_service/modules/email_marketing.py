@@ -1126,6 +1126,7 @@ def send_test_email(user, request):
     # Get and validate request data
     data = get_json_data_if_validated(request, TEST_EMAIL_SCHEMA)
     body_text = data.get('body_text', '')
+    reply_address = data.get('reply_to', '')
     [new_html, new_text, subject] = do_mergetag_replacements([data['body_html'], body_text, data['subject']],
                                                              request.user, requested_object=request.user)
     try:
@@ -1136,7 +1137,7 @@ def send_test_email(user, request):
                    # Can't be '', otherwise, text_body will not show in email
                    text_body=new_text,
                    to_addresses=data['email_address_list'],
-                   reply_address=user.email,
+                   reply_address=reply_address or user.email,
                    body=None,
                    email_format='html')
         logger.info('Test email has been sent to %s addresses. User(id:%s)'
