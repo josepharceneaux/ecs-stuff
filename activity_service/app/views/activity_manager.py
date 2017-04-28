@@ -149,7 +149,15 @@ class TalentActivityManager(object):
             "Push Campaign <b>%(campaign_name)s</b> has been sent to <b>%(candidate_name)s</b>.", "campaign.png"),
         Activity.MessageIds.CAMPAIGN_PUSH_CLICK: (
             "<b>%(candidate_name)s</b> clicked on Push Campaign <b>%(campaign_name)s</b>.",
-            "<b>%(candidate_name)s</b> clicked on %(campaign_name)s.", "campaign.png")
+            "<b>%(candidate_name)s</b> clicked on %(campaign_name)s.", "campaign.png"),
+        Activity.MessageIds.CANDIDATE_DOCUMENT_UPLOADED: (
+            "User %(user)s uploaded %(filename)s on %(candidate)s candidate's profile at %(time)s",
+            "%(count)s Candidate Documents have been uploaded"
+        ),
+        Activity.MessageIds.CANDIDATE_DOCUMENT_DELETED: (
+            "User %(user)s deleted %(filename)s on %(candidate)s candidate's profile at %(time)s",
+            "%(count)s Candidate Documents have been deleted"
+        )
     }
 
     def __init__(self, activity_params):
