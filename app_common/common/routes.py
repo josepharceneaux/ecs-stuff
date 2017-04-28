@@ -334,6 +334,9 @@ class CandidateApi(object):
     CUSTOM_FIELDS = '/' + VERSION + '/candidates/<int:candidate_id>/custom_fields'
     CUSTOM_FIELD = '/' + VERSION + '/candidates/<int:candidate_id>/custom_fields/<int:id>'
 
+    DOCUMENTS = '/' + VERSION + '/candidates/<int:candidate_id>/documents'
+    DOCUMENT = '/' + VERSION + '/candidates/<int:candidate_id>/documents/<int:id>'
+
     EDUCATIONS = '/' + VERSION + '/candidates/<int:candidate_id>/educations'
     EDUCATION = '/' + VERSION + '/candidates/<int:candidate_id>/educations/<int:id>'
 
@@ -435,6 +438,9 @@ class CandidateApiUrl(object):
 
     DEVICES = HOST_NAME % ('/' + VERSION + '/candidates/%s/devices')
     DEVICE = HOST_NAME % ('/' + VERSION + '/candidates/%s/devices/%s')
+
+    DOCUMENTS = HOST_NAME % ('/' + VERSION + '/candidates/%s/documents/')
+    DOCUMENT = HOST_NAME % ('/' + VERSION + '/candidates/%s/documents/%s')
 
     EMAILS = HOST_NAME % ('/' + VERSION + '/candidates/%s/emails')
     EMAIL = HOST_NAME % ('/' + VERSION + '/candidates/%s/emails/%s')
@@ -892,6 +898,7 @@ class EmailCampaignApi(object):
     TEMPLATE = '/' + VERSION + '/email-templates/<int:template_id>'
     TEMPLATE_FOLDERS = '/' + VERSION + '/email-template-folders'
     TEMPLATE_FOLDER = '/' + VERSION + '/email-template-folders/<int:folder_id>'
+    TEMPLATES_IN_FOLDER = '/' + VERSION + '/email-template-folders/<int:folder_id>/email-templates'
 
     """ URLs for email-clients """
     EMAIL_CLIENTS = '/' + VERSION + '/email-clients'
@@ -926,6 +933,7 @@ class EmailCampaignApiUrl(object):
     TEMPLATE = HOST_NAME % ('/' + VERSION + '/email-templates/%s')
     TEMPLATE_FOLDERS = HOST_NAME % ('/' + VERSION + '/email-template-folders')
     TEMPLATE_FOLDER = HOST_NAME % ('/' + VERSION + '/email-template-folders/%s')
+    TEMPLATES_IN_FOLDER = HOST_NAME % ('/' + VERSION + '/email-template-folders/%s/email-templates')
 
     """ URLs for email-clients """
     EMAIL_CLIENTS = HOST_NAME % ('/' + VERSION + '/email-clients')

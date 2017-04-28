@@ -164,6 +164,9 @@ candidates_resource_schema_post = {
                                 "custom_field_id": {
                                     "type": ["integer", "null"]
                                 },
+                                "custom_field_subcategory_id": {
+                                    "type": ["integer", "null"]
+                                },
                                 "value": {
                                     "type": ["string", "null"]
                                 },
@@ -552,7 +555,7 @@ candidates_resource_schema_post = {
                                 },
                                 "end_year": {
                                     "type": ["integer", "null"],
-                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                    "minimum": 1950, "maximum": CURRENT_YEAR + 50
                                 },
                                 "end_month": {
                                     "type": ["integer", "null"],
@@ -774,6 +777,9 @@ candidates_resource_schema_patch = {
                                     "type": ["integer", "null"]
                                 },
                                 "custom_field_id": {
+                                    "type": ["integer", "null"]
+                                },
+                                "custom_field_subcategory_id": {
                                     "type": ["integer", "null"]
                                 },
                                 "value": {

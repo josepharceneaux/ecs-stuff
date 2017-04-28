@@ -32,6 +32,10 @@ TEST_EMAIL_SCHEMA = {
         "from": {
             "type": "string",
             "pattern": "\S",
+        },
+        "reply_to": {
+            "type": "string",
+            "format": "email",
         }
     },
     "required": [

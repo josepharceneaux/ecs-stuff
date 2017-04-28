@@ -32,7 +32,7 @@ from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
     EmailCampaignSendUrlConversion
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product
+from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product, CustomFieldSubCategory
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.user import User, Permission
@@ -46,7 +46,7 @@ from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
     do_phones_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
-    get_education_degree_if_exists, does_military_service_exist, do_emails_exist, remove_duplicates
+    get_education_degree_if_exists, do_emails_exist, remove_duplicates
 )
 from track_changes import track_edits, track_areas_of_interest_edits
 
@@ -480,14 +480,35 @@ def candidate_military_services(candidate_id):
 
 def candidate_custom_fields(candidate):
     """
+    Function will return custom field information linked to the candidate, which include:
+      - candidate's domain custom field ID
+      - candidate's custom field value
+      - candidate's domain custom field subcategory
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    return [{'id': custom_field.id,
-             'custom_field_id': custom_field.custom_field_id,
-             'value': custom_field.value,
-             'created_at_datetime': custom_field.added_time.isoformat()
-             } for custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id).all()]
+
+    candidate_custom_fields_data = []
+
+    for candidate_custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id):
+        subcategory_id = candidate_custom_field.custom_field_subcategory_id
+        if subcategory_id:
+            sub_cat = CustomFieldSubCategory.get(subcategory_id)  # type: CustomFieldSubCategory
+            sub_cat_data = {'id': sub_cat.id, 'name': sub_cat.name}
+        else:
+            sub_cat_data = None
+
+        candidate_custom_fields_data.append(
+            {
+                'id': candidate_custom_field.id,
+                'custom_field_id': candidate_custom_field.custom_field_id,
+                'value': candidate_custom_field.value,
+                'created_at_datetime': candidate_custom_field.added_time.isoformat(),
+                'custom_field_subcategory': sub_cat_data
+            }
+        )
+
+    return candidate_custom_fields_data
 
 
 def candidate_social_networks(candidate):
@@ -949,7 +970,7 @@ def create_or_update_candidate_from_params(
         if candidate_id_from_dice_profile:
             raise InvalidUsage(error_message='Candidate already exists, creation failed',
                                error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
-                               additional_error_info={'id': candidate_id})
+                               additional_error_info={'id': candidate_id_from_dice_profile})
 
         # Figure out first_name, last_name, middle_name, and formatted_name from inputs
         if first_name or last_name or middle_name or formatted_name:
@@ -1373,14 +1394,15 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
 
     candidate_id = candidate.id
 
-    for custom_field in custom_fields:
+    for custom_field in custom_fields:  # type: dict
 
         # In case a list of custom field values are provided, we must remove all white spaces and all empty/none values
         values = filter(None, [value.strip() for value in (custom_field.get('values') or []) if value])
 
         custom_field_dict = dict(
             values=values or [(custom_field.get('value') or '').strip()],
-            custom_field_id=custom_field.get('custom_field_id')
+            custom_field_id=custom_field.get('custom_field_id'),
+            custom_field_subcategory_id=custom_field.get('custom_field_subcategory_id')
         )
 
         candidate_custom_field_id = custom_field.get('id')
@@ -2234,7 +2256,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, is_u
     """
     Function will update CandidateMilitaryService or create new one(s).
     """
-    candidate_id, candidate_military_services = candidate.id, candidate.military_services
+    candidate_id = candidate.id
     for military_service in remove_duplicates(military_services):
 
         # Convert ISO 8061 date object to datetime object
@@ -2289,12 +2311,10 @@ def _add_or_update_military_services(candidate, military_services, user_id, is_u
 
         else:  # Add
             military_service_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
-            if not does_military_service_exist(candidate_military_services, military_service_dict):
-                db.session.add(CandidateMilitaryService(**military_service_dict))
-
-                if is_updating:  # Track all updates
-                    track_edits(update_dict=military_service_dict, table_name='candidate_military_service',
-                                candidate_id=candidate_id, user_id=user_id)
+            db.session.add(CandidateMilitaryService(**military_service_dict))
+            if is_updating:  # Track all updates
+                track_edits(update_dict=military_service_dict, table_name='candidate_military_service',
+                            candidate_id=candidate_id, user_id=user_id)
 
 
 def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, is_updating):

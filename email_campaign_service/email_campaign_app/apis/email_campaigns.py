@@ -208,7 +208,8 @@ class TestEmailResource(Resource):
               "subject": "Test Email",
               "from": "Zohaib Ijaz",
               "body_html": "<html><body><h1>Welcome to email campaign service <a href=https://www.github.com>Github</a></h1></body></html>",
-              "emails": ["mzohaib.qc@gmail.com", "mzohaib.qc+1@gmail.com"]
+              "emails": ["mzohaib.qc@gmail.com", "mzohaib.qc+1@gmail.com"],
+              "reply_to": "abc@xyz.com"
             }
         """
         user = request.user

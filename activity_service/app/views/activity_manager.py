@@ -47,6 +47,18 @@ class TalentActivityManager(object):
                                                "<b>%(username)s</b> updated %(count)s candidates", "candidate.png"),
         Activity.MessageIds.CANDIDATE_DELETE: ("<b>%(username)s</b> deleted the candidate <b>%(formattedName)s</b>",
                                                "<b>%(username)s</b> deleted %(count)s candidates", "candidate.png"),
+
+        # Candidate De-Duping Activities
+        Activity.MessageIds.CANDIDATE_AUTO_MERGED: ("Candidate <b>%(formatted_name)s</b> was automatically merged with "
+                                                    "a duplicated profile.",
+                                                    "%(count)s candidates were updated", "candidate.png"),
+        Activity.MessageIds.CANDIDATE_USER_MERGED: ("<b>%(username)s</b> (User) merged candidate "
+                                                    "<b>%(formatted_name)s</b> with a duplicated profiles.",
+                                                    "%(count)s candidates were updated", "candidate.png"),
+        Activity.MessageIds.CANDIDATE_SENT_TO_MERGE_HUB: ("<b>%(formatted_name)s</b> was identified as a possible "
+                                                          "match. View in <a href='/candidates/mergehub'>Merge Hub</a> "
+                                                          "to resolve.",
+                                                          "%(count)s candidates were updated", "candidate.png"),
         Activity.MessageIds.CAMPAIGN_CREATE: (
             "<b>%(username)s</b> created an %(campaign_type)s campaign: <b>%(name)s</b>",
             "<b>%(username)s</b> created %(count)s campaigns", "campaign.png"),
@@ -142,7 +154,6 @@ class TalentActivityManager(object):
 
     def __init__(self, activity_params):
         self.activity_params = activity_params
-        logger.info('ACTIVITY::INFO::apiParams: {}'.format(vars(self.activity_params).items()))
 
     def get_activities(self):
         """Method for retrieving activity logs based on a domain ID that is extracted via an
@@ -201,21 +212,22 @@ class TalentActivityManager(object):
 
     # Like 'get' but gets the last 200 consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self):
-        logger.info("{} getting recent readable for {} - {}".format(self.activity_params.api_call,
-                                                                    self.activity_params.start_datetime or 'N/A',
-                                                                    self.activity_params.end_datetime or 'N/A'))
+        logs = [
+            "Getting recent readable for {} - {}\n".format(self.activity_params.start_datetime or 'N/A',
+                                                           self.activity_params.end_datetime or 'N/A')
+        ]
 
         limit = self.activity_params.aggregate_limit
         start_time = time()
         current_user = User.query.filter_by(id=self.activity_params.user_id).first()
-        logger.info("{} fetched current user in {} seconds".format(self.activity_params.api_call, time() - start_time))
+        logs.append("Fetched current user in {} seconds\n".format(time() - start_time))
 
         # Get the last 200 activities and aggregate them by type, with order.
         user_domain_id = current_user.domain_id
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
-        logger.info("{} fetched domain IDs in {} seconds".format(self.activity_params.api_call, time() - start_time))
+        logs.append("Fetched domain IDs in {} seconds\n".format(time() - start_time))
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
-        logger.info("{} flattened domain IDs in {} seconds".format(self.activity_params.api_call, time() - start_time))
+        logs.append("Flattened domain IDs in {} seconds\n".format(time() - start_time))
         filters = [Activity.user_id.in_(flattened_user_ids)]
 
         start, end = self.activity_params.start_datetime, self.activity_params.end_datetime
@@ -227,15 +239,13 @@ class TalentActivityManager(object):
         activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc()).limit(200).all()
         activities_count = len(activities)
 
-        logger.info("{} fetched {} activities in {} seconds".format(self.activity_params.api_call, activities_count,
-                                                                    time() - start_time))
+        logs.append("Fetched {} activities in {} seconds\n".format(activities_count, time() - start_time))
 
         aggregated_activities = []
         aggregated_activities_count = 0
         current_activity_count = 0
         aggregate_start, aggregate_end = datetime.today(), EPOCH
 
-        logger.info('Beginning enumerate loop for {}'.format(self.activity_params.api_call))
         for i, activity in enumerate(activities):
             if activity.added_time < aggregate_start:
                 aggregate_start = activity.added_time
@@ -250,7 +260,6 @@ class TalentActivityManager(object):
 
             # next activity is new, or the very last one, so aggregate these ones
             if activity.type != next_activity_type:
-                logger.info('{} new activity type hit'.format(self.activity_params.api_call))
                 activity_aggregate = {
                     'count': current_activity_count,
                     'start': aggregate_start.strftime(DATE_FORMAT),
@@ -258,8 +267,6 @@ class TalentActivityManager(object):
                 }
                 activity_aggregate['readable_text'] = self.activity_text(activity, activity_aggregate['count'],
                                                                          current_user)
-
-                logger.info('{} generated aggregate in {}s'.format(self.activity_params.api_call, time() - start_time))
 
                 aggregate_start, aggregate_end = datetime.today(), EPOCH
                 aggregated_activities.append(activity_aggregate)
@@ -271,10 +278,14 @@ class TalentActivityManager(object):
                 current_activity_count = 0
 
         finishing_time = time() - start_time
-        logger.info("{} finished making readable in {} seconds".format(self.activity_params.api_call, finishing_time))
+        logs.append("Finished making readable in {} seconds\n".format(finishing_time))
         if finishing_time > TIMEOUT_THRESHOLD:
-            logger.info('ActivityService::INFO::Timeout -  {} exceeded desired timeout at {}s'.format(
+            logs.append('ActivityService::INFO::Timeout -  {} exceeded desired timeout at {}s'.format(
                 self.activity_params, finishing_time))
+            log_string = ''
+            for log in logs:
+                log_string += log
+            logger.info(log_string)
         return aggregated_activities
 
     def activity_text(self, activity, count, current_user):
@@ -317,6 +328,4 @@ class TalentActivityManager(object):
             # To fix "You's recurring campaign has expired"
             formatted_string = formatted_string.replace("You's", "Your")
 
-        if single_count:
-            logger.info('ActivityService::INFO activity_text performed in {}s'.format(time() - start))
         return formatted_string

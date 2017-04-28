@@ -1,8 +1,10 @@
 import datetime
 
+from ..constants import CUSTOM_FIELD_TYPES
 from db import db
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import DOUBLE
+from contracts import contract
 
 from ..error_handling import InvalidUsage
 from candidate import CandidateMilitaryService
@@ -52,6 +54,11 @@ class Activity(db.Model):
         CANDIDATE_CREATE_CSV = 18
         CANDIDATE_CREATE_WIDGET = 19
         CANDIDATE_CREATE_MOBILE = 20  # TODO add in
+
+        # Candidate De-Duping Activities
+        CANDIDATE_AUTO_MERGED = 300
+        CANDIDATE_USER_MERGED = 301
+        CANDIDATE_SENT_TO_MERGE_HUB = 302
 
         # Params may include/require:
         # id, username, name (old), campaign_name (new), campaign_type, candidate_name,
@@ -106,10 +113,10 @@ class Activity(db.Model):
         CAMPAIGN_SMS_CLICK = 25
         CAMPAIGN_SMS_REPLY = 26
 
-    ####################################################################################################
-    #   V2.0+ Codes
-    #   Activity Codes are set up in blocks of 100 to avoid search for the last used int.
-    ####################################################################################################
+        ####################################################################################################
+        #   V2.0+ Codes
+        #   Activity Codes are set up in blocks of 100 to avoid search for the last used int.
+        ####################################################################################################
 
         # RESUME_PARSING_SERVICE 100-199
         # USER_SERVICE_PORT  200-299
@@ -286,7 +293,6 @@ class Country(db.Model):
                                               Country.code == name_or_code)).first()
         return country_row.id if country_row else None
 
-
     @classmethod
     def country_name_from_country_id(cls, country_id):
         if not country_id:
@@ -428,13 +434,14 @@ class CustomField(db.Model):
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     name = db.Column('Name', db.String(255))
     type = db.Column('Type', db.String(127))
-    category_id = db.Column('CategoryId', db.Integer)
-    added_time = db.Column('AddedTime', db.DateTime)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationship
     candidate_custom_fields = relationship('CandidateCustomField', backref='custom_field',
                                            cascade="all, delete-orphan", passive_deletes=True)
+    categories = relationship('CustomFieldCategory', backref='custom_field',
+                              cascade='all, delete-orphan', passive_deletes=True)
 
     def __repr__(self):
         return "<CustomField (name = %r)>" % self.name
@@ -449,19 +456,52 @@ class CustomField(db.Model):
         :type domain_id:  int|long
         :rtype:  list[CustomField]
         """
-        return cls.query.filter(CustomField.domain_id==domain_id).all()
+        return cls.query.filter(CustomField.domain_id == domain_id).all()
+
+    @classmethod
+    @contract
+    def get_by_domain_id_and_filter_by_name_and_type(cls, domain_id, search_keyword, sort_by, sort_type, cf_type):
+        """
+        This method will return custom fields of a domain filtered by name against search_keyword
+        :param positive domain_id: User Domain Id
+        :param string search_keyword: Search keyword
+        :param string sort_by: Sort by name or added_time
+        :param string sort_type: Sort Type ASC or DSC
+        :param string cf_type: Custom Field Type input or pre-defined
+        """
+        if sort_by == 'name':
+            sort_by_object = cls.name
+        else:
+            sort_by_object = cls.added_time
+
+        if sort_type == 'ASC':
+            sort_by_object = sort_by_object.asc()
+        else:
+            sort_by_object = sort_by_object.desc()
+        filtered_query = cls.query.filter(cls.domain_id == domain_id, cls.name.ilike('%' + search_keyword + '%'))
+
+        return filtered_query.filter(cls.type == cf_type).order_by(sort_by_object) if cf_type in\
+                                                                                      CUSTOM_FIELD_TYPES.values()\
+            else filtered_query.order_by(sort_by_object)
 
 
 class CustomFieldCategory(db.Model):
     __tablename__ = 'custom_field_category'
     id = db.Column(db.Integer, primary_key=True)
+    custom_field_id = db.Column(db.Integer, db.ForeignKey('custom_field.id'))
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(255))
+    added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    # Relationships
+    subcategories = relationship('CustomFieldSubCategory', backref='custom_field_category',
+                                 cascade='all, delete-orphan', passive_deletes=True)
 
     def __repr__(self):
         return "<CustomFieldCategory (id = {})>".format(self.id)
 
+    # TODO: remove and all its usages since CFC will no longer be linked to domains
     @classmethod
     def get_all_in_domain(cls, domain_id):
         """
@@ -472,16 +512,16 @@ class CustomFieldCategory(db.Model):
         return cls.query.filter_by(domain_id=domain_id).all()
 
 
-# class PatentDetail(db.Model):
-#     __tablename__ = 'patent_detail'
-#     id = db.Column('Id', db.BIGINT, primary_key=True)
-#     patent_id = db.Column('PatentId', db.BIGINT)
-#     issuing_authority = db.Column('IssuingAuthority', db.String(255))
-#     country_id = db.Column('CountryId', db.INT, db.ForeignKey('country.Id'))
-#     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetim.utcnow)
-#
-#     def __repr__(self):
-#         return "<PatentDetail (id = {})>".format(self.id)
+class CustomFieldSubCategory(db.Model):
+    __tablename__ = 'custom_field_subcategory'
+    id = db.Column(db.Integer, primary_key=True)
+    custom_field_category_id = db.Column(db.Integer, db.ForeignKey('custom_field_category.id'))
+    name = db.Column(db.String(255))
+    added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    def __repr__(self):
+        return "<CustomFieldSubCategory (id = {})>".format(self.id)
 
 
 class UrlConversion(db.Model):
@@ -531,5 +571,3 @@ class UrlConversion(db.Model):
                                                        passive_deletes=True,
                                                        backref='url_conversion',
                                                        lazy='dynamic')
-
-

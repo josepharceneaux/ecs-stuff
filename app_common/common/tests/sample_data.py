@@ -7,6 +7,7 @@ from random import randrange
 
 # Faker
 from faker import Faker
+
 fake = Faker()
 
 
@@ -49,7 +50,7 @@ def generate_single_candidate_data():
             'educations': [
                 {'school_name': 'SJSU', 'city': 'San Jose', 'country': 'USA', 'degrees': [
                     {'type': 'BS', 'title': 'dancing',
-                     'degree_bullets': [{'major': fake.job()}]   # TODO major
+                     'degree_bullets': [{'major': fake.job()}]  # TODO major
                      }
                 ]}
             ],
@@ -62,7 +63,7 @@ def generate_single_candidate_data():
                 {'city': fake.city(), 'region': fake.state()}  # TODO state
             ],
             'skills': [
-                {'name': 'payroll'}, {'name': 'sql'}, {'name': 'excell'} # TODO name
+                {'name': 'payroll'}, {'name': 'sql'}, {'name': 'excell'}  # TODO name
             ],
             'social_networks': [
                 {'profile_url': 'http://www.facebook.com/1024359318', 'name': 'facebook'},
@@ -88,7 +89,7 @@ def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
             'middle_name': fake.first_name(),
             'last_name': fake.last_name(),
             'emails': [
-                {'id': email_1_id,'label': 'Primary', 'address': fake.email()},
+                {'id': email_1_id, 'label': 'Primary', 'address': fake.email()},
                 {'id': email_2_id, 'label': 'work', 'address': fake.company_email()}
             ],
             'phones': [
@@ -117,7 +118,7 @@ def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
             'educations': [
                 {'id': education_1_id, 'school_name': 'SJSU', 'city': 'San Jose',
                  'country': 'USA', 'degrees': [
-                    {'id': degree_1_id,'type': 'BS', 'title': 'dancing'}
+                    {'id': degree_1_id, 'type': 'BS', 'title': 'dancing'}
                 ]}
             ],
             'military_services': [
@@ -141,3 +142,41 @@ def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
     ]}
 
     return data
+
+
+def sample_cf_data(count=1):
+    """
+    Function creates n-number of custom fields sample data
+    :param count: int | number of custom fields' data
+    """
+
+    def _maker():
+        return {
+            "name": fake.name(),
+            "categories": [
+                {
+                    "name": fake.name(),
+                    "subcategories": [{"name": fake.name()}, {"name": fake.name()}]
+                },
+                {
+                    "name": "red",
+                    "subcategories": [{"name": fake.name()}, {"name": fake.name()}]
+                }
+            ]
+        }
+
+    return {"custom_fields": [_maker() for _ in xrange(count)]}
+
+
+def sample_cf_categories(count=1):
+    def _maker():
+        return {"name": fake.name(), "subcategories": [{"name": fake.name()}, {"name": fake.name()}]}
+
+    return [_maker() for _ in xrange(count)]
+
+
+def sample_subcategories(count=1):
+    def _maker():
+        return {"name": fake.name()}
+
+    return [_maker() for _ in xrange(count)]

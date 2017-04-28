@@ -1,0 +1,15 @@
+"""
+Change the ATS use of product table
+"""
+
+
+from sqlalchemy import text
+from candidate_service.common.models.db import db
+
+
+db.session.execute(text("delete from product where name = 'iCIMS'"))
+db.session.execute(text("delete from product where name = 'Greenhouse'"))
+
+db.session.execute(text("insert ignore into product (Name, Notes) select * from (select 'ATS', 'Applicant Tracking System') as tmp where not exists (select Name from product where Name ='ATS') limit 1"))
+
+db.session.commit()

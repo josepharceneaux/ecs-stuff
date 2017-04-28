@@ -672,8 +672,9 @@ class CandidateDocument(db.Model):
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     filename = db.Column('Filename', db.String(260))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
+    key_path = db.Column('KeyPath', db.String(255))
+    added_datetime = db.Column('AddedDateTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('UpdatedDateTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<CandidateDocument (id = {})>".format(self.id)
@@ -1268,6 +1269,7 @@ class CandidateCustomField(db.Model):
     value = db.Column('Value', db.Text)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     custom_field_id = db.Column('CustomFieldId', db.Integer, db.ForeignKey('custom_field.id', ondelete='CASCADE'))
+    custom_field_subcategory_id = db.Column(db.Integer, db.ForeignKey('custom_field_subcategory.id'))
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 

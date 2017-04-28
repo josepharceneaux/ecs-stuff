@@ -25,6 +25,7 @@ LOCAL_CONFIG_PATH = ".talent/%s" % CONFIG_FILE_NAME
 STAGING_CONFIG_FILE_S3_BUCKET = "gettalent-private-staging"
 PROD_CONFIG_FILE_S3_BUCKET = "gettalent-private"
 JENKINS_CONFIG_FILE_S3_BUCKET = "gettalent-private-jenkins"
+AWS_JENKINS_CONFIG_FILE_S3_BUCKET = "gettalent-private-awsjenkins"
 
 
 class TalentConfigKeys(object):
@@ -77,19 +78,20 @@ class TalentEnvs(object):
     """
     DEV = 'dev'
     JENKINS = 'jenkins'
+    AWS_JENKINS = 'awsjenkins'
     QA = 'qa'
     PROD = 'prod'
 
 
 def load_gettalent_config(app_config):
     """
-    Load configuration variables from env vars, conf file, or S3 bucket (if QA/prod)
+    Load configuration variables from env vars, conf file, or S3 bucket (if QA/prod/CI)
     :param flask.config.Config app_config: Flask configuration object
     :return: None
     """
     app_config.root_path = os.path.expanduser('~')
 
-    # Load up config from file on local filesystem (for local dev & Jenkins only).
+    # Load up config from file on local filesystem (for local dev only).
     app_config.from_pyfile(LOCAL_CONFIG_PATH, silent=True)  # silent=True avoids errors in CI/QA/prod envs
 
     # Make sure that the environment and AWS credentials are defined
@@ -101,7 +103,7 @@ def load_gettalent_config(app_config):
     app_config[TalentConfigKeys.LOGGER] = logging.getLogger("flask_service.%s" % app_config[TalentConfigKeys.ENV_KEY])
 
     # Load up config from private S3 bucket, if environment is qa or prod
-    if app_config[TalentConfigKeys.ENV_KEY] in (TalentEnvs.QA, TalentEnvs.PROD, TalentEnvs.JENKINS):
+    if app_config[TalentConfigKeys.ENV_KEY] in (TalentEnvs.QA, TalentEnvs.PROD, TalentEnvs.JENKINS, TalentEnvs.AWS_JENKINS):
         # Open S3 connection to default region & use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY env vars
         from boto.s3.connection import S3Connection
         s3_connection = S3Connection()
@@ -109,6 +111,8 @@ def load_gettalent_config(app_config):
             bucket_name = PROD_CONFIG_FILE_S3_BUCKET
         elif app_config[TalentConfigKeys.ENV_KEY] == TalentEnvs.QA:
             bucket_name = STAGING_CONFIG_FILE_S3_BUCKET
+        elif app_config[TalentConfigKeys.ENV_KEY] == TalentEnvs.AWS_JENKINS:
+            bucket_name = AWS_JENKINS_CONFIG_FILE_S3_BUCKET
         else:
             bucket_name = JENKINS_CONFIG_FILE_S3_BUCKET
 

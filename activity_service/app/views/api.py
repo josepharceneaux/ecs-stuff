@@ -26,8 +26,8 @@ POSTS_PER_PAGE = 20
 mod = Blueprint('activities_api_v1', __name__)
 
 ACTIVITY_REQUIREMENTS = [
-    'api_call', 'user_id', 'exclude_current_user', 'start_datetime', 'end_datetime', 'is_aggregate_request',
-    'aggregate_limit', 'post_qty', 'page'
+    'user_id', 'exclude_current_user', 'start_datetime', 'end_datetime', 'is_aggregate_request', 'aggregate_limit',
+    'post_qty', 'page'
 ]
 ActivityParams = namedtuple('ActivityParams', ACTIVITY_REQUIREMENTS)
 
@@ -39,14 +39,12 @@ def get_activities(page):
     :param int page: Page used in pagination for GET requests.
     :return: JSON formatted pagination response or message notifying creation status.
     """
-    api_id = uuid4()
-    logger.info("Call to activity service with id: {}".format(api_id))
     rargs = request.args
     start_datetime, end_datetime = None, None
     valid_user_id = request.user.id
     aggregate = rargs.get('aggregate') == '1'  # TODO see if int arg can be used
     aggregate_limit = rargs.get('aggregate_limit', '5')
-    post_qty = rargs.get('post_qty') if rargs.get('post_qty') else POSTS_PER_PAGE
+    post_qty = int(rargs.get('post_qty')) if rargs.get('post_qty') else POSTS_PER_PAGE
     start_param = rargs.get('start_datetime')
     end_param = rargs.get('end_datetime')
     exclude_current_user = True if rargs.get('exclude_current_user') == '1' else False
@@ -70,18 +68,15 @@ def get_activities(page):
         except ValueError:
             return jsonify({'error': {'message': 'page parameter must be an integer'}}), STATUS_CODES.bad
 
-    activity_params = ActivityParams(api_id, valid_user_id, exclude_current_user, start_datetime, end_datetime,
-                                     aggregate, aggregate_limit, post_qty, request_page)
+    activity_params = ActivityParams(valid_user_id, exclude_current_user, start_datetime, end_datetime, aggregate,
+                                     aggregate_limit, post_qty, request_page)
 
     tam = TalentActivityManager(activity_params)
 
     if aggregate:
-        logger.info('Aggregate call made with id: {}'.format(api_id))
-
         return jsonify({'activities': tam.get_recent_readable()}), 200
 
     else:
-        logger.info('Individual call made with id: {}'.format(api_id))
         return jsonify(tam.get_activities())
 
 

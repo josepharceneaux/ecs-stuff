@@ -106,3 +106,8 @@ class CandidateCustomErrors(object):
     # Error codes for Candidate Notes
     NOTE_NOT_FOUND = 3290
     NOTE_FORBIDDEN = 3291
+
+    # Error codes for Candidate Document
+    INVALID_DOCUMENT_PARAMS = 3292
+    DOCUMENT_NOT_FOUND = 3293
+    DOCUMENT_SAVING_ERROR = 3294
