@@ -93,12 +93,12 @@ def convert_csv_to_table(csv_file):
                 column = row[column_index] if len(row) > column_index else ''
                 if column:
                     is_row_empty = False  # to ignore empty rows
+
+                encoding = chardet.detect(column.strip(' '))['encoding']
                 try:
-                    row_array.append(
-                        column.strip(' ').decode(chardet.detect(column.strip(' '))['encoding'] or 'cp1252'))
+                    row_array.append(column.strip(' ').decode(encoding or 'cp1252'))
                 except UnicodeDecodeError:
-                    row_array.append(
-                        column.strip(' ').decode(chardet.detect(column.strip(' '))['encoding'] or 'latin-1'))
+                    row_array.append(column.strip(' ').decode(encoding or 'latin-1'))
             if not is_row_empty:
                 csv_table.append(row_array)
         return csv_table
