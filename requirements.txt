@@ -13,8 +13,8 @@ itsdangerous==0.24
 Jinja2==2.8
 mysql-python==1.2.5
 oauthlib==1.0.3
-pytest==2.9.1
-pytest-xdist==1.13.1
+pytest==3.0.7
+pytest-xdist==1.16.0
 pytest-mock==0.11.0
 pytest-html==1.13.0
 pytest-json==0.4.0
