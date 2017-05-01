@@ -2,6 +2,7 @@
 File contains unittests for testing functions used by the candidate-service
 """
 import random
+from candidate_service.modules.utils import get_candidate_name
 from faker import Faker
 from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
 from candidate_service.modules.talent_candidates import CandidateTitle
@@ -211,3 +212,12 @@ class TestRemoveTabs(object):
         }
 
         assert expected == r
+
+
+def test_candidate_name():
+    assert get_candidate_name('First', 'Last', 'Formatted Name') == 'Formatted Name'
+    assert get_candidate_name('First', 'Last', None) == 'First Last'
+    assert get_candidate_name('First', None, None) == 'First'
+    assert get_candidate_name('First', '', '') == 'First'
+    assert get_candidate_name('First', 'Last', '') == 'First Last'
+    assert get_candidate_name(None, None, None) == 'Unknown'  # so three nones walk into a function

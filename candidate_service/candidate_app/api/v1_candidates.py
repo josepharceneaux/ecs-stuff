@@ -86,6 +86,7 @@ from candidate_service.common.utils.handy_functions import normalize_value, time
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
 from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
+from candidate_service.modules.utils import get_candidate_name
 
 
 class CandidatesResource(Resource):
@@ -335,7 +336,9 @@ class CandidatesResource(Resource):
                 tam = TalentActivityManager(db, activity_model=Activity,logger=logger)
                 tam.create_activity({
                     'activity_params': {'username': authed_user.email,
-                                        'formatted_name': candidate_data.get('formatted_name') or 'Unknown'},
+                                        'formatted_name': get_candidate_name(candidate_data.get('first_name'),
+                                                                             candidate_data.get('last_name'),
+                                                                             candidate_data.get('full_name'))},
                     'activity_type': 'CANDIDATE_CREATE_WEB',
                     'activity_type_id': Activity.MessageIds.CANDIDATE_CREATE_WEB,
                     'domain_id': domain_id,
