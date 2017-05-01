@@ -14,6 +14,9 @@ from candidate_service.common.tests.conftest import user_first
 
 
 class TestCandidateDocument(object):
+    """
+    Class contains functional tests for all candidate-document CRUD operations
+    """
     def test_document_life_cycle(self, access_token_first, candidate_first):
         test_post_response = requests.post(
             CandidateApiUrl.DOCUMENTS % candidate_first.id,

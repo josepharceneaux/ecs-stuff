@@ -41,6 +41,7 @@ from candidate_service.common.models.candidate import (
     CandidateSubscriptionPreference, CandidatePhoto, CandidateSource,
     CandidateStatus, CandidateDocument
 )
+from candidate_service.common.models.candidate_edit import CandidateEdit
 from candidate_service.common.models.db import db
 from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField, Product
@@ -67,6 +68,7 @@ from candidate_service.modules.talent_candidates import (
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
     add_languages, update_candidate_languages, CachedData, CandidateTitle
 )
+from candidate_service.modules.track_changes import track_edits
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 from candidate_service.modules.talent_openweb import (
     match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict,
@@ -1659,7 +1661,7 @@ class CandidatePreferenceResource(Resource):
         # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
         frequency_id = frequency_id if is_number(frequency_id) else None
-        
+
         if frequency_id and not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
@@ -2116,16 +2118,27 @@ class CandidateDocumentResource(Resource):
         S3 upload is handled by FilePicker.
         :param kwargs: dict like {'candidate_id': 489}
         """
-        request_json = request.json
+        # Remove whitespaces & empty values
+        request_json = {k: v.strip() for k, v in request.json.items() if v}
+
         if not all(key in self.REQUIRED_POST_KEYS for key in request_json):
             raise InvalidUsage('Missing required JSON keys', custom_error.INVALID_DOCUMENT_PARAMS)
 
         candidate_id = kwargs['candidate_id']
         if not does_candidate_belong_to_users_domain(request.user, candidate_id):
-            raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
+
         request_json['candidate_id'] = candidate_id
         candidate_document = CandidateDocument(**request_json)
         db.session.add(candidate_document)
+
+        # Track changes made to candidate's profile
+        track_edits(
+            update_dict={'filename': request_json['filename'], 'key_path': request_json['key_path']},
+            table_name='candidate_document',
+            candidate_id=candidate_id,
+            user_id=request.user.id
+        )
 
         try:
             db.session.commit()
@@ -2163,13 +2176,15 @@ class CandidateDocumentResource(Resource):
             }
         :param kwargs: dict like {'candidate_id': 511, 'id': 17} where id is the document id
         """
-        request_json = request.json
+        # Remove whitespaces & empty values
+        request_json = {k: v.strip() for k, v in request.json.items() if v}
+
         if 'filename' not in request_json:
             raise InvalidUsage('Missing required JSON keys', custom_error.INVALID_DOCUMENT_PARAMS)
 
         candidate_id = kwargs['candidate_id']
         if not does_candidate_belong_to_users_domain(request.user, candidate_id):
-            raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
 
         document_id = kwargs['id']
 
@@ -2178,11 +2193,19 @@ class CandidateDocumentResource(Resource):
             logger.error('CandidateDocument PATCH not found with: {}'.format(str(kwargs)))
             return NotFoundError('CandidateDocument not found', custom_error.DOCUMENT_NOT_FOUND)
 
+        # Track changes made to candidate's profile
+        db.session.add(CandidateEdit(
+            candidate_id=candidate_id,
+            user_id=request.user.id,
+            field_id=1901,  # CandidateEdit -> candidate-document filename
+            old_value=document.filename,
+            new_value=request_json['filename']
+        ))
+
         document.filename = request_json['filename']
-        db.session.add(document)
         db.session.commit()
 
-        return '', 204
+        return '', 204  # TODO: should return document's ID when moving to gQL
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
@@ -2192,16 +2215,33 @@ class CandidateDocumentResource(Resource):
         """
         candidate_id = kwargs['candidate_id']
         if not does_candidate_belong_to_users_domain(request.user, candidate_id):
-            raise InvalidUsage('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Candidate does not belong to User\'s domain', custom_error.CANDIDATE_FORBIDDEN)
 
         document_id = kwargs['id']
 
-        document = CandidateDocument.query.get(document_id)
+        document = CandidateDocument.query.get(document_id)  # type: CandidateDocument
         if not document:
             logger.error('CandidateDocument Delete not found with: {}'.format(str(kwargs)))
             return NotFoundError('CandidateDocument not found', custom_error.DOCUMENT_NOT_FOUND)
 
         db.session.delete(document)
+
+        # Track changes made to candidate's profile
+        for k, v in document.to_json().items():
+
+            # If field_id is not found, do not add record
+            field_id = CandidateEdit.get_field_id('candidate_document', k)
+            if not field_id:
+                continue
+
+            db.session.add(CandidateEdit(
+                candidate_id=candidate_id,
+                user_id=request.user.id,
+                field_id=field_id,
+                old_value=v,
+                new_value=None
+            ))
+
         db.session.commit()
 
         return '', 204
