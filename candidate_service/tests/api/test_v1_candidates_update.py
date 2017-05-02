@@ -731,7 +731,7 @@ class TestUpdateCandidateAOI(object):
         assert isinstance(candidate_aois, list)
         assert candidate_aois[0]['name'] == db.session.query(AreaOfInterest).get(candidate_aois[0]['id']).name
         assert candidate_aois[1]['name'] == db.session.query(AreaOfInterest).get(candidate_aois[1]['id']).name
-        assert len(candidate_aois) == candidate_area_of_interest_count + 2
+        assert len(candidate_aois) == candidate_area_of_interest_count + len(domain_aois)
 
 
 class TestUpdateWorkPreference(object):
