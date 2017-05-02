@@ -8,9 +8,6 @@ pip install --upgrade pip
 # Install Requirements
 pip install -r requirements.txt
 
-echo -n "GREP loggly: "
-pip freeze | grep loggly
-
 # Build Docker Images
 sudo service docker restart
 
@@ -25,6 +22,10 @@ sudo usermod -aG docker jenkins
 docker stop $(docker ps -a -q)
 docker rm $(docker ps -a -q)
 docker images -qf "dangling=true" | xargs docker rmi
+
+# Reset Database and Amazon Cloud Search
+export PYTHONPATH=.
+python setup_environment/reset_database_and_cloud_search.py
 
 # Build the micro service images
 cd base_service_container && tar -czh . | docker build -t gettalent/base-service-container:latest - && cd ../
@@ -49,10 +50,6 @@ cd widget_service && tar -czh . | docker build -t gettalent/widget-service:lates
 
 # TODO: Move scheduler service admin to another repo
 # cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-service-admin:latest - && cd ../
-
-# Reset Database and Amazon Cloud Search
-export PYTHONPATH=.
-python setup_environment/reset_database_and_cloud_search.py
 
 # Start Docker Containers for all apps before testing them
 
@@ -89,9 +86,8 @@ py.test banner_service/tests
 # Commenting out due to talent_pool issues (passing locally)
 # py.test widget_service/tests
 
-py.test -n 48 scheduler_service/tests auth_service/tests candidate_pool_service/tests spreadsheet_import_service/tests app_common/common/tests talentbot_service/tests
-# Commented out due to failures on jenkins
-# candidate_service/tests user_service/tests
+py.test -n 48 scheduler_service/tests auth_service/tests candidate_service/tests user_service/tests candidate_pool_service/tests spreadsheet_import_service/tests app_common/common/tests talentbot_service/tests
+
 # email_campaign_service/tests social_network_service/tests
 # Commented out due to ActivitySearching failures
 # sms_campaign_service/tests
