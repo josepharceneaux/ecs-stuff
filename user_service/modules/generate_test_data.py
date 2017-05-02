@@ -78,8 +78,9 @@ def create_user_with_domain_admin_role(domain_id, group_id):
     :param int | long group_id: user's group id
     :rtype: User
     """
+    timestamp = str(time.time()) + gen_salt(10)
     role = Role.get_by_name('DOMAIN_ADMIN')
-    user = User(email=fake.word(), domain_id=domain_id, user_group_id=group_id, password=TEST_PASSWORD, role_id=role.id)
+    user = User(email=fake.word() + timestamp, domain_id=domain_id, user_group_id=group_id, password=TEST_PASSWORD, role_id=role.id)
     User.save(user)
     logger.debug('create_test_user: Created a test user: %s', user.name)
     return user
