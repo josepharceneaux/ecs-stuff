@@ -23,9 +23,6 @@ docker stop $(docker ps -a -q)
 docker rm $(docker ps -a -q)
 docker images -qf "dangling=true" | xargs docker rmi
 
-# Reset Database and Amazon Cloud Search
-export PYTHONPATH=.
-python setup_environment/reset_database_and_cloud_search.py
 
 # Build the micro service images
 cd base_service_container && tar -czh . | docker build -t gettalent/base-service-container:latest - && cd ../
@@ -52,6 +49,10 @@ cd widget_service && tar -czh . | docker build -t gettalent/widget-service:lates
 # cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-service-admin:latest - && cd ../
 
 # Start Docker Containers for all apps before testing them
+
+# Reset Database and Amazon Cloud Search
+export PYTHONPATH=.
+python setup_environment/reset_database_and_cloud_search.py
 
 ENV_VARIABLES=("GT_ENVIRONMENT" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY")
 
