@@ -8,6 +8,7 @@ from candidate_sample_data import (
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
 from candidate_service.common.models.candidate import CandidateEmail
+from candidate_service.common.models.misc import Activity
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.iso_standards import get_country_name
 from candidate_service.common.utils.test_utils import send_request, response_info
@@ -318,6 +319,37 @@ class TestCreateCandidateSuccessfully(object):
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
         assert create_resp.status_code == requests.codes.CREATED
+
+    def test_add_candidate_activity(self, user_first, access_token_first, talent_pool):
+        test_first, test_last = fake.first_name(), fake.last_name()
+        data = {'candidates': [
+            {
+                'first_name': test_first, 'last_name': test_last,
+                'talent_pool_ids': {'add': [talent_pool.id]}
+            }
+        ]}
+        create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
+        assert create_resp.status_code == requests.codes.CREATED
+        db.session.commit() # Session mismatch issue
+        user_activity = Activity.query.filter_by(user_id = user_first.id).first()
+        assert "{} {}".format(test_first, test_last) in user_activity.params
+
+    def test_add_candidate_full_name_activity(self, user_first, access_token_first, talent_pool):
+        test_name = fake.name()
+        data = {'candidates': [
+            {
+                'full_name': test_name,
+                'talent_pool_ids': {'add': [talent_pool.id]}
+            }
+        ]}
+        create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
+        assert create_resp.status_code == requests.codes.CREATED
+        db.session.commit()  # Session mismatch issue
+        user_activity = Activity.query.filter_by(user_id=user_first.id).first()
+        assert test_name in user_activity.params
+
+
+
 
 
 class TestCreateInvalidCandidates(object):

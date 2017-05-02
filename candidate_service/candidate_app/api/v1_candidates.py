@@ -338,7 +338,7 @@ class CandidatesResource(Resource):
                     'activity_params': {'username': authed_user.email,
                                         'formatted_name': get_candidate_name(candidate_data.get('first_name'),
                                                                              candidate_data.get('last_name'),
-                                                                             candidate_data.get('full_name'))},
+                                                                             candidate_data.get('formatted_name'))},
                     'activity_type': 'CANDIDATE_CREATE_WEB',
                     'activity_type_id': Activity.MessageIds.CANDIDATE_CREATE_WEB,
                     'domain_id': domain_id,
