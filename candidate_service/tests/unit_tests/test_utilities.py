@@ -20,12 +20,6 @@ class TestMostRecentPosition(object):
         print "CandidateTitle: {}".format(t.title)
         assert t.title is None
 
-    def test_with_no_dates(self):
-        experiences = [{'position': fake.job()}, {'position': fake.job()}]
-        t = CandidateTitle(experiences)
-        print "CandidateTitle: {}".format(t.title)
-        assert t.title is None
-
     def test_with_is_current(self):
         experiences = [
             {'position': fake.job()},
@@ -84,32 +78,6 @@ class TestMostRecentPosition(object):
         t = CandidateTitle(experiences)
         print "CandidateTitle: {}".format(t.title)
         assert t.title == experiences[0]['position']
-
-    def test_with_title(self):
-        title = fake.job()
-        t = CandidateTitle(title=title)
-        assert t.title == title
-
-    def test_with_title_and_experiences(self):
-        experiences = [
-            {
-                'position': fake.job(),
-                'start_year': 2016,
-                'start_month': 3,
-                'end_year': 2017,
-                'end_month': 4
-            },
-            {
-                'position': fake.job(),
-                'start_year': 2016,
-                'start_month': 1,
-                'end_year': 2017,
-                'end_month': 2
-            }
-        ]
-        title = fake.job()
-        t = CandidateTitle(experiences, title)
-        assert t.title == title
 
 
 class TestRemoveTabs(object):
