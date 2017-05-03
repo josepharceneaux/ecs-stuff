@@ -69,7 +69,7 @@ class DomainCustomFieldCategoriesResource(Resource):
         body_dict = get_json_data_if_validated(request, cf_schema_post, False)
 
         # User must be a Talent Admin to create domain custom fields
-        if request.user.role.name != 'TALENT_ADMIN':
+        if request.user.role.name not in ('TALENT_ADMIN', 'DOMAIN_ADMIN'):
             raise ForbiddenError("Not authorized")  # TODO: custom error codes
 
         return {
