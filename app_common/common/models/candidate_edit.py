@@ -159,6 +159,10 @@ class CandidateEdit(db.Model):
         },
         'talent_pipeline': {
             'id': 1801
+        },
+        'candidate_document': {
+            'filename': 1901,
+            'key_path': 1902
         }
     }
 

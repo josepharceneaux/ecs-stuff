@@ -43,7 +43,7 @@ def _get_host_name(service_name, port_number):
         # This looks like http://127.0.0.1:8001 (for auth service)
         return LOCAL_HOST + ':' + str(port_number) + '%s'
     elif env == TalentEnvs.JENKINS:
-        return 'http://aws-jenkins.gettalent.com' + ':' + str(port_number) + '%s'
+        return 'http://jenkins.gettalent.com' + ':' + str(port_number) + '%s'
     elif env == TalentEnvs.QA:
         # This looks like:  https://auth-service-staging.gettalent.com%s
         return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'

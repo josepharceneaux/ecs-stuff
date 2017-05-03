@@ -78,6 +78,9 @@ db.init_app(app)
 db.app = app
 db.reflect()
 
+db.session.rollback()
+db.session.commit()
+
 query = ''
 db.session.connection().execute('SET FOREIGN_KEY_CHECKS = 0;')
 for table_key in db.metadata.tables.keys():

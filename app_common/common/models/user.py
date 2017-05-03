@@ -211,6 +211,7 @@ class User(db.Model):
         user = User(email='{}@example.com'.format(uuid.uuid4().__str__()),
                     password=generate_password_hash(password, method='pbkdf2:sha512'),
                     domain_id=domain_id,
+                    first_name='FakeFirst',
                     user_group_id=user_group_id,
                     expiration=None, role_id=role_id)
         session.add(user)
