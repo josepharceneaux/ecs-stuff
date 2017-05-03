@@ -13,12 +13,12 @@ app, logger = init_talent_app(__name__)
 
 try:
     from views import api
-    # from views import api_v2
+    from views import api_v2
     app.register_blueprint(api.mod)
-    # app.register_blueprint(api_v2.api_v2, url_prefix='/v2')
+    app.register_blueprint(api_v2.api_v2, url_prefix='/v2')
 
     logger.info("Starting activity_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
 except Exception as e:
-    logger.exception("Couldn't start activity_service in %s environment because: %s"
-                     % (app.config[TalentConfigKeys.ENV_KEY], e.message))
+    logger.exception("Couldn't start activity_service in %s environment because: %s" %
+                     (app.config[TalentConfigKeys.ENV_KEY], e.message))
