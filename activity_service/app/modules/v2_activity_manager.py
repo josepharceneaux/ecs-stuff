@@ -46,6 +46,7 @@ def activity_text(activity, user_name):
         formatted_string = format_string.format(**params)
     except UnicodeEncodeError:
         logger.exception('V2UnicodeError: {}'.format(params))
+        return None
 
     if 'You has' in formatted_string:
         # To fix 'You has joined'
