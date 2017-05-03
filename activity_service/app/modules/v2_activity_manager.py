@@ -3,6 +3,7 @@ import json
 import re
 
 from activity_service.app.constants.activity_messaging import MESSAGES
+from activity_service.app import logger
 
 EPOCH = datetime(year=1970, month=1, day=1)
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
@@ -41,7 +42,10 @@ def activity_text(activity, user_name):
     for k, v in params.iteritems():
         params[k] = v.encode('utf-8', 'replace')
 
-    formatted_string = format_string.format(**params)
+    try:
+        formatted_string = format_string.format(**params)
+    except UnicodeEncodeError:
+        logger.exception('V2UnicodeError: {}'.format(params))
 
     if 'You has' in formatted_string:
         # To fix 'You has joined'
