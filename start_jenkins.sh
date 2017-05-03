@@ -42,6 +42,7 @@ cd ats_service && tar -czh . | docker build -t gettalent/ats-service:latest - &&
 cd mock_service && tar -czh . | docker build -t gettalent/mock-service:latest - && cd ../
 cd talentbot_service && tar -czh . | docker build -t gettalent/talentbot-service:latest - && cd ../
 cd graphql_service && tar -czh . | docker build -t gettalent/graphql-service:latest - && cd ../
+cd banner_service && tar -czh .
 cd widget_service && tar -czh . | docker build -t gettalent/widget-service:latest - && cd ../
 
 # TODO: Move scheduler service admin to another repo
@@ -83,8 +84,6 @@ echo "Beginning tests."
 
 # These tests cannot be ran concurrently
 py.test banner_service/tests
-# Commenting out due to talent_pool issues (passing locally)
-# py.test widget_service/tests
 
 py.test -n 48 scheduler_service/tests auth_service/tests candidate_service/tests user_service/tests candidate_pool_service/tests spreadsheet_import_service/tests app_common/common/tests talentbot_service/tests
 
