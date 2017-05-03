@@ -315,7 +315,7 @@ class Domain(db.Model):
     default_tracking_code = db.Column('DefaultTrackingCode', db.SmallInteger)
     default_culture_id = db.Column('DefaultCultureId', db.Integer, default=1)
     settings_json = db.Column('SettingsJson', db.Text)
-    expiration = db.Column('Expiration', db.TIMESTAMP)
+    expiration = db.Column('Expiration', db.TIMESTAMP, nullable=True, default=None)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
     default_from_name = db.Column('DefaultFromName', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
@@ -345,8 +345,7 @@ class Domain(db.Model):
         Function creates a unique domain + domain's UserGroup for testing
         :return:
         """
-        domain = Domain(name='{}'.format(uuid.uuid4().__str__()[0:8]),
-                        expiration='0000-00-00 00:00:00')
+        domain = Domain(name='{}'.format(uuid.uuid4().__str__()[0:8]))
         session.add(domain)
         session.commit()
         return domain

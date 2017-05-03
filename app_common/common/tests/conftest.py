@@ -126,7 +126,7 @@ def test_domain():
 
 @pytest.fixture()
 def test_domain_2():
-    domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
+    domain = Domain(name=gen_salt(20))
     db.session.add(domain)
     db.session.commit()
     return domain
@@ -397,7 +397,7 @@ def domain_first():
 
 @pytest.fixture()
 def domain_second():
-    domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
+    domain = Domain(name=gen_salt(20))
     db.session.add(domain)
     db.session.commit()
     return domain
