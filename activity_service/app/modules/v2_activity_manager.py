@@ -38,6 +38,9 @@ def activity_text(activity, user_name):
         if not params.get(param):
             params[param] = 'unknown'
 
+    for k, v in params.iteritems():
+        params[k] = v.encode('utf-8', 'replace')
+
     formatted_string = format_string.format(**params)
 
     if 'You has' in formatted_string:
