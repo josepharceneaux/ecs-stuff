@@ -40,7 +40,8 @@ def activity_text(activity, user_name):
             params[param] = 'unknown'
 
     for k, v in params.iteritems():
-        params[k] = v.encode('utf-8', 'replace')
+        if isinstance(v, (str, unicode)):
+            params[k] = v.encode('utf-8', 'replace')
 
     try:
         formatted_string = format_string.format(**params)
