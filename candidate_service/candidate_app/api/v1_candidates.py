@@ -2265,7 +2265,7 @@ class CandidateDocumentResource(Resource):
 
         candidate = Candidate.get(kwargs['candidate_id'])
         delete_activity = Activity(
-            type=Activity.MessageIds.CANDIDATE_DOCUMENT_UPLOADED,
+            type=Activity.MessageIds.CANDIDATE_DOCUMENT_DELETED,
             user_id=request.user.id,
             domain_id=request.user.domain_id,
             params=json.dumps({
