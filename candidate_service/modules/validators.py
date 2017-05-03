@@ -232,7 +232,7 @@ def validate_string_list(key, values):
     # Ex: "40|san jose, CA"
     if key == 'custom_fields':
         parsed_values = values.split(',')
-        values = [urllib.unquote(parsed_value) for parsed_value in parsed_values]
+        values = [urllib.unquote(parsed_value).strip().replace("'", r"\'") for parsed_value in parsed_values]
         return values[0] if values.__len__() == 1 else values
     elif ',' in values or isinstance(values, list):
         if ',' in values:
