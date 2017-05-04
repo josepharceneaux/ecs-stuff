@@ -24,6 +24,7 @@ from candidate_pool_service.common.inter_service_calls.candidate_service_calls i
 from candidate_pool_service.common.inter_service_calls.activity_service_calls import add_activity
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
+EPOCH_TIME_STRING = '1969-12-31'
 
 
 class TalentPipelineApi(Resource):
@@ -80,6 +81,8 @@ class TalentPipelineApi(Resource):
             search_keyword = request.args.get('search', '').strip()
             owner_user_id = request.args.get('user_id', '')
             is_hidden = request.args.get('is_hidden', 0)
+            from_date = request.args.get('from_date', EPOCH_TIME_STRING)
+            to_date = request.args.get('to_date', datetime.utcnow().isoformat())
             page = request.args.get('page', DEFAULT_PAGE)
             per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
 
@@ -98,21 +101,28 @@ class TalentPipelineApi(Resource):
             if sort_by not in ('added_time', 'name', 'engagement_score'):
                 raise InvalidUsage('Value of sort parameter is not valid')
 
+            try:
+                from_date = parser.parse(from_date).replace(tzinfo=None)
+                to_date = parser.parse(from_date).replace(tzinfo=None)
+            except Exception as e:
+                raise InvalidUsage("from_date or to_date is not properly formatted: %s" % e)
+
             if owner_user_id:
                 talent_pipelines_query = TalentPipeline.query.join(User).filter(and_(
-                    TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id,
-                    User.id == int(owner_user_id), or_(TalentPipeline.name.ilike(
-                        '%' + search_keyword + '%'), TalentPipeline.description.ilike(
-                        '%' + search_keyword + '%'))))
+                    TalentPipeline.is_hidden == is_hidden, User.id == int(owner_user_id),
+                        from_date <= TalentPipeline.added_time <= to_date, or_(TalentPipeline.name.ilike(
+                                '%' + search_keyword + '%'), TalentPipeline.description.ilike(
+                                '%' + search_keyword + '%'))))
             else:
                 talent_pipelines_query = TalentPipeline.query.join(User).filter(and_(
-                    TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id, or_(
-                        TalentPipeline.name.ilike('%' + search_keyword + '%'),
-                        TalentPipeline.description.ilike('%' + search_keyword + '%'))))
+                    TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id,
+                        from_date <= TalentPipeline.added_time <= to_date, or_(
+                                TalentPipeline.name.ilike('%' + search_keyword + '%'),
+                                TalentPipeline.description.ilike('%' + search_keyword + '%'))))
 
             total_number_of_talent_pipelines = talent_pipelines_query.count()
 
-            if sort_by != "engagement_score":
+            if sort_by not in ("engagement_score", "candidate_count"):
                 if sort_by == 'added_time':
                     sort_attribute = TalentPipeline.added_time
                 else:
@@ -124,24 +134,25 @@ class TalentPipelineApi(Resource):
             else:
                 talent_pipelines = talent_pipelines_query.all()
 
-            if not candidate_count:
+            if candidate_count or sort_by == "candidate_count":
                 talent_pipelines_data = [
-                    talent_pipeline.to_dict(email_campaign_count=email_campaign_count)
+                    talent_pipeline.to_dict(include_cached_candidate_count=True,
+                                            email_campaign_count=email_campaign_count,
+                                            get_candidate_count=get_talent_pipeline_stat_for_given_day)
                     for talent_pipeline in talent_pipelines]
             else:
                 talent_pipelines_data = [
-                    talent_pipeline.to_dict(include_candidate_count=True, email_campaign_count=email_campaign_count,
-                                            get_candidate_count=get_talent_pipeline_stat_for_given_day)
+                    talent_pipeline.to_dict(email_campaign_count=email_campaign_count)
                     for talent_pipeline in talent_pipelines]
 
             for talent_pipeline_data in talent_pipelines_data:
                 talent_pipeline_data['engagement_score'] = get_pipeline_engagement_score(talent_pipeline_data['id'])
 
-            if sort_by == 'engagement_score':
+            if sort_by in ("engagement_score", "candidate_count"):
+                sort_by = 'total_candidates' if sort_by == "candidate_count" else "engagement_score"
                 talent_pipelines_data = sorted(
-                    talent_pipelines_data, key=lambda talent_pipeline_data: talent_pipeline_data[sort_by],
-                    reverse=(False if sort_type == 'ASC' else True))
-
+                        talent_pipelines_data, key=lambda talent_pipeline_data: talent_pipeline_data[sort_by],
+                        reverse=(False if sort_type == 'ASC' else True))
                 talent_pipelines_data = talent_pipelines_data[(page - 1) * per_page:page * per_page]
 
             headers = generate_pagination_headers(total_number_of_talent_pipelines, per_page, page)
