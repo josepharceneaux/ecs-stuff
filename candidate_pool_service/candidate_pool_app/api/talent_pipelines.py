@@ -109,7 +109,7 @@ class TalentPipelineApi(Resource):
 
             talent_pipelines_query = TalentPipeline.query.join(User).filter(
                     TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id,
-                    from_date <= TalentPipeline.added_time <= to_date, or_(
+                    from_date <= TalentPipeline.added_time, TalentPipeline.added_time <= to_date, or_(
                             TalentPipeline.name.ilike('%' + search_keyword + '%'),
                             TalentPipeline.description.ilike('%' + search_keyword + '%')))
             if owner_user_id:
