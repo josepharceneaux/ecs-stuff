@@ -94,8 +94,6 @@ class CandidatePipelineResource(Resource):
                 # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
                 if search_response.get('candidates'):
                     found_talent_pipelines.append(talent_pipeline)
-                    # if number_of_requests >= 5:
-                    #     break
 
         result = []
 
@@ -134,8 +132,6 @@ def format_search_params(search_params):
     for key, value in json.loads(search_params).iteritems():
         if not value:
             continue
-        if key == 'custom_fields':
-            value = [urllib.quote(v) for v in value]
 
         fixed_search_params += key
         fixed_search_params += '='
