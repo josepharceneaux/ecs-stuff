@@ -107,18 +107,13 @@ class TalentPipelineApi(Resource):
             except Exception as e:
                 raise InvalidUsage("from_date or to_date is not properly formatted: %s" % e)
 
+            talent_pipelines_query = TalentPipeline.query.join(User).filter(
+                    TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id,
+                    from_date <= TalentPipeline.added_time <= to_date, or_(
+                            TalentPipeline.name.ilike('%' + search_keyword + '%'),
+                            TalentPipeline.description.ilike('%' + search_keyword + '%')))
             if owner_user_id:
-                talent_pipelines_query = TalentPipeline.query.join(User).filter(
-                        TalentPipeline.is_hidden == is_hidden, User.id == int(owner_user_id),
-                        from_date <= TalentPipeline.added_time <= to_date, or_(TalentPipeline.name.ilike(
-                                '%' + search_keyword + '%'), TalentPipeline.description.ilike(
-                                '%' + search_keyword + '%')))
-            else:
-                talent_pipelines_query = TalentPipeline.query.join(User).filter(
-                        TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id,
-                        from_date <= TalentPipeline.added_time <= to_date, or_(
-                                TalentPipeline.name.ilike('%' + search_keyword + '%'),
-                                TalentPipeline.description.ilike('%' + search_keyword + '%')))
+                talent_pipelines_query = talent_pipelines_query.filter(User.id == int(owner_user_id))
 
             total_number_of_talent_pipelines = talent_pipelines_query.count()
 
