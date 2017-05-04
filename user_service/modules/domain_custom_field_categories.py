@@ -6,7 +6,7 @@ This file contains helpers functions for
 """
 
 # Models
-from sqlalchemy.exc import SQLAlchemyError
+from user_service.common.constants import INPUT, PRE_DEFINED
 from user_service.common.models.db import db
 from user_service.common.models.misc import CustomField, CustomFieldCategory, CustomFieldSubCategory
 
@@ -44,6 +44,10 @@ def add_or_update_custom_fields(custom_fields_data, domain_id, is_creating=False
             if not cf_name:  # In case it's just a whitespace
                 raise InvalidUsage("Custom field name is required.")  # TODO: custom error codes
 
+            cf_type = custom_field.get('type', INPUT).strip()
+            if cf_type not in [INPUT, PRE_DEFINED]:  # type can be input or pre-defined only
+                cf_type = INPUT
+
             # Prevent duplicate entries into the database
             cf_object = CustomField.query.filter_by(domain_id=domain_id, name=cf_name).first()  # type: CustomField
             if cf_object:
@@ -51,7 +55,7 @@ def add_or_update_custom_fields(custom_fields_data, domain_id, is_creating=False
                                    additional_error_info={"id": cf_object.id, "domain_id": domain_id})
 
             # Add domain custom field
-            cf = CustomField(domain_id=domain_id, name=cf_name, type='string')
+            cf = CustomField(domain_id=domain_id, name=cf_name, type=cf_type)
             db.session.add(cf)
             db.session.flush()
             cf_id = cf.id
