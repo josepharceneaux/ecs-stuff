@@ -4,6 +4,7 @@ This file contains Pipeline-restful-services
 # Standard library
 import requests
 import json
+import urllib
 
 # Flask specific
 from flask import request
@@ -133,6 +134,9 @@ def format_search_params(search_params):
     for key, value in json.loads(search_params).iteritems():
         if not value:
             continue
+        if key == 'custom_fields':
+            value = [urllib.quote(v) for v in value]
+
         fixed_search_params += key
         fixed_search_params += '='
         if isinstance(value, list):
