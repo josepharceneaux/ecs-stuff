@@ -235,7 +235,7 @@ def validate_string_list(key, values):
         # Some inner search calls will provide custom field values that are not url encoded
         # Below logic will url encode cf-value(s) except the pipe character
         if isinstance(values, list) and urllib.unquote(values[0]) == values[0]:
-            values = ','.join([v.replace('%7C', '|') for v in [urllib.quote(v) for v in values]])
+            values = ','.join([urllib.quote(v).replace('%7C', '|') for v in values])
         else:
             if urllib.unquote(values) == values:
                 values = urllib.quote(values).replace('%7C', '|')
