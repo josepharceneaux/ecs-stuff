@@ -2147,6 +2147,25 @@ class CandidateDocumentResource(Resource):
             raise InternalServerError('Error Saving Candidate Document: {}'.format(str(request_json)),
                                       custom_error.DOCUMENT_SAVING_ERROR)
 
+        candidate = Candidate.get(kwargs['candidate_id'])
+        upload_activity = Activity(
+            type=Activity.MessageIds.CANDIDATE_DOCUMENT_UPLOADED,
+            user_id=request.user.id,
+            domain_id=request.user.domain_id,
+            params=json.dumps({
+                'user': request.user.first_name or 'Unknown',
+                'filename': request_json['filename'],
+                'candidate': candidate.first_name,
+                'time': datetime.datetime.utcnow().strftime('%I:%M %m/%d/%y')
+            }))
+
+        try:
+            db.session.add(upload_activity)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            logger.exception('Failed to upload Candidate Document Activity')
+
         return {'document_id': candidate_document.id}, 201
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
@@ -2243,5 +2262,24 @@ class CandidateDocumentResource(Resource):
             ))
 
         db.session.commit()
+
+        candidate = Candidate.get(kwargs['candidate_id'])
+        delete_activity = Activity(
+            type=Activity.MessageIds.CANDIDATE_DOCUMENT_DELETED,
+            user_id=request.user.id,
+            domain_id=request.user.domain_id,
+            params=json.dumps({
+                'user': request.user.first_name or 'Unknown',
+                'filename': document.filename,
+                'candidate': candidate.first_name,
+                'time': datetime.datetime.utcnow().strftime('%I:%M %m/%d/%y')
+            }))
+
+        try:
+            db.session.add(delete_activity)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            logger.exception('Failed to upload Candidate Document Activity')
 
         return '', 204
