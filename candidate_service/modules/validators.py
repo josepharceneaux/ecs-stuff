@@ -231,6 +231,15 @@ def validate_string_list(key, values):
     # Some custom fields' values may be comma separated and we must ensure the string is not always split on the comma
     # Ex: "40|san jose, CA"
     if key == 'custom_fields':
+
+        # Some inner search calls will provide custom field values that are not url encoded
+        # Below logic will url encode cf-value(s) except the pipe character
+        if isinstance(values, list) and urllib.unquote(values[0]) == values[0]:
+            values = ','.join([urllib.quote(v).replace('%7C', '|') for v in values])
+        else:
+            if urllib.unquote(values) == values:
+                values = urllib.quote(values).replace('%7C', '|')
+
         parsed_values = values.split(',')
         values = [urllib.unquote(parsed_value).strip().replace("'", r"\'") for parsed_value in parsed_values]
         return values[0] if values.__len__() == 1 else values

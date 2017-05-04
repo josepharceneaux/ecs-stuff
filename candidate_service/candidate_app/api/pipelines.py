@@ -4,6 +4,7 @@ This file contains Pipeline-restful-services
 # Standard library
 import requests
 import json
+import urllib
 
 # Flask specific
 from flask import request
@@ -93,8 +94,6 @@ class CandidatePipelineResource(Resource):
                 # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
                 if search_response.get('candidates'):
                     found_talent_pipelines.append(talent_pipeline)
-                    # if number_of_requests >= 5:
-                    #     break
 
         result = []
 
@@ -133,6 +132,7 @@ def format_search_params(search_params):
     for key, value in json.loads(search_params).iteritems():
         if not value:
             continue
+
         fixed_search_params += key
         fixed_search_params += '='
         if isinstance(value, list):
