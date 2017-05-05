@@ -186,7 +186,7 @@ def assert_valid_campaign_get(email_campaign_dict, referenced_campaigns, fields=
         assert found
 
 
-def get_campaign_or_campaigns(access_token, campaign_id=None, fields=None, pagination_query=None):
+def get_campaign_or_campaigns(access_token, campaign_id=None, fields=None, query_params=None):
     """
     This makes HTTP GET call on /v1/email-campaigns with given access_token to get
     1) all the campaigns of logged-in user if campaign_id is None
@@ -199,14 +199,14 @@ def get_campaign_or_campaigns(access_token, campaign_id=None, fields=None, pagin
     else:
         url = EmailCampaignApiUrl.CAMPAIGNS
         entity = 'email_campaigns'
-    if pagination_query:
-        url = url + pagination_query
+    if query_params:
+        url = url + query_params
 
     params = {'fields': ','.join(fields)} if fields else {}
     response = requests.get(url=url,
                             params=params,
                             headers={'Authorization': 'Bearer %s' % access_token})
-    assert response.status_code == requests.codes.OK
+    assert response.status_code == requests.codes.OK, response.text
     resp = response.json()
     assert entity in resp
     return resp[entity]

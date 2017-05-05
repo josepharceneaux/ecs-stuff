@@ -54,6 +54,7 @@ from flask import request, Blueprint, jsonify
 
 # Service Specific
 from email_campaign_service.email_campaign_app import logger
+from email_campaign_service.common.models.user import (User, Role)
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.validations import validate_and_format_request_data
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
@@ -71,7 +72,8 @@ from email_campaign_service.common.models.misc import UrlConversion, Activity
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, ActivityApiUrl)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignSend, EmailCampaignBlast)
-from email_campaign_service.common.error_handling import (InvalidUsage, MethodNotAllowedError, ResourceNotFound)
+from email_campaign_service.common.error_handling import (ForbiddenError, InvalidUsage, MethodNotAllowedError,
+                                                          ResourceNotFound)
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response, get_pagination_params,
                                                            SORT_TYPES)
 from email_campaign_service.common.campaign_services.campaign_utils import (CampaignUtils, INVITATION_STATUSES)
@@ -110,6 +112,14 @@ class EmailCampaigns(Resource):
             search_keyword = request.args.get('search', '')
             sort_by = request.args.get('sort_by', 'added_datetime')
             is_hidden = request.args.get('is_hidden', 0)
+            user_id = request.args.get('user_id')
+
+            if user_id:
+                if not is_number(user_id):
+                    raise InvalidUsage('`user_id` should be a non-negative int|long')
+                if request.user.role.name != Role.TALENT_ADMIN \
+                        and User.get_domain_id(user_id) != request.user.domain_id:
+                    raise ForbiddenError("Logged-in user and requested user_id are of different domains")
 
             if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
                 raise InvalidUsage('`is_hidden` can be either 0 or 1')
@@ -123,7 +133,7 @@ class EmailCampaigns(Resource):
 
             # Get all email campaigns from logged in user's domain
             query = EmailCampaign.get_by_domain_id_and_filter_by_name(
-                    user.domain_id, search_keyword, sort_by, sort_type, int(is_hidden))
+                    user.domain_id, search_keyword, sort_by, sort_type, int(is_hidden), user_id=user_id)
 
             return get_paginated_response('email_campaigns', query, page, per_page, parser=EmailCampaign.to_dict)
 
