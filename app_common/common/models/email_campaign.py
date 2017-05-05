@@ -131,8 +131,20 @@ class EmailCampaign(db.Model):
         return email_campaign
 
     @classmethod
+    @contract
     def get_by_domain_id_and_filter_by_name(cls, domain_id, search_keyword, sort_by, sort_type, is_hidden,
                                             user_id=None):
+        """
+        This filters records of database table EmailCampaign for given criteria. By default it returns all the
+        campaigns in user's domain. If we provide user_id it will only return campaigns belonging to give user_id.
+        :param positive domain_id: Id of domain
+        :param string search_keyword: String with which we want to filter the records. e.g. filter campaigns containing
+                                        word "Python"   
+        :param string sort_by: String by which we want to sort the records. e.g. Sort by Name OR Description etc
+        :param string sort_type: String either "ASC" or "DESC" 
+        :param int is_hidden: Indicator to return archived or unarchived campaigns
+        :param positive|None user_id: Id of user
+        """
         assert domain_id, 'domain_id not given'
         from user import User  # This has to be here to avoid circular import
         if sort_by == 'name':
@@ -148,6 +160,7 @@ class EmailCampaign(db.Model):
         is_hidden = True if is_hidden else False
 
         if user_id:
+            assert str(user_id).isdigit() and int(user_id) > 0, 'positive user_id expected, given: {}'.format(user_id)
             sub_query = cls.query.filter_by(user_id=user_id)
         else:
             sub_query = cls.query.join(User).filter(User.domain_id == domain_id)

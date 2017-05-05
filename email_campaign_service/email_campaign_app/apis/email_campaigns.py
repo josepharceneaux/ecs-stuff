@@ -120,6 +120,7 @@ class EmailCampaigns(Resource):
                 if request.user.role.name != Role.TALENT_ADMIN \
                         and User.get_domain_id(user_id) != request.user.domain_id:
                     raise ForbiddenError("Logged-in user and requested user_id are of different domains")
+                user_id = int(user_id)
 
             if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
                 raise InvalidUsage('`is_hidden` can be either 0 or 1')
