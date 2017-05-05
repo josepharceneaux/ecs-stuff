@@ -2156,7 +2156,7 @@ class CandidateDocumentResource(Resource):
                 'user': request.user.first_name or 'Unknown',
                 'filename': request_json['filename'],
                 'candidate': candidate.first_name,
-                'time': datetime.datetime.utcnow().strftime('%I:%M %m/%d/%y')
+                'time': datetime.datetime.utcnow().isoformat()
             }))
 
         try:
@@ -2272,7 +2272,7 @@ class CandidateDocumentResource(Resource):
                 'user': request.user.first_name or 'Unknown',
                 'filename': document.filename,
                 'candidate': candidate.first_name,
-                'time': datetime.datetime.utcnow().strftime('%I:%M %m/%d/%y')
+                'time': datetime.datetime.utcnow().isoformat()
             }))
 
         try:
