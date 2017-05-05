@@ -98,7 +98,7 @@ class TalentPipelineApi(Resource):
             if owner_user_id and is_number(owner_user_id) and not User.query.get(int(owner_user_id)):
                 raise InvalidUsage("User: (%s) doesn't exist in system")
 
-            if sort_by not in ('added_time', 'name', 'engagement_score'):
+            if sort_by not in ('added_time', 'name', 'engagement_score', 'candidate_count'):
                 raise InvalidUsage('Value of sort parameter is not valid')
 
             try:
