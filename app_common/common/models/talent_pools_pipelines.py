@@ -257,8 +257,8 @@ class TalentPipeline(db.Model):
         db.session.commit()
 
     def to_dict(self, include_stats=False, get_stats_function=None, include_growth=False, interval=None,
-                get_growth_function=None, include_candidate_count=False, get_candidate_count=None,
-                email_campaign_count=False):
+                get_growth_function=None, include_candidate_count=False, include_cached_candidate_count=False,
+                get_candidate_count=None, email_campaign_count=False):
 
         talent_pipeline = {
             'id': self.id,
@@ -276,8 +276,12 @@ class TalentPipeline(db.Model):
         }
         if email_campaign_count:
             talent_pipeline['total_email_campaigns'] = self.get_email_campaigns_count()
-        if include_candidate_count and get_candidate_count:
-            talent_pipeline['total_candidates'] = get_candidate_count(self, datetime.utcnow())
+        if (include_candidate_count or include_cached_candidate_count) and get_candidate_count:
+            current_date = datetime.utcnow()
+            if include_cached_candidate_count:
+                current_date -= timedelta(days=1)
+                current_date = current_date.replace(hour=23, minute=59, second=59)
+            talent_pipeline['total_candidates'] = get_candidate_count(self, current_date)
         if include_growth and interval and get_growth_function:
             talent_pipeline['growth'] = get_growth_function(self, int(interval))
         if include_stats and get_stats_function:

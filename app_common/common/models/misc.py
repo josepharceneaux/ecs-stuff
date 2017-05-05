@@ -55,10 +55,6 @@ class Activity(db.Model):
         CANDIDATE_CREATE_WIDGET = 19
         CANDIDATE_CREATE_MOBILE = 20  # TODO add in
 
-        # Candidate De-Duping Activities
-        CANDIDATE_AUTO_MERGED = 300
-        CANDIDATE_USER_MERGED = 301
-        CANDIDATE_SENT_TO_MERGE_HUB = 302
 
         # Params may include/require:
         # id, username, name (old), campaign_name (new), campaign_type, candidate_name,
@@ -121,6 +117,11 @@ class Activity(db.Model):
         # RESUME_PARSING_SERVICE 100-199
         # USER_SERVICE_PORT  200-299
         # CANDIDATE_SERVICE 300-399
+        CANDIDATE_AUTO_MERGED = 300
+        CANDIDATE_USER_MERGED = 301
+        CANDIDATE_SENT_TO_MERGE_HUB = 302
+        CANDIDATE_DOCUMENT_UPLOADED = 303
+        CANDIDATE_DOCUMENT_DELETED = 304
         # WIDGET_SERVICE 400-499
         # SOCIAL_NETWORK_SERVICE 500-599
 
