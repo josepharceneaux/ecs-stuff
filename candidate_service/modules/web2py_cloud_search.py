@@ -166,24 +166,13 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.id AS `id`, candidate.firstName AS `first_name`, candidate.lastName AS `last_name`,
                 candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, :date_format) AS `added_time`,
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
-                candidate.is_archived AS `is_archived`, candidate.source_detail AS `source_details`,
-                candidate.sourceId AS `source_id`,
-                candidate.sourceProductId AS `source_product_id`, candidate.totalMonthsExperience AS
-                `total_months_experience`,
+                candidate.sourceId AS `source_id`, candidate.sourceProductId AS `source_product_id`,
+                candidate.totalMonthsExperience AS `total_months_experience`,
 
                 # Address & contact info
                 candidate_address.city AS `city`, candidate_address.state AS `state`, candidate_address.zipCode AS `zip_code`,
                 candidate_address.coordinates AS `coordinates`,
                 GROUP_CONCAT(DISTINCT candidate_email.address SEPARATOR :sep) AS `email`,
-
-                # Dumb Lists
-                GROUP_CONCAT(DISTINCT smart_list_candidate.smartlistId SEPARATOR :sep) AS `dumb_lists`,
-
-                # Pipelines to which candidate belongs statically
-                GROUP_CONCAT(DISTINCT talent_pipeline_included_candidates.talent_pipeline_id SEPARATOR :sep) AS `added_talent_pipelines`,
-
-                # Pipelines to which candidate doesn't belong at all
-                GROUP_CONCAT(DISTINCT talent_pipeline_excluded_candidates.talent_pipeline_id SEPARATOR :sep) AS `removed_talent_pipelines`,
 
                 # AOIs and Custom Fields
                 GROUP_CONCAT(DISTINCT candidate_area_of_interest.areaOfInterestId SEPARATOR :sep) AS `area_of_interest_id`,
@@ -200,9 +189,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 GROUP_CONCAT(DISTINCT candidate_experience.position ORDER BY candidate_experience.IsCurrent DESC, candidate_experience.StartYear DESC, candidate_experience.StartMonth DESC SEPARATOR :sep) AS `position`,
                 GROUP_CONCAT(DISTINCT candidate_experience_bullet.description SEPARATOR :sep) AS `experience_description`,
 
-                # Start Date At Current Job
-                DATE_FORMAT(MIN((CASE candidate_experience.IsCurrent WHEN 1 THEN DATE_ADD(MAKEDATE((CASE WHEN candidate_experience.StartYear then candidate_experience.StartYear ELSE YEAR(CURDATE()) END) , 1), INTERVAL (CASE WHEN candidate_experience.StartMonth then candidate_experience.StartMonth ELSE MONTH(CURDATE()) END)-1 MONTH) END)), :date_format) AS `start_date_at_current_job`,
-
                 # Education
                 GROUP_CONCAT(DISTINCT candidate_education.schoolName SEPARATOR :sep) AS `school_name`,
                 GROUP_CONCAT(DISTINCT candidate_education_degree.degreeType SEPARATOR :sep) AS `degree_type`,
@@ -216,16 +202,10 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
                 # Rating and comments
                 GROUP_CONCAT(DISTINCT CONCAT(candidate_rating.ratingTagId, '|', candidate_rating.value) SEPARATOR :sep) AS `candidate_rating_id_and_value`,
-                GROUP_CONCAT(DISTINCT candidate_text_comment.comment SEPARATOR :sep) AS `text_comment`,
-
-                # Tags
-                GROUP_CONCAT(DISTINCT candidate_tag.tag_id SEPARATOR :sep) AS `tag_ids`
+                GROUP_CONCAT(DISTINCT candidate_text_comment.comment SEPARATOR :sep) AS `text_comment`
 
     FROM        candidate
 
-    LEFT JOIN   smart_list_candidate ON (candidate.id = smart_list_candidate.candidateId)
-    LEFT JOIN   talent_pipeline_included_candidates ON (candidate.id = talent_pipeline_included_candidates.candidate_id)
-    LEFT JOIN   talent_pipeline_excluded_candidates ON (candidate.id = talent_pipeline_excluded_candidates.candidate_id)
     LEFT JOIN   candidate_address ON (candidate.id = candidate_address.candidateId)
     LEFT JOIN   candidate_email ON (candidate.id = candidate_email.candidateId)
 
@@ -249,9 +229,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
     LEFT JOIN   candidate_rating ON (candidate.id = candidate_rating.candidateId)
     LEFT JOIN   candidate_text_comment ON (candidate.id = candidate_text_comment.candidateId)
 
-    # Tags
-    LEFT JOIN   candidate_tag ON (candidate.id = candidate_tag.candidate_id)
-
     WHERE       candidate.id IN :candidate_ids_string
 
     GROUP BY    candidate.id
@@ -271,7 +248,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
         # Go through results & build action dicts
         for field_name_to_sql_value in results:
             candidate_id = field_name_to_sql_value['id']
-
             action_dict = dict(type='add', id=str(candidate_id))
 
             # Remove keys with empty values
@@ -284,6 +260,23 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 domain_id = field_name_to_sql_value_row.domain_id
 
             field_name_to_sql_value['domain_id'] = domain_id
+
+            for field_name in field_name_to_sql_value.keys():
+                index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
+
+                if not index_field_options:
+                    continue
+
+                sql_value = field_name_to_sql_value[field_name]
+                if not sql_value:
+                    continue
+
+                index_field_type = index_field_options['IndexFieldType']
+                if 'array' in index_field_type:
+                    sql_value_array = sql_value.split(group_concat_separator)
+                    if index_field_type == 'int-array':
+                        sql_value_array = [int(field_value) for field_value in sql_value_array]
+                    field_name_to_sql_value[field_name] = sql_value_array
 
             action_dict['fields'] = field_name_to_sql_value
             action_dicts.append(action_dict)
@@ -382,8 +375,9 @@ def _send_batch_request(action_dicts):
 #     try:
 #         from candidate_service.common.models.candidate import Candidate
 #         kaiser_candidates = Candidate.query.filter_by(source_id=6739)
-#         candidate_ids = [2881510, 2881509, 2881508, 2881506]
-#         upload_candidate_documents(candidate_ids)
+#         for candidate in kaiser_candidates:
+#             print "uploading candidate: {}".format(candidate.id)
+#             upload_candidate_documents_to_us_west(candidate.id)
 #         print "~~~~~ UPLOAD SUCCESSFUL ~~~~~"
 #     except Exception as e:
 #         print("ERROR: {}".format(e.message))
