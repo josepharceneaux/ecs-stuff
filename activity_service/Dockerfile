@@ -9,7 +9,6 @@ WORKDIR /root/base_service_container/activity_service
 RUN sed -i -e 's/APP_NAME/activity_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
 
 EXPOSE 80
-EXPOSE 3031
 
 # Set PYTHON PATH
 ENV PYTHONPATH ../
