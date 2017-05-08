@@ -2,10 +2,9 @@
 File contains unittests for testing functions used by the candidate-service
 """
 import random
-from candidate_service.modules.utils import get_candidate_name
 from faker import Faker
 from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
-from candidate_service.modules.talent_candidates import CandidateTitle
+from candidate_service.modules.talent_candidates import CandidateTitle, get_fullname_from_name_fields
 
 fake = Faker()
 
@@ -215,9 +214,11 @@ class TestRemoveTabs(object):
 
 
 def test_candidate_name():
-    assert get_candidate_name('First', 'Last', 'Formatted Name') == 'Formatted Name'
-    assert get_candidate_name('First', 'Last', None) == 'First Last'
-    assert get_candidate_name('First', None, None) == 'First'
-    assert get_candidate_name('First', '', '') == 'First'
-    assert get_candidate_name('First', 'Last', '') == 'First Last'
-    assert get_candidate_name(None, None, None) == 'Unknown'  # so three nones walk into a function
+    assert get_fullname_from_name_fields('First', 'Middle', 'Last') == 'First Middle Last'
+    assert get_fullname_from_name_fields('First', 'Middle', None) == 'First Middle'
+    assert get_fullname_from_name_fields('First', '', 'Last') == 'First Last'
+    assert get_fullname_from_name_fields('First', None, 'Last') == 'First Last'
+    assert get_fullname_from_name_fields('First', None, None) == 'First'
+    assert get_fullname_from_name_fields('First', '', '') == 'First'
+    assert get_fullname_from_name_fields('First', 'Middle', '') == 'First Middle'
+    assert get_fullname_from_name_fields(None, None, None) == ''

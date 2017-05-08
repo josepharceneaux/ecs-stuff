@@ -65,7 +65,7 @@ from candidate_service.modules.talent_candidates import (
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
-    add_languages, update_candidate_languages, CachedData, CandidateTitle
+    add_languages, update_candidate_languages, CachedData, CandidateTitle, get_fullname_from_name_fields
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 from candidate_service.modules.talent_openweb import (
@@ -86,7 +86,6 @@ from candidate_service.common.utils.handy_functions import normalize_value, time
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
 from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
-from candidate_service.modules.utils import get_candidate_name
 
 
 class CandidatesResource(Resource):
@@ -334,11 +333,13 @@ class CandidatesResource(Resource):
                 resp_dict = create_or_update_candidate_from_params(**candidate_data)
                 created_candidate_ids.append(resp_dict['candidate_id'])
                 tam = TalentActivityManager(db, activity_model=Activity,logger=logger)
+                formatted_name = get_fullname_from_name_fields(
+                                            candidate_data.get('first_name'),
+                                            candidate_data.get('middle_name'),
+                                            candidate_data.get('last_name'))
                 tam.create_activity({
                     'activity_params': {'username': authed_user.email,
-                                        'formatted_name': get_candidate_name(candidate_data.get('first_name'),
-                                                                             candidate_data.get('last_name'),
-                                                                             candidate_data.get('formatted_name'))},
+                                        'formatted_name': formatted_name if formatted_name != '' else 'Unknown'},
                     'activity_type': 'CANDIDATE_CREATE_WEB',
                     'activity_type_id': Activity.MessageIds.CANDIDATE_CREATE_WEB,
                     'domain_id': domain_id,

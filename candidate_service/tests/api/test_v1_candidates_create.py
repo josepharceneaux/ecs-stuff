@@ -334,21 +334,6 @@ class TestCreateCandidateSuccessfully(object):
         user_activity = Activity.query.filter_by(user_id = user_first.id).first()
         assert "{} {}".format(test_first, test_last) in user_activity.params
 
-    def test_add_candidate_full_name_activity(self, user_first, access_token_first, talent_pool):
-        test_name = fake.name()
-        data = {'candidates': [
-            {
-                'full_name': test_name,
-                'talent_pool_ids': {'add': [talent_pool.id]}
-            }
-        ]}
-        create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
-        assert create_resp.status_code == requests.codes.CREATED
-        db.session.commit()  # Session mismatch issue
-        user_activity = Activity.query.filter_by(user_id=user_first.id).first()
-        assert test_name in user_activity.params
-
-
 
 
 
