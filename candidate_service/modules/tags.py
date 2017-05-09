@@ -24,17 +24,14 @@ def create_tags(candidate_id, tags):
             db.session.add(tag_object)
             db.session.flush()
 
-        # Insert into CandidateTag table
-        candidate_tag_object = CandidateTag.get_by(candidate_id=candidate_id, tag_id=tag_object.id)
-        if candidate_tag_object:
-            raise InvalidUsage(
-                "Candidate (id = {}) is already associated with tag \"{}\"".format(candidate_id, tag_name),
-                error_code=custom_error.TAG_EXISTS,
-                additional_error_info={"tag": {"id": candidate_tag_object.tag_id}})
+        tag_id = tag_object.id
 
-        db.session.add(CandidateTag(candidate_id=candidate_id, tag_id=tag_object.id))
-        db.session.commit()
-        created_tag_ids.append(tag_object.id)
+        # Insert into CandidateTag table
+        candidate_tag_object = CandidateTag.get_by(candidate_id=candidate_id, tag_id=tag_id)
+        if not candidate_tag_object:
+            db.session.add(CandidateTag(candidate_id=candidate_id, tag_id=tag_id))
+            db.session.commit()
+            created_tag_ids.append(tag_id)
 
     return created_tag_ids
 
