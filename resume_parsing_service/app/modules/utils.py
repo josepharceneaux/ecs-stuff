@@ -221,10 +221,12 @@ def resume_file_from_params(parse_params):
 
 
 def extra_skills_parsing(encoded_text):
-    url = current_app.config["JD_URL"]
+    url = current_app.config['JD_URL']
+    token = current_app.config['JD_TOKEN']
+    headers = {'x-api-key': token}
     payload = json.dumps({'text': encoded_text})
     try:
-        skills_response = requests.post(url, data=payload)
+        skills_response = requests.post(url, data=payload, headers=headers)
     except requests.exceptions.ConnectionError:
         logger.exception("Unable to obtain extra skills from lambda call")
 
