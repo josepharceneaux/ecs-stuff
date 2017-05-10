@@ -641,6 +641,8 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
 
+    TALENT_ADMIN = "TALENT_ADMIN"
+
     @property
     def permissions(self):
         permissions_of_role = PermissionsOfRole.query.filter_by(role_id=self.id).all()

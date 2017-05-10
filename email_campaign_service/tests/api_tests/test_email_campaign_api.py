@@ -21,6 +21,7 @@ from requests import codes
 
 # Application Specific
 from email_campaign_service.tests.conftest import fake
+from email_campaign_service.common.models.user import Role
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.email_campaign import EmailClient
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
@@ -130,7 +131,7 @@ class TestGetCampaigns(object):
         """
         # Test GET api of email campaign using per_page=1 and default page=1.
         # It should return first campaign in response.
-        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?per_page=1')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?per_page=1')
         assert len(email_campaigns) == 1
         reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
@@ -139,12 +140,12 @@ class TestGetCampaigns(object):
 
         # Test GET api of email campaign using per_page=1 for page=2. It should
         # return second campaign in response.
-        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?per_page=1&page=2')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?per_page=1&page=2')
         assert len(email_campaigns) == 1
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
 
         # Test GET api of email campaign with 2 results per_page
-        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?per_page=2')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?per_page=2')
         assert len(email_campaigns) == 2
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
         assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
@@ -153,15 +154,58 @@ class TestGetCampaigns(object):
 
         # Test GET api of email campaign with default per_page=10 and page =1.
         # It should get both campaigns in response.
-        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?&page=1')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?&page=1')
         assert len(email_campaigns) == 2
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
         assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
 
         # Test GET api of email campaign with page = 2. No campaign should be received in response
         # as we have created only two campaigns so far and default per_page is 10.
-        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?page=2')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?page=2')
         assert len(email_campaigns) == 0
+
+    def test_get_campaigns_with_invalid_user_id(self, headers):
+        """
+        Test GET API of email_campaigns for getting all campaigns for particular user_id where user_id
+        is not in valid format. i.e. we are passing string rather that integer value. It should result in Bad Request 
+        Error.
+        """
+        url = EmailCampaignApiUrl.CAMPAIGNS + '?user_id={}'.format(fake.word())
+        response = requests.get(url, headers=headers)
+        assert response.status_code == requests.codes.BAD, response.text
+
+    def test_get_campaigns_with_user_id_of_same_domain(self, email_campaign_of_user_first, access_token_first,
+                                                       email_campaign_of_user_second, user_same_domain):
+        """
+        Test GET API of email_campaigns for getting all campaigns for a particular user_id of same domain.
+        It should return one campaign.
+        """
+        email_campaigns = get_campaign_or_campaigns(access_token_first,
+                                                    query_params='?user_id={}'.format(user_same_domain.id))
+        assert len(email_campaigns) == 1  # As we have only 1 campaign created by other user of same domain
+        assert email_campaigns[0]['user_id'] == user_same_domain.id
+
+    def test_get_campaigns_with_user_id_of_other_domain(self, headers, user_from_diff_domain):
+        """
+        Test GET API of email_campaigns for getting all campaigns for a particular user_id of some other domain.
+        It should result in Forbidden Error.
+        """
+        url = EmailCampaignApiUrl.CAMPAIGNS + '?user_id={}'.format(user_from_diff_domain.id)
+        response = requests.get(url, headers=headers)
+        assert response.status_code == ForbiddenError.http_status_code()
+
+    def test_get_campaigns_with_user_id_of_other_domain_with_talent_admin_role(self, user_first, access_token_first,
+                                                                               user_from_diff_domain,
+                                                                               email_campaign_in_other_domain):
+        """
+        Test GET API of email_campaigns for getting all campaigns for a particular user_id of some other domain.
+        It should return the campaign created by that user as requested user has appropriate role.
+        """
+        user_first.update(role_id=Role.get_by_name(Role.TALENT_ADMIN).id)
+        email_campaigns = get_campaign_or_campaigns(access_token_first,
+                                                    query_params='?user_id={}'.format(user_from_diff_domain.id))
+        assert len(email_campaigns) == 1  # As we have only 1 campaign created by the user of other domain
+        assert email_campaigns[0]['user_id'] == user_from_diff_domain.id
 
     def test_get_campaigns_with_invalid_sort_type(self, headers):
         """
@@ -228,7 +272,7 @@ class TestGetCampaigns(object):
         create_email_campaign(user_first)
         time.sleep(2)
         create_email_campaign(user_same_domain)
-        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?sort_type=DESC')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?sort_type=DESC')
         assert email_campaigns[0]['added_datetime'] > email_campaigns[1]['added_datetime']
 
     @pytest.mark.qa
@@ -241,7 +285,7 @@ class TestGetCampaigns(object):
         create_email_campaign(user_first)
         time.sleep(2)
         create_email_campaign(user_same_domain)
-        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?sort_type=ASC')
+        email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?sort_type=ASC')
         assert email_campaigns[0]['added_datetime'] < email_campaigns[1]['added_datetime']
 
     @pytest.mark.qa
