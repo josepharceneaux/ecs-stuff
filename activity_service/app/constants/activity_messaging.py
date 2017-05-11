@@ -53,12 +53,6 @@ MESSAGES = {
         SINGLE: "<b>{username}</b> (User) merged candidate <b>{formatted_name}</b> with a duplicated profiles.",
         PLURAL: "{count} candidates were updated"
     },
-    EVENTS.CANDIDATE_SENT_TO_MERGE_HUB: {
-        SINGLE:
-        "<b>{formatted_name}</b> was identified as a possible match. View in <a href='/candidates/mergehub'>Merge Hub</a> to resolve.",
-        PLURAL:
-        "{count} candidates were updated",
-    },
     EVENTS.CAMPAIGN_CREATE: {
         SINGLE: "<b>{username}</b> created an {campaign_type} campaign: <b>{name}</b>",
         PLURAL: "<b>{username}</b> created {count} campaigns"
