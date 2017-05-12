@@ -100,6 +100,9 @@ class CandidatePipelineResource(Resource):
         found_talent_pipelines += added_pipelines
         found_talent_pipelines = list(set(found_talent_pipelines))
 
+        found_talent_pipelines = sorted(found_talent_pipelines,
+                                        key=lambda talent_pipeline: talent_pipeline.added_time, reverse=True)
+
         logger.info("\nfound_talent_pipelines: {}".format(found_talent_pipelines))
 
         # Only return pipeline data if candidate is found from pipeline's search params
