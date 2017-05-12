@@ -512,7 +512,7 @@ def does_address_exist(candidate, address_dict):
     return False
 
 
-def does_candidate_cf_exist(candidate, custom_field_id, value):
+def does_candidate_cf_exist(candidate, custom_field_id, value, custom_field_subcategory_id=None):
     """
     Function will return true if custom field already exists for candidate, otherwise false
     :type candidate:  Candidate
@@ -522,7 +522,9 @@ def does_candidate_cf_exist(candidate, custom_field_id, value):
     :rtype:  bool
     """
     for custom_field in candidate.custom_fields:
-        if custom_field.custom_field_id == custom_field_id and (custom_field.value or '').lower() == value.lower():
+        if custom_field.custom_field_id == custom_field_id and (custom_field.value or '').lower() == value.lower()\
+                and (custom_field_subcategory_id is None  # If None then comparison's value wont matter
+                     or custom_field_subcategory_id == custom_field.custom_field_subcategory_id):
             return True
     return False
 
