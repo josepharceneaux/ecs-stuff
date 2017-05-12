@@ -515,6 +515,7 @@ def does_address_exist(candidate, address_dict):
 def does_candidate_cf_exist(candidate, custom_field_id, value, custom_field_subcategory_id=None):
     """
     Function will return true if custom field already exists for candidate, otherwise false
+    :param None | long | int custom_field_subcategory_id: Custom Field Subcategory Id
     :type candidate:  Candidate
     :type custom_field_id: int | long
     :param value: candidate's custom field valued
