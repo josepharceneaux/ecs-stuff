@@ -62,7 +62,7 @@ class CandidatePipelineResource(Resource):
 
         # Candidate's talent pool ID
         candidate_talent_pool_ids = [tp.talent_pool_id for tp in TalentPoolCandidate.query.filter_by(
-                candidate_id=candidate_id).all()]
+                candidate_id=3105461).all()]
 
         added_pipelines = TalentPipelineIncludedCandidates.query.filter_by(candidate_id=candidate_id).all()
         added_pipelines = map(lambda x: x.talent_pipeline, added_pipelines)
@@ -72,10 +72,10 @@ class CandidatePipelineResource(Resource):
 
         # Get User-domain's 10 most recent talent pipelines in order of added time
         talent_pipelines = TalentPipeline.query.join(User).filter(
-            TalentPipeline.is_hidden == is_hidden,
+            TalentPipeline.is_hidden == 0,
             TalentPipeline.talent_pool_id.in_(candidate_talent_pool_ids),
             TalentPipeline.id.notin_(removed_pipeline_ids)
-        ).order_by(TalentPipeline.added_time.desc()).limit(max_requests).all()
+        ).order_by(TalentPipeline.added_time.desc()).limit(30).all()
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
         found_talent_pipelines = []
@@ -85,11 +85,8 @@ class CandidatePipelineResource(Resource):
             if search_params:
                 search_response = search_candidates_from_params(
                         search_params=format_search_params(talent_pipeline.search_params),
-                        access_token=request.oauth_token,
-                        url_args='?id={}&talent_pool_id={}'.format(candidate_id, talent_pipeline.talent_pool_id))
-
-                logger.info("\ncandidate_id: {}\ntalent_pipeline_id: {}\nsearch_params: {}\nsearch_response: {}".format(
-                    candidate_id, talent_pipeline.id, search_params, search_response))
+                        access_token='Bearer eyJhbGciOiJIUzI1NiIsImV4cCI6MTQ5NTE0NjI4NCwiaWF0IjoxNDk0NTQxNDg0fQ.eyJjcmVhdGVkX2F0IjoiMjAxNy0wNS0xMVQyMjoyNDo0NC4yNzIyNjMiLCJ1c2VyX2lkIjozNDh9.RTYFOdoZYOIrPewYUGlOSUhxvXNMn6jXu-8Mmx5xl9I.6d55518a-8',
+                        url_args='?id={}&talent_pool_id={}'.format(3105461, talent_pipeline.talent_pool_id))
 
                 # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
                 if search_response.get('candidates'):
@@ -99,6 +96,9 @@ class CandidatePipelineResource(Resource):
 
         found_talent_pipelines += added_pipelines
         found_talent_pipelines = list(set(found_talent_pipelines))
+
+        found_talent_pipelines = sorted(found_talent_pipelines,
+                                        key=lambda talent_pipeline: talent_pipeline.added_time, reverse=True)
 
         logger.info("\nfound_talent_pipelines: {}".format(found_talent_pipelines))
 
