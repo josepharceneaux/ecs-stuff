@@ -523,9 +523,11 @@ def does_candidate_cf_exist(candidate, custom_field_id, value, custom_field_subc
     :rtype:  bool
     """
     for custom_field in candidate.custom_fields:
-        if custom_field.custom_field_id == custom_field_id and (custom_field.value or '').lower() == value.lower()\
-                and (custom_field_subcategory_id is None  # If None then comparison's value wont matter
-                     or custom_field_subcategory_id == custom_field.custom_field_subcategory_id):
+        value_comparison = (custom_field.value or '').lower() == value.lower()
+        subcategory_comparison = (custom_field_subcategory_id is None  # If None then comparison's value wont matter
+                                  or custom_field_subcategory_id == custom_field.custom_field_subcategory_id)
+        id_comparison = custom_field.custom_field_id == custom_field_id
+        if id_comparison and value_comparison and subcategory_comparison:
             return True
     return False
 

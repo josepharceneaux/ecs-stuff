@@ -1437,9 +1437,8 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                             column_name='value')
 
                 # Update CandidateCustomField
-                can_custom_field_obj.update(**dict(value=value,
-                                                   custom_field_subcategory_id=
-                                                   custom_field_dict.get('custom_field_subcategory_id')))
+                can_custom_field_obj.update(value=value, custom_field_subcategory_id=custom_field_dict
+                                            .get('custom_field_subcategory_id'))
 
             else:  # Add
                 custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
