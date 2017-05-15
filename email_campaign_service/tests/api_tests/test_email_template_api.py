@@ -38,46 +38,32 @@ class TestEmailTemplateFolders(object):
         assert template_folder_name
 
     @pytest.mark.qa
-    def test_delete_email_template_folder(self, headers_same, create_email_template_folder):
-        """
-        Test for deleting email template folder.
-        It creates a test folder by user_first and deletes that by the user_same_domain of same domain.
-        This verifies that the users of the same domain having appropriate privileges are able to delete
-        email template folders created by users of same domain. Deletion should be successful and
-        a response of 204 (NO_CONTENT) must be returned.
-        """
-        # Get Template Folder Id
-        template_folder_id, template_folder_name = create_email_template_folder
-        data = {'name': template_folder_name}
-        assert_and_delete_template_folder(template_folder_id, headers_same, data=json.dumps(data))
-
-    @pytest.mark.qa
-    def test_create_email_template_folder_with_same_name(self, headers, create_email_template_folder):
+    def test_create_email_template_folder_with_same_name(self, headers_for_email_templates,
+                                                         create_email_template_folder):
         """
         This test makes sure that email template folder is not created with same
         name which already exist. Should return 400 bad request.
         """
         # Get Template Folder Id
         template_folder_id, template_folder_name = create_email_template_folder
-        data = {'name': template_folder_name,
-                'is_immutable': 1}
+        data = {'name': template_folder_name, 'is_immutable': 1}
         response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
-                                 headers=headers)
+                                 headers=headers_for_email_templates)
         CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.BAD_REQUEST)
 
     @pytest.mark.qa
-    def test_create_email_template_folder_with_invalid_data_type(self, headers):
+    def test_create_email_template_folder_with_invalid_data_type(self, headers_for_email_templates):
         """
         This test is to certify that create email template with invalid data_types isn't possible.
         Should return 400 bad request.
         """
         for param in EMAIL_TEMPLATE_INVALID_DATA_TYPES:
             response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(param),
-                                     headers=headers)
+                                     headers=headers_for_email_templates)
             CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.BAD_REQUEST)
 
     @pytest.mark.qa
-    def test_create_email_template_folder_with_non_existing_parent_id(self, headers):
+    def test_create_email_template_folder_with_non_existing_parent_id(self, headers_for_email_templates):
         """
         This test is to  certify that email template folder can't be created by using
         parent_id which doesn't exist. Should return 400 bad request.
@@ -85,7 +71,7 @@ class TestEmailTemplateFolders(object):
         non_existing_parent_id = CampaignsTestsHelpers.get_non_existing_id(EmailTemplateFolder)
         data = {'name': fake.word(), 'is_immutable': 1, 'parent_id': non_existing_parent_id}
         response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
-                                 headers=headers)
+                                 headers=headers_for_email_templates)
         CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.NOT_FOUND)
 
     @pytest.mark.qa
@@ -109,12 +95,21 @@ class TestEmailTemplateFolders(object):
         CampaignsTestsHelpers.request_for_forbidden_error('post', EmailCampaignApiUrl.TEMPLATE_FOLDERS,
                                                           access_token_other, data)
 
-    def test_get_email_template_folders_in_domain(self, headers):
+    def test_create_email_template_folder_with_invalid_domain(self, access_token_other):
+        """
+        This test is to assure that email template folder can't be created through the user of domain other
+        than Kaiser's. Should result in Forbidden error.
+        """
+        data = {'name': fake.sentence()}
+        CampaignsTestsHelpers.request_for_forbidden_error('post', EmailCampaignApiUrl.TEMPLATE_FOLDERS,
+                                                          access_token_other, data)
+
+    def test_get_email_template_folders_in_domain(self, headers_for_email_templates):
         """
         In this test, we get email-template-folders in a domain
         """
         # Check without creating any template-folder
-        response = requests.get(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, headers=headers)
+        response = requests.get(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, headers=headers_for_email_templates)
         assert response.status_code == codes.OK, response.text
         json_response = response.json()
         assert 'template_folders' in json_response
@@ -124,14 +119,73 @@ class TestEmailTemplateFolders(object):
         for _ in xrange(5):
             data = {'name': fake.name(), 'is_immutable': 1}
             response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
-                                     headers=headers)
+                                     headers=headers_for_email_templates)
             assert response.status_code == codes.CREATED, response.text
-        response = requests.get(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, headers=headers)
+        response = requests.get(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, headers=headers_for_email_templates)
         assert response.status_code == codes.OK, response.text
         json_response = response.json()
         assert 'template_folders' in json_response
         assert len(json_response['template_folders']) == 5
 
+    def test_get_email_template_folders_with_invalid_domain(self, access_token_other):
+        """
+        This test is to assure that email template folder can't be get through the user of domain other
+        than Kaiser's. Should result in Forbidden error.
+        """
+        CampaignsTestsHelpers.request_for_forbidden_error('get', EmailCampaignApiUrl.TEMPLATE_FOLDERS,
+                                                          access_token_other)
+
+    def test_get_email_template_folder_with_user_of_other_domain(self, create_email_template_folder,
+                                                                    access_token_other):
+        """
+        Test for retrieving email template folder with user of some other domain.
+        It should result in Forbidden error.
+        """
+        # Get Template Folder Id
+        template_folder_id, _ = create_email_template_folder
+        CampaignsTestsHelpers.request_for_forbidden_error('get',
+                                                          EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id,
+                                                          access_token_other)
+
+    def test_delete_email_template_folder(self, headers_for_email_templates, create_email_template_folder):
+        """
+        Test for deleting email template folder with user who created the folder.
+        It creates a test folder by user_first and deletes that by the user_same_domain of same domain.
+        This verifies that the users of the same domain having appropriate privileges are able to delete
+        email template folders created by users of same domain. Deletion should be successful and
+        a response of 204 (NO_CONTENT) must be returned.
+        """
+        # Get Template Folder Id
+        template_folder_id, template_folder_name = create_email_template_folder
+        data = {'name': template_folder_name}
+        assert_and_delete_template_folder(template_folder_id, headers_for_email_templates, data=json.dumps(data))
+
+    def test_delete_email_template_folder_with_user_of_same_domain(self, create_email_template_folder,
+                                                                   headers_same_for_email_templates):
+        """
+        Test for deleting email template folder with another user of same domain.
+        It creates a test folder by user_first and deletes that by the user_same_domain of same domain.
+        This verifies that the users of the same domain having appropriate privileges are able to delete
+        email template folders created by users of same domain. Deletion should be successful and
+        a response of 204 (NO_CONTENT) must be returned.
+        """
+        # Get Template Folder Id
+        template_folder_id, template_folder_name = create_email_template_folder
+        data = {'name': template_folder_name}
+        assert_and_delete_template_folder(template_folder_id, headers_same_for_email_templates,
+                                          data=json.dumps(data))
+
+    def test_delete_email_template_folder_with_user_of_other_domain(self, create_email_template_folder,
+                                                                    access_token_other):
+        """
+        Test for deleting email template folder with user of some other domain.
+        It should result in Forbidden error.
+        """
+        # Get Template Folder Id
+        template_folder_id, _ = create_email_template_folder
+        CampaignsTestsHelpers.request_for_forbidden_error('delete',
+                                                          EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id,
+                                                          access_token_other)
 
 class TestEmailTemplatesInFolders(object):
     """
@@ -139,14 +193,14 @@ class TestEmailTemplatesInFolders(object):
     """
     URL = EmailCampaignApiUrl.TEMPLATES_IN_FOLDER
 
-    def test_get_templates_in_a_folder(self, create_email_template_folder, headers,
-                                                    headers_same, headers_other):
+    def test_get_templates_in_a_folder(self, create_email_template_folder, headers_for_email_templates,
+                                       headers_same_for_email_templates, headers_other):
         """
         Test for getting email-templates associated with a template folder.
         We have not created any email-templates, so there should not exist any email-template in template-folder
         """
         template_folder_id, _ = create_email_template_folder
-        for auth_header in (headers, headers_same):
+        for auth_header in (headers_for_email_templates, headers_same_for_email_templates):
             response = requests.get(url=self.URL % template_folder_id, headers=auth_header)
             assert response.status_code == requests.codes.OK, response.text
             email_templates = response.json()['email_templates']
@@ -156,14 +210,15 @@ class TestEmailTemplatesInFolders(object):
         response = requests.get(url=self.URL % template_folder_id, headers=headers_other)
         assert response.status_code == requests.codes.FORBIDDEN, response.text
 
-    def test_get_saved_templates_in_a_folder(self, create_email_template_folder, headers, headers_same,
-                                      headers_other, email_templates_bulk):
+    def test_get_saved_templates_in_a_folder(self, create_email_template_folder, headers_for_email_templates,
+                                             headers_same_for_email_templates,
+                                             headers_other, email_templates_bulk):
         """
         Test for getting saved email-templates associated with a template folder.
         Here we are using fixture "email_templates_bulk" to create 10 email-templates in template folder.
         """
         template_folder_id, _ = create_email_template_folder
-        for auth_header in (headers, headers_same):
+        for auth_header in (headers_for_email_templates, headers_same_for_email_templates):
             response = requests.get(url=self.URL % template_folder_id, headers=auth_header)
             assert response.status_code == requests.codes.OK, response.text
             email_templates = response.json()['email_templates']
@@ -181,20 +236,20 @@ class TestEmailTemplates(object):
     URL = EmailCampaignApiUrl.TEMPLATES
     ENTITY = 'email_templates'
 
-    def test_create_email_template(self, user_first, headers):
+    def test_create_email_template(self, user_first, headers_for_email_templates):
         """
         Here we create an email-template. Response should be OK.
         """
         # Add Email template
-        template_data = data_to_create_email_template(headers, user_first, EMAIL_TEMPLATE_BODY)
-        response = post_to_email_template_resource(headers, data=template_data)
+        template_data = data_to_create_email_template(headers_for_email_templates, user_first, EMAIL_TEMPLATE_BODY)
+        response = post_to_email_template_resource(headers_for_email_templates, data=template_data)
         assert response.status_code == codes.CREATED
         assert response.json()
         json_response = response.json()
         assert 'id' in json_response
 
         # GET created email-template and assert on fields
-        response = requests.get(EmailCampaignApiUrl.TEMPLATES, headers=headers)
+        response = requests.get(EmailCampaignApiUrl.TEMPLATES, headers=headers_for_email_templates)
         assert response.ok
         assert response.json()
         email_templates = response.json()[self.ENTITY]
@@ -202,29 +257,36 @@ class TestEmailTemplates(object):
         # Pick first record and assert expected field values
         assert_valid_template_object(email_templates[0], user_first.id, [json_response['id']], template_data['name'])
 
-    def test_create_email_template_with_same_name(self, user_first, headers):
+    def test_create_email_template_with_invalid_domain(self, access_token_other):
+        """
+        This test is to assure that email template folder can't be created through the user of domain other
+        than Kaiser's. Should result in Forbidden error.
+        """
+        CampaignsTestsHelpers.request_for_forbidden_error('post', EmailCampaignApiUrl.TEMPLATES,
+                                                          access_token_other)
+
+    def test_create_email_template_with_same_name(self, user_first, headers_for_email_templates):
         """
         Test for creating email template with same name. It should get Bad request error.
         Here we first create email-template and then tries to create another email-template with same name.
-        :param headers: For user authentication
-        :param user_first: sample user
+
         """
         # Add Email template
-        template_data = data_to_create_email_template(headers, user_first, EMAIL_TEMPLATE_BODY)
+        template_data = data_to_create_email_template(headers_for_email_templates, user_first, EMAIL_TEMPLATE_BODY)
         template_data['name'] = fake.word() + str(datetime.datetime.utcnow().microsecond)
-        response = post_to_email_template_resource(headers, data=template_data)
+        response = post_to_email_template_resource(headers_for_email_templates, data=template_data)
         assert response.status_code == codes.CREATED
         assert response.json()
         json_response = response.json()
         assert 'id' in json_response
 
         # Try to create another email-template with same name
-        response = post_to_email_template_resource(headers, data=template_data)
+        response = post_to_email_template_resource(headers_for_email_templates, data=template_data)
         assert response.status_code == codes.BAD
         assert template_data['name'] in response.json()['error']['message']
 
-    def test_get_email_templates(self, user_first, user_same_domain, user_from_diff_domain,
-                                 headers, headers_same, headers_other):
+    def test_get_email_templates(self, user_first, user_same_domain,
+                                 headers_for_email_templates, headers_same_for_email_templates):
         """
         Test for creating email template with different users of same domain.
         User should get both records while requesting email-templates.
@@ -234,53 +296,47 @@ class TestEmailTemplates(object):
         expected_records_in_domain_1 = 2
         expected_records_in_domain_2 = 1
         # Add Email template by user_first
-        add_email_template(headers, user_first)
+        add_email_template(headers_for_email_templates, user_first)
         # Add Email template by user_same_domain
-        add_email_template(headers_same, user_same_domain)
-        # Add Email template by user of different domain
-        add_email_template(headers_other, user_from_diff_domain)
+        add_email_template(headers_same_for_email_templates, user_same_domain)
 
         # Get all email-templates in user_first's domain
-        response = requests.get(EmailCampaignApiUrl.TEMPLATES, headers=headers)
+        response = requests.get(EmailCampaignApiUrl.TEMPLATES, headers=headers_for_email_templates)
         assert response.ok
         assert response.json()
         email_templates = response.json()[self.ENTITY]
         assert len(email_templates) == expected_records_in_domain_1
 
+    def test_get_email_templates_with_invalid_domain(self, headers_other):
+        """
+        Non-Kaiser customer tries to access the API, it should result in Forbidden error.
+        """
         # Get all email-templates in user_from_diff_domain's domain
         response = requests.get(EmailCampaignApiUrl.TEMPLATES, headers=headers_other)
-        assert response.ok
-        assert response.json()
-        email_templates = response.json()[self.ENTITY]
-        assert len(email_templates) == expected_records_in_domain_2
+        assert response.status_code == codes.FORBIDDEN
 
-    def test_create_and_get_email_template_without_name(self, user_first, headers):
+    def test_create_and_get_email_template_without_name(self, user_first, headers_for_email_templates):
         """
         Test for creating email template without passing name. The response should be Bad Request - 400
         because we are requesting to create an email template without passing the appropriate
         value for template name.
-        :param user_first: sample user
-        :param headers: For user authentication
         """
         # Empty template name
         template_name = ''
-        data = data_to_create_email_template(headers, user_first, EMAIL_TEMPLATE_BODY)
+        data = data_to_create_email_template(headers_for_email_templates, user_first, EMAIL_TEMPLATE_BODY)
         data['name'] = template_name
-        response = post_to_email_template_resource(headers, data=data)
+        response = post_to_email_template_resource(headers_for_email_templates, data=data)
         assert response.status_code == requests.codes.BAD_REQUEST
 
-    def test_create_template_without_email_body(self, user_first, headers):
+    def test_create_template_without_email_body(self, user_first, headers_for_email_templates):
         """
         Test for creating email template without passing email body. The response should be Bad Request - 400
         because template_body is mandatory for creating an email template.
-
-        :param user_first: sample user
-        :param headers: For user authentication
         """
         template_name = 'test_email_template%i' % datetime.datetime.now().microsecond
-        data = data_to_create_email_template(headers, user_first)
+        data = data_to_create_email_template(headers_for_email_templates, user_first)
         data['name'] = template_name
-        response = post_to_email_template_resource(headers, data=data)
+        response = post_to_email_template_resource(headers_for_email_templates, data=data)
         assert response.status_code == requests.codes.BAD_REQUEST
 
     def test_get_with_paginated_response(self, headers, email_templates_bulk, user_first):
@@ -332,7 +388,7 @@ class TestEmailTemplate(object):
     """
     URL = EmailCampaignApiUrl.TEMPLATE
 
-    def test_get_email_template_via_id(self, user_first, headers_same, email_template):
+    def test_get_email_template_via_id(self, user_first, headers_same_for_email_templates, email_template):
         """
         Retrieve email_template via template's ID. We will create the email template using user_first
         and try to retrieve it using the template id returned in the response. user_same_domain with the same domain
@@ -340,12 +396,12 @@ class TestEmailTemplate(object):
         allowed to access the templates created by fellow domain users. Response should be 200 (OK).
         """
         # Get email_template via template ID using token for 2nd user
-        response = requests.get(url=self.URL % email_template['id'], headers=headers_same)
+        response = requests.get(url=self.URL % email_template['id'], headers=headers_same_for_email_templates)
         assert response.status_code == requests.codes.OK
         resp_dict = response.json()['template']
         assert_valid_template_object(resp_dict, user_first.id, [email_template['id']], email_template['name'])
 
-    def test_get_email_template_with_non_existing_id(self, email_template, headers_same):
+    def test_get_email_template_with_non_existing_id(self, email_template, headers_same_for_email_templates):
         """
         Retrieve email_template via ID for which email template doesn't exist.We will create the email
         template using user_first and try to retrieve it by appending some random value to the template id returned
@@ -355,7 +411,7 @@ class TestEmailTemplate(object):
         """
         template_id = str(email_template['id']) + str(datetime.datetime.now().microsecond)
         # Get email_template via template ID
-        response = requests.get(url=self.URL % template_id, headers=headers_same)
+        response = requests.get(url=self.URL % template_id, headers=headers_same_for_email_templates)
         assert response.status_code == requests.codes.NOT_FOUND
 
     def test_get_email_template_with_user_of_other_domain(self, email_template, headers_other):
@@ -366,7 +422,8 @@ class TestEmailTemplate(object):
         response = requests.get(url=self.URL % email_template['id'], headers=headers_other)
         assert response.status_code == requests.codes.FORBIDDEN
 
-    def test_update_email_template(self, user_first, email_template, user_same_domain, access_token_same):
+    def test_update_email_template(self, user_first, email_template, headers_same_for_email_templates,
+                                   user_same_domain, access_token_same):
         """
         To update email template by other user in the same domain
         Response should be 200 (OK)
@@ -386,7 +443,8 @@ class TestEmailTemplate(object):
         assert_valid_template_object(resp_dict, user_first.id, [email_template['id']], email_template['name'],
                                      updated_template_body)
 
-    def test_update_non_existing_email_template(self, email_template, user_same_domain, access_token_same):
+    def test_update_non_existing_email_template(self, email_template, headers_same_for_email_templates,
+                                                user_same_domain, access_token_same):
         """
         Test : To update email template by other user in the same domain
         Expect: 404 - NOT FOUND
@@ -405,7 +463,7 @@ class TestEmailTemplate(object):
                                      email_template['is_immutable'])
         assert resp.status_code == requests.codes.NOT_FOUND
 
-    def test_delete_email_template(self, access_token_same, email_template):
+    def test_delete_email_template(self, headers_same_for_email_templates, access_token_same, email_template):
         """
         Tests deleting user's email template. Template should be deleted successfully returning
         204 (NO CONTENT) response.
@@ -415,7 +473,8 @@ class TestEmailTemplate(object):
         template_after_delete = UserEmailTemplate.get_by_id(email_template['id'])
         assert template_after_delete is None
 
-    def test_delete_template_with_non_existing_template_id(self, email_template, access_token_same):
+    def test_delete_template_with_non_existing_template_id(self, email_template, headers_same_for_email_templates,
+                                                           access_token_same):
         """
         Tests deleting user's email template with non existing template_id. The response should be Not Found - 404
         as we are trying to delete a template which does not exist.

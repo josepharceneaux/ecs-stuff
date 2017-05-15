@@ -21,6 +21,7 @@ from email_campaign_service.common.utils.api_utils import (api_route, get_pagina
 from email_campaign_service.common.utils.validators import validate_and_return_immutable_value
 from email_campaign_service.common.utils.auth_utils import (require_oauth, require_all_permissions)
 from email_campaign_service.common.models.email_campaign import (UserEmailTemplate, EmailTemplateFolder)
+from email_campaign_service.modules.validations import validate_domain_id_for_email_templates
 
 # Blueprint for email-templates API
 template_blueprint = Blueprint('email_templates', __name__)
@@ -34,7 +35,7 @@ class TemplateFolders(Resource):
     """
     Endpoint looks like /v1/email-template-folders
     """
-    decorators = [require_oauth()]
+    decorators = [validate_domain_id_for_email_templates(), require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_CAMPAIGNS)
     def post(self):
@@ -127,7 +128,7 @@ class TemplateFolder(Resource):
     """
     Endpoint looks like /v1/email-template-folders/:id.
     """
-    decorators = [require_oauth()]
+    decorators = [validate_domain_id_for_email_templates(), require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CAMPAIGNS)
     def get(self, folder_id):
@@ -203,7 +204,7 @@ class TemplatesInFolder(Resource):
     """
     Endpoint looks like /v1/email-template-folders/:id/email-templates.
     """
-    decorators = [require_oauth()]
+    decorators = [validate_domain_id_for_email_templates(), require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CAMPAIGNS)
     def get(self, folder_id):
@@ -253,7 +254,7 @@ class EmailTemplates(Resource):
     """
     Endpoint looks like /v1/email-templates
     """
-    decorators = [require_oauth()]
+    decorators = [validate_domain_id_for_email_templates(), require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CAMPAIGNS)
     def get(self):
@@ -368,7 +369,7 @@ class EmailTemplate(Resource):
     """
     Endpoint looks like /v1/email-template/:id
     """
-    decorators = [require_oauth()]
+    decorators = [validate_domain_id_for_email_templates(), require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CAMPAIGNS)
     def get(self, template_id):

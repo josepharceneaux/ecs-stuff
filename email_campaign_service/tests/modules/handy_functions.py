@@ -351,7 +351,7 @@ def create_template_folder(headers):
             'is_immutable': ON}
     response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
                              headers=headers)
-    assert response.status_code == requests.codes.CREATED
+    assert response.status_code == requests.codes.CREATED, response.text
     response_obj = response.json()
     template_folder_id = response_obj["id"]
     return template_folder_id, template_folder_name
