@@ -49,7 +49,7 @@ class TalentActivityManager(object):
                                                "<b>%(username)s</b> deleted %(count)s candidates", "candidate.png"),
 
         # Candidate De-Duping Activities
-        Activity.MessageIds.CANDIDATE_AUTO_MERGED: ("Candidate <b>%(formatted_name1)s</b> was automatically merged "
+        Activity.MessageIds.CANDIDATE_AUTO_MERGED: ("Candidate <b>%(formatted_name)s</b> was automatically merged "
                                                     "with a duplicated profile.",
                                                     "%(count)s candidates were updated", "candidate.png"),
         Activity.MessageIds.CANDIDATE_USER_MERGED: ("<b>%(username)s</b> (User) merged candidate "
