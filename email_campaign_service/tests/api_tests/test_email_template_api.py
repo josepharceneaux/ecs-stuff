@@ -75,15 +75,6 @@ class TestEmailTemplateFolders(object):
         CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.NOT_FOUND)
 
     @pytest.mark.qa
-    def test_create_email_template_folder_with_deleted_parent_id(self, headers, create_email_template_folder):
-        """
-        This test is to assure that email template folder can't be created through
-        parent_id of the folder which is deleted. Should return 400 bad request.
-        """
-        template_folder_id, template_folder_name = create_email_template_folder
-        assert_and_delete_template_folder(template_folder_id, headers)
-
-    @pytest.mark.qa
     def test_create_email_template_folder_with_parent_id_other_domain(self, create_email_template_folder,
                                                                       access_token_other):
         """
@@ -157,8 +148,7 @@ class TestEmailTemplateFolders(object):
         """
         # Get Template Folder Id
         template_folder_id, template_folder_name = create_email_template_folder
-        data = {'name': template_folder_name}
-        assert_and_delete_template_folder(template_folder_id, headers_for_email_templates, data=json.dumps(data))
+        assert_and_delete_template_folder(template_folder_id, headers_for_email_templates)
 
     def test_delete_email_template_folder_with_user_of_same_domain(self, create_email_template_folder,
                                                                    headers_same_for_email_templates):
@@ -171,9 +161,7 @@ class TestEmailTemplateFolders(object):
         """
         # Get Template Folder Id
         template_folder_id, template_folder_name = create_email_template_folder
-        data = {'name': template_folder_name}
-        assert_and_delete_template_folder(template_folder_id, headers_same_for_email_templates,
-                                          data=json.dumps(data))
+        assert_and_delete_template_folder(template_folder_id, headers_same_for_email_templates)
 
     def test_delete_email_template_folder_with_user_of_other_domain(self, create_email_template_folder,
                                                                     access_token_other):

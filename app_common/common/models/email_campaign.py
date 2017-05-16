@@ -386,9 +386,9 @@ class EmailCampaignSend(db.Model):
     is_ses_bounce = db.Column('isSesBounce', db.Boolean, default=False)
     is_ses_complaint = db.Column('isSesComplaint', db.Boolean, default=False)
     updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.utcnow)
-    email_campaign = relationship('EmailCampaign', backref="email_campaign")
 
     # Relationships
+    email_campaign = relationship('EmailCampaign', backref="email_campaign")
     url_conversions = relationship('EmailCampaignSendUrlConversion',
                                    cascade='all,delete-orphan',
                                    passive_deletes=True,

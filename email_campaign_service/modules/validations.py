@@ -12,9 +12,12 @@ from functools import wraps
 from collections import Counter
 
 # Third Party
+import requests
 from flask import request
 
 # Application Specific
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
+from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.modules.email_clients import EmailClientBase
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
@@ -22,7 +25,8 @@ from email_campaign_service.common.models.user import (User, ForbiddenError, Dom
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity)
 from email_campaign_service.common.campaign_services.validators import validate_smartlist_ids
 from email_campaign_service.common.campaign_services.validators import validate_base_campaign_id
-from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient)
+from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient, EmailCampaignSend)
+from email_campaign_service.modules.utils import S3_FILE_FOR_DOMAIN_IDS_FOR_EMAIL_TEMPLATES
 
 
 def validate_datetime(datetime_text, field_name=None):
@@ -163,7 +167,18 @@ def validate_domain_id_for_email_templates():
     def wrapper(func):
         @wraps(func)
         def validate(*args, **kwargs):
-            valid_domain_ids = Domain.get_by_name('kaiser')
+            valid_domain_ids = []
+            if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
+                valid_domain_ids = Domain.get_by_name('kaiser')
+                obj = EmailCampaignSend(blast_id=1, candidate_id=1)
+                obj.save()
+            else:
+                # Get valid domain ids from S3 file.
+                response = requests.get(S3_FILE_FOR_DOMAIN_IDS_FOR_EMAIL_TEMPLATES)
+                response = response.json()
+                for key, value in response.iteritems():
+                    if value:
+                        valid_domain_ids.append(int(key))
             if request.user.domain_id not in valid_domain_ids:
                 raise ForbiddenError('You are not allowed to view this feature')
             return func(*args, **kwargs)
