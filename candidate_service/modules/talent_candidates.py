@@ -1437,14 +1437,16 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                             column_name='value')
 
                 # Update CandidateCustomField
-                can_custom_field_obj.update(**dict(value=value))
+                can_custom_field_obj.update(value=value, custom_field_subcategory_id=custom_field_dict
+                                            .get('custom_field_subcategory_id'))
 
             else:  # Add
                 custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
                 custom_field_id = custom_field_dict.get('custom_field_id')
+                custom_field_subcategory_id = custom_field_dict.get('custom_field_subcategory_id')
 
                 # Prevent duplicate insertions
-                if not does_candidate_cf_exist(candidate, custom_field_id, value):
+                if not does_candidate_cf_exist(candidate, custom_field_id, value, custom_field_subcategory_id):
                     custom_field_dict['value'] = value
                     custom_field_dict.pop('values', None)
                     db.session.add(CandidateCustomField(**custom_field_dict))
