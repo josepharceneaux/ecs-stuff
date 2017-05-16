@@ -4,7 +4,7 @@ File contains unittests for testing functions used by the candidate-service
 import random
 from faker import Faker
 from candidate_service.common.utils.candidate_utils import replace_tabs_with_spaces
-from candidate_service.modules.talent_candidates import CandidateTitle
+from candidate_service.modules.talent_candidates import CandidateTitle, get_fullname_from_name_fields
 
 fake = Faker()
 
@@ -179,3 +179,14 @@ class TestRemoveTabs(object):
         }
 
         assert expected == r
+
+
+def test_candidate_name():
+    assert get_fullname_from_name_fields('First', 'Middle', 'Last') == 'First Middle Last'
+    assert get_fullname_from_name_fields('First', 'Middle', None) == 'First Middle'
+    assert get_fullname_from_name_fields('First', '', 'Last') == 'First Last'
+    assert get_fullname_from_name_fields('First', None, 'Last') == 'First Last'
+    assert get_fullname_from_name_fields('First', None, None) == 'First'
+    assert get_fullname_from_name_fields('First', '', '') == 'First'
+    assert get_fullname_from_name_fields('First', 'Middle', '') == 'First Middle'
+    assert get_fullname_from_name_fields(None, None, None) == ''

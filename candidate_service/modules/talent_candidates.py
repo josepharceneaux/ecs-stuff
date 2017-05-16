@@ -1076,7 +1076,8 @@ def get_fullname_from_name_fields(first_name, middle_name, last_name):
     :rtype: str
     """
     full_name = re.sub(' +', ' ', '%s %s %s' % (first_name, middle_name, last_name))
-    return full_name.replace('None', '').strip()
+    # remove 'None's, get rid of double space between first and last if middle was not provided, and strip outer spaces
+    return full_name.replace('None', '').replace('  ', ' ').strip()
 
 
 def format_full_name(first_name=None, middle_name=None, last_name=None):
