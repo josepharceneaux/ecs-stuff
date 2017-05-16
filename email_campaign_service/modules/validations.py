@@ -170,8 +170,6 @@ def validate_domain_id_for_email_templates():
             valid_domain_ids = []
             if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
                 valid_domain_ids = Domain.get_by_name('kaiser')
-                obj = EmailCampaignSend(blast_id=1, candidate_id=1)
-                obj.save()
             else:
                 # Get valid domain ids from S3 file.
                 response = requests.get(S3_FILE_FOR_DOMAIN_IDS_FOR_EMAIL_TEMPLATES)
