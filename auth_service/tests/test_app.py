@@ -27,8 +27,7 @@ class AuthServiceTestsContext:
 
         # Add test domain
         test_domain = Domain(
-            name=gen_salt(20),
-            expiration='0000-00-00 00:00:00'
+            name=gen_salt(20)
         )
         db.session.add(test_domain)
         db.session.commit()
