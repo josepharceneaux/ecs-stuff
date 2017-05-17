@@ -51,7 +51,6 @@ TRACKING_URL_TYPE = 0
 TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
 TASK_ALREADY_SCHEDULED = 6057
-S3_FILE_FOR_DOMAIN_IDS_FOR_EMAIL_TEMPLATES = "https://s3.amazonaws.com/email-template-feature/allowed-domain.json"
 
 
 def get_topic_arn_and_region_name():

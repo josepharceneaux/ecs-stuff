@@ -16,7 +16,6 @@ import requests
 from flask import request
 
 # Application Specific
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.modules.email_clients import EmailClientBase
@@ -24,9 +23,9 @@ from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.user import (User, ForbiddenError, Domain)
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity)
 from email_campaign_service.common.campaign_services.validators import validate_smartlist_ids
+from email_campaign_service.common.talent_config_manager import (TalentConfigKeys, TalentEnvs)
 from email_campaign_service.common.campaign_services.validators import validate_base_campaign_id
-from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient, EmailCampaignSend)
-from email_campaign_service.modules.utils import S3_FILE_FOR_DOMAIN_IDS_FOR_EMAIL_TEMPLATES
+from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient)
 
 
 def validate_datetime(datetime_text, field_name=None):
@@ -172,7 +171,7 @@ def validate_domain_id_for_email_templates():
                 valid_domain_ids = Domain.get_by_name('kaiser')
             else:
                 # Get valid domain ids from S3 file.
-                response = requests.get(S3_FILE_FOR_DOMAIN_IDS_FOR_EMAIL_TEMPLATES)
+                response = requests.get(app.config[TalentConfigKeys.URL_FOR_DOMAINS_FOR_EMAIL_TEMPLATES])
                 response = response.json()
                 for key, value in response.iteritems():
                     if value:
