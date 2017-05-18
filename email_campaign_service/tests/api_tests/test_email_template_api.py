@@ -11,8 +11,10 @@ import pytest
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import UserEmailTemplate
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.models.email_campaign import EmailTemplateFolder
+from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.modules.handy_functions import (request_to_email_template_resource,
                                                                   EMAIL_TEMPLATE_BODY, update_email_template,
                                                                   add_email_template, assert_valid_template_object,
@@ -20,6 +22,17 @@ from email_campaign_service.tests.modules.handy_functions import (request_to_ema
                                                                   post_to_email_template_resource,
                                                                   EMAIL_TEMPLATE_INVALID_DATA_TYPES,
                                                                   assert_and_delete_template_folder)
+
+
+def test_s3_url_for_domain_ids_for_email_templates():
+    """
+    This test is to  certify that email template folder can't be created by using
+    parent_id which doesn't exist. Should return 400 bad request.
+    """
+    url = app.config[TalentConfigKeys.URL_FOR_DOMAINS_FOR_EMAIL_TEMPLATES]
+    response = requests.get(url)
+    assert response.ok
+    assert response.json()
 
 
 class TestEmailTemplateFolders(object):
