@@ -370,6 +370,16 @@ class Domain(db.Model):
             "is_disabled": True if self.is_disabled == 1 else False
         }
 
+    @classmethod
+    def get_by_name(cls, domain_name):
+        """
+        This searches records in database table "Domain" with given name of domain.
+        If any domain contains given "domain_name" in its name, It returns list of matching domain ids.
+        :param str domain_name: Name of domain
+        """
+        domains = cls.query.filter(cls.name.contains(domain_name))
+        return [domain.id for domain in domains] if domains else []
+
 
 class WebAuthGroup(db.Model):
     __tablename__ = 'web_auth_group'

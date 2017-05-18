@@ -313,14 +313,42 @@ def invalid_data_for_campaign_creation(request):
 
 
 @pytest.fixture()
-def create_email_template_folder(headers, user_first):
+def dummy_kaiser_domain_id():
+    """
+    This creates a dummy domain with name "Kaiser" in database to access email-templates API.
+    """
+    domain = Domain(name='test_domain_{}_{}'.format('kaiser', fake.uuid4()[0:8]))
+    domain.save()
+    return domain.id
+
+
+@pytest.fixture()
+def headers_for_email_templates(user_first, dummy_kaiser_domain_id, headers):
+    """
+    Returns headers for "user_fist" to access email-templates APIs.
+    """
+    user_first.update(domain_id=dummy_kaiser_domain_id)
+    return headers
+
+
+@pytest.fixture()
+def headers_same_for_email_templates(user_same_domain, dummy_kaiser_domain_id, headers_same):
+    """
+    Returns headers for "user_same_domain" to access email-templates APIs.
+    """
+    user_same_domain.update(domain_id=dummy_kaiser_domain_id)
+    return headers_same
+
+
+@pytest.fixture()
+def create_email_template_folder(headers_for_email_templates, user_first):
     """
     Here we create email-template-folder
     """
-    template_folder_id, template_folder_name = create_template_folder(headers)
+    template_folder_id, template_folder_name = create_template_folder(headers_for_email_templates)
     # Assert that folder is created with correct name
     response = requests.get(EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id,
-                            headers=headers)
+                            headers=headers_for_email_templates)
     assert response.ok
     assert response.json()
     json_response = response.json()
@@ -330,22 +358,22 @@ def create_email_template_folder(headers, user_first):
 
 
 @pytest.fixture()
-def email_template(headers, user_first):
+def email_template(headers_for_email_templates, user_first):
     """
     Here we create email-template-folder
     """
-    return add_email_template(headers, user_first)
+    return add_email_template(headers_for_email_templates, user_first)
 
 
 @pytest.fixture()
-def email_templates_bulk(headers, user_first, create_email_template_folder):
+def email_templates_bulk(headers_for_email_templates, user_first, create_email_template_folder):
     """
     Here we create 10 email-templates to test pagination.
     """
     email_template_ids = []
     template_folder_id, _ = create_email_template_folder
     for _ in xrange(1, 11):
-        template = add_email_template(headers, user_first, template_folder_id=template_folder_id)
+        template = add_email_template(headers_for_email_templates, user_first, template_folder_id=template_folder_id)
         email_template_ids.append(template['id'])
     return email_template_ids
 

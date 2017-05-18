@@ -8,17 +8,24 @@
 
 # Standard Library
 import datetime
+from functools import wraps
 from collections import Counter
 
+# Third Party
+import requests
+from flask import request
+
 # Application Specific
-from email_campaign_service.common.models.user import User
+from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.modules.email_clients import EmailClientBase
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.common.models.user import (User, ForbiddenError, Domain)
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity)
 from email_campaign_service.common.campaign_services.validators import validate_smartlist_ids
-from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient)
+from email_campaign_service.common.talent_config_manager import (TalentConfigKeys, TalentEnvs)
 from email_campaign_service.common.campaign_services.validators import validate_base_campaign_id
+from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient)
 
 
 def validate_datetime(datetime_text, field_name=None):
@@ -148,3 +155,31 @@ def get_or_set_valid_value(required_value, required_instance, default):
     if not isinstance(required_value, required_instance):
         required_value = default
     return required_value
+
+
+def validate_domain_id_for_email_templates():
+    """
+    We want to show email-template feature to only Kaiser for now.
+    If any other customer tries to use this API, we will raise Forbidden error saying something like
+        "You are not allowed to perform this action"
+    """
+    def wrapper(func):
+        @wraps(func)
+        def validate(*args, **kwargs):
+            valid_domain_ids = []
+            if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
+                valid_domain_ids = Domain.get_by_name('kaiser')
+            else:
+                # Get valid domain ids from S3 file.
+                response = requests.get(app.config[TalentConfigKeys.URL_FOR_DOMAINS_FOR_EMAIL_TEMPLATES])
+                response = response.json()
+                for key, value in response.iteritems():
+                    if value:
+                        valid_domain_ids.append(int(key))
+            if request.user.domain_id not in valid_domain_ids:
+                raise ForbiddenError('You are not allowed to view this feature')
+            return func(*args, **kwargs)
+
+        return validate
+
+    return wrapper

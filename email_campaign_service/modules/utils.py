@@ -22,7 +22,6 @@ from dateutil.relativedelta import relativedelta
 
 # Service Specific
 from email_campaign_service.email_campaign_app import (logger, celery_app, cache, app)
-from sqlalchemy import inspect
 
 # Common Utils
 from email_campaign_service.common.redis_cache import redis_store

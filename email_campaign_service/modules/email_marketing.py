@@ -34,7 +34,6 @@ from email_campaign_service.modules.utils import (TRACKING_URL_TYPE, get_candida
 # Common Utils
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import Domain, User
-from email_campaign_service.common.utils.dynamo_utils import EmailMarketing
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
@@ -359,7 +358,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     if candidate_ids_and_emails:
         concurrent_lambdas = 55
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
-        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA, TalentEnvs.DEV]:
+        if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA]:
             # Get AWS region name
             _, region_name = get_topic_arn_and_region_name()
             try:
