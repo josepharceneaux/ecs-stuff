@@ -186,6 +186,9 @@ class TalentPipelineApi(Resource):
             raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
         talent_pipeline.is_hidden = 1
+        for smartlist in Smartlist.query.filter(Smartlist.talent_pipeline_id == talent_pipeline_id):
+            smartlist.is_hidden = 1
+
         db.session.commit()
 
         return {
