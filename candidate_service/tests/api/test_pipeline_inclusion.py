@@ -1,4 +1,3 @@
-# TODO: I've commented out this file to prevent it from running in jenkins build due to many flaky tests -Amir
 # Candidate Service app instance
 import time
 

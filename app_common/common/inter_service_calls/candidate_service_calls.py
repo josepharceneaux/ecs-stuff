@@ -20,8 +20,6 @@ __author__ = 'jitesh'
 
 MAX_WORKERS = 20
 
-futures_session = FuturesSession(max_workers=MAX_WORKERS)
-
 
 def search_candidates_from_params(search_params, access_token, url_args=None, user_id=None):
     """
@@ -42,7 +40,8 @@ def search_candidates_from_params(search_params, access_token, url_args=None, us
         headers = {'Authorization': access_token, 'Content-Type': 'application/json'}
 
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI
-    future = futures_session.get(url=(url + url_args) if url_args else url, params=search_params, headers=headers)
+    session = FuturesSession(max_workers=MAX_WORKERS)
+    future = session.get(url=(url + url_args) if url_args else url, params=search_params, headers=headers)
     return future
 
 
