@@ -2,11 +2,14 @@
 This file contains Pipeline-restful-services
 """
 # Standard library
-import requests
 import json
-import urllib
+import itertools
+
+# Third Party
+import requests
 
 # Flask specific
+from concurrent.futures import wait
 from flask import request
 from flask_restful import Resource
 
@@ -79,21 +82,30 @@ class CandidatePipelineResource(Resource):
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
         found_talent_pipelines = []
+        futures = []
 
         for number_of_requests, talent_pipeline in enumerate(talent_pipelines, start=1):
             search_params = talent_pipeline.search_params
             if search_params:
-                search_response = search_candidates_from_params(
+                search_future = search_candidates_from_params(
                         search_params=format_search_params(talent_pipeline.search_params),
                         access_token=request.oauth_token,
                         url_args='?id={}&talent_pool_id={}'.format(candidate_id, talent_pipeline.talent_pool_id))
-
+                search_future.talent_pipeline = talent_pipeline
+                search_future.search_params = search_params
+                futures.append(search_future)
+        # Wait for all the futures to complete
+        completed_futures = wait(futures)
+        for completed_future in completed_futures[0]:
+            if completed_future._result.ok:
+                search_response = completed_future._result.json()
                 logger.info("\ncandidate_id: {}\ntalent_pipeline_id: {}\nsearch_params: {}\nsearch_response: {}".format(
-                    candidate_id, talent_pipeline.id, search_params, search_response))
+                    candidate_id, completed_future.talent_pipeline.id, completed_future.search_params, search_response))
+            else:
+                raise logger.error("Couldn't get candidates from Search API because %s" % completed_future._result.text)
 
-                # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
-                if search_response.get('candidates'):
-                    found_talent_pipelines.append(talent_pipeline)
+            if search_response.get('candidates'):
+                found_talent_pipelines.append(completed_future.talent_pipeline)
 
         result = []
 

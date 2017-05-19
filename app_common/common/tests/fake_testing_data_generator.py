@@ -11,7 +11,7 @@ __author__ = 'jitesh'
 class FakeCandidatesData(object):
     @classmethod
     def create(cls, talent_pool, count=1, first_name=True, middle_name=False, last_name=True,
-               added_time=True, emails_list=True, address_list=None, create_phone=True):
+               added_time=True, emails_list=True, address_list=None, create_phone=True, skill_name=None):
         """
         Generates candidate data dictionary as required by candidate_service API.
         Creates candidate data dictionary with given data or random data
@@ -32,8 +32,16 @@ class FakeCandidatesData(object):
         :type address_list: bool | list[dict]
         :param create_phone:
         :type create_phone: bool
+        :param skill_name: Name of skill
+        :type skill_name: str
         """
         candidates = []
+        if skill_name:
+            skills = [{
+                "name": skill_name,
+                "months_used": 13,
+                "last_used_date": "2019-08-03"
+            }]
         for iteration in range(0, count):
             candidate = {
                 'talent_pool_ids': {'add': [talent_pool.id]},
@@ -44,7 +52,10 @@ class FakeCandidatesData(object):
                 'emails': {True: cls.create_emails_list(), False: None}.get(emails_list, emails_list),
                 'addresses': cls.create_address_list() if address_list is True else address_list,
                 'phones': [
-                    {"label": "mobile", "value": sample_phone_number(), "is_default": True}] if create_phone else []}
+                    {"label": "mobile", "value": sample_phone_number(), "is_default": True}] if create_phone else []
+            }
+            if skill_name:
+                candidate['skills'] = skills
             candidates.append(candidate)
         return {'candidates': candidates}
 
