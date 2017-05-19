@@ -52,10 +52,16 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
         cell_values = []
         for cell in cells:
             cell_value = cell.value
-            if isinstance(cell_value, float):  # there should be no float-type data
+            cell_type = cell.ctype
+
+            if cell_type == xlrd.XL_CELL_NUMBER:  # there should be no float-type data
                 cell_value = str(int(cell_value))
-            if isinstance(cell_value, basestring):
+            elif cell_type == xlrd.XL_CELL_TEXT:
                 cell_value = cell_value.strip()
+            elif cell_type == xlrd.XL_CELL_DATE:
+                cell_value = datetime.datetime(*(xlrd.xldate.xldate_as_tuple(cell_value, book.datemode)))
+                cell_value = cell_value.isoformat()
+
             cell_values.append(cell_value)
 
         table.append(cell_values)
