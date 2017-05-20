@@ -26,6 +26,7 @@ from candidate_service.common.models.candidate import (
     SocialNetwork, CandidateEducationDegreeBullet, CandidateExperienceBullet, ClassificationType,
     CandidatePhoto, PhoneLabel, EmailLabel, CandidateSubscriptionPreference
 )
+from candidate_service.modules.mergehub import MergeHub, GtDict
 from candidate_service.modules.tags import create_tags, update_candidate_tags
 from candidate_service.common.models.candidate_edit import CandidateView
 from candidate_service.common.models.db import db
@@ -893,7 +894,8 @@ def create_or_update_candidate_from_params(
         resume_url=None,
         resume_text=None,
         tags=None,
-        title=None
+        title=None,
+        mergehub=None
 ):
     """
     Function will parse each parameter and:
@@ -947,6 +949,7 @@ def create_or_update_candidate_from_params(
     :type   resume_text             basestring
     :type   tags                    list
     :type   title                   basestring
+    :type   mergehub                type(t)
     :rtype                          dict
     """
     # Format inputs
@@ -1001,7 +1004,6 @@ def create_or_update_candidate_from_params(
     """
     :type candidate: Candidate
     """
-
     # Add or update Candidate's talent-pools
     if talent_pool_ids:  # TODO: track all updates
         _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating, is_updating)
@@ -1286,6 +1288,40 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     return candidate.id
 
 
+def parse_address(address, candidate_id=None):
+    zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
+    city = address['city'].strip() if address.get('city') else None
+    country_code = address.get('country_code')
+    if country_code:
+        country_code = get_country_code_from_name(country_code)
+        if country_code:
+            country_code = country_code.upper()
+        else:
+            logger.info("Country code was not found ... %s" % country_code)
+
+    subdivision_code = address['subdivision_code'].upper() if address.get('subdivision_code') else None
+    address_dict = dict(
+        address_line_1=address['address_line_1'].strip() if address.get('address_line_1') else None,
+        address_line_2=address['address_line_2'].strip() if address.get('address_line_2') else None,
+        city=city,
+        state=(address.get('state') or '').strip(),
+        iso3166_subdivision=subdivision_code,
+        iso3166_country=country_code,
+        zip_code=zip_code,
+        po_box=address['po_box'].strip() if address.get('po_box') else None,
+        is_default=bool(address.get('is_default')) or False,
+        coordinates=get_coordinates(zipcode=zip_code, city=city, state=subdivision_code)
+    )
+    if candidate_id and isinstance(candidate_id, (int, long)):
+        address_dict.update(candidate_id=candidate_id, resume_id=candidate_id)
+
+    # Remove keys that have None values
+    address_dict = purge_dict(address_dict)
+    # Cache country code
+    CachedData.country_codes.append(address_dict.get('iso3166_country'))
+    return address_dict
+
+
 def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updating):
     """
     Function will update CandidateAddress or create a new one.
@@ -1296,8 +1332,22 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
     address_has_default = any([address.get('is_default') for address in addresses])
     if address_has_default:
         CandidateAddress.set_is_default_to_false(candidate_id)
+    addresses = remove_duplicates(addresses)
+    address_ids = [address['id'] for address in addresses if 'id' in address]
+    if not is_updating and address_ids:
+        raise InvalidUsage("Can't specify address id while creating candidate")
 
-    for i, address in enumerate(remove_duplicates(addresses)):
+    address_objects = CandidateAddress.query.filter(CandidateAddress.id.in_(address_ids)).all()
+    """
+    Instead of querying CandidateAddress objects one by one in a loop much slow and this processing is too
+    fast (i.e. looping and filtering objects)
+    """
+    if len(address_objects) != len(address_ids):
+        missing_ids = set(address_ids) - set([address.id for address in address_objects])
+        raise InvalidUsage('Candidate addresses not found with following ids: {}'.format(missing_ids),
+                           custom_error.ADDRESS_NOT_FOUND)
+    formatted_addresses = []
+    for i, address in enumerate(addresses):
 
         zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
         city = address['city'].strip() if address.get('city') else None
@@ -1328,39 +1378,21 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
 
         # Prevent adding empty records to db
         if not address_dict:
+            addresses.remove(address_dict)
             continue
 
         # Cache country code
         CachedData.country_codes.append(address_dict.get('iso3166_country'))
+        address_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
+        formatted_addresses.append(GtDict(address_dict))
 
-        address_id = address.get('id')
-        if address_id:  # Update
-
-            # CandidateAddress must be recognized before updating
-            candidate_address_obj = CandidateAddress.get_by_id(address_id)
-            if not candidate_address_obj:
-                raise InvalidUsage('Candidate address not found', custom_error.ADDRESS_NOT_FOUND)
-
-            # CandidateAddress must belong to Candidate
-            if candidate_address_obj.candidate_id != candidate_id:
-                raise ForbiddenError("Unauthorized candidate address", custom_error.ADDRESS_FORBIDDEN)
-
-            # Track all updates
-            track_edits(update_dict=address_dict, table_name='candidate_address',
-                        candidate_id=candidate_id, user_id=user_id, query_obj=candidate_address_obj)
-
-            # Update
-            candidate_address_obj.update(**address_dict)
-
-        else:  # Create if not an update
-            address_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
-            # Prevent duplicate insertions
-            if not does_address_exist(candidate=candidate, address_dict=address_dict):
-                db.session.add(CandidateAddress(**address_dict))
-
-                if is_updating:  # Track all updates
-                    track_edits(update_dict=address_dict, table_name='candidate_address',
-                                candidate_id=candidate_id, user_id=user_id)
+    if is_updating:
+        mergehub = MergeHub(candidate, dict(addresses=formatted_addresses))
+        formatted_addresses = mergehub.merge_addresses(weight=90)
+    for address in [address for address in formatted_addresses if not address.id]:
+        db.session.add(CandidateAddress(**address))
+        track_edits(update_dict=address, table_name='candidate_address',
+                    candidate_id=candidate_id, user_id=user_id)
 
 
 def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, user_id, edit_datetime, is_updating):
