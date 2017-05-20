@@ -15,6 +15,7 @@
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/candidate_service/modules/cloudsearch_scripts.py" />
     <option name="PARAMETERS" value="--define-index-fields gettalent-prod us-east-1" />
     <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="EMULATE_TERMINAL" value="false" />
     <method />
   </configuration>
 </component>
