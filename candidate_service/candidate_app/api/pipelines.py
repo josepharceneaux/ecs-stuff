@@ -3,13 +3,12 @@ This file contains Pipeline-restful-services
 """
 # Standard library
 import json
-import itertools
 
 # Third Party
 import requests
+from concurrent.futures import wait
 
 # Flask specific
-from concurrent.futures import wait
 from flask import request
 from flask_restful import Resource
 
@@ -42,8 +41,7 @@ class CandidatePipelineResource(Resource):
     @time_me(logger=logger, api='candidate_pipeline_inclusion')
     def get(self, **kwargs):
         """
-        Function will return user's 5 most recently added Pipelines. One of the pipelines will
-          include the specified candidate.
+        Function will return Pipelines for which given candidate is part of.
         :rtype:  dict[list[dict]]
         Usage:
             >>> requests.get('host/v1/candidates/:candidate_id/pipelines')
@@ -99,13 +97,12 @@ class CandidatePipelineResource(Resource):
         for completed_future in completed_futures[0]:
             if completed_future._result.ok:
                 search_response = completed_future._result.json()
+                if search_response.get('candidates'):
+                    found_talent_pipelines.append(completed_future.talent_pipeline)
                 logger.info("\ncandidate_id: {}\ntalent_pipeline_id: {}\nsearch_params: {}\nsearch_response: {}".format(
                     candidate_id, completed_future.talent_pipeline.id, completed_future.search_params, search_response))
             else:
-                raise logger.error("Couldn't get candidates from Search API because %s" % completed_future._result.text)
-
-            if search_response.get('candidates'):
-                found_talent_pipelines.append(completed_future.talent_pipeline)
+                logger.error("Couldn't get candidates from Search API because %s" % completed_future._result.text)
 
         result = []
 

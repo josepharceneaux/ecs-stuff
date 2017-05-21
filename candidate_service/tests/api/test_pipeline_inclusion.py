@@ -1,6 +1,4 @@
 # Candidate Service app instance
-import time
-
 from candidate_service.candidate_app import app
 
 # Conftest
