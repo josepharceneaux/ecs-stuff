@@ -6,6 +6,7 @@ from datetime import datetime
 
 MAX_INT = sys.maxint
 CURRENT_YEAR = datetime.utcnow().year
+OFFSET_10 = 10
 
 candidates_resource_schema_post = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -362,7 +363,7 @@ candidates_resource_schema_post = {
                                             },
                                             "end_year": {
                                                 "type": ["integer", "null"],
-                                                "minimum": 1950, "maximum": CURRENT_YEAR
+                                                "minimum": 1950, "maximum": CURRENT_YEAR + OFFSET_10
                                             },
                                             "end_month": {
                                                 "type": ["integer", "null"],
@@ -969,7 +970,7 @@ candidates_resource_schema_patch = {
                                             },
                                             "end_year": {
                                                 "type": ["integer", "null"],
-                                                "minimum": 1950, "maximum": CURRENT_YEAR
+                                                "minimum": 1950, "maximum": CURRENT_YEAR + OFFSET_10
                                             },
                                             "end_month": {
                                                 "type": ["integer", "null"],
