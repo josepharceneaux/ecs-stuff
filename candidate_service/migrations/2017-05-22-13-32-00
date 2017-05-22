@@ -1,0 +1,11 @@
+"""
+Script will:
+ 1. Add a column custom_field_category_id in candidate_custom_field table.
+ 2. Add a foreign key constraint on it.
+"""
+from sqlalchemy import text
+from candidate_service.common.models.db import db
+
+db.session.execute(text("ALTER TABLE candidate_custom_field ADD custom_field_category_id INT UNSIGNED DEFAULT NULL;"))
+db.session.execute(text("ALTER TABLE candidate_custom_field ADD CONSTRAINT candidate_custom_field_category FOREIGN KEY (custom_field_category_id) REFERENCES custom_field_category(id);"))
+db.session.commit();
