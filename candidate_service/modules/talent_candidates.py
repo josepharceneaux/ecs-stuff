@@ -67,6 +67,7 @@ def fetch_candidate_info(candidate, fields=None):
     candidate_id = candidate.id
 
     get_all_fields = fields is None  # if fields is None, then get ALL the fields
+    logger.info('get_all_fields is set {}, candidate_id: {}'.format(get_all_fields, candidate_id))
 
     full_name = None
     if get_all_fields or 'full_name' in fields:
@@ -83,7 +84,7 @@ def fetch_candidate_info(candidate, fields=None):
     phones = None
     if get_all_fields or 'phones' in fields:
         phones = candidate_phones(candidate=candidate)
-
+    logger.info('got phones of candidate id: {}'.format(candidate.id))
     addresses = None
     if get_all_fields or 'addresses' in fields:
         addresses = candidate_addresses(candidate_id=candidate_id)
@@ -91,7 +92,7 @@ def fetch_candidate_info(candidate, fields=None):
     work_experiences = None
     if get_all_fields or 'work_experiences' in fields:
         work_experiences = candidate_experiences(candidate_id=candidate_id)
-
+    logger.info('got work experiences of candidate id: {}'.format(candidate.id))
     work_preference = None
     if get_all_fields or 'work_preferences' in fields:
         work_preference = candidate_work_preference(candidate=candidate)
@@ -115,7 +116,7 @@ def fetch_candidate_info(candidate, fields=None):
     military_services = None
     if get_all_fields or 'military_services' in fields:
         military_services = candidate_military_services(candidate_id=candidate_id)
-
+    logger.info('got military services of candidate id: {}'.format(candidate.id))
     custom_fields = None
     if get_all_fields or 'custom_fields' in fields:
         custom_fields = candidate_custom_fields(candidate=candidate)
@@ -133,7 +134,7 @@ def fetch_candidate_info(candidate, fields=None):
             history = candidate_contact_history(candidate=candidate)
         else:
             raise ForbiddenError("You are not authorized to get contact history of this candidate")
-
+    logger.info('got contract history of candidate id: {}'.format(candidate.id))
     openweb_id = None
     if get_all_fields or 'openweb_id' in fields:
         openweb_id = candidate.dice_social_profile_id
@@ -150,6 +151,7 @@ def fetch_candidate_info(candidate, fields=None):
     resume_url = None
     if (get_all_fields or 'resume_url' in fields) and candidate.filename:
         resume_url = get_s3_url(folder_path="OriginalFiles", name=candidate.filename)
+    logger.info('got resume url of candidate id: {}'.format(candidate.id))
 
     # Get candidate's source product information
     source_product_info = None
@@ -157,7 +159,7 @@ def fetch_candidate_info(candidate, fields=None):
     if source_product_id:
         source_product = Product.get(source_product_id)
         source_product_info = source_product.to_json()
-
+    logger.info('got all data of candidate id: {}'.format(candidate.id))
     return {
         'id': candidate_id,
         'owner_id': candidate.user_id,
