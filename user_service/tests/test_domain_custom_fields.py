@@ -343,7 +343,7 @@ class TestDomainCustomField(object):
                 'custom_fields': [
                     {
                         'custom_field_id': custom_field_id,
-                        'custom_field_category': category['id'],
+                        'custom_field_category_id': category['id'],
                         'custom_field_subcategory_id': subcategory['id']
                     }
                 ]

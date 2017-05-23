@@ -764,8 +764,8 @@ def validate_cf_category_and_subcategory_ids(cf_category_id, domain_id, cf_subca
     :param positive|None cf_subcategory_id: Custom Field Subcategory Id
     :param positive domain_id: User's domain Id
     """
-    category = CustomFieldCategory.query.filter(CustomFieldCategory.id == cf_category_id,
-                                                CustomFieldCategory.domain_id == domain_id).first()
+    category = CustomFieldCategory.query.join(CustomField).filter(CustomFieldCategory.id == cf_category_id,
+                                                                  CustomField.domain_id == domain_id).first()
     if not category:
         raise ForbiddenError("Requested Custom Field Category does not belong to user's domain",
                              custom_error.CUSTOM_FIELD_CATEGORY_NOT_FOUND)
