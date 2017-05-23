@@ -55,7 +55,7 @@ class CandidatePipelineResource(Resource):
 
         # Maximum number of Talent Pipeline objects used for searching.
         # This is to prevent client from waiting too long for a response
-        max_requests = 30
+        max_requests = request.args.get('max_requests', 30)
 
         is_hidden = request.args.get('is_hidden', 0)
         if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
@@ -67,22 +67,26 @@ class CandidatePipelineResource(Resource):
 
         added_pipelines = TalentPipelineIncludedCandidates.query.filter_by(candidate_id=candidate_id).all()
         added_pipelines = map(lambda x: x.talent_pipeline, added_pipelines)
+        logger.info('added_pipelines are:{}. candidate_id:{}'.format(len(added_pipelines), candidate_id))
 
         removed_pipeline_ids = map(lambda x: x[0], TalentPipelineExcludedCandidates.query.with_entities(
                 TalentPipelineExcludedCandidates.talent_pipeline_id).filter_by(candidate_id=candidate_id).all())
 
-        # Get User-domain's 10 most recent talent pipelines in order of added time
+        # Get User-domain's 30 most recent talent pipelines in order of added time
         talent_pipelines = TalentPipeline.query.join(User).filter(
             TalentPipeline.is_hidden == is_hidden,
             TalentPipeline.talent_pool_id.in_(candidate_talent_pool_ids),
             TalentPipeline.id.notin_(removed_pipeline_ids)
         ).order_by(TalentPipeline.added_time.desc()).limit(max_requests).all()
 
+        logger.info('Going for CS for {} talent_pipelines for candidate_id:{}'.
+                    format(len(talent_pipelines), candidate_id))
+
         # Use Search API to retrieve candidate's domain-pipeline inclusion
         found_talent_pipelines = []
         futures = []
 
-        for number_of_requests, talent_pipeline in enumerate(talent_pipelines, start=1):
+        for talent_pipeline in talent_pipelines:
             search_params = talent_pipeline.search_params
             if search_params:
                 search_future = search_candidates_from_params(
@@ -112,9 +116,8 @@ class CandidatePipelineResource(Resource):
         found_talent_pipelines = sorted(found_talent_pipelines,
                                         key=lambda talent_pipeline: talent_pipeline.added_time, reverse=True)
 
-        logger.info("\nfound_talent_pipelines: {}".format(found_talent_pipelines))
+        logger.info("\nFound {} talent_pipelines:{}".format(len(found_talent_pipelines), found_talent_pipelines))
 
-        # Only return pipeline data if candidate is found from pipeline's search params
         if found_talent_pipelines:
             pipeline_engagements = top_most_engaged_pipelines_of_candidate(candidate_id)
             for talent_pipeline in found_talent_pipelines:
