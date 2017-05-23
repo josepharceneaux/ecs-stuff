@@ -14,6 +14,8 @@ from fuzzywuzzy import fuzz
 
 from candidate_service.candidate_app import logger
 from candidate_service.common.error_handling import InvalidUsage
+from candidate_service.common.models.db import db
+from candidate_service.common.models.candidate import CandidateEducationDegree
 from candidate_service.modules.track_changes import track_edits
 from constants import (EXACT, YES_MATCH_CASES, HIGH_MATCH_CASES, MEDIUM_MATCH_CASES,
                        LOW_MATCH_CASES, JOB_TITLE_VARIATIONS, DEGREES, ADDRESS_NOTATIONS, MATCH_CATEGORIES,
@@ -232,45 +234,93 @@ class MergeHub(object):
         addresses += self.first.addresses or []
         return addresses
 
-    def merge_educations(self):
+    def merge_educations(self, weight=EXACT):
         """
-        This method combines educations of first and second candidates into educations of first candidate.
-        :return: list of educations
+        This method matches candidate's existing educations with newly added educations
         """
-        degree_fields = ["type", "title", "start_year", "start_month", "end_year", "end_month", "gpa"]
-        educations = []
-        is_same_education = False
-        educations1 = (self.first.educations or [])[:]
+        new_educations = []
         for education2 in self.second.educations or []:
-            matches = 0
-            for index, education1 in enumerate(educations1):
-                index -= matches
-                same_school = education2.school_name == education1.school_name
-                same_city = education1.city == education2.city
-                is_same_education = same_school and same_city
+            is_same_education = False
+            for education_obj in self.first.educations or []:
+                same_school = fuzz.ratio(education2.school_name, education_obj.school_name) >= weight
+                same_city = education_obj.city == education2.city
+                is_same_education = education_obj.id == education2.id or same_school and same_city
                 if is_same_education:
-                    degrees = []
-                    is_same_degree = False
-                    for degree2 in education2.degrees or []:
-                        for degree1 in education1.degrees or []:
-                            if all(getattr(degree1, key) == getattr(degree2, key) for key in degree_fields):
-                                is_same_degree = True
-                                break
-                        if not is_same_degree:
-                            degrees.append(degree2)
-                            is_same_degree = False
-                    degrees += education1.degrees or []
-                    education = education1
-                    education['degrees'] = degrees
-                    educations.append(education)
-                    educations1.pop(index)
-                    matches += 1
+                    education_obj.update(**education2)
+                    new_educations.append((education2, education_obj))
+                    track_edits(update_dict=education2, table_name='candidate_education',
+                                candidate_id=self.first.id, user_id=self.first.user_id, query_obj=education_obj)
+                    break
             if not is_same_education:
-                educations.append(education2)
-                is_same_education = False
+                new_educations.append((education2, None))
 
-        educations += educations1
-        return educations
+        return new_educations
+
+    def merge_degrees(self, degrees1, degrees2, weight=EXACT):
+        """
+        This method compares degrees of existing education with degrees of new education
+        """
+        degree_fields = ["degree_type", "degree_title", "start_year", "start_month", "end_year", "end_month"]
+        degrees, new_degrees = [], []
+        for degree2 in degrees2 or []:
+            is_same_degree = False
+            for degree_obj in degrees1 or []:
+                if degree_obj.id and degree2.id and degree_obj.id != degree2.id:
+                    continue
+                if degree_obj.id and degree2.id and degree_obj.id == degree2.id:
+                    is_same_degree = True
+                    start_year = degree2.get('start_year')
+                    end_year = degree2.get('end_year')
+                    # If start year needs to be updated, it cannot be greater than existing end year
+                    if start_year and not end_year and (start_year > degree_obj.end_year):
+                        raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(
+                            start_year, degree_obj.end_year))
+
+                    # If end year needs to be updated, it cannot be less than existing start year
+                    if end_year and not start_year and (end_year < degree_obj.start_year):
+                        raise InvalidUsage('End year ({}) cannot be less than start year ({})'.format(
+                            end_year, degree_obj.start_year))
+
+                if all(getattr(degree_obj, key) == getattr(degree2, key) for key in degree_fields):
+                    is_same_degree = True
+                if is_same_degree:
+                    new_degrees.append((degree2, degree_obj))
+                    degree_obj.update(**degree2)
+                    track_edits(update_dict=degree2, table_name='candidate_education_degree',
+                                candidate_id=self.first.id, user_id=self.first.user_id, query_obj=degree_obj)
+                    break
+            if not is_same_degree:
+                degrees.append(degree2)
+                new_degrees.append((degree2, None))
+        return new_degrees
+
+    def merge_bullets(self, bullets1, bullets2, weight=EXACT):
+        """
+        This method compares degree's existing bullets with newly added bullets
+        """
+        new_bullets = []
+        for bullet2 in bullets2 or []:
+            is_same_bullet = False
+            for bullet1 in bullets1 or []:
+                if bullet1.id and bullet2.id and bullet1.id != bullet2.id:
+                    continue
+                if bullet1.id and bullet2.id and bullet1.id == bullet2.id:
+                    is_same_bullet = True
+
+                # TODO: @amir, help me to determine the conditions for bullet match
+                if bullet1.concentration_type == bullet2.concentration_type:
+                    is_same_bullet = True
+                if is_same_bullet:
+                    new_bullets.append((bullet2, bullet1))
+                    bullet1.update(**bullet2)
+                    track_edits(update_dict=bullet2,
+                                table_name='candidate_education_degree_bullet',
+                                candidate_id=self.first.id, user_id=self.first.user_id,
+                                query_obj=bullet1)
+                    break
+            if not is_same_bullet:
+                new_bullets.append((bullet2, None))
+        return new_bullets
 
     def merge_emails(self):
         """
