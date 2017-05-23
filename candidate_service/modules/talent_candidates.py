@@ -1409,7 +1409,7 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
         )
         if custom_field_dict['custom_field_subcategory_id']:
             if custom_field_dict['custom_field_category_id'] is None:
-                raise InvalidUsage("No Custom Field Category Found")
+                raise InvalidUsage("No Custom Field Category Provided", custom_error.NO_CUSTOM_FIELD_CATEGORY_PROVIDED)
         if custom_field_dict['custom_field_category_id']:
             validate_cf_category_and_subcategory_ids(custom_field_dict['custom_field_category_id'],
                                                      domain_id_from_user_id(user_id),

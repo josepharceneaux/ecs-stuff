@@ -171,6 +171,7 @@ def is_custom_field_authorized(user_domain_id, custom_field_ids):
     :rtype: bool
     """
     assert isinstance(custom_field_ids, list)
+    custom_field_ids = list(set(custom_field_ids))  # Removing duplicate Ids
     exists = db.session.query(CustomField). \
                  filter(CustomField.id.in_(custom_field_ids),
                         CustomField.domain_id == user_domain_id).count() == len(custom_field_ids)
@@ -766,8 +767,8 @@ def validate_cf_category_and_subcategory_ids(cf_category_id, domain_id, cf_subca
     category = CustomFieldCategory.query.filter(CustomFieldCategory.id == cf_category_id,
                                                 CustomFieldCategory.domain_id == domain_id).first()
     if not category:
-        raise ForbiddenError("Unauthorized Custom Field Category", custom_error.CUSTOM_FIELD_CATEGORY_NOT_FOUND)
-
+        raise ForbiddenError("Requested Custom Field Category does not belong to user's domain",
+                             custom_error.CUSTOM_FIELD_CATEGORY_NOT_FOUND)
     if cf_subcategory_id:
         valid_subcategory = False
         if cf_subcategory_id in [category.id for category in category.subcategories]:

@@ -28,6 +28,7 @@ class CandidateCustomErrors(object):
     CUSTOM_FIELD_NOT_FOUND = 3041
     CUSTOM_FIELD_CATEGORY_NOT_FOUND = 3042
     CUSTOM_FIELD_SUBCATEGORY_NOT_FOUND = 3043
+    NO_CUSTOM_FIELD_CATEGORY_PROVIDED = 3044
 
     # Error codes for CandidateEducation, CandidateEducationDegree, and CandidateEducationDegreeBullet
     EDUCATION_FORBIDDEN = 3050
