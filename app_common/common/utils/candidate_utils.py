@@ -52,3 +52,19 @@ def replace_tabs_with_spaces(obj):
     else:
         pass
     return obj
+
+
+def remove_duplicates(collection):
+    """
+    Function will remove duplicate dict_data from collection
+    :type collection: list
+    :rtype: list
+    """
+    seen = set()
+    unique_items = []
+    for dict_data in collection:
+        t = tuple(dict_data.items())
+        if t not in seen:
+            seen.add(t)
+            unique_items.append(dict_data)
+    return unique_items
