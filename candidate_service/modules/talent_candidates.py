@@ -1288,11 +1288,18 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     return candidate.id
 
 
+def get_value(dict_item, key, function_name=None, default=None):
+    val = dict_item[key].strip() if dict_item.get(key) else default
+    if function_name and val:
+        val = getattr(val, function_name)()
+    return val
+
+
 def parse_addresses(addresses, candidate, has_default=False):
     for i, address in enumerate(addresses):
 
         zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
-        city = address['city'].strip() if address.get('city') else None
+        city = get_value(address, 'city')
         country_code = address.get('country_code')
         if country_code:
             country_code = get_country_code_from_name(country_code)
@@ -1303,14 +1310,15 @@ def parse_addresses(addresses, candidate, has_default=False):
 
         subdivision_code = address['subdivision_code'].upper() if address.get('subdivision_code') else None
         address_dict = dict(
-            address_line_1=address['address_line_1'].strip() if address.get('address_line_1') else None,
-            address_line_2=address['address_line_2'].strip() if address.get('address_line_2') else None,
+            id=address.get('id'),
+            address_line_1=get_value(address, 'address_line_1'),
+            address_line_2=get_value(address, 'address_line_2'),
             city=city,
             state=(address.get('state') or '').strip(),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
             zip_code=zip_code,
-            po_box=address['po_box'].strip() if address.get('po_box') else None,
+            po_box=get_value(address, 'po_box'),
             is_default=i == 0 if not has_default else address.get('is_default'),
             coordinates=get_coordinates(zipcode=zip_code, city=city, state=subdivision_code)
         )
@@ -1363,9 +1371,10 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
     if address_has_default:
         CandidateAddress.set_is_default_to_false(candidate_id)
     addresses = remove_duplicates(addresses)
-    validate_existing_objects(addresses, CandidateAddress, is_updating, 'address', custom_error.ADDRESS_NOT_FOUND)
+    validate_existing_objects(addresses, CandidateAddress, candidate_id, is_updating, 'address',
+                              custom_error.ADDRESS_NOT_FOUND, custom_error.ADDRESS_FORBIDDEN)
 
-    formatted_addresses = parse_addresses(addresses, candidate, has_default=address_has_default)
+    formatted_addresses = list(parse_addresses(addresses, candidate, has_default=address_has_default))
     if is_updating:
         mergehub = MergeHub(candidate, dict(addresses=formatted_addresses))
         formatted_addresses = mergehub.merge_addresses(weight=90)
@@ -1499,7 +1508,7 @@ def parse_education(education):
             continue
         formatted_degrees.append(degree_dict)
 
-    education_dict['degrees'] = formatted_degrees
+    education_dict['degrees'] = remove_duplicates(formatted_degrees)
     return GtDict(education_dict)
 
 
@@ -1549,7 +1558,7 @@ def parse_degree(education_degree):
         if not bullet:
             continue
         formatted_bullets.append(bullet)
-    education_degree_dict['bullets'] = formatted_bullets
+    education_degree_dict['bullets'] = remove_duplicates(formatted_bullets)
     return education_degree_dict
 
 

@@ -202,12 +202,11 @@ class MergeHub(object):
                 if address1.id == address2.id or (address_line_1_match and city_match) or \
                         (address_line_1_match and zip_code_match):
                     is_same = True
-                    address1.update(**address2)
                     track_edits(update_dict=address2, table_name='candidate_address',
                                 candidate_id=self.first.id, user_id=self.first.user_id, query_obj=address1)
+                    address1.update(**address2)
                     break
             if not is_same:
-                address2.is_default = False
                 addresses.append(address2)
 
         addresses += self.first.addresses or []
@@ -225,10 +224,11 @@ class MergeHub(object):
                 same_city = education_obj.city == education2.city
                 is_same_education = education_obj.id == education2.id or same_school and same_city
                 if is_same_education:
-                    education_obj.update(**education2)
+
                     new_educations.append((education2, education_obj))
                     track_edits(update_dict=education2, table_name='candidate_education',
                                 candidate_id=self.first.id, user_id=self.first.user_id, query_obj=education_obj)
+                    education_obj.update(**education2)
                     break
             if not is_same_education:
                 new_educations.append((education2, None))
@@ -264,9 +264,9 @@ class MergeHub(object):
                     is_same_degree = True
                 if is_same_degree:
                     new_degrees.append((degree2, degree_obj))
-                    degree_obj.update(**degree2)
                     track_edits(update_dict=degree2, table_name='candidate_education_degree',
                                 candidate_id=self.first.id, user_id=self.first.user_id, query_obj=degree_obj)
+                    degree_obj.update(**degree2)
                     break
             if not is_same_degree:
                 degrees.append(degree2)
@@ -291,11 +291,11 @@ class MergeHub(object):
                     is_same_bullet = True
                 if is_same_bullet:
                     new_bullets.append((bullet2, bullet1))
-                    bullet1.update(**bullet2)
                     track_edits(update_dict=bullet2,
                                 table_name='candidate_education_degree_bullet',
                                 candidate_id=self.first.id, user_id=self.first.user_id,
                                 query_obj=bullet1)
+                    bullet1.update(**bullet2)
                     break
             if not is_same_bullet:
                 new_bullets.append((bullet2, None))
