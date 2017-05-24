@@ -77,9 +77,10 @@ class CandidateSearch(Resource):
             limit = request_vars.get('limit')
             search_limit = int(limit) if limit else 15
             count_only = True if 'count_only' in request.args.get('fields', '') else False
+            facets = request_vars.get('facets', '')
 
             # If limit is not requested then the Search limit would be taken as 15, the default value
-            candidate_search_results = search_candidates(domain_id, request_vars, search_limit, count_only)
+            candidate_search_results = search_candidates(domain_id, request_vars, facets, search_limit, count_only)
 
             return candidate_search_results
 

@@ -31,6 +31,29 @@ DOCUMENT_SIZE_LIMIT_BYTES = 1024 * 1024
 CLOUD_SEARCH_SDF_S3_FOLDER = "CloudSearchSDF"
 CLOUD_SEARCH_MAX_LIMIT = 10000
 
+valid_facets = [
+    'area_of_interest_id',
+    'source_id',
+    'total_months_experience',
+    'user_id',
+    'status_id',
+    'skill_description',
+    'position',
+    'organization',
+    'school_name',
+    'degree_type',
+    'concentration_type',
+    'military_service_status',
+    'tags',
+    'military_branch',
+    'military_highest_grade',
+    'tag_ids',
+    'custom_field_id_and_value',
+    'candidate_engagement_score',
+    'source_details',
+    "added_time_hour"
+]
+
 STOPWORDS = """a
 an
 and
@@ -679,14 +702,16 @@ def _cloud_search_domain_connection():
     return _cloud_search_domain.get_search_service().domain_connection
 
 
-def search_candidates(domain_id, request_vars, search_limit=15, count_only=False):
+def search_candidates(domain_id, request_vars, facets="", search_limit=15, count_only=False):
     """
     Searches candidates based on domain_id and search_filters provided.
     Search Engine: Amazon Cloud Search
 
     :param domain_id: Search candidates in given domain Id
     :param request_vars: Search criteria, or various search filters
-    :param search_limit: Defaults to 15.
+    :param search_limit: Defaults to 15,
+    :param facets: Facets String
+    :param count_only: Candidate Count only or data too
     :return: Search results in format described on `search service` apiary document.
 
     Set search_limit = 0 for no limit, candidate_ids_only returns dict of candidate_ids.
@@ -848,8 +873,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     logger.info("Filter Query: %s, Search Query: %s" % (filter_query, search_query))
 
-    # Adding facet fields parameters
-    if not count_only:
+    if facets == 'all':
         request_facets = {
             'area_of_interest_id': 500, 'source_id': 50, 'total_months_experience': 50,
             'user_id': 50, 'status_id': 50, 'skill_description': 500, 'position': 50, 'organization': 50,
@@ -857,9 +881,27 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
             'tags': 1000, 'military_branch': 50, 'military_highest_grade': 50, 'tag_ids': 500,
             'custom_field_id_and_value': 1000, 'candidate_engagement_score': 50, 'source_details': 100
         }
-        params['facet'] = "{" + ','.join(["%s:{size:%s}" % (facet_name, size) for (facet_name, size) in request_facets.items()]) + "}"
+    elif facets:
+        try:
+            facets = [facet.split(':') for facet in facets.split(',')]
+            request_facets = {facet[0]: int(facet[1]) for facet in facets}
+        except Exception as e:
+            raise InvalidUsage("Facets are not properly formatted: %s" % facets)
     else:
-        params['facet'] = "{added_time_hour:{size:24}}"
+        request_facets = {}
+
+    for facet_key in request_facets.keys():
+        if facet_key not in valid_facets:
+            raise InvalidUsage("Facet %s is not valid" % facet_key)
+
+    # Adding facet fields parameters
+    if count_only:
+        request_facets = {
+            "added_time_hour": 24
+        }
+
+    params['facet'] = "{" + ','.join(
+        ["%s:{size:%s}" % (facet_name, size) for (facet_name, size) in request_facets.items()]) + "}"
 
     if geo_params:
         params = dict(params.items() + geo_params.items())
@@ -911,12 +953,12 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     # Update facets
     if total_found > 0:
-        _update_facet_counts(filter_queries_list, params['filter_query'], facets, search_query)
+        _update_facet_counts(filter_queries_list, params['filter_query'], facets, search_query, request_facets)
 
     # for facet_field_name, facet_dict in facets.iteritems():
     #     facets[facet_field_name] = sorted(facet_dict.iteritems(), key=operator.itemgetter(1), reverse=True)
-    if facets.get('custom_field_id_and_value', dict()):
-        _kaiser_custom_fields_facets(request_vars, facets)
+    # if facets.get('custom_field_id_and_value', dict()):
+    #     _kaiser_custom_fields_facets(request_vars, facets)
 
     # Get max score
     max_score = _get_max_score(params, search_service)
@@ -939,27 +981,31 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
 # Get the facet information from database with given ids
 def get_faceting_information(facets):
+
+    if not facets:
+        return dict()
+
     logger.info("talent_cloud_search.get_faceting_information: facets: %s" % facets)
     search_facets_values = {}
     # cache = SimpleCache()
-    facet_aoi = facets.get('area_of_interest_id').get('buckets')  # db area_of_interest_id
-    facet_owner = facets.get('user_id').get('buckets')  # db user
-    facet_source = facets.get('source_id').get('buckets')  # db candidate_source
-    facet_source_details = facets.get('source_details').get('buckets')  # db candidate.source_detail
-    facet_status = facets.get('status_id').get('buckets')  # db candidate_status
-    facet_skills = facets.get('skill_description').get('buckets')  # skills
-    facet_position = facets.get('position').get('buckets')  # position = job_title
-    facet_organization = facets.get('organization').get('buckets')
-    facet_university = facets.get('school_name').get('buckets')  # university = school_name
-    facet_degree_type = facets.get('degree_type').get('buckets')  # degree = degree_type
-    facet_major = facets.get('concentration_type').get('buckets')  # major = concentration_type
-    facet_military_service_status = facets.get('military_service_status').get('buckets')
-    facet_military_branch = facets.get('military_branch').get('buckets')
-    facet_military_highest_grade = facets.get('military_highest_grade').get('buckets')
-    facet_custom_field_id_and_value = facets.get('custom_field_id_and_value').get('buckets')
-    facet_candidate_engagement_score = facets.get('candidate_engagement_score').get('buckets')
-    facet_total_months_experience = facets.get('total_months_experience').get('buckets')
-    facet_tag_ids = facets.get('tag_ids').get('buckets')
+    facet_aoi = facets.get('area_of_interest_id', {}).get('buckets')  # db area_of_interest_id
+    facet_owner = facets.get('user_id', {}).get('buckets')  # db user
+    facet_source = facets.get('source_id', {}).get('buckets')  # db candidate_source
+    facet_source_details = facets.get('source_details', {}).get('buckets')  # db candidate.source_detail
+    facet_status = facets.get('status_id', {}).get('buckets')  # db candidate_status
+    facet_skills = facets.get('skill_description', {}).get('buckets')  # skills
+    facet_position = facets.get('position', {}).get('buckets')  # position = job_title
+    facet_organization = facets.get('organization', {}).get('buckets')
+    facet_university = facets.get('school_name', {}).get('buckets')  # university = school_name
+    facet_degree_type = facets.get('degree_type', {}).get('buckets')  # degree = degree_type
+    facet_major = facets.get('concentration_type', {}).get('buckets')  # major = concentration_type
+    facet_military_service_status = facets.get('military_service_status', {}).get('buckets')
+    facet_military_branch = facets.get('military_branch', {}).get('buckets')
+    facet_military_highest_grade = facets.get('military_highest_grade', {}).get('buckets')
+    facet_custom_field_id_and_value = facets.get('custom_field_id_and_value', {}).get('buckets')
+    facet_candidate_engagement_score = facets.get('candidate_engagement_score', {}).get('buckets')
+    facet_total_months_experience = facets.get('total_months_experience', {}).get('buckets')
+    facet_tag_ids = facets.get('tag_ids', {}).get('buckets')
 
     if facet_owner:
         search_facets_values['username'] = get_username_facet_info_with_ids(facet_owner)
@@ -1083,56 +1129,96 @@ def get_added_time_hour_facet_count(facet):
     return facet_bucket
 
 
-def _update_facet_counts(filter_queries, params_fq, existing_facets, query_string):
+def _update_facet_counts(filter_queries, params_fq, existing_facets, query_string, facets_input):
     """
     For multi-select facets, return facet count and values based on filter queries
     :param filter_queries:
     :return:
     """
     search_service = _cloud_search_domain_connection()
+
     # Multi-select facet scenario
+    user_filter_queries = []
+    aoi_filter_queries = []
+    source_filter_queries = []
+    school_filter_queries = []
+    degree_filter_queries = []
+
     for filter_query in filter_queries:
         if 'user_id' in filter_query:
-            fq_without_user_id = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
-            query_user_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_user_id,
-                                   'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{user_id: {size:50}}"}
-            result_user_id_facet = search_service.search(**query_user_id_facet)
-            facet_owner = result_user_id_facet['facets']['user_id']['buckets']
-            existing_facets['username'] = get_username_facet_info_with_ids(facet_owner)
+            user_filter_queries.append(filter_query)
         if 'area_of_interest_id' in filter_query:
-            fq_without_area_of_interest = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
-            query_area_of_interest_facet = {'query': query_string, 'size': 0,
-                                            'filter_query': fq_without_area_of_interest, 'query_parser': 'lucene',
-                                            'ret': '_no_fields', 'facet': "{area_of_interest_id: {size:500}}"}
-            result_area_of_interest_facet = search_service.search(**query_area_of_interest_facet)
-            facet_aoi = result_area_of_interest_facet['facets']['area_of_interest_id']['buckets']
-            existing_facets['area_of_interest'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
-                                                                               'name')
+            aoi_filter_queries.append(filter_query)
         if 'source_id' in filter_query:
-            fq_without_source_id = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
-            query_source_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_source_id,
-                                     'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{source_id: {size:50}}"}
-            result_source_id_facet = search_service.search(**query_source_id_facet)
-            facet_source = result_source_id_facet['facets']['source_id']['buckets']
-            existing_facets['source'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
-
+            source_filter_queries.append(filter_query)
         if 'school_name' in filter_query:
-            fq_without_school_name = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
-            query_school_name_facet = {'query': query_string, 'size':0, 'filter_query': fq_without_school_name,
-                                       'query_parser': 'lucene', 'ret': '_no_fields',
-                                       'facet': "{school_name: {size:500}}"}
-            result_school_name_facet = search_service.search(**query_school_name_facet)
-            facet_school = result_school_name_facet['facets']['school_name']['buckets']
-            existing_facets['school_name'] = get_bucket_facet_value_count(facet_school)
+            school_filter_queries.append(filter_query)
         if 'degree_type' in filter_query:
-            fq_without_degree_type = params_fq.replace(filter_query, '')
+            degree_filter_queries.append(filter_query)
 
-            query_degree_type_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_degree_type,
-                                       'query_parser': 'lucene', 'ret': '_no_fields', 'facet':
-                                           "{degree_type: {size:50}}"}
-            result_degree_type_facet = search_service.search(**query_degree_type_facet)
-            facet_degree_type = result_degree_type_facet['facets']['degree_type']['buckets']
-            existing_facets['degree_type'] = get_bucket_facet_value_count(facet_degree_type)
+    fq_without_user_id = params_fq
+    fq_without_area_of_interest = params_fq
+    fq_without_source_id = params_fq
+    fq_without_school_name = params_fq
+    fq_without_degree_type = params_fq
+
+    if user_filter_queries and 'user_id' in facets_input:
+        for user_filter_query in user_filter_queries:
+            fq_without_user_id = fq_without_user_id.replace(user_filter_query, '')
+            fq_without_user_id = re.sub(r'\(\s*(and|or|not)\s*\)', '', fq_without_user_id)
+
+        query_user_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_user_id,
+                               'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{user_id: {size:50}}"}
+        result_user_id_facet = search_service.search(**query_user_id_facet)
+        facet_owner = result_user_id_facet['facets']['user_id']['buckets']
+        existing_facets['username'] = get_username_facet_info_with_ids(facet_owner)
+
+    if aoi_filter_queries and 'area_of_interest_id' in facets_input:
+        for aoi_filter_query in aoi_filter_queries:
+            fq_without_area_of_interest = fq_without_area_of_interest.replace(aoi_filter_query, '')
+            fq_without_area_of_interest = re.sub(r'\(\s*(and|or|not)\s*\)', '', fq_without_area_of_interest)
+
+        query_area_of_interest_facet = {'query': query_string, 'size': 0,
+                                        'filter_query': fq_without_area_of_interest, 'query_parser': 'lucene',
+                                        'ret': '_no_fields', 'facet': "{area_of_interest_id: {size:500}}"}
+        result_area_of_interest_facet = search_service.search(**query_area_of_interest_facet)
+        facet_aoi = result_area_of_interest_facet['facets']['area_of_interest_id']['buckets']
+        existing_facets['area_of_interest'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi, 'name')
+
+    if source_filter_queries and 'source_id' in facets_input:
+        for source_filter_query in source_filter_queries:
+            fq_without_source_id = fq_without_source_id.replace(source_filter_query, '')
+            fq_without_source_id = re.sub(r'\(\s*(and|or|not)\s*\)', '', fq_without_source_id)
+
+        query_source_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_source_id,
+                                 'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{source_id: {size:50}}"}
+        result_source_id_facet = search_service.search(**query_source_id_facet)
+        facet_source = result_source_id_facet['facets']['source_id']['buckets']
+        existing_facets['source'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
+
+    if school_filter_queries and 'school_name' in facets_input:
+        for school_filter_query in school_filter_queries:
+            fq_without_school_name = fq_without_school_name.replace(school_filter_query, '')
+            fq_without_school_name = re.sub(r'\(\s*(and|or|not)\s*\)', '', fq_without_school_name)
+
+        query_school_name_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_school_name,
+                                   'query_parser': 'lucene', 'ret': '_no_fields',
+                                   'facet': "{school_name: {size:500}}"}
+        result_school_name_facet = search_service.search(**query_school_name_facet)
+        facet_school = result_school_name_facet['facets']['school_name']['buckets']
+        existing_facets['school_name'] = get_bucket_facet_value_count(facet_school)
+
+    if degree_filter_queries and 'degree_type' in facets_input:
+        for degree_filter_query in degree_filter_queries:
+            fq_without_degree_type = fq_without_degree_type.replace(degree_filter_query, '')
+            fq_without_degree_type = re.sub(r'\(\s*(and|or|not)\s*\)', '', fq_without_degree_type)
+
+        query_degree_type_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_degree_type,
+                                   'query_parser': 'lucene', 'ret': '_no_fields', 'facet':
+                                       "{degree_type: {size:50}}"}
+        result_degree_type_facet = search_service.search(**query_degree_type_facet)
+        facet_degree_type = result_degree_type_facet['facets']['degree_type']['buckets']
+        existing_facets['degree_type'] = get_bucket_facet_value_count(facet_degree_type)
 
 
 def _cloud_search_fetch_all(params):
