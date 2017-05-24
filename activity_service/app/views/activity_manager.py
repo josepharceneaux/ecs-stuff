@@ -33,7 +33,7 @@ class TalentActivityManager(object):
         Activity.MessageIds.EVENT_UPDATE: ("<b>%(username)s</b> updated an event <b>%(event_title)s</b>.",
                                            "<b>%(username)s</b> updated %(count)s events.", "event.png"),
         Activity.MessageIds.CANDIDATE_CREATE_WEB:
-        ("<b>%(username)s</b> uploaded the resume of candidate <b>%(formattedName)s</b>",
+        ("<b>%(username)s</b> uploaded the resume of candidate <b>%(formatted_name)s</b>",
          "<b>%(username)s</b> uploaded the resume(s) of %(count)s candidate(s)", "candidate.png"),
         Activity.MessageIds.CANDIDATE_CREATE_CSV:
         ("<b>%(username)s</b> imported the candidate <b>%(formattedName)s</b> via spreadsheet",

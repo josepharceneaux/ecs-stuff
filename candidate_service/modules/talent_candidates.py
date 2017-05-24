@@ -47,8 +47,8 @@ from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
     do_phones_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
-    get_education_degree_if_exists, do_emails_exist, remove_duplicates
-)
+    get_education_degree_if_exists, do_emails_exist, remove_duplicates,
+    validate_cf_category_and_subcategory_ids)
 from track_changes import track_edits, track_areas_of_interest_edits
 
 
@@ -505,6 +505,7 @@ def candidate_custom_fields(candidate):
                 'custom_field_id': candidate_custom_field.custom_field_id,
                 'value': candidate_custom_field.value,
                 'created_at_datetime': candidate_custom_field.added_time.isoformat(),
+                'custom_field_category_id': candidate_custom_field.custom_field_category_id,
                 'custom_field_subcategory': sub_cat_data
             }
         )
@@ -1424,8 +1425,16 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
         custom_field_dict = dict(
             values=values or [(custom_field.get('value') or '').strip()],
             custom_field_id=custom_field.get('custom_field_id'),
-            custom_field_subcategory_id=custom_field.get('custom_field_subcategory_id')
+            custom_field_subcategory_id=custom_field.get('custom_field_subcategory_id'),
+            custom_field_category_id=custom_field.get('custom_field_category_id')
         )
+        if custom_field_dict['custom_field_subcategory_id']:
+            if custom_field_dict['custom_field_category_id'] is None:
+                raise InvalidUsage("No Custom Field Category Provided", custom_error.NO_CUSTOM_FIELD_CATEGORY_PROVIDED)
+        if custom_field_dict['custom_field_category_id']:
+            validate_cf_category_and_subcategory_ids(custom_field_dict['custom_field_category_id'],
+                                                     domain_id_from_user_id(user_id),
+                                                     custom_field_dict['custom_field_subcategory_id'])
 
         candidate_custom_field_id = custom_field.get('id')
 
@@ -1460,15 +1469,18 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
 
                 # Update CandidateCustomField
                 can_custom_field_obj.update(value=value, custom_field_subcategory_id=custom_field_dict
-                                            .get('custom_field_subcategory_id'))
+                                            .get('custom_field_subcategory_id'),
+                                            custom_field_category_id=custom_field_dict.get('custom_field_category_id'))
 
             else:  # Add
                 custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
                 custom_field_id = custom_field_dict.get('custom_field_id')
                 custom_field_subcategory_id = custom_field_dict.get('custom_field_subcategory_id')
+                custom_field_category_id = custom_field_dict.get('custom_field_category_id')
 
                 # Prevent duplicate insertions
-                if not does_candidate_cf_exist(candidate, custom_field_id, value, custom_field_subcategory_id):
+                if not does_candidate_cf_exist(candidate, custom_field_id, value, custom_field_subcategory_id,
+                                               custom_field_category_id):
                     custom_field_dict['value'] = value
                     custom_field_dict.pop('values', None)
                     db.session.add(CandidateCustomField(**custom_field_dict))

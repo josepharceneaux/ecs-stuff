@@ -336,12 +336,14 @@ class TestDomainCustomField(object):
 
         # Link candidate to custom field subcategory
         subcategory = r.json()['custom_field']['categories'][0]['subcategories'][0]
+        category = r.json()['custom_field']['categories'][0]
         update_data = {'candidates': [
             {
                 'id': candidate_first.id,
                 'custom_fields': [
                     {
                         'custom_field_id': custom_field_id,
+                        'custom_field_category_id': category['id'],
                         'custom_field_subcategory_id': subcategory['id']
                     }
                 ]

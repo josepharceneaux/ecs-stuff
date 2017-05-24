@@ -527,6 +527,7 @@ class CandidatesResource(Resource):
 
         # Custom fields must belong to user's domain
         if all_cf_ids:
+            all_cf_ids = [cf_id for cf_id in all_cf_ids if cf_id is not None]
             if not is_custom_field_authorized(domain_id, all_cf_ids):
                 raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
 

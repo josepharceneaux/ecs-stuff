@@ -7,6 +7,7 @@ import re
 import urllib
 from datetime import datetime
 
+from contracts import contract
 from dateutil.parser import parse
 from flask import request
 from jsonschema import validate, ValidationError, FormatChecker
@@ -23,7 +24,8 @@ from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User, Role
-from candidate_service.common.models.misc import AreaOfInterest, CustomField
+from candidate_service.common.models.misc import AreaOfInterest, CustomField, CustomFieldCategory, \
+    CustomFieldSubCategory
 from candidate_service.common.models.user import User
 from candidate_service.common.utils.validators import is_number, format_phone_number, is_valid_email
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
@@ -162,9 +164,10 @@ def is_custom_field_authorized(user_domain_id, custom_field_ids):
     :rtype: bool
     """
     assert isinstance(custom_field_ids, list)
+    custom_field_ids = list(set(custom_field_ids))  # Removing duplicate Ids
     exists = db.session.query(CustomField). \
                  filter(CustomField.id.in_(custom_field_ids),
-                        CustomField.domain_id != user_domain_id).count() == 0
+                        CustomField.domain_id == user_domain_id).count() == len(custom_field_ids)
     return exists
 
 
@@ -505,9 +508,11 @@ def does_address_exist(candidate, address_dict):
     return False
 
 
-def does_candidate_cf_exist(candidate, custom_field_id, value, custom_field_subcategory_id=None):
+def does_candidate_cf_exist(candidate, custom_field_id, value, custom_field_subcategory_id=None,
+                            custom_field_category_id=None):
     """
     Function will return true if custom field already exists for candidate, otherwise false
+    :param None | long | int custom_field_category_id: Custom Field Category Id
     :param None | long | int custom_field_subcategory_id: Custom Field Subcategory Id
     :type candidate:  Candidate
     :type custom_field_id: int | long
@@ -519,8 +524,10 @@ def does_candidate_cf_exist(candidate, custom_field_id, value, custom_field_subc
         value_comparison = (custom_field.value or '').lower() == value.lower()
         subcategory_comparison = (custom_field_subcategory_id is None  # If None then comparison's value wont matter
                                   or custom_field_subcategory_id == custom_field.custom_field_subcategory_id)
+        category_comparison = (custom_field_category_id is None  # If None then comparison's value wont matter
+                               or custom_field_category_id == custom_field.custom_field_category_id)
         id_comparison = custom_field.custom_field_id == custom_field_id
-        if id_comparison and value_comparison and subcategory_comparison:
+        if id_comparison and value_comparison and subcategory_comparison and category_comparison:
             return True
     return False
 
@@ -739,3 +746,26 @@ def is_user_permitted_to_archive_candidate(user, candidate):
     :rtype: bool
     """
     return True if 'ADMIN' in Role.get(user.role_id).name or user.id == candidate.user_id else False
+
+
+@contract
+def validate_cf_category_and_subcategory_ids(cf_category_id, domain_id, cf_subcategory_id=None):
+    """
+    Function will check whether custom field category and subcategory ids exits in db
+    and if the do, do they belong to active user's domain
+    :param positive cf_category_id: Custom Field Category Id
+    :param positive|None cf_subcategory_id: Custom Field Subcategory Id
+    :param positive domain_id: User's domain Id
+    """
+    category = CustomFieldCategory.query.join(CustomField).filter(CustomFieldCategory.id == cf_category_id,
+                                                                  CustomField.domain_id == domain_id).first()
+    if not category:
+        raise ForbiddenError("Requested Custom Field Category does not belong to user's domain",
+                             custom_error.CUSTOM_FIELD_CATEGORY_NOT_FOUND)
+    if cf_subcategory_id:
+        valid_subcategory = False
+        if cf_subcategory_id in [category.id for category in category.subcategories]:
+            valid_subcategory = True
+        if not valid_subcategory:
+            raise ForbiddenError("Unauthorized Custom Field Subcategory",
+                                 custom_error.CUSTOM_FIELD_SUBCATEGORY_NOT_FOUND)
