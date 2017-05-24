@@ -113,6 +113,7 @@ class TestCreateCandidateEducation(object):
 
 
 class TestUpdateCandidateEducation(object):
+
     def test_add_new_education(self, access_token_first, talent_pool):
         """
         Test:   Add a new CandidateEducation. Candidate's CandidateEducation count should

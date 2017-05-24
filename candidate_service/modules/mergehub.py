@@ -148,28 +148,7 @@ class MergeHub(object):
         '''
         self.cache will contain information about candidate first and second match data.
         '''
-        self.cache = {
-            "exact_match_fields": {
-                "first":  {
-                    "first_name": self.first.first_name,
-                    "middle_name": self.first.middle_name,
-                    "last_name": self.first.last_name,
-                    "formatted_name": self.first.formatted_name,
-                    "emails": [email.address for email in (self.first.emails or [])],
-                    "phones": [phone.value for phone in (self.first.phones or [])],
-                    "profile_urls": [sn.profile_url for sn in (self.first.social_networks or [])]
-                },
-                "second": {
-                    "first_name": self.second.first_name,
-                    "middle_name": self.second.middle_name,
-                    "last_name": self.second.last_name,
-                    "formatted_name": self.second.formatted_name,
-                    "emails": [email.address for email in (self.second.emails or [])],
-                    "phones": [phone.value for phone in (self.second.phones or [])],
-                    "profile_urls": [sn.profile_url for sn in (self.second.social_networks or [])]
-                }
-            }
-        }
+        self.cache = {}
         # Match name, yes, high, medium or low
         self.match = None
         # How many match sets exist

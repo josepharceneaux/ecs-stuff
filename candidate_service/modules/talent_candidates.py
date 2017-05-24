@@ -1326,7 +1326,7 @@ def parse_addresses(addresses, candidate, has_default=False):
         # Cache country code
         CachedData.country_codes.append(address_dict.get('iso3166_country'))
         address_dict.update(dict(candidate_id=candidate.id, resume_id=candidate.id))
-        yield address_dict
+        yield GtDict(address_dict)
 
 
 def validate_existing_objects(dict_objects, model, candidate_id, is_updating, entity_name, not_found_code=404,
@@ -1485,21 +1485,22 @@ def parse_education(education):
         iso3166_subdivision=subdivision_code,
         iso3166_country=country_code,
         is_current=education.get('is_current'),
-        list_order=education.get('list_order') or 1
+        id=education.get('id')
     )
-    degrees = education.get('degrees') or []
-    formatted_degrees = []
-    for degree in degrees:
-        degree = parse_degree(degree)
-        if not degree:
-            continue
-        formatted_degrees.append(degree)
-
     education_dict = purge_dict(education_dict)
     if not education_dict:
         return education_dict
-    education_dict['degrees'] = degrees
-    return education_dict
+
+    degrees = education.get('degrees') or []
+    formatted_degrees = []
+    for degree in degrees:
+        degree_dict = parse_degree(degree)
+        if not degree_dict:
+            continue
+        formatted_degrees.append(degree_dict)
+
+    education_dict['degrees'] = formatted_degrees
+    return GtDict(education_dict)
 
 
 def parse_degree(education_degree):
@@ -1520,19 +1521,27 @@ def parse_degree(education_degree):
 
     degree_type = education_degree['type'].strip() if education_degree.get('type') else None
     degree_title = education_degree['title'].strip() if education_degree.get('title') else None
+    degree_id = education_degree.get('id')
+    main_fields = degree_id or degree_title or degree_type
     education_degree_dict = dict(
         list_order=education_degree.get('list_order'),
         degree_type=degree_type,
         degree_title=degree_title,
-        start_year=start_year if degree_title or degree_type else None,
-        start_month=education_degree.get('start_month') if degree_title or degree_type else None,
-        end_year=end_year if degree_title or degree_type else None,
-        end_month=end_month if degree_title or degree_type else None,
-        gpa_num=education_degree.get('gpa') if degree_title or degree_type else None,
+        start_year=start_year if degree_id or degree_title or degree_type else None,
+        start_month=education_degree.get('start_month') if main_fields else None,
+        end_year=end_year if main_fields else None,
+        end_month=end_month if main_fields else None,
+        gpa_num=education_degree.get('gpa') if main_fields else None,
         classification_type_id=classification_type_id_from_degree_type(degree_type),
-        start_time=education_degree.get('start_time') if degree_title or degree_type else None,
-        end_time=end_time if degree_title or degree_type else None
+        start_time=education_degree.get('start_time') if main_fields else None,
+        end_time=end_time if main_fields else None,
+        id=degree_id
     )
+
+    education_degree_dict = purge_dict(education_degree_dict)
+    if not education_degree_dict:
+        return education_degree_dict
+
     bullets = education_degree.get('bullets') or []
     formatted_bullets = []
     for bullet in bullets:
@@ -1540,16 +1549,13 @@ def parse_degree(education_degree):
         if not bullet:
             continue
         formatted_bullets.append(bullet)
-
-    education_degree_dict = purge_dict(education_degree_dict)
-    if not education_degree_dict:
-        return education_degree_dict
     education_degree_dict['bullets'] = formatted_bullets
     return education_degree_dict
 
 
 def parse_degree_bullet(degree_bullet):
     degree_bullet_dict = dict(
+        id=degree_bullet.get('id'),
         concentration_type=degree_bullet['major'].strip()
         if degree_bullet.get('major') else None,
         comments=degree_bullet['comments'].strip()
@@ -1623,11 +1629,12 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
     formatted_degrees = []
     formatted_bullets = []
     for education in educations:
-        education_dict = GtDict(parse_education(education))
-        degrees = [GtDict(parse_degree(degree)) for degree in education_dict.pop('degrees', [])]
-        # TODO: major is not being added
-        formatted_bullets.append([[GtDict(parse_degree_bullet(bullet)) for bullet in degree.pop('bullets', [])]
-                                  for degree in degrees])
+        education_dict = parse_education(education)
+        if not education_dict:
+            continue
+        education_dict.update(list_order=education.get('list_order') or 1)
+        degrees = education_dict.pop('degrees', [])
+        formatted_bullets.append([degree.pop('bullets', []) for degree in degrees])
 
         if not education_dict and not degrees:
             continue
@@ -1660,219 +1667,6 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                                                          formatted_bullets[index][degree_index])
                     new_bullets = [bullet_dict for bullet_dict, bullet_obj in new_bullets if not bullet_obj]
                     update_candidate.add_new_bullets(new_bullets, existing_degree_obj)
-
-
-
-
-    ####################################################################################################################
-
-        # # Prevent empty records from being added to the db
-        # education_degrees = education.get('degrees') or []
-        # if not education_dict and not education_degrees:
-        #     continue
-        #
-        # education_id = education.get('id')
-        # if education_id:  # Update
-        #
-        #     # # CandidateEducation must be recognized
-        #     # can_education_obj = CandidateEducation.get(education_id)
-        #     # if not can_education_obj:
-        #     #     raise NotFoundError('Candidate education you are requesting does not exist',
-        #     #                         error_code=custom_error.EDUCATION_NOT_FOUND)
-        #     #
-        #     # # CandidateEducation must belong to Candidate
-        #     # if can_education_obj.candidate_id != candidate_id:
-        #     #     raise ForbiddenError('Unauthorized candidate education', custom_error.EDUCATION_FORBIDDEN)
-        #
-        #     # Track all changes made to CandidateEducation
-        #     track_edits(update_dict=education_dict, table_name='candidate_education',
-        #                 candidate_id=candidate_id, user_id=user_id, query_obj=address_mappings[education_id])
-        #
-        #     # # Update CandidateEducation
-        #     # if education_dict:
-        #     #     can_education_obj.update(**education_dict)
-        #
-        #     # Remove identical education degree data
-        #     education_degree_items = None
-        #     for i, education_degree in enumerate(education_degrees):
-        #         if education_degree.items() == education_degree_items:
-        #             del education_degrees[i]
-        #         else:
-        #             education_degree_items = education_degree.items()
-        #
-        #     # CandidateEducationDegree
-        #     for education_degree in education_degrees:
-        #         education_degree_dict = parse_degree(education_degree)
-        #
-        #         # Prevent empty records from being inserted into db
-        #         education_degree_bullets = remove_duplicates(education_degree.get('bullets') or [])
-        #         if not education_degree_dict and not education_degree_bullets:
-        #             continue
-        #
-        #         education_degree_id = education_degree.get('id')
-        #         if education_degree_id:  # Update CandidateEducationDegree
-        #             degree_mappings = validate_existing_objects(education_degrees, CandidateEducationDegree,
-        #                                                         candidate_id, is_updating, 'education',
-        #                                                         custom_error.DEGREE_NOT_FOUND,
-        #                                                         custom_error.DEGREE_FORBIDDEN)
-        #             degree_obj = degree_mappings[education_degree_id]
-        #             start_year = education_degree_dict.get('start_year')
-        #             end_year = education_degree_dict.get('start_year')
-        #             # If start year needs to be updated, it cannot be greater than existing end year
-        #             if start_year and not end_year and (start_year > degree_obj.end_year):
-        #                 raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(
-        #                     start_year, degree_obj.end_year))
-        #
-        #             # If end year needs to be updated, it cannot be less than existing start year
-        #             if end_year and not start_year and (end_year < degree_obj.start_year):
-        #                 raise InvalidUsage('End year ({}) cannot be less than start year ({})'.format(
-        #                     end_year, degree_obj.start_year))
-        #
-        #             # Track all changes made to CandidateEducationDegree
-        #             track_edits(update_dict=education_degree_dict, table_name='candidate_education_degree',
-        #                         candidate_id=candidate_id, user_id=user_id, query_obj=degree_obj)
-        #
-        #             # Update CandidateEducationDegree
-        #             if education_degree_dict:
-        #                 degree_obj.update(**education_degree_dict)
-        #
-        #             # CandidateEducationDegreeBullet
-        #             for degree_bullet in education_degree_bullets:
-        #                 education_degree_bullet_dict = parse_degree_bullet(degree_bullet)
-        #
-        #                 # Prevent empty records from being inserted into db
-        #                 if not education_degree_bullet_dict:
-        #                     continue
-        #
-        #                 education_degree_bullet_id = degree_bullet.get('id')
-        #                 if education_degree_bullet_id:  # Update CandidateEducationDegreeBullet
-        #
-        #                     # CandidateEducationDegreeBullet must be recognized
-        #                     can_edu_degree_bullet_obj = CandidateEducationDegreeBullet.get(education_degree_bullet_id)
-        #                     if not can_edu_degree_bullet_obj:
-        #                         raise NotFoundError('Candidate education degree bullet not found',
-        #                                             error_code=custom_error.DEGREE_BULLET_NOT_FOUND)
-        #
-        #                     # CandidateEducationDegreeBullet must belong to Candidate
-        #                     if can_edu_degree_bullet_obj.candidate_education_degree. \
-        #                             candidate_education.candidate_id != candidate_id:
-        #                         raise ForbiddenError('Unauthorized candidate degree bullet',
-        #                                              error_code=custom_error.DEGREE_BULLET_FORBIDDEN)
-        #
-        #                     # Track all changes made to CandidateEducationDegreeBullet
-        #                     track_edits(update_dict=education_degree_bullet_dict,
-        #                                 table_name='candidate_education_degree_bullet',
-        #                                 candidate_id=candidate_id, user_id=user_id,
-        #                                 query_obj=can_edu_degree_bullet_obj)
-        #
-        #                     can_edu_degree_bullet_obj.update(**education_degree_bullet_dict) # Update
-        #                 else:   # Add CandidateEducationDegreeBullet
-        #                     education_degree_bullet_dict.update(dict(added_time=added_datetime))
-        #                     # Prevent duplicate entries
-        #                     if not does_education_degree_bullet_exist(candidate_educations,
-        #                                                               education_degree_bullet_dict):
-        #                         db.session.add(CandidateEducationDegreeBullet(**education_degree_bullet_dict))
-        #
-        #                         if is_updating:  # Track all updates
-        #                             track_edits(update_dict=education_degree_bullet_dict,
-        #                                         table_name='candidate_education_degree_bullet',
-        #                                         candidate_id=candidate_id, user_id=user_id)
-        #
-        #         else:   # Add CandidateEducationDegree
-        #             education_degree_dict.update(dict(candidate_education_id=education_id))
-        #             candidate_education_degree_id = get_education_degree_if_exists(candidate_educations,
-        #                                                                            education_degree_dict)
-        #             if not candidate_education_degree_id:
-        #                 candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
-        #                 db.session.add(candidate_education_degree)
-        #                 db.session.flush()
-        #                 candidate_education_degree_id = candidate_education_degree.id
-        #
-        #                 if is_updating:  # Track all updates
-        #                     track_edits(update_dict=education_degree_dict, table_name='candidate_education_degree',
-        #                                 candidate_id=candidate_id, user_id=user_id)
-        #
-        #             # Add CandidateEducationDegreeBullets
-        #             education_degree_bullets = education_degree.get('bullets') or []
-        #             for degree_bullet in remove_duplicates(education_degree_bullets):
-        #                 education_degree_bullet_dict = parse_degree_bullet(degree_bullet)
-        #
-        #                 # Prevent empty records from being inserted into db
-        #                 if not education_degree_bullet_dict:
-        #                     continue
-        #
-        #                 education_degree_bullet_dict.update(dict(
-        #                     added_time=added_datetime, candidate_education_degree_id=candidate_education_degree_id))
-        #                 db.session.add(CandidateEducationDegreeBullet(**education_degree_bullet_dict))
-        #
-        # else:  # Add
-        #     # Remove identical education degree data
-        #     education_degree_items = None
-        #     for i, education_degree in enumerate(education_degrees):
-        #         if education_degree.items() == education_degree_items:
-        #             del education_degrees[i]
-        #         else:
-        #             education_degree_items = education_degree.items()
-        #
-        #     # CandidateEducation
-        #     # TODO: resume_id to be removed once all tables have been added & migrated
-        #     education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_datetime,
-        #                                list_order=education.get('list_order') or 1))
-        #     # Prevent duplicate entries
-        #     education_id = get_education_if_exists(candidate_educations, education_dict, education_degrees)
-        #     if not education_id:
-        #         candidate_education = CandidateEducation(**education_dict)
-        #         db.session.add(candidate_education)
-        #         db.session.flush()
-        #         education_id = candidate_education.id
-        #
-        #         if is_updating:  # Track all updates
-        #             track_edits(update_dict=education_dict,
-        #                         table_name='candidate_education',
-        #                         candidate_id=candidate_id,
-        #                         user_id=user_id)
-        #
-        #     # CandidateEducationDegree
-        #     for education_degree in education_degrees:
-        #         education_degree_dict = parse_degree(education_degree)
-        #
-        #         # Prevent empty records from being inserted into db
-        #         education_degree_bullets = education_degree.get('bullets') or []
-        #         if not education_degree_dict and not education_degree_bullets:
-        #             continue
-        #
-        #         # Update education_degree_dict with added_time
-        #         education_degree_dict['added_time'] = added_datetime
-        #
-        #         # Update dict with candidate education ID
-        #         education_degree_dict['candidate_education_id'] = education_id
-        #         candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
-        #         db.session.add(candidate_education_degree)  # Add CandidateEducationDegree
-        #         db.session.flush()
-        #         candidate_education_degree_id = candidate_education_degree.id
-        #
-        #         if is_updating:  # Track all updates
-        #             track_edits(update_dict=education_degree_dict,
-        #                         table_name='candidate_education_degree',
-        #                         candidate_id=candidate_id, user_id=user_id)
-        #
-        #         # CandidateEducationDegreeBullet
-        #         degree_bullets = education_degree.get('bullets') or []
-        #         for degree_bullet in remove_duplicates(degree_bullets):
-        #             education_degree_bullet_dict = parse_degree_bullet(degree_bullet)
-        #             # Update education_degree_bullet_dict with candidate_education_degree_id & added_time
-        #             education_degree_bullet_dict['candidate_education_degree_id'] = candidate_education_degree_id
-        #             education_degree_bullet_dict['added_time'] = added_datetime
-        #
-        #             # Prevent duplicate entries
-        #             if not does_education_degree_bullet_exist(candidate_educations, education_degree_bullet_dict):
-        #                 # Add CandidateEducationDegreeBullet
-        #                 db.session.add(CandidateEducationDegreeBullet(**education_degree_bullet_dict))
-        #
-        #                 if is_updating:  # Track all updates
-        #                     track_edits(update_dict=education_degree_bullet_dict,
-        #                                 table_name='candidate_education_degree_bullet',
-        #                                 candidate_id=candidate_id, user_id=user_id)
 
 
 def _add_or_update_work_experiences(candidate, work_experiences, added_time, user_id, is_updating):
