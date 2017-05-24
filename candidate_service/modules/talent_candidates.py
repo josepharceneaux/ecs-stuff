@@ -1319,7 +1319,7 @@ def parse_addresses(addresses, candidate, has_default=False):
             iso3166_country=country_code,
             zip_code=zip_code,
             po_box=get_value(address, 'po_box'),
-            is_default=(i == 0 if not has_default and (city or zip_code or country_code) else address.get('is_default')) if (city or zip_code or country_code) else None,
+            is_default=i == 0 if not has_default and (city or zip_code or country_code) else address.get('is_default'),
             coordinates=get_coordinates(zipcode=zip_code, city=city, state=subdivision_code)
         )
 
@@ -1327,7 +1327,7 @@ def parse_addresses(addresses, candidate, has_default=False):
         address_dict = purge_dict(address_dict)
 
         # Prevent adding empty records to db
-        if not address_dict:
+        if not address_dict or (len(address_dict) == 1 and 'is_default' in address_dict):
             # addresses.remove(address_dict)
             continue
 
