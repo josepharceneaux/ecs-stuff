@@ -13,4 +13,3 @@ for table_name in result:
 	# Columns are default nullable -- ResumeId was previously explicitly set to NOT NULL
 	# Reset to default state
 	db.session.execute(text("alter table `%s` modify `ResumeId` bigint(20)" % table_name))
-	
