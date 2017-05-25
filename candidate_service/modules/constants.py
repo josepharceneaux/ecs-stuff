@@ -132,7 +132,7 @@ DEGREES = [
     ('MLIS', 'M.L.I.S.', 'Master of Library & Information Studies'),
     ('MM', 'M.M.', 'M.Mus.', 'M.Mus', 'Master of Music'),
     ('MPS', 'M.P.S.', 'Master of Political Science'),
-    ('MS', 'M.S.', 'Master of Science'),
+    ('MS', 'M.S.', 'M.Sc.', 'M.Sc', 'Master of Science'),
     ('MSCJ', 'M.S.C.J.', 'M.S. in Criminal Justice'),
     ('MSCS', 'M.S.C.S.', 'M.S. in Computer Science'),
     ('MSChem', 'M.S.Chem.', 'M.S.Chem', 'M.S. in Chemistry'),

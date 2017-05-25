@@ -197,6 +197,7 @@ class MergeHub(object):
             for address1 in self.first.addresses or []:
                 address_line_1_match = self.match_address_line_1(address1.address_line_1, address2.address_line_1,
                                                                  weight=weight)
+                # TODO: @amir please confirm that is this comparison is right. I am doeing this in de-duping
                 city_match = address1.city == address2.city
                 zip_code_match = address1.zip_code == address2.zip_code
                 if address1.id == address2.id or (address_line_1_match and city_match) or \
@@ -239,7 +240,7 @@ class MergeHub(object):
         """
         This method compares degrees of existing education with degrees of new education
         """
-        degree_fields = ["degree_type", "degree_title", "start_year", "start_month", "end_year", "end_month"]
+        degree_fields = ["degree_type", "start_year", "start_month", "end_year", "end_month"]
         degrees, new_degrees = [], []
         for degree2 in degrees2 or []:
             is_same_degree = False
@@ -259,8 +260,16 @@ class MergeHub(object):
                     if end_year and not start_year and (end_year < degree_obj.start_year):
                         raise InvalidUsage('End year ({}) cannot be less than start year ({})'.format(
                             end_year, degree_obj.start_year))
+                is_same_title = False
+                for degree_titles in DEGREES:
+                    degree_titles = [val.lower() for val in degree_titles]
+                    old_title = (degree_obj.degree_title or '').lower()
+                    new_title = (degree2.degree_title or '').lower()
+                    if (old_title in degree_titles and new_title in degree_titles) \
+                            or fuzz.ratio(old_title, new_title) >= weight:
+                        is_same_title = True
 
-                if all(getattr(degree_obj, key) == getattr(degree2, key) for key in degree_fields):
+                if is_same_title and all(getattr(degree_obj, key) == getattr(degree2, key) for key in degree_fields):
                     is_same_degree = True
                 if is_same_degree:
                     new_degrees.append((degree2, degree_obj))
