@@ -888,7 +888,7 @@ def search_candidates(domain_id, request_vars, facets="", search_limit=15, count
             facets = [facet.split(':') for facet in facets.split(',')]
             request_facets = {facet[0]: int(facet[1]) for facet in facets}
         except Exception as e:
-            raise InvalidUsage("Facets are not properly formatted: %s" % facets)  
+            raise InvalidUsage("Facets are not properly formatted: %s" % facets)
 
     for facet_key in request_facets:
         if facet_key not in valid_facets:
