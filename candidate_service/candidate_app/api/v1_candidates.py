@@ -132,7 +132,6 @@ class CandidatesResource(Resource):
         is_creating, is_updating, candidate_id = True, False, None
         all_cf_ids, all_aoi_ids = [], []
         all_email_addresses = []
-        candidate = None
 
         for position, candidate_dict_ in enumerate(candidates, start=1):
             try:
@@ -323,7 +322,6 @@ class CandidatesResource(Resource):
                 tags=candidate_dict.get('tags', []),
                 title=title
             )
-            print('candidate: {}, is_updating:{}'.format(candidate, is_updating))
             if multiple_candidates:
                 try:
                     resp_dict = create_or_update_candidate_from_params(**candidate_data)

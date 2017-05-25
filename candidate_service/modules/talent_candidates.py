@@ -895,8 +895,7 @@ def create_or_update_candidate_from_params(
         resume_url=None,
         resume_text=None,
         tags=None,
-        title=None,
-        mergehub=None
+        title=None
 ):
     """
     Function will parse each parameter and:
@@ -945,12 +944,10 @@ def create_or_update_candidate_from_params(
     :type   objective:              basestring
     :type   summary:                basestring
     :type   talent_pool_ids:        dict
-    :type   delete_talent_pools:    bool
     :type   resume_url              basestring
     :type   resume_text             basestring
     :type   tags                    list
     :type   title                   basestring
-    :type   mergehub                type(t)
     :rtype                          dict
     """
     # Format inputs
@@ -1478,9 +1475,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
             new_degrees = mergehub.merge_degrees(existing_education_obj.degrees, formatted_degrees[index])
             for degree_index, (degree_dict, existing_degree_obj) in enumerate(new_degrees):
                 if not existing_degree_obj:
-                    degree_dict.update(candidate_education_id=existing_education_obj.id,
-                                       added_time=added_datetime)
-                    degree_obj = candidate_utils.add_new_degree(degree_dict)
+                    degree_obj = candidate_utils.add_new_degree(degree_dict, existing_education_obj.id)
                     candidate_utils.add_new_bullets(formatted_bullets[index][degree_index], degree_obj)
                 else:
                     new_bullets = mergehub.merge_bullets(existing_degree_obj.bullets,
@@ -2450,6 +2445,9 @@ def get_value(dict_item, key, function_name=None, default=None):
 
 def validate_existing_objects(dict_objects, model, candidate_id, is_updating, entity_name, not_found_code=404,
                               forbidden_code=403):
+    """
+    This function validates that all dict objects with id field, there must be an object in db for that id.
+    """
     ids = [obj['id'] for obj in dict_objects if 'id' in obj]
     if not is_updating and ids:
         raise InvalidUsage("Can't specify {} id while creating candidate".format(entity_name))
@@ -2474,9 +2472,6 @@ def validate_existing_objects(dict_objects, model, candidate_id, is_updating, en
 def parse_addresses(addresses, candidate, has_default=False):
     """
     This function takes a list of candidate addresses and parses them.
-    :param list addresses: list of addresses (dict objects)
-    :param type(t) candidate:  candidate SqlAlchemy object
-    :param bool has_default: boolean, is there any default address or not
     """
     for i, address in enumerate(addresses):
 
@@ -2520,6 +2515,9 @@ def parse_addresses(addresses, candidate, has_default=False):
 
 
 def parse_education(education):
+    """
+    Parses education object/dict and removes None value keys
+    """
     # CandidateEducation
     country_code = education['country_code'].upper() if education.get('country_code') else None
     subdivision_code = education['subdivision_code'].upper() if education.get('subdivision_code') else None
@@ -2550,6 +2548,9 @@ def parse_education(education):
 
 
 def parse_degree(education_degree):
+    """
+    Parses degree object (dict) and removes None value keys
+    """
     # Start year must not be later than end year
     start_year, end_year = education_degree.get('start_year'), education_degree.get('end_year')
     if (start_year and end_year) and (start_year > end_year):
@@ -2600,6 +2601,9 @@ def parse_degree(education_degree):
 
 
 def parse_degree_bullet(degree_bullet):
+    """
+    Parses degree bullets and removes None value keys
+    """
     degree_bullet_dict = dict(
         id=degree_bullet.get('id'),
         concentration_type=degree_bullet['major'].strip()
@@ -2612,19 +2616,30 @@ def parse_degree_bullet(degree_bullet):
 
 
 class CandidateAddUpdateUtils(object):
+    """
+    This class provides helper methods to add candidate related objects
+    """
     def __init__(self, candidate_id, user_id, added_time):
         self.candidate_id = candidate_id
         self.user_id = user_id
         self.added_time = added_time
 
     def add_new_education(self, education_dict):
+        """
+        Update education dict with candidate info and saves in db
+        """
         education_dict.update(candidate_id=self.candidate_id, resume_id=self.candidate_id, added_time=self.added_time)
         education_obj = CandidateEducation(**education_dict)
         db.session.add(education_obj)
         db.session.flush()
         return education_obj
 
-    def add_new_degree(self, degree_dict):
+    def add_new_degree(self, degree_dict, education_id):
+        """
+        Update education degree dict with candidate info and added_time and saves in db
+        """
+        degree_dict.update(candidate_education_id=education_id,
+                           added_time=self.added_time)
         degree_obj = CandidateEducationDegree(**degree_dict)
         db.session.add(degree_obj)
         db.session.flush()
@@ -2633,13 +2648,17 @@ class CandidateAddUpdateUtils(object):
         return degree_obj
 
     def add_new_degrees_and_bullets(self, degrees, all_bullets, education):
+        """
+        Update education degrees and  bullets dict with candidate info and added_time save in db
+        """
         for degree_index, degree_dict in enumerate(degrees):
-            degree_dict.update(candidate_education_id=education.id,
-                               added_time=self.added_time)
-            degree_obj = self.add_new_degree(degree_dict)
+            degree_obj = self.add_new_degree(degree_dict, education.id)
             self.add_new_bullets(all_bullets[degree_index], degree_obj)
 
     def add_new_bullets(self, bullets, degree):
+        """
+        Update education degree bullet dict with candidate info and added_time save in db
+        """
         for bullet_dict in bullets:
             bullet_dict.update(candidate_education_degree_id=degree.id,
                                added_time=self.added_time)
