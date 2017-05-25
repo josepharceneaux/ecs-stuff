@@ -873,7 +873,7 @@ def search_candidates(domain_id, request_vars, facets="", search_limit=15, count
 
     logger.info("Filter Query: %s, Search Query: %s" % (filter_query, search_query))
 
-    if facets == 'all':
+    if not facets or facets == 'all':
         request_facets = {
             'area_of_interest_id': 500, 'source_id': 50, 'total_months_experience': 50,
             'user_id': 50, 'status_id': 50, 'skill_description': 500, 'position': 50, 'organization': 50,
