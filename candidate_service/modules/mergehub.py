@@ -3,23 +3,16 @@ This module contains all functions and classes that will be used for Candidate D
 
 Author: Zohaib Ijaz, QC-Technologies, <mzohaib.qc@gmail.com
 """
-import json
 import re
-import traceback
-import uuid
 from datetime import date, datetime
 from functools import wraps
-from itertools import chain, islice, combinations, izip
+from itertools import chain
 from fuzzywuzzy import fuzz
 
 from candidate_service.candidate_app import logger
 from candidate_service.common.error_handling import InvalidUsage
-from candidate_service.common.models.db import db
-from candidate_service.common.models.candidate import CandidateEducationDegree
 from candidate_service.modules.track_changes import track_edits
-from constants import (EXACT, YES_MATCH_CASES, HIGH_MATCH_CASES, MEDIUM_MATCH_CASES,
-                       LOW_MATCH_CASES, JOB_TITLE_VARIATIONS, DEGREES, ADDRESS_NOTATIONS, MATCH_CATEGORIES,
-                       CANDIDATE_CACHE_TIMEOUT, CATEGORIES_NAMES, EXTENSION_SOURCE_PRODUCT_ID, MOBILE_SOURCE_PRODUCT_ID)
+from constants import (EXACT, JOB_TITLE_VARIATIONS, DEGREES, ADDRESS_NOTATIONS)
 
 
 def cache_match(func):
@@ -117,33 +110,13 @@ class GtDict(dict):
 
 
 class MergeHub(object):
-    # Uncomment this for debugging
-    # __metaclass__ = TimeItMeta
 
     def __init__(self, first, second):
         """
-        This class allows us to compare and merge two candidates. first argument is a candidate (dict | SqlAlchemy)
-        object which want to determine that, is it a duplicate of second candidate.
-        For now there are 4 categories of match:
-
-        1. YES: Yes means that candidate second is an exact match of first one, so we need to archive second and update
-        first candidate with second's data.
-
-        2. HIGH: High match means that it is most probable that second candidate is a match of first candidate but
-        we are not sure about this that is why system will not merge these candidates and will allow user through
-        front end to merge or keep these candidates separate.
-
-        3. MEDIUM: Some values matches. User can later merge these or can keep them separate.
-
-        4. LOW: Low match means that only few properties match are there. User can merge them of keep them separate.
-
-
-        :param first: candidate created before second candidate. i.e. with older added_datetime
-        :param second: candidate object created after first candidate.
+        This class allows us to compare and merge two candidates' list objects like addresses, educations, degrees etc.
         """
         self.first = GtDict(first) if isinstance(first, dict) else first
         self.second = GtDict(second) if isinstance(second, dict) else second
-        self.categories = CATEGORIES_NAMES
 
         '''
         self.cache will contain information about candidate first and second match data.
@@ -153,38 +126,6 @@ class MergeHub(object):
         self.match = None
         # How many match sets exist
         self.match_count = 0
-
-    def get_merged_data(self):
-        """
-        This method returns updated merged data which will be saved against candidate first.
-        e.g. if first candidate has 2 emails and second candidate also has 2 emails and one is common so after merging
-        there will be three emails in this data.
-        :rtype: dict
-        """
-        # Some function like first_name return a tuple like this (True, ('Zohaib', 'Zohaib'))
-        # where 1st item is status of match and second is also a tuple contains values of first name for candidate
-        # first and candidate second respectively. So in order to merge second, we need to keep values first candidate
-        # and for list fields, we will merge both list values into one.
-
-        merged_data = {
-            'last_name': (self.last_name()[1][1]).title(),
-            'addresses': self.merge_addresses(),
-            'phones': self.merge_phones(),
-            'id': int(self.first.id),
-            'first_name': (self.first_name()[1][1]).title(),
-            'middle_name': (self.middle_name()[1][1]).title(),
-            'formatted_name': (self.full_name()[1][1]).title(),
-            'talent_pool_id': self.first.talent_pool_id,
-            'status_id': self.first.status_id,
-            'educations': self.merge_educations(),
-            'experiences': self.merge_jobs(),
-            'emails': self.merge_emails(),
-            'source_id': self.get_source_id(),
-            'source_product_id': self.source_product_id()[1][1]
-        }
-        data = self.first.copy()
-        data.update(merged_data)
-        return data
 
     def merge_addresses(self, weight=EXACT):
         """
@@ -387,37 +328,6 @@ class MergeHub(object):
                         break
         return jobs
 
-    def compare(self):
-        """
-        This method will be invoked on MergeHub instance which will perform all matches.
-        :return: boolean
-        """
-        # if both objects are same, return false
-        if self.first.id == self.second.id:
-            return False
-
-        # Match sets of conditions given by each category
-        for name in self.categories:
-            result = getattr(self, 'match_{}'.format(name))()
-            if not self.match and result[0]:
-                self.match = name
-                self.match_count = result[1]
-
-        # This field is not part of any comparison
-        self.middle_name()
-        self.job_description()
-        first_photos = self.first.photos or []
-        second_photos = self.second.photos or []
-        photos_first = filter(lambda photo: photo.is_default, first_photos)
-        photos_second = filter(lambda photo: photo.is_default, second_photos)
-        first_image_url = photos_first[0].image_url if len(photos_first) \
-            else first_photos[0].image_url if len(first_photos) else None
-        second_image_url = photos_second.image_url if len(photos_second) \
-            else photos_second.image_url if len(photos_second) else None
-        self.cache['image_url'] = [first_image_url, second_image_url]
-        self.cache['added_datetime'] = [
-            self.first.added_datetime, self.second.added_datetime
-        ]
 
     def compare_field(self, name, weight=EXACT):
         """
@@ -447,34 +357,6 @@ class MergeHub(object):
         else:
             raise InvalidUsage('Invalid key format. Given "{}", required "name,weight"'.format(key))
         return self.compare_field(name, weight)[0]
-
-    def match_category(self, cases):
-        """
-        This function matches all cases possible for a category,e.g. Exact match (Yes), High match and returns
-        status of match (True or False) and number of count, how many condition sets were matched in this category.
-        e.g for Yes category there are three sets of conditions
-            1. email
-            2. name_1, name_2, name_3, phone
-            3. social_profile_url
-        So if if none of the above sets of fields match, status will be False otherwise True
-        and if match count will be incremented with match of each set of conditions.
-        e.g. if (name_1, name_2, name_3, phone) match, count will be incremented by 1 and it can be upto number of
-        condition sets for that category.
-
-        :param list[tuple] cases: list of tuples
-        :return: boolean, whether any case matched or not for this category
-
-        :Example:
-            # first and second are dynamodb candidate objects
-            >>> merge_hub = MergeHub(first, second)
-            >>> yes_categories = [('email',), ('name_1', 'name_2', 'name_3', 'phone'), ('social_profile_url',)]
-            >>> yes_match_status, yes_match_count = merge_hub.match_category(yes_categories)
-        """
-        match_count = 0
-        for match_set in cases:
-            if all(self.compare_with_weight(name) for name in match_set):
-                match_count += 1
-        return match_count > 0, match_count
 
     def create_date(self, year, month, day):
         """
@@ -599,38 +481,6 @@ class MergeHub(object):
 
     def phone_parser(self, value, digits=7):
         return (value or '')[-digits:]
-
-    @cache_match
-    def match_yes(self):
-        """
-        This methods matches all those conditions that are required for Auto Merge.
-        :return: boolean, True or False
-        """
-        return self.match_category(YES_MATCH_CASES)
-
-    @cache_match
-    def match_high(self):
-        """
-        This methods matches all those conditions that are required for High Confidence match
-        :return: boolean, True or False
-        """
-        return self.match_category(HIGH_MATCH_CASES)
-
-    @cache_match
-    def match_medium(self):
-        """
-        This methods matches all those conditions that are required for Medium Confidence match
-        :return: boolean, True or False
-        """
-        return self.match_category(MEDIUM_MATCH_CASES)
-
-    @cache_match
-    def match_low(self):
-        """
-        This methods matches all those conditions that are required for Low Confidence match
-        :return: boolean, True or False
-        """
-        return self.match_category(LOW_MATCH_CASES)
 
     @cache_match
     def email(self, weight=EXACT):

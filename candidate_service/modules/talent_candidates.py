@@ -1289,78 +1289,6 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     return candidate.id
 
 
-def get_value(dict_item, key, function_name=None, default=None):
-    val = dict_item[key].strip() if dict_item.get(key) else default
-    if function_name and val:
-        val = getattr(val, function_name)()
-    return val
-
-
-def parse_addresses(addresses, candidate, has_default=False):
-    for i, address in enumerate(addresses):
-
-        zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
-        city = get_value(address, 'city')
-        country_code = address.get('country_code')
-        if country_code:
-            country_code = get_country_code_from_name(country_code)
-            if country_code:
-                country_code = country_code.upper()
-            else:
-                logger.info("Country code was not found ... %s" % country_code)
-
-        subdivision_code = address['subdivision_code'].upper() if address.get('subdivision_code') else None
-        address_dict = dict(
-            id=address.get('id'),
-            address_line_1=get_value(address, 'address_line_1'),
-            address_line_2=get_value(address, 'address_line_2'),
-            city=city,
-            state=(address.get('state') or '').strip(),
-            iso3166_subdivision=subdivision_code,
-            iso3166_country=country_code,
-            zip_code=zip_code,
-            po_box=get_value(address, 'po_box'),
-            is_default=i == 0 if not has_default and (city or zip_code or country_code) else address.get('is_default'),
-            coordinates=get_coordinates(zipcode=zip_code, city=city, state=subdivision_code)
-        )
-
-        # Remove keys that have None values
-        address_dict = purge_dict(address_dict)
-
-        # Prevent adding empty records to db
-        if not address_dict or (len(address_dict) == 1 and 'is_default' in address_dict):
-            # addresses.remove(address_dict)
-            continue
-
-        # Cache country code
-        CachedData.country_codes.append(address_dict.get('iso3166_country'))
-        address_dict.update(dict(candidate_id=candidate.id, resume_id=candidate.id))
-        yield GtDict(address_dict)
-
-
-def validate_existing_objects(dict_objects, model, candidate_id, is_updating, entity_name, not_found_code=404,
-                              forbidden_code=403):
-    ids = [obj['id'] for obj in dict_objects if 'id' in obj]
-    if not is_updating and ids:
-        raise InvalidUsage("Can't specify {} id while creating candidate".format(entity_name))
-
-    # Not using model.query to avoid PEP8 warning in calling function
-    objects = getattr(model, 'query').filter(model.id.in_(ids)).all()
-    """
-    Instead of querying model objects one by one in a loop much slow and this processing is too
-    fast (i.e. looping and filtering objects)
-    """
-    if len(objects) != len(ids):
-        missing_ids = set(ids) - set([obj.id for obj in objects])
-        raise InvalidUsage('Candidate {}es not found with following ids: {}'.format(entity_name, missing_ids),
-                           not_found_code)
-
-    for obj in objects:
-        if obj.candidate_id != candidate_id:
-            raise ForbiddenError("Unauthorized candidate {}".format(entity_name), forbidden_code)
-    return {obj.id: obj for obj in objects}
-
-
 def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updating):
     """
     Function will update CandidateAddress or create a new one.
@@ -1494,135 +1422,6 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                                     column_name='value')
 
 
-def parse_education(education):
-    # CandidateEducation
-    country_code = education['country_code'].upper() if education.get('country_code') else None
-    subdivision_code = education['subdivision_code'].upper() if education.get('subdivision_code') else None
-    education_dict = dict(
-        school_name=(education.get('school_name') or '').strip(),
-        school_type=(education.get('school_type') or '').strip(),
-        city=(education.get('city') or '').strip(),
-        state=(education.get('state') or '').strip(),
-        iso3166_subdivision=subdivision_code,
-        iso3166_country=country_code,
-        is_current=education.get('is_current'),
-        id=education.get('id')
-    )
-    education_dict = purge_dict(education_dict)
-    if not education_dict:
-        return education_dict
-
-    degrees = education.get('degrees') or []
-    formatted_degrees = []
-    for degree in degrees:
-        degree_dict = parse_degree(degree)
-        if not degree_dict:
-            continue
-        formatted_degrees.append(degree_dict)
-
-    education_dict['degrees'] = remove_duplicates(formatted_degrees)
-    return GtDict(education_dict)
-
-
-def parse_degree(education_degree):
-    # Start year must not be later than end year
-    start_year, end_year = education_degree.get('start_year'), education_degree.get('end_year')
-    if (start_year and end_year) and (start_year > end_year):
-        raise InvalidUsage('Start year of education cannot be later than end year of education',
-                           custom_error.INVALID_USAGE)
-
-    # Degree end_time is necessary for searching. If degree's end-month is not provided, assume it's 1/jan
-    end_month = education_degree.get('end_month')
-    end_time = None
-    if end_year:
-        if end_month:
-            end_time = datetime.datetime(end_year, end_month, 1)
-        else:
-            end_time = datetime.datetime(end_year, 1, 1)
-
-    degree_type = education_degree['type'].strip() if education_degree.get('type') else None
-    degree_title = education_degree['title'].strip() if education_degree.get('title') else None
-    degree_id = education_degree.get('id')
-    main_fields = degree_id or degree_title or degree_type
-    education_degree_dict = dict(
-        list_order=education_degree.get('list_order'),
-        degree_type=degree_type,
-        degree_title=degree_title,
-        start_year=start_year if degree_id or degree_title or degree_type else None,
-        start_month=education_degree.get('start_month') if main_fields else None,
-        end_year=end_year if main_fields else None,
-        end_month=end_month if main_fields else None,
-        gpa_num=education_degree.get('gpa') if main_fields else None,
-        classification_type_id=classification_type_id_from_degree_type(degree_type),
-        start_time=education_degree.get('start_time') if main_fields else None,
-        end_time=end_time if main_fields else None,
-        id=degree_id
-    )
-
-    education_degree_dict = purge_dict(education_degree_dict)
-    if not education_degree_dict:
-        return education_degree_dict
-
-    bullets = education_degree.get('bullets') or []
-    formatted_bullets = []
-    for bullet in bullets:
-        bullet = parse_degree_bullet(bullet)
-        if not bullet:
-            continue
-        formatted_bullets.append(bullet)
-    education_degree_dict['bullets'] = remove_duplicates(formatted_bullets)
-    return education_degree_dict
-
-
-def parse_degree_bullet(degree_bullet):
-    degree_bullet_dict = dict(
-        id=degree_bullet.get('id'),
-        concentration_type=degree_bullet['major'].strip()
-        if degree_bullet.get('major') else None,
-        comments=degree_bullet['comments'].strip()
-        if degree_bullet.get('comments') else None
-    )
-    # Remove keys with None values
-    return purge_dict(degree_bullet_dict)
-
-
-class CandidateUpdate(object):
-    def __init__(self, candidate_id, user_id, added_time):
-        self.candidate_id = candidate_id
-        self.user_id = user_id
-        self.added_time = added_time
-
-    def add_new_education(self, education_dict):
-        education_dict.update(candidate_id=self.candidate_id, resume_id=self.candidate_id, added_time=self.added_time)
-        education_obj = CandidateEducation(**education_dict)
-        db.session.add(education_obj)
-        db.session.flush()
-        return education_obj
-
-    def add_new_degree(self, degree_dict):
-        degree_obj = CandidateEducationDegree(**degree_dict)
-        db.session.add(degree_obj)
-        db.session.flush()
-        track_edits(update_dict=degree_dict, table_name='candidate_education_degree',
-                    candidate_id=self.candidate_id, user_id=self.user_id)
-        return degree_obj
-
-    def add_new_degrees_and_bullets(self, degrees, all_bullets, education):
-        for degree_index, degree_dict in enumerate(degrees):
-            degree_dict.update(candidate_education_id=education.id,
-                               added_time=self.added_time)
-            degree_obj = self.add_new_degree(degree_dict)
-            self.add_new_bullets(all_bullets[degree_index], degree_obj)
-
-    def add_new_bullets(self, bullets, degree):
-        for bullet_dict in bullets:
-            bullet_dict.update(candidate_education_degree_id=degree.id,
-                               added_time=self.added_time)
-            db.session.add(CandidateEducationDegreeBullet(**bullet_dict))
-            track_edits(update_dict=bullet_dict, table_name='candidate_education_degree_bullet',
-                        candidate_id=self.candidate_id, user_id=self.user_id)
-
-
 def _add_or_update_educations(candidate, educations, added_datetime, user_id, is_updating):
     """
     Function will update CandidateEducation, CandidateEducationDegree, and
@@ -1644,7 +1443,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
     validate_existing_objects(educations, CandidateEducation, candidate_id, is_updating, 'education',
                               custom_error.EDUCATION_NOT_FOUND, custom_error.EDUCATION_FORBIDDEN)
 
-    update_candidate = CandidateUpdate(candidate_id, user_id, added_datetime)
+    candidate_utils = CandidateAddUpdateUtils(candidate_id, user_id, added_datetime)
 
     formatted_educations = []
     formatted_degrees = []
@@ -1670,10 +1469,10 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
 
     for index, (education_dict, existing_education_obj) in enumerate(new_educations):
         if not existing_education_obj:
-            education_obj = update_candidate.add_new_education(education_dict)
+            education_obj = candidate_utils.add_new_education(education_dict)
             track_edits(update_dict=education_dict, table_name='candidate_education',
                         candidate_id=candidate_id, user_id=user_id)
-            update_candidate.add_new_degrees_and_bullets(formatted_degrees[index], formatted_bullets[index],
+            candidate_utils.add_new_degrees_and_bullets(formatted_degrees[index], formatted_bullets[index],
                                                          education_obj)
         else:
             new_degrees = mergehub.merge_degrees(existing_education_obj.degrees, formatted_degrees[index])
@@ -1681,13 +1480,13 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                 if not existing_degree_obj:
                     degree_dict.update(candidate_education_id=existing_education_obj.id,
                                        added_time=added_datetime)
-                    degree_obj = update_candidate.add_new_degree(degree_dict)
-                    update_candidate.add_new_bullets(formatted_bullets[index][degree_index], degree_obj)
+                    degree_obj = candidate_utils.add_new_degree(degree_dict)
+                    candidate_utils.add_new_bullets(formatted_bullets[index][degree_index], degree_obj)
                 else:
                     new_bullets = mergehub.merge_bullets(existing_degree_obj.bullets,
                                                          formatted_bullets[index][degree_index])
                     new_bullets = [bullet_dict for bullet_dict, bullet_obj in new_bullets if not bullet_obj]
-                    update_candidate.add_new_bullets(new_bullets, existing_degree_obj)
+                    candidate_utils.add_new_bullets(new_bullets, existing_degree_obj)
 
 
 def _add_or_update_work_experiences(candidate, work_experiences, added_time, user_id, is_updating):
@@ -2632,3 +2431,218 @@ class CachedData(object):
     """
     country_codes = []
     candidate_emails = []
+
+
+def get_value(dict_item, key, function_name=None, default=None):
+    """
+    This function takes a dictionary and a key for which we need to return a value. It retrieves that key's values
+    from dict and after parsing, returns the value.
+    :param sict dict_item: dictionary object
+    :param str key: key name
+    :param str function_name: string function which will be applied on value like `upper`, `lower`, `title` etc.
+    :param type(t) default: default value to e returned
+    """
+    val = dict_item[key].strip() if dict_item.get(key) else default
+    if function_name and val:
+        val = getattr(val, function_name)()
+    return val
+
+
+def validate_existing_objects(dict_objects, model, candidate_id, is_updating, entity_name, not_found_code=404,
+                              forbidden_code=403):
+    ids = [obj['id'] for obj in dict_objects if 'id' in obj]
+    if not is_updating and ids:
+        raise InvalidUsage("Can't specify {} id while creating candidate".format(entity_name))
+
+    # Not using model.query to avoid PEP8 warning in calling function
+    objects = getattr(model, 'query').filter(model.id.in_(ids)).all()
+    """
+    Instead of querying model objects one by one in a loop much slow and this processing is too
+    fast (i.e. looping and filtering objects)
+    """
+    if len(objects) != len(ids):
+        missing_ids = set(ids) - set([obj.id for obj in objects])
+        raise InvalidUsage('Candidate {}es not found with following ids: {}'.format(entity_name, missing_ids),
+                           not_found_code)
+
+    for obj in objects:
+        if obj.candidate_id != candidate_id:
+            raise ForbiddenError("Unauthorized candidate {}".format(entity_name), forbidden_code)
+    return {obj.id: obj for obj in objects}
+
+
+def parse_addresses(addresses, candidate, has_default=False):
+    """
+    This function takes a list of candidate addresses and parses them.
+    :param list addresses: list of addresses (dict objects)
+    :param type(t) candidate:  candidate SqlAlchemy object
+    :param bool has_default: boolean, is there any default address or not
+    """
+    for i, address in enumerate(addresses):
+
+        zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
+        city = get_value(address, 'city')
+        country_code = address.get('country_code')
+        if country_code:
+            country_code = get_country_code_from_name(country_code)
+            if country_code:
+                country_code = country_code.upper()
+            else:
+                logger.info("Country code was not found ... %s" % country_code)
+
+        subdivision_code = address['subdivision_code'].upper() if address.get('subdivision_code') else None
+        address_dict = dict(
+            id=address.get('id'),
+            address_line_1=get_value(address, 'address_line_1'),
+            address_line_2=get_value(address, 'address_line_2'),
+            city=city,
+            state=(address.get('state') or '').strip(),
+            iso3166_subdivision=subdivision_code,
+            iso3166_country=country_code,
+            zip_code=zip_code,
+            po_box=get_value(address, 'po_box'),
+            is_default=i == 0 if not has_default and (city or zip_code or country_code) else address.get('is_default'),
+            coordinates=get_coordinates(zipcode=zip_code, city=city, state=subdivision_code)
+        )
+
+        # Remove keys that have None values
+        address_dict = purge_dict(address_dict)
+
+        # Prevent adding empty records to db
+        if not address_dict or (len(address_dict) == 1 and 'is_default' in address_dict):
+            # addresses.remove(address_dict)
+            continue
+
+        # Cache country code
+        CachedData.country_codes.append(address_dict.get('iso3166_country'))
+        address_dict.update(dict(candidate_id=candidate.id, resume_id=candidate.id))
+        yield GtDict(address_dict)
+
+
+def parse_education(education):
+    # CandidateEducation
+    country_code = education['country_code'].upper() if education.get('country_code') else None
+    subdivision_code = education['subdivision_code'].upper() if education.get('subdivision_code') else None
+    education_dict = dict(
+        school_name=(education.get('school_name') or '').strip(),
+        school_type=(education.get('school_type') or '').strip(),
+        city=(education.get('city') or '').strip(),
+        state=(education.get('state') or '').strip(),
+        iso3166_subdivision=subdivision_code,
+        iso3166_country=country_code,
+        is_current=education.get('is_current'),
+        id=education.get('id')
+    )
+    education_dict = purge_dict(education_dict)
+    if not education_dict:
+        return education_dict
+
+    degrees = education.get('degrees') or []
+    formatted_degrees = []
+    for degree in degrees:
+        degree_dict = parse_degree(degree)
+        if not degree_dict:
+            continue
+        formatted_degrees.append(degree_dict)
+
+    education_dict['degrees'] = remove_duplicates(formatted_degrees)
+    return GtDict(education_dict)
+
+
+def parse_degree(education_degree):
+    # Start year must not be later than end year
+    start_year, end_year = education_degree.get('start_year'), education_degree.get('end_year')
+    if (start_year and end_year) and (start_year > end_year):
+        raise InvalidUsage('Start year of education cannot be later than end year of education',
+                           custom_error.INVALID_USAGE)
+
+    # Degree end_time is necessary for searching. If degree's end-month is not provided, assume it's 1/jan
+    end_month = education_degree.get('end_month')
+    end_time = None
+    if end_year:
+        if end_month:
+            end_time = datetime.datetime(end_year, end_month, 1)
+        else:
+            end_time = datetime.datetime(end_year, 1, 1)
+
+    degree_type = education_degree['type'].strip() if education_degree.get('type') else None
+    degree_title = education_degree['title'].strip() if education_degree.get('title') else None
+    degree_id = education_degree.get('id')
+    main_fields = degree_id or degree_title or degree_type
+    education_degree_dict = dict(
+        list_order=education_degree.get('list_order'),
+        degree_type=degree_type,
+        degree_title=degree_title,
+        start_year=start_year if degree_id or degree_title or degree_type else None,
+        start_month=education_degree.get('start_month') if main_fields else None,
+        end_year=end_year if main_fields else None,
+        end_month=end_month if main_fields else None,
+        gpa_num=education_degree.get('gpa') if main_fields else None,
+        classification_type_id=classification_type_id_from_degree_type(degree_type),
+        start_time=education_degree.get('start_time') if main_fields else None,
+        end_time=end_time if main_fields else None,
+        id=degree_id
+    )
+
+    education_degree_dict = purge_dict(education_degree_dict)
+    if not education_degree_dict:
+        return education_degree_dict
+
+    bullets = education_degree.get('bullets') or []
+    formatted_bullets = []
+    for bullet in bullets:
+        bullet = parse_degree_bullet(bullet)
+        if not bullet:
+            continue
+        formatted_bullets.append(bullet)
+    education_degree_dict['bullets'] = remove_duplicates(formatted_bullets)
+    return education_degree_dict
+
+
+def parse_degree_bullet(degree_bullet):
+    degree_bullet_dict = dict(
+        id=degree_bullet.get('id'),
+        concentration_type=degree_bullet['major'].strip()
+        if degree_bullet.get('major') else None,
+        comments=degree_bullet['comments'].strip()
+        if degree_bullet.get('comments') else None
+    )
+    # Remove keys with None values
+    return purge_dict(degree_bullet_dict)
+
+
+class CandidateAddUpdateUtils(object):
+    def __init__(self, candidate_id, user_id, added_time):
+        self.candidate_id = candidate_id
+        self.user_id = user_id
+        self.added_time = added_time
+
+    def add_new_education(self, education_dict):
+        education_dict.update(candidate_id=self.candidate_id, resume_id=self.candidate_id, added_time=self.added_time)
+        education_obj = CandidateEducation(**education_dict)
+        db.session.add(education_obj)
+        db.session.flush()
+        return education_obj
+
+    def add_new_degree(self, degree_dict):
+        degree_obj = CandidateEducationDegree(**degree_dict)
+        db.session.add(degree_obj)
+        db.session.flush()
+        track_edits(update_dict=degree_dict, table_name='candidate_education_degree',
+                    candidate_id=self.candidate_id, user_id=self.user_id)
+        return degree_obj
+
+    def add_new_degrees_and_bullets(self, degrees, all_bullets, education):
+        for degree_index, degree_dict in enumerate(degrees):
+            degree_dict.update(candidate_education_id=education.id,
+                               added_time=self.added_time)
+            degree_obj = self.add_new_degree(degree_dict)
+            self.add_new_bullets(all_bullets[degree_index], degree_obj)
+
+    def add_new_bullets(self, bullets, degree):
+        for bullet_dict in bullets:
+            bullet_dict.update(candidate_education_degree_id=degree.id,
+                               added_time=self.added_time)
+            db.session.add(CandidateEducationDegreeBullet(**bullet_dict))
+            track_edits(update_dict=bullet_dict, table_name='candidate_education_degree_bullet',
+                        candidate_id=self.candidate_id, user_id=self.user_id)

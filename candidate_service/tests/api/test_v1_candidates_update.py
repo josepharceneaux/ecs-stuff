@@ -440,7 +440,7 @@ class TestUpdateCandidate(object):
             'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean(),
             'degrees': [
                 {
-                    'type': 'ms', 'title': 'masters of science', 'start_year': 2002, 'start_month': 11,
+                    'type': 'ms', 'title': 'master of science', 'start_year': 2002, 'start_month': 11,
                     'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
                     {
                         'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
@@ -449,7 +449,7 @@ class TestUpdateCandidate(object):
 
                 },
                 {
-                    'type': 'ms', 'title': 'masters of science', 'start_year': 2002, 'start_month': 11,
+                    'type': 'ms', 'title': 'master of science', 'start_year': 2002, 'start_month': 11,
                     'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
                     {
                         'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
