@@ -890,7 +890,7 @@ def search_candidates(domain_id, request_vars, facets="", search_limit=15, count
     else:
         request_facets = {}
 
-    for facet_key in request_facets.keys():
+    for facet_key in request_facets:
         if facet_key not in valid_facets:
             raise InvalidUsage("Facet %s is not valid" % facet_key)
 
@@ -1132,6 +1132,9 @@ def get_added_time_hour_facet_count(facet):
 def _update_facet_counts(filter_queries, params_fq, existing_facets, query_string, facets_input):
     """
     For multi-select facets, return facet count and values based on filter queries
+    If a filter query has parameter X included and we want facet counts for that parameter too, in that case
+    we'll get one value for that parameter A in facets. So to avoid that and to get all values on that parameter A
+    in facets, we exclude that parameter from filter Query.
     :param filter_queries:
     :return:
     """
