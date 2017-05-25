@@ -881,14 +881,14 @@ def search_candidates(domain_id, request_vars, facets="", search_limit=15, count
             'tags': 1000, 'military_branch': 50, 'military_highest_grade': 50, 'tag_ids': 500,
             'custom_field_id_and_value': 1000, 'candidate_engagement_score': 50, 'source_details': 100
         }
-    elif facets:
+    elif facets == "none":
+        request_facets = {}
+    else:
         try:
             facets = [facet.split(':') for facet in facets.split(',')]
             request_facets = {facet[0]: int(facet[1]) for facet in facets}
         except Exception as e:
-            raise InvalidUsage("Facets are not properly formatted: %s" % facets)
-    else:
-        request_facets = {}
+            raise InvalidUsage("Facets are not properly formatted: %s" % facets)  
 
     for facet_key in request_facets:
         if facet_key not in valid_facets:
@@ -1132,9 +1132,9 @@ def get_added_time_hour_facet_count(facet):
 def _update_facet_counts(filter_queries, params_fq, existing_facets, query_string, facets_input):
     """
     For multi-select facets, return facet count and values based on filter queries
-    If a filter query has parameter X included and we want facet counts for that parameter too, in that case
-    we'll get one value for that parameter A in facets. So to avoid that and to get all values on that parameter A
-    in facets, we exclude that parameter from filter Query.
+    If a filter query has parameter 'X' included and we want facet counts for that parameter too, in that case
+    we'll get one value for that parameter 'X' in facets. So to avoid that and to get all values on that 
+    parameter 'X' in facets, we exclude that parameter from filter Query.
     :param filter_queries:
     :return:
     """
