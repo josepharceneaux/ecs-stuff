@@ -435,6 +435,7 @@ class TalentPoolCandidateApi(Resource):
                                  "candidates".format(request.user.id))
 
         request_params = dict()
+        request_params['facets'] = request.args.get('facets', '')
         request_params['fields'] = request.args.get('fields', '')
         request_params['sort_by'] = request.args.get('sort_by', '')
         request_params['limit'] = request.args.get('limit', '')
