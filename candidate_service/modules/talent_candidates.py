@@ -557,30 +557,29 @@ def candidate_contact_history(candidate):
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
 
-        # Get email campaign sends if its url was clicked by the candidate
-        email_campaign_sends = EmailCampaignSend.query.join(EmailCampaignSendUrlConversion).join(UrlConversion). \
-            filter(EmailCampaignSend.candidate_id == candidate.id). \
-            filter((EmailCampaignSendUrlConversion.type == 0) | (EmailCampaignSendUrlConversion.type == 1)). \
-            filter(UrlConversion.hit_count > 0).all()
+    # Get email campaign sends if its url was clicked by the candidate
+    email_campaign_sends = EmailCampaignSend.query.join(EmailCampaignSendUrlConversion).join(UrlConversion). \
+        filter(EmailCampaignSend.candidate_id == candidate.id). \
+        filter((EmailCampaignSendUrlConversion.type == 0) | (EmailCampaignSendUrlConversion.type == 1)). \
+        filter(UrlConversion.hit_count > 0).all()
 
-        for email_campaign_send_ in email_campaign_sends:
+    for email_campaign_send_ in email_campaign_sends:
+        # Get email campaign send's url conversion
+        url_conversion_id = EmailCampaignSendUrlConversion.query.filter(
+            EmailCampaignSendUrlConversion.email_campaign_send_id == email_campaign_send_.id
+        ).first().url_conversion_id
+        url_conversion = UrlConversion.get(url_conversion_id)
 
-            # Get email campaign send's url conversion
-            url_conversion_id = EmailCampaignSendUrlConversion.query.filter(
-                EmailCampaignSendUrlConversion.email_campaign_send_id == email_campaign_send_.id
-            ).first().url_conversion_id
-            url_conversion = UrlConversion.get(url_conversion_id)
+        event_datetime = url_conversion.last_hit_time
+        event_type = ContactHistoryEvent.EMAIL_OPEN
 
-            event_datetime = url_conversion.last_hit_time
-            event_type = ContactHistoryEvent.EMAIL_OPEN
-
-            timeline.append(dict(
-                id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
-                email_campaign_id=email_campaign.id,
-                campaign_name=email_campaign.name,
-                event_type=event_type,
-                event_datetime=event_datetime
-            ))
+        timeline.append(dict(
+            id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
+            email_campaign_id=email_campaign.id,
+            campaign_name=email_campaign.name,
+            event_type=event_type,
+            event_datetime=event_datetime
+        ))
 
     timeline_with_valid_event_datetime = filter(lambda entry: isinstance(entry['event_datetime'],
                                                                          datetime.datetime), timeline)

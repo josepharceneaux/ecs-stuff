@@ -5,9 +5,14 @@ Test cases for CandidateResource/get()
 
 # Conftest
 from candidate_sample_data import generate_single_candidate_data
+from candidate_service.candidate_app import app
+from candidate_service.common.models.email_campaign import EmailCampaignSend
+from candidate_service.common.routes import EmailCampaignApiUrl
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
+    create_data_for_campaign_creation, assert_campaign_send
 
 
 class TestGetCandidate(object):
@@ -168,3 +173,28 @@ class TestGetCandidate(object):
         print response_info(get_resp)
         assert get_resp.status_code == 404
         assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_ARCHIVED
+
+    def test_get_candidate_campaign(self, access_token_first, user_first,
+                                    candidate_first, talent_pipeline, smartlist_first):
+        """
+        This test creates candidate and sends an email campaign to candidate twice. After that gets candidate 
+        and asserts its contact history(timeline)
+        """
+        url = EmailCampaignApiUrl.SEND
+        with app.app_context():
+            campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline)
+            response = send_request('post', EmailCampaignApiUrl.CAMPAIGNS, access_token_first, campaign_data)
+            db.session.commit()
+            campaign = EmailCampaign.get(response.json()['campaign']['id'])
+            assert_campaign_send(response, campaign, user_first.id, 1, expected_status=codes.CREATED, email_client=True)
+            email_campaign_send = EmailCampaignSend.filter_by_keywords(campaign_id=campaign.id)
+            response = send_request('post', url % campaign.id, access_token_first)
+            assert response.status_code == codes.OK
+            db.session.commit()
+            assert_campaign_send(response, campaign, user_first.id, blasts_count=2, total_sends=2,
+                                 expected_status=codes.OK, email_client=True)
+
+            get_resp = send_request('get', CandidateApiUrl.CANDIDATE % str(email_campaign_send[0].candidate_id),
+                                    access_token_first)
+            assert get_resp.status_code == codes.OK
+            assert len(get_resp.json()['candidate']['contact_history']['timeline']) == 2
