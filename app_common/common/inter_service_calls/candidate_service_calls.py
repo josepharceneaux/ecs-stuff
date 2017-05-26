@@ -1,27 +1,35 @@
 """File contains handy functions which can be used to call frequently used
 candidate_service API calls."""
 
+# Standard Imports
 import json
+
+# Third Party
 import requests
 from requests import codes
+from requests_futures.sessions import FuturesSession
+
+# Application Specific
 from ..models.user import User
 from ..routes import CandidateApiUrl
 from ..utils.handy_functions import create_oauth_headers, http_request, send_request
 from ..error_handling import InternalServerError, InvalidUsage, ForbiddenError
 from ..utils.validators import raise_if_not_positive_int_or_long
-from ..constants import CANDIDATE_ALREADY_EXIST
 
 __author__ = 'jitesh'
+
+MAX_WORKERS = 20
 
 
 def search_candidates_from_params(search_params, access_token, url_args=None, user_id=None):
     """
-    Calls the candidate_service's Search API with given search criteria and returns the search result.
+    Calls the candidate_service's Search API with given search criteria and returns the Future object.
+    We can get the result from future object by applying .result() on it.
     :param search_params: Search params or search criteria upon which candidates would be filtered.
     :param access_token: Oauth-based or JWT-based token
     :param  url_args:  accepted arguments sent via the url; e.g. "?user_ids=2,3,4"
     :param user_id: Id of logged-in user
-    :return: search result based on search criteria.
+    :return: future object for search result based on search criteria.
     """
     if not access_token:
         jw_token = User.generate_jw_token(user_id=user_id)
@@ -32,15 +40,9 @@ def search_candidates_from_params(search_params, access_token, url_args=None, us
         headers = {'Authorization': access_token, 'Content-Type': 'application/json'}
 
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI
-    response = requests.get(
-        url=(url + url_args) if url_args else url,
-        params=search_params,
-        headers=headers
-    )
-    if not response.ok:
-        raise InvalidUsage("Couldn't get candidates from Search API because %s" % response)
-    else:
-        return response.json()
+    session = FuturesSession(max_workers=MAX_WORKERS)
+    future = session.get(url=(url + url_args) if url_args else url, params=search_params, headers=headers)
+    return future
 
 
 def update_candidates_on_cloudsearch(access_token, candidate_ids):
@@ -94,7 +96,7 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
                  'content-type': 'application/json'},
         data=json.dumps(data)
     )
-    assert resp.status_code == 201
+    assert resp.status_code == 201, resp.text
     if return_candidate_ids_only:
         return [candidate['id'] for candidate in resp.json()['candidates']]
     return resp.json()

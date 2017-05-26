@@ -4,9 +4,11 @@ See: http://docs.graphene-python.org/en/latest/types/objecttypes/#resolvers-outs
 """
 __all__ = [
     'resolve_user_id',
+    'resolve_id',
     'resolve_total_months_experience',
     'resolve_summary',
     'resolve_source_id',
+    'resolve_source_detail',
     'resolve_added_datetime',
     'resolve_candidate_status_id',
     'resolve_city',
@@ -18,18 +20,27 @@ __all__ = [
     'resolve_formatted_name',
     'resolve_is_current',
     'resolve_is_default',
+    'resolve_description',
     'resolve_iso3166_country',
     'resolve_iso3166_subdivision',
     'resolve_last_name',
     'resolve_middle_name',
+    'resolve_title',
     'resolve_objective',
     'resolve_resume_url',
     'resolve_start_month',
     'resolve_start_year',
     'resolve_state',
     'resolve_updated_datetime',
-    'resolve_zip_code'
+    'resolve_zip_code',
+    'resolve_talent_pool_id',
+    'resolve_attribute',
+    'resolve_attr'
 ]
+
+
+def resolve_id(root, args, context, info):
+    return root.get('id')
 
 
 def resolve_added_datetime(root, args, context, info):
@@ -46,6 +57,10 @@ def resolve_is_current(root, args, context, info):
 
 def resolve_is_default(root, args, context, info):
     return root.get('is_default')
+
+
+def resolve_description(root, args, context, info):
+    return root.get('description')
 
 
 def resolve_city(root, args, context, info):
@@ -109,7 +124,7 @@ def resolve_user_id(self, args, context, info):
 
 
 def resolve_resume_url(self, args, context, info):
-    return self.get('resume_url')
+    return self.get('filename')
 
 
 def resolve_objective(self, args, context, info):
@@ -132,5 +147,37 @@ def resolve_source_id(self, args, context, info):
     return self.get('source_id')
 
 
+def resolve_source_detail(self, args, context, info):
+    return self.get('source_detail')
+
+
+def resolve_title(self, args, context, info):
+    return self.get('title')
+
+
 def resolve_culture_id(self, args, context, info):
     return self.get('culture_id')
+
+
+def resolve_talent_pool_id(self, args, context, info):
+    return self.get('talent_pool_id')
+
+
+def resolve_attr(self, args, context, info):
+    return self.get(info.field_name)
+
+
+def resolve_attribute(self, args, context, info):
+    """
+    If you need a resolver that simply returns value of specific attribute
+    and does not modify value, use this function. It will simply get attribute name from info object and will
+    return value using getattr().
+    :Example:
+        >>> import graphene
+        >>> class CandidateComparisonType(graphene.ObjectType):
+        >>>    first_candidate_id = graphene.Int(resolver=resolve_attribute)
+        >>>    domain_id = graphene.Int(resolver=resolve_attribute)
+        >>>    match_data = graphene.String(resolver=resolve_attribute)
+        >>>    match_category = graphene.String(resolver=resolve_attribute)
+    """
+    return getattr(self, info.field_name)

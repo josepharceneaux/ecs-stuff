@@ -170,6 +170,7 @@ def retrieve_domain_custom_fields(domain_id, custom_field_id=None):
                 'id': custom_field.id,
                 'domain_id': custom_field.domain_id,
                 'name': custom_field.name,
+                'type': custom_field.type,
                 'categories': [
                     {
                         'id': category.id,
@@ -185,6 +186,7 @@ def retrieve_domain_custom_fields(domain_id, custom_field_id=None):
                 {
                     'id': custom_field.id,
                     'name': custom_field.name,
+                    'type': custom_field.type,
                     'categories': [
                         {
                             'id': category.id,

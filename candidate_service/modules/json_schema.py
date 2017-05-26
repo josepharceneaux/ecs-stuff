@@ -6,7 +6,7 @@ from datetime import datetime
 
 MAX_INT = sys.maxint
 CURRENT_YEAR = datetime.utcnow().year
-OFFSET_10 = 10
+OFFSET_8 = 8
 
 candidates_resource_schema_post = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -166,6 +166,9 @@ candidates_resource_schema_post = {
                                     "type": ["integer", "null"]
                                 },
                                 "custom_field_subcategory_id": {
+                                    "type": ["integer", "null"]
+                                },
+                                "custom_field_category_id": {
                                     "type": ["integer", "null"]
                                 },
                                 "value": {
@@ -363,7 +366,7 @@ candidates_resource_schema_post = {
                                             },
                                             "end_year": {
                                                 "type": ["integer", "null"],
-                                                "minimum": 1950, "maximum": CURRENT_YEAR + OFFSET_10
+                                                "minimum": 1950, "maximum": CURRENT_YEAR + OFFSET_8
                                             },
                                             "end_month": {
                                                 "type": ["integer", "null"],
@@ -783,6 +786,9 @@ candidates_resource_schema_patch = {
                                 "custom_field_subcategory_id": {
                                     "type": ["integer", "null"]
                                 },
+                                "custom_field_category_id": {
+                                    "type": ["integer", "null"]
+                                },
                                 "value": {
                                     "type": ["string", "null"]
                                 }
@@ -970,7 +976,7 @@ candidates_resource_schema_patch = {
                                             },
                                             "end_year": {
                                                 "type": ["integer", "null"],
-                                                "minimum": 1950, "maximum": CURRENT_YEAR + OFFSET_10
+                                                "minimum": 1950, "maximum": CURRENT_YEAR + OFFSET_8
                                             },
                                             "end_month": {
                                                 "type": ["integer", "null"],
@@ -1092,7 +1098,7 @@ candidates_resource_schema_patch = {
                                 },
                                 "end_year": {
                                     "type": ["integer", "null"],
-                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                    "minimum": 1950, "maximum": CURRENT_YEAR + OFFSET_8
                                 },
                                 "start_month": {
                                     "type": ["integer", "null"],
@@ -1173,7 +1179,7 @@ candidates_resource_schema_patch = {
                                 },
                                 "end_year": {
                                     "type": ["integer", "null"],
-                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                    "minimum": 1950, "maximum": CURRENT_YEAR + 50
                                 },
                                 "end_month": {
                                     "type": ["integer", "null"],
