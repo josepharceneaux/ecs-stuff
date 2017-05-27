@@ -164,7 +164,6 @@ class EmailCampaigns(Resource):
                                          body_text=data['body_text'],
                                          list_ids=data['list_ids'],
                                          email_client_id=data['email_client_id'],
-                                         template_id=data['template_id'],
                                          start_datetime=data['start_datetime'],
                                          end_datetime=data['end_datetime'],
                                          frequency_id=data['frequency_id'],
