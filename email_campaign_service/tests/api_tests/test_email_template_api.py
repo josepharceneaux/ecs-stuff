@@ -266,15 +266,17 @@ class TestEmailTemplates(object):
         CampaignsTestsHelpers.request_for_forbidden_error('post', EmailCampaignApiUrl.TEMPLATES,
                                                           access_token_other)
 
-    def test_create_email_template_with_same_name(self, user_first, headers_for_email_templates):
+    def test_create_email_template_with_same_name(self, user_first, headers_for_email_templates,
+                                                  headers_other_for_email_templates, user_from_diff_domain):
         """
-        Test for creating email template with same name. It should get Bad request error.
-        Here we first create email-template and then tries to create another email-template with same name.
-
+        Test for creating email template with same name. Here we first create email-template and then tries
+        to create another email-template with same name. It should result in Bad request error.
+        We then create email-template with same name in some other domain, it should create the template with no error.
         """
         # Add Email template
         template_data = data_to_create_email_template(headers_for_email_templates, user_first, EMAIL_TEMPLATE_BODY)
-        template_data['name'] = fake.word() + str(datetime.datetime.utcnow().microsecond)
+        template_name = fake.word() + str(datetime.datetime.utcnow().microsecond)
+        template_data['name'] = template_name
         response = post_to_email_template_resource(headers_for_email_templates, data=template_data)
         assert response.status_code == codes.CREATED
         assert response.json()
@@ -284,7 +286,17 @@ class TestEmailTemplates(object):
         # Try to create another email-template with same name
         response = post_to_email_template_resource(headers_for_email_templates, data=template_data)
         assert response.status_code == codes.BAD
-        assert template_data['name'] in response.json()['error']['message']
+        assert template_name in response.json()['error']['message']
+
+        # Try to create another email-template with same name in some other domain.
+        template_data = data_to_create_email_template(headers_other_for_email_templates, user_from_diff_domain,
+                                                      EMAIL_TEMPLATE_BODY)
+        template_data['name'] = template_name
+        response = post_to_email_template_resource(headers_other_for_email_templates, data=template_data)
+        assert response.status_code == codes.CREATED
+        assert response.json()
+        json_response = response.json()
+        assert 'id' in json_response
 
     def test_get_email_templates(self, user_first, user_same_domain,
                                  headers_for_email_templates, headers_same_for_email_templates):
