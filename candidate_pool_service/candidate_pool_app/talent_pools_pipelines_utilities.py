@@ -85,6 +85,7 @@ def get_smartlist_candidates(smartlist, oauth_token=None, request_params=None):
                 raise InvalidUsage("Search params of talent pipeline are in bad format because: %s" % e.message)
 
         request_params['talent_pool_id'] = smartlist.talent_pipeline.talent_pool_id
+        request_params['talent_pipelines'] = str(smartlist.talent_pipeline.id)
 
     if smartlist.search_params:
         request_params['smartlist_ids'] = smartlist.id
