@@ -498,6 +498,9 @@ class UserEmailTemplate(db.Model):
         :param int|long domain_id: Id of domain
         :rtype: UserEmailTemplate
         """
+        assert str(domain_id).isdigit() and int(domain_id) > 0, \
+            'positive domain_id expected, given: {}'.format(domain_id)
+        assert isinstance(template_name, basestring) and template_name, 'template_name not given'
         from user import User  # This has to be here to avoid circular import
         return cls.query.join(User).filter(User.domain_id == domain_id, cls.name == template_name).first()
 

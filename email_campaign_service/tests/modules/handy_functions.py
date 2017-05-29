@@ -646,6 +646,6 @@ def create_dummy_kaiser_domain():
     """
     This creates a domain with name containing word "Kaiser"
     """
-    domain = Domain(name='test_domain_{}_{}'.format('kaiser', fake.uuid4()[0:8]))
+    domain = Domain(name='test_domain_{}_{}'.format('kaiser', fake.uuid4()))
     domain.save()
     return domain.id

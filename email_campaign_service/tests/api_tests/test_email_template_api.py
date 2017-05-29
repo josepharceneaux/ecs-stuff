@@ -31,8 +31,7 @@ def test_s3_url_for_domain_ids_for_email_templates():
     """
     url = app.config[TalentConfigKeys.URL_FOR_DOMAINS_FOR_EMAIL_TEMPLATES]
     response = requests.get(url)
-    assert response.ok
-    assert response.json()
+    assert response.ok, response.text
 
 
 class TestEmailTemplateFolders(object):
@@ -245,14 +244,12 @@ class TestEmailTemplates(object):
         template_data = data_to_create_email_template(headers_for_email_templates, user_first, EMAIL_TEMPLATE_BODY)
         response = post_to_email_template_resource(headers_for_email_templates, data=template_data)
         assert response.status_code == codes.CREATED
-        assert response.json()
         json_response = response.json()
         assert 'id' in json_response
 
         # GET created email-template and assert on fields
         response = requests.get(EmailCampaignApiUrl.TEMPLATES, headers=headers_for_email_templates)
         assert response.ok
-        assert response.json()
         email_templates = response.json()[self.ENTITY]
         assert len(email_templates) == 1
         # Pick first record and assert expected field values
@@ -279,7 +276,6 @@ class TestEmailTemplates(object):
         template_data['name'] = template_name
         response = post_to_email_template_resource(headers_for_email_templates, data=template_data)
         assert response.status_code == codes.CREATED
-        assert response.json()
         json_response = response.json()
         assert 'id' in json_response
 
@@ -294,9 +290,8 @@ class TestEmailTemplates(object):
         template_data['name'] = template_name
         response = post_to_email_template_resource(headers_other_for_email_templates, data=template_data)
         assert response.status_code == codes.CREATED
-        assert response.json()
         json_response = response.json()
-        assert 'id' in json_response
+        assert 'id' in json_response, 'Expecting id in the response'
 
     def test_get_email_templates(self, user_first, user_same_domain,
                                  headers_for_email_templates, headers_same_for_email_templates):
@@ -315,8 +310,7 @@ class TestEmailTemplates(object):
 
         # Get all email-templates in user_first's domain
         response = requests.get(EmailCampaignApiUrl.TEMPLATES, headers=headers_for_email_templates)
-        assert response.ok
-        assert response.json()
+        assert response.ok, response.text
         email_templates = response.json()[self.ENTITY]
         assert len(email_templates) == expected_records_in_domain_1
 
