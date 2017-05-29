@@ -7,7 +7,8 @@ from sqlalchemy import and_, or_
 # Candidate Service app instance
 # Conftest
 from candidate_sample_data import generate_single_candidate_data
-from candidate_service.common.models.email_campaign import EmailCampaignSend, EmailCampaignSendUrlConversion
+from candidate_service.common.models.email_campaign import EmailCampaignSend, EmailCampaignSendUrlConversion, \
+    TRACKING_URL_TYPE, TEXT_CLICK_URL_TYPE
 from candidate_service.common.models.misc import UrlConversion
 from candidate_service.common.routes import EmailCampaignApiUrl
 from candidate_service.common.tests.conftest import *
@@ -204,8 +205,8 @@ class TestGetCandidate(object):
             url_conversion_ids = db.session.query(
                 EmailCampaignSendUrlConversion.url_conversion_id).filter(
                 EmailCampaignSendUrlConversion.email_campaign_send_id == campaign_send.id, (
-                    or_(EmailCampaignSendUrlConversion.type == 1,
-                        EmailCampaignSendUrlConversion.type == 0))).all()[0]
+                    or_(EmailCampaignSendUrlConversion.type == TEXT_CLICK_URL_TYPE,
+                        EmailCampaignSendUrlConversion.type == TRACKING_URL_TYPE))).all()[0]
             assert len(url_conversion_ids) == 1
             url_conversion = UrlConversion.get(url_conversion_ids[0])
             response = requests.get(url_conversion.source_url)

@@ -14,6 +14,10 @@ from sqlalchemy.dialects.mysql import LONGTEXT
 
 __author__ = 'jitesh'
 
+TRACKING_URL_TYPE = 0
+TEXT_CLICK_URL_TYPE = 1
+HTML_CLICK_URL_TYPE = 2
+
 
 class EmailCampaign(db.Model):
     __tablename__ = 'email_campaign'
