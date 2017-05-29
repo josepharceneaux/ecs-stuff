@@ -491,7 +491,7 @@ class UserEmailTemplate(db.Model):
                                                                               cascade="all, delete-orphan"))
 
     @classmethod
-    def search_by_name_in_domain(cls, template_name, domain_id):
+    def get_by_name_and_domain_id(cls, template_name, domain_id):
         """
         This filters email-templates for given name and returns first object
         :param string template_name: Name of email-template
