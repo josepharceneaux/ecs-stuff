@@ -548,22 +548,20 @@ def candidate_contact_history(candidate):
         event_datetime = email_campaign_send.sent_datetime
         event_type = ContactHistoryEvent.EMAIL_SEND
 
-        timeline.insert(0, dict(id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
+        timeline.insert(0, dict(id=hashlib.md5('{}{}{}'.format(str(event_datetime), event_type, str(email_campaign.id)))
+                                .hexdigest(),
                                 email_campaign_id=email_campaign.id,
                                 event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
 
     # Get email campaign sends if its url was clicked by the candidate
-    email_campaign_sends = EmailCampaignSend.query.join(EmailCampaignSendUrlConversion).join(UrlConversion). \
-        filter(EmailCampaignSend.candidate_id == candidate.id). \
-        filter((EmailCampaignSendUrlConversion.type == 0) | (EmailCampaignSendUrlConversion.type == 1)). \
-        filter(UrlConversion.hit_count > 0).all()
+    open_email_campaign_sends = EmailCampaignSend.get_candidate_open_email_campaign_send(int(candidate.id))
 
-    for email_campaign_send_ in email_campaign_sends:
+    for open_email_campaign_send_ in open_email_campaign_sends:
         # Get email campaign send's url conversion
         url_conversion_id = EmailCampaignSendUrlConversion.query.filter(
-            EmailCampaignSendUrlConversion.email_campaign_send_id == email_campaign_send_.id
+            EmailCampaignSendUrlConversion.email_campaign_send_id == open_email_campaign_send_.id
         ).first().url_conversion_id
         url_conversion = UrlConversion.get(url_conversion_id)
 
@@ -571,7 +569,7 @@ def candidate_contact_history(candidate):
         event_type = ContactHistoryEvent.EMAIL_OPEN
 
         timeline.append(dict(
-            id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
+            id=hashlib.md5('{}{}{}'.format(str(event_datetime), event_type, str(email_campaign.id))).hexdigest(),
             email_campaign_id=email_campaign.id,
             campaign_name=email_campaign.name,
             event_type=event_type,

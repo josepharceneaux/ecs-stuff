@@ -3,7 +3,6 @@ from datetime import datetime
 from contracts import contract
 from sqlalchemy.orm import relationship
 from sqlalchemy import or_, desc, extract, and_
-
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
@@ -445,6 +444,22 @@ class EmailCampaignSend(db.Model):
             cls.candidate_id).filter_by(campaign_id=campaign.id).all()
         emailed_candidate_ids = [row.candidate_id for row in already_emailed_candidates]
         return emailed_candidate_ids
+
+    @classmethod
+    def get_candidate_open_email_campaign_send(cls, candidate_id):
+        """
+        Get opened email campaign sends of a candidate
+        :param int candidate_id: Candidate id
+        :return: Candidate's open email campaign sends
+        """
+        from ..models.misc import UrlConversion
+        if not isinstance(candidate_id, int):
+            raise InternalServerError(error_message='Candidate id must be integer.')
+
+        return EmailCampaignSend.query.join(EmailCampaignSendUrlConversion).join(UrlConversion).\
+            filter(EmailCampaignSend.candidate_id == candidate_id). \
+            filter((EmailCampaignSendUrlConversion.type == 0) | (EmailCampaignSendUrlConversion.type == 1)). \
+            filter(UrlConversion.hit_count > 0).all()
 
 
 class EmailClient(db.Model):

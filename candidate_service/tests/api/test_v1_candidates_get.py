@@ -193,7 +193,7 @@ class TestGetCandidate(object):
                              delete_url_conversion=False)
         email_campaign_send = EmailCampaignSend.filter_by_keywords(campaign_id=campaign.id)
         response = send_request('post', url % campaign.id, access_token_first)
-        assert response.status_code == codes.OK
+        assert response.status_code == codes.OK, 'Expected: {}, Found: {}'.format(codes.OK, response.status_code)
         db.session.commit()
         assert_campaign_send(response, campaign, user_first.id, blasts_count=2, total_sends=2,
                              expected_status=codes.OK, email_client=True, delete_url_conversion=False)
@@ -203,13 +203,17 @@ class TestGetCandidate(object):
             # Getting url_conversion ids and setting hit_count = 1 to check event_type='email_open' in timeline
             url_conversion_ids = db.session.query(
                 EmailCampaignSendUrlConversion.url_conversion_id).filter(
-                and_(EmailCampaignSendUrlConversion.email_campaign_send_id == campaign_send.id, (
+                EmailCampaignSendUrlConversion.email_campaign_send_id == campaign_send.id, (
                     or_(EmailCampaignSendUrlConversion.type == 1,
-                        EmailCampaignSendUrlConversion.type == 0)))).all()[0]
-            UrlConversion.query.filter(UrlConversion.id.in_(url_conversion_ids)).\
-                update({'hit_count': 1}, synchronize_session='fetch')
+                        EmailCampaignSendUrlConversion.type == 0))).all()[0]
+            assert len(url_conversion_ids) == 1
+            url_conversion = UrlConversion.get(url_conversion_ids[0])
+            response = requests.get(url_conversion.source_url)
+            assert response.status_code == codes.OK
+
         db.session.commit()
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % str(email_campaign_send[0].candidate_id),
                                 access_token_first)
-        assert get_resp.status_code == codes.OK
-        assert len(get_resp.json()['candidate']['contact_history']['timeline']) == 4
+        assert get_resp.status_code == codes.OK, 'Expected: {}, Found: {}'.format(codes.OK, response.status_code)
+        assert len(get_resp.json()['candidate']['contact_history']['timeline']) == 4, 'Expected length: 4, got: {}'\
+            .format(len(get_resp.json()['candidate']['contact_history']['timeline']))
