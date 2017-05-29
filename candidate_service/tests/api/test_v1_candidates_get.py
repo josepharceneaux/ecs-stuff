@@ -1,11 +1,12 @@
 """
 Test cases for CandidateResource/get()
 """
-# Candidate Service app instance
+# Third party imports
 from sqlalchemy import and_, or_
+
+# Candidate Service app instance
 # Conftest
 from candidate_sample_data import generate_single_candidate_data
-from candidate_service.candidate_app import app
 from candidate_service.common.models.email_campaign import EmailCampaignSend, EmailCampaignSendUrlConversion
 from candidate_service.common.models.misc import UrlConversion
 from candidate_service.common.routes import EmailCampaignApiUrl

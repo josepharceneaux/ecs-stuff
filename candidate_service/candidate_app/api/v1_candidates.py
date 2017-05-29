@@ -671,7 +671,6 @@ class CandidateResource(Resource):
 
         # Either candidate_id or candidate_email must be provided
         candidate_id, candidate_email = kwargs.get('id'), kwargs.get('email')
-        logger.info('candidate_id: {}, candidate_email: {}'.format(candidate_id, candidate_email))
 
         if candidate_email:
             # Email address must be valid
@@ -683,12 +682,8 @@ class CandidateResource(Resource):
 
         # Check for candidate's existence and web-hidden status
         candidate = get_candidate_if_validated(authed_user, candidate_id)
-        logger.info('candidate validated: {}'.format(candidate.to_json()))
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
-        logger.info('got candidate data dict : {} , candidate id: {}'.format(candidate_data_dict, candidate_id))
         candidate_data_dict['engagement_score'] = calculate_candidate_engagement_score(candidate_id)
-        logger.info('got engagement score: {}, candidate id: {}'.format(candidate_data_dict['engagement_score'],
-                                                                        candidate_id))
         logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
         return {'candidate': candidate_data_dict}
 
