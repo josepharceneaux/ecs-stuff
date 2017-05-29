@@ -80,7 +80,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject=fak
 
 def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_count=1, total_sends=None,
                          email_client=False, expected_status=codes.OK, abort_time_for_sends=300, via_amazon_ses=True,
-                         delete_email=True):
+                         delete_email=True, delete_url_conversion=True):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -134,9 +134,10 @@ def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_coun
         #     assert msg_ids, "Email with subject %s was not found at time: %s." % (campaign.subject,
         #                                                               str(datetime.utcnow()))
     # For each url_conversion record we assert that source_url is saved correctly
-    for send_url_conversion in sends_url_conversions:
-        # get URL conversion record from database table 'url_conversion' and delete it
-        # delete url_conversion record
-        assert str(send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
-        UrlConversion.delete(send_url_conversion.url_conversion)
+    if delete_url_conversion:
+        for send_url_conversion in sends_url_conversions:
+            # get URL conversion record from database table 'url_conversion' and delete it
+            # delete url_conversion record
+            assert str(send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
+            UrlConversion.delete(send_url_conversion.url_conversion)
     return msg_ids
