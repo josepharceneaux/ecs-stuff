@@ -7,7 +7,7 @@ from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from common_functions import *
 
 
-@pytest.mark.skipif(True, reason='@amir, @umar. Kindly have a look. I tried to fix this but could not understand')
+# @pytest.mark.skipif(True, reason='@amir, @umar. Kindly have a look. I tried to fix this but could not understand')
 def test_talent_pipeline_candidate_get(access_token_first, access_token_second, talent_pool, talent_pipeline,
                                        user_first, user_second):
     """
@@ -37,7 +37,7 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
 
     # Adding candidates with 'Talent' as first_name and 'Software Engineer' as current title
     sw_engineers_candidate_ids = populate_candidates(oauth_token=access_token_first, count=5,
-                                                     current_title='Software Engineer', first_name='Talent',
+                                                     current_title='Electrical Engineer', first_name='Talent',
                                                      talent_pool_id=talent_pool.id)
 
     # Adding candidates with 'Talent' as first_name and 'Software Engineer' as current title and 'CS' as major
