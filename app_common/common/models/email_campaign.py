@@ -472,6 +472,16 @@ class EmailCampaignSendUrlConversion(db.Model):
     # Relationships
     email_campaign_send = relationship('EmailCampaignSend', backref="email_campaign_send")
 
+    @classmethod
+    def get_by_url_conversion_id(cls, url_conversion_id):
+        """
+        Gets the first matching record for given "url_conversion_id"
+        :param url_conversion_id: Id of UrlConversion record
+        """
+        assert str(url_conversion_id).isdigit() and int(url_conversion_id) > 0,\
+            'positive `url_conversion_id` expected. Given:{}'.format(url_conversion_id)
+        return cls.query.filter_by(url_conversion_id=url_conversion_id).first()
+
 
 class UserEmailTemplate(db.Model):
     __tablename__ = 'user_email_template'
