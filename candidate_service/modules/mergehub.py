@@ -24,7 +24,12 @@ class MergeHub(object):
         This method combines addresses of first and second candidates into addresses of first candidate.
         Address objects looks like this
         {
-            ""
+            'is_default': True,
+            'city': u'San Jose',
+            'state': u'CA',
+            'candidate_id': 1085L,
+            'resume_id': 1085L,
+            'coordinates': '37.3382082,-121.8863286'
         }
 
         We have list of address dict (GtDict) objects that end-user want to add or update in existing
@@ -55,7 +60,13 @@ class MergeHub(object):
         This method matches candidate's existing educations with newly added educations
         Education objects looks like this
         {
-            ""
+            'school_type': u'college',
+            'city': u'North Maren',
+            'state': u'Florida',
+            'is_current': True,
+            list_order': 1,
+            'school_name': u'westvalley',
+            'iso3166_country': u'NI'
         }
 
         We have list of education dict (GtDict) objects that end-user want to add or update in existing
@@ -64,29 +75,36 @@ class MergeHub(object):
         education object (dict) data and will append a tuple (new_education, existing_education) in degrees list and if
         it will not match, we will append tuple (new_education, None) in degrees list.
         """
-        new_educations = []
+        educations = []
         for new_education in self.new_candidate.educations or []:
             is_same_education = False
             for existing_education in self.existing_candidate.educations or []:
                 if existing_education == new_education:
                     is_same_education = True
-                    new_educations.append((new_education, existing_education))
+                    educations.append((new_education, existing_education))
                     track_edits(update_dict=new_education, table_name='candidate_education',
                                 candidate_id=self.existing_candidate.id, user_id=self.existing_candidate.user_id,
                                 query_obj=existing_education)
                     existing_education.update(**new_education)
                     break
             if not is_same_education:
-                new_educations.append((new_education, None))
+                educations.append((new_education, None))
 
-        return new_educations
+        return educations
 
     def merge_degrees(self, existing_degrees, new_degrees):
         """
         This method compares degrees of existing education with degrees of new education
         EducationDegree objects looks like this
         {
-            ""
+            'start_month': 11,
+            'start_year': 2002,
+            'end_year': 2006,
+            'degree_type': u'ms',
+            'end_month': 12,
+            'end_time': datetime.datetime(2006, 12, 1, 0, 0),
+            'degree_title': u'M.Sc',
+            'gpa_num': 1.5
         }
 
         We have list of education degrees dict (GtDict) objects that end-user want to add or update in existing
@@ -121,7 +139,7 @@ class MergeHub(object):
                     break
             if not is_same_degree:
                 degrees.append((new_degree, None))
-        return new_degrees
+        return degrees
 
     def merge_bullets(self, bullets1, bullets2):
         """
