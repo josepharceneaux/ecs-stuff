@@ -3,202 +3,127 @@ This module contains all functions and classes that will be used for Candidate D
 
 Author: Zohaib Ijaz, QC-Technologies, <mzohaib.qc@gmail.com
 """
-import re
-from fuzzywuzzy import fuzz
 
 from candidate_service.common.error_handling import InvalidUsage
+from candidate_service.common.utils.helpers import GtDict
 from candidate_service.modules.track_changes import track_edits
-from constants import (EXACT, DEGREES, ADDRESS_NOTATIONS)
-
-
-class GtDict(dict):
-    """
-    This class is to allow getting attribute value from dict object instead of using get item syntax.
-    TODO: It does not converts lists of objects / dict inside list (nested lists).
-    e.g d = {'a': [[{'b': 1}, {'c': 2}], [{'d': 3}]]}
-
-    :Examples:
-
-        >>> data = {'a': 123, 'b': 222, 'c': {'d': 111}, 'e': [{'f': 100}, {'g': 333}]}
-        >>> data = GtDict(data)
-        >>> data.a
-        123
-        >>> data.c.d
-        111
-        >>> data.e[1].g
-        333
-    """
-    def __init__(self, data):
-        super(GtDict, self).__init__(data)
-        for key, val in self.items():
-            if isinstance(val, dict):
-                self[key] = GtDict(val)
-            if isinstance(val, list):
-                for index, item in enumerate(val):
-                    val[index] = GtDict(item) if isinstance(item, dict) else item
-
-    def __getattr__(self, key):
-        """
-        Get item value from dict object
-        :param key: key name
-        :return: value of object under that key
-        """
-        return self.get(key)
-
-    def __setattr__(self, key, value):
-        """
-        Set value against a key in dict object
-        :param key: key name
-        :param value: value to be set against key
-        :return: value of object under that key
-        """
-        self[key] = value
 
 
 class MergeHub(object):
 
-    def __init__(self, first, second):
+    def __init__(self, existing_candidate, new_candidate):
         """
         This class allows us to compare and merge two candidates' list objects like addresses, educations, degrees etc.
         """
-        self.first = GtDict(first) if isinstance(first, dict) else first
-        self.second = GtDict(second) if isinstance(second, dict) else second
+        self.existing_candidate = GtDict(existing_candidate
+                                         ) if isinstance(existing_candidate, dict) else existing_candidate
+        self.new_candidate = GtDict(new_candidate) if isinstance(new_candidate, dict) else new_candidate
 
-        '''
-        self.cache will contain information about candidate first and second match data.
-        '''
-        self.cache = {}
-        # Match name, yes, high, medium or low
-        self.match = None
-        # How many match sets exist
-        self.match_count = 0
-
-    def merge_addresses(self, weight=EXACT):
+    def merge_addresses(self):
         """
         This method combines addresses of first and second candidates into addresses of first candidate.
+        Address objects looks like this
+        {
+            ""
+        }
+
+        We have list of address dict (GtDict) objects that end-user want to add or update in existing
+        addresses of a specific candidate. We will loop over new es and will compare each new degree object with all
+        existing candidate's addresses objects and if it matches, we will update existing addresses object with new
+        address object (dict) data and will append in addresses list.
         :return: list of addresses
         """
         addresses = []
-        for address2 in self.second.addresses or []:
-            is_same = False
-            for address1 in self.first.addresses or []:
-                address_line_1_match = self.match_address_line_1(address1.address_line_1, address2.address_line_1,
-                                                                 weight=weight)
-                # TODO: @amir please confirm that is this comparison is right. I am doeing this in de-duping
-                city_match = address1.city == address2.city
-                zip_code_match = address1.zip_code == address2.zip_code
-                if address1.id == address2.id or (address_line_1_match and city_match) or \
-                        (address_line_1_match and zip_code_match):
-                    is_same = True
-                    track_edits(update_dict=address2, table_name='candidate_address',
-                                candidate_id=self.first.id, user_id=self.first.user_id, query_obj=address1)
-                    address1.update(**address2)
+        for new_address in self.new_candidate.addresses or []:
+            is_same_address = False
+            for existing_address_obj in self.existing_candidate.addresses or []:
+                if existing_address_obj == new_address:
+                    is_same_address = True
+                    track_edits(update_dict=new_address, table_name='candidate_address',
+                                candidate_id=self.existing_candidate.id, user_id=self.existing_candidate.user_id,
+                                query_obj=existing_address_obj)
+                    existing_address_obj.update(**new_address)
                     break
-            if not is_same:
-                addresses.append(address2)
+            if not is_same_address:
+                addresses.append(new_address)
 
-        addresses += self.first.addresses or []
+        addresses += self.existing_candidate.addresses or []
         return addresses
 
-    @staticmethod
-    def match_address_line_1(address1, address2, weight=EXACT):
-        """
-        This method matches given two address_line_1 values with given criteria.
-
-        Here is criteria:
-            "155 national" would match to "155 national st" and "155 national street"
-            "155 national ave" is a match to "155 national avenue"
-        :param str address1: first value of address_line_1
-        :param str address2: second value of address_line_1
-        :param int weight: comparison weight, 100 for exact match, default 100
-        :return: boolean
-        :rtype: bool
-        """
-        address1 = (address1 or '').lower().strip()
-        address2 = (address2 or '').lower().strip()
-        address_type = ADDRESS_NOTATIONS[0]
-        val1 = re.sub('|'.join(address_type), '', address1)
-        val2 = re.sub('|'.join(address_type), '', address2)
-        if fuzz.ratio(val1, val2) >= weight:
-            return True
-        for address_type in ADDRESS_NOTATIONS[1:]:
-            if re.findall('|'.join(address_type), address1) and re.findall('|'.join(address_type), address2):
-                val1 = re.sub('|'.join(address_type), '', address1)
-                val2 = re.sub('|'.join(address_type), '', address2)
-                if fuzz.ratio(val1, val2) >= weight:
-                    return True
-        return False
-
-    def merge_educations(self, weight=EXACT):
+    def merge_educations(self):
         """
         This method matches candidate's existing educations with newly added educations
+        Education objects looks like this
+        {
+            ""
+        }
+
+        We have list of education dict (GtDict) objects that end-user want to add or update in existing
+        educations of a specific candidate. We will loop over new degrees and will compare each new degree object with
+        all existing candidate's education objects and if it matches, we will update existing education object with new
+        education object (dict) data and will append a tuple (new_education, existing_education) in degrees list and if
+        it will not match, we will append tuple (new_education, None) in degrees list.
         """
         new_educations = []
-        for education2 in self.second.educations or []:
+        for new_education in self.new_candidate.educations or []:
             is_same_education = False
-            for education_obj in self.first.educations or []:
-                same_school = fuzz.ratio(education2.school_name, education_obj.school_name) >= weight
-                same_city = education_obj.city == education2.city
-                is_same_education = education_obj.id == education2.id or same_school and same_city
-                if is_same_education:
-
-                    new_educations.append((education2, education_obj))
-                    track_edits(update_dict=education2, table_name='candidate_education',
-                                candidate_id=self.first.id, user_id=self.first.user_id, query_obj=education_obj)
-                    education_obj.update(**education2)
+            for existing_education in self.existing_candidate.educations or []:
+                if existing_education == new_education:
+                    is_same_education = True
+                    new_educations.append((new_education, existing_education))
+                    track_edits(update_dict=new_education, table_name='candidate_education',
+                                candidate_id=self.existing_candidate.id, user_id=self.existing_candidate.user_id,
+                                query_obj=existing_education)
+                    existing_education.update(**new_education)
                     break
             if not is_same_education:
-                new_educations.append((education2, None))
+                new_educations.append((new_education, None))
 
         return new_educations
 
-    def merge_degrees(self, degrees1, degrees2, weight=EXACT):
+    def merge_degrees(self, existing_degrees, new_degrees):
         """
         This method compares degrees of existing education with degrees of new education
+        EducationDegree objects looks like this
+        {
+            ""
+        }
+
+        We have list of education degrees dict (GtDict) objects that end-user want to add or update in existing
+        degrees of a specific candidate. We will loop over new degrees and will compare each new degree object with all
+        existing candidate's degree objects and if it matches, we will update existing degree object with new degree
+        object (dict) data and will append a tuple (new_degree, existing degree) in degrees list and if it will not
+        match, we will append tuple (new_degree, None) in degrees list.
         """
-        degree_fields = ["degree_type", "start_year", "start_month", "end_year", "end_month"]
-        degrees, new_degrees = [], []
-        for degree2 in degrees2 or []:
+        degrees = []
+        for new_degree in new_degrees or []:
             is_same_degree = False
-            for degree_obj in degrees1 or []:
-                if degree_obj.id and degree2.id and degree_obj.id != degree2.id:
-                    continue
-                if degree_obj.id and degree2.id and degree_obj.id == degree2.id:
-                    is_same_degree = True
-                    start_year = degree2.get('start_year')
-                    end_year = degree2.get('end_year')
-                    # If start year needs to be updated, it cannot be greater than existing end year
-                    if start_year and not end_year and (start_year > degree_obj.end_year):
-                        raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(
-                            start_year, degree_obj.end_year))
+            for existing_degree_obj in existing_degrees or []:
+                start_year = new_degree.start_year
+                end_year = new_degree.end_year
+                # If start year needs to be updated, it cannot be greater than existing end year
+                if start_year and not end_year and (start_year > existing_degree_obj.end_year):
+                    raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(
+                        start_year, existing_degree_obj.end_year))
 
-                    # If end year needs to be updated, it cannot be less than existing start year
-                    if end_year and not start_year and (end_year < degree_obj.start_year):
-                        raise InvalidUsage('End year ({}) cannot be less than start year ({})'.format(
-                            end_year, degree_obj.start_year))
-                is_same_title = False
-                for degree_titles in DEGREES:
-                    degree_titles = [val.lower() for val in degree_titles]
-                    old_title = (degree_obj.degree_title or '').lower()
-                    new_title = (degree2.degree_title or '').lower()
-                    if (old_title in degree_titles and new_title in degree_titles) \
-                            or fuzz.ratio(old_title, new_title) >= weight:
-                        is_same_title = True
+                # If end year needs to be updated, it cannot be less than existing start year
+                if end_year and not start_year and (end_year < existing_degree_obj.start_year):
+                    raise InvalidUsage('End year ({}) cannot be less than start year ({})'.format(
+                        end_year, existing_degree_obj.start_year))
 
-                if is_same_title and all(getattr(degree_obj, key) == getattr(degree2, key) for key in degree_fields):
+                if existing_degree_obj == new_degree:
                     is_same_degree = True
-                if is_same_degree:
-                    new_degrees.append((degree2, degree_obj))
-                    track_edits(update_dict=degree2, table_name='candidate_education_degree',
-                                candidate_id=self.first.id, user_id=self.first.user_id, query_obj=degree_obj)
-                    degree_obj.update(**degree2)
+                    degrees.append((new_degree, existing_degree_obj))
+                    track_edits(update_dict=new_degree, table_name='candidate_education_degree',
+                                candidate_id=self.existing_candidate.id, user_id=self.existing_candidate.user_id,
+                                query_obj=existing_degree_obj)
+                    existing_degree_obj.update(**new_degree)
                     break
             if not is_same_degree:
-                degrees.append(degree2)
-                new_degrees.append((degree2, None))
+                degrees.append((new_degree, None))
         return new_degrees
 
-    def merge_bullets(self, bullets1, bullets2, weight=EXACT):
+    def merge_bullets(self, bullets1, bullets2):
         """
         This method compares degree's existing bullets with newly added bullets
         """
@@ -211,14 +136,13 @@ class MergeHub(object):
                 if bullet1.id and bullet2.id and bullet1.id == bullet2.id:
                     is_same_bullet = True
 
-                # TODO: @amir, help me to determine the conditions for bullet match
                 if bullet1.concentration_type == bullet2.concentration_type:
                     is_same_bullet = True
                 if is_same_bullet:
                     new_bullets.append((bullet2, bullet1))
                     track_edits(update_dict=bullet2,
                                 table_name='candidate_education_degree_bullet',
-                                candidate_id=self.first.id, user_id=self.first.user_id,
+                                candidate_id=self.existing_candidate.id, user_id=self.existing_candidate.user_id,
                                 query_obj=bullet1)
                     bullet1.update(**bullet2)
                     break

@@ -16,6 +16,7 @@ from flask import request, has_request_context
 from nameparser import HumanName
 
 from candidate_service.candidate_app import logger
+from candidate_service.common.constants import HIGH
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 from candidate_service.common.models.associations import CandidateAreaOfInterest
@@ -1303,7 +1304,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
     formatted_addresses = list(parse_addresses(addresses, candidate, has_default=address_has_default))
     if is_updating:
         mergehub = MergeHub(candidate, dict(addresses=formatted_addresses))
-        formatted_addresses = mergehub.merge_addresses(weight=90)
+        formatted_addresses = mergehub.merge_addresses()
     for address in [address for address in formatted_addresses if not address.id]:
         db.session.add(CandidateAddress(**address))
         track_edits(update_dict=address, table_name='candidate_address',
@@ -1425,12 +1426,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
     CandidateEducationDegreeBullet or create new ones.
     """
     # Remove identical data
-    education_items = None
-    for i, education in enumerate(educations):
-        if education.items() == education_items:
-            del educations[i]
-        else:
-            education_items = education.items()
+    educations = remove_duplicates(educations)
 
     # If any of educations is_current, set all of Candidate's educations' is_current to False
     candidate_id = candidate.id
@@ -1460,17 +1456,24 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
 
     mergehub = MergeHub(candidate, dict(educations=formatted_educations))
     if is_updating:
-        new_educations = mergehub.merge_educations(weight=90)
+        # if it is a candidate update, merge with existing education objects
+        new_educations = mergehub.merge_educations()
     else:
         new_educations = [(education_dict, None) for education_dict in formatted_educations]
 
+    """
+    `new_educations` is a list of tuples where each tuple contains two items. At 0 index, there is new
+    education dict object given by end-user and on index 1, there will be existing SqlAlchemy object of matching
+    education or it will be None if it is not match of any existing education object.
+    """
+    # Iterate over all education objects and save those that are not duplicate of existing objects
     for index, (education_dict, existing_education_obj) in enumerate(new_educations):
         if not existing_education_obj:
             education_obj = candidate_utils.add_new_education(education_dict)
             track_edits(update_dict=education_dict, table_name='candidate_education',
                         candidate_id=candidate_id, user_id=user_id)
             candidate_utils.add_new_degrees_and_bullets(formatted_degrees[index], formatted_bullets[index],
-                                                         education_obj)
+                                                        education_obj)
         else:
             new_degrees = mergehub.merge_degrees(existing_education_obj.degrees, formatted_degrees[index])
             for degree_index, (degree_dict, existing_degree_obj) in enumerate(new_degrees):
