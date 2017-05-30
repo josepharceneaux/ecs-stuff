@@ -456,6 +456,7 @@ class EmailCampaignSend(db.Model):
         :param int candidate_id: Candidate id
         :return: Candidate's open email campaign sends
         """
+        # importing UrlConversion here due to import errors
         from ..models.misc import UrlConversion
         if not isinstance(candidate_id, int):
             raise InternalServerError(error_message='Candidate id must be an integer, given {}'.format(candidate_id))
