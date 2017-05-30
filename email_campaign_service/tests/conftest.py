@@ -33,12 +33,12 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   EmailCampaignTypes, data_for_creating_email_clients,
 
                                                                   send_campaign_with_client_id,
-                                                                  create_email_campaign_with_merge_tags)
+                                                                  create_email_campaign_with_merge_tags,
+                                                                  create_dummy_kaiser_domain)
 from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
     create_email_campaign_via_api, create_scheduled_email_campaign_data, create_data_for_campaign_creation
 
 __author__ = 'basit'
-
 
 GRAPHQL_BASE_URL = GraphqlServiceApiUrl.GRAPHQL
 EMAIL_CAMPAIGN_TYPES = [EmailCampaignTypes.WITHOUT_CLIENT, EmailCampaignTypes.WITH_CLIENT]
@@ -317,9 +317,7 @@ def dummy_kaiser_domain_id():
     """
     This creates a dummy domain with name "Kaiser" in database to access email-templates API.
     """
-    domain = Domain(name='test_domain_{}_{}'.format('kaiser', fake.uuid4()[0:8]))
-    domain.save()
-    return domain.id
+    return create_dummy_kaiser_domain()
 
 
 @pytest.fixture()
@@ -329,6 +327,15 @@ def headers_for_email_templates(user_first, dummy_kaiser_domain_id, headers):
     """
     user_first.update(domain_id=dummy_kaiser_domain_id)
     return headers
+
+
+@pytest.fixture()
+def headers_other_for_email_templates(user_from_diff_domain, headers_other):
+    """
+    Returns headers for "user_from_diff_domain" to access email-templates APIs.
+    """
+    user_from_diff_domain.update(domain_id=create_dummy_kaiser_domain())
+    return headers_other
 
 
 @pytest.fixture()
@@ -397,6 +404,7 @@ def email_clients(request, headers):
             [EmailClientCredentials.delete(email_client_id) for email_client_id in email_client_ids]
         except Exception:
             pass
+
     request.addfinalizer(fin)
     return email_client_ids
 

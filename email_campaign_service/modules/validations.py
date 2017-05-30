@@ -65,7 +65,6 @@ def validate_and_format_request_data(data, current_user):
     start_datetime = data.get('start_datetime')
     end_datetime = data.get('end_datetime')
     frequency_id = data.get('frequency_id')  # required
-    template_id = data.get('template_id')
     email_client_credentials_id = data.get('email_client_credentials_id')
     base_campaign_id = data.get('base_campaign_id')
 
@@ -106,9 +105,6 @@ def validate_and_format_request_data(data, current_user):
         if not email_client:
             raise InvalidUsage("`email_client_id` is not valid id.")
 
-        # If email_client_id is there then set template_id to None. Why??
-        template_id = None
-
     # In case user wants to send email-campaign with its own account
     if email_client_credentials_id:
         email_client_credentials = EmailClientCredentials.get_by_id(email_client_credentials_id)
@@ -138,7 +134,6 @@ def validate_and_format_request_data(data, current_user):
         'start_datetime': start_datetime,
         'end_datetime': end_datetime,
         'frequency_id': frequency_id,
-        'template_id': template_id,
         'email_client_credentials_id': email_client_credentials_id,
         'base_campaign_id': base_campaign_id
     }

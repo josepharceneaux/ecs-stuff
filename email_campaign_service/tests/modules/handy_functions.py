@@ -20,6 +20,7 @@ from requests import codes
 # Application Specific
 from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
 from email_campaign_service.common.models.db import db
+from email_campaign_service.common.models.user import Domain
 from email_campaign_service.email_campaign_app import app, logger
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.models.misc import (Activity,
@@ -639,3 +640,12 @@ def send_campaign_with_client_id(email_campaign, access_token):
     return_value['response'] = response
     return_value['campaign'] = email_campaign
     return return_value
+
+
+def create_dummy_kaiser_domain():
+    """
+    This creates a domain with name containing word "Kaiser"
+    """
+    domain = Domain(name='test_domain_{}_{}'.format('kaiser', fake.uuid4()))
+    domain.save()
+    return domain.id

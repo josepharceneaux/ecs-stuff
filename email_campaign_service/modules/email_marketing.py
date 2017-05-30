@@ -17,8 +17,9 @@ from time import sleep
 
 # Third Party
 from celery import chord
-from redo import retrier
 from requests import codes
+from redo import retrier, retry
+from sqlalchemy.exc import OperationalError
 
 # Service Specific
 from email_campaign_service.modules.email_clients import SMTP
@@ -78,7 +79,7 @@ def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
 def create_email_campaign(user_id, oauth_token, name, subject, description, _from, reply_to, body_html,
                           body_text, list_ids, email_client_id=None, frequency_id=None,
                           email_client_credentials_id=None, base_campaign_id=None, start_datetime=None,
-                          end_datetime=None, template_id=None):
+                          end_datetime=None):
     """
     Creates a new email campaign.
     Schedules email campaign.
@@ -704,13 +705,10 @@ def update_hit_count(url_conversion):
     try:
         # Increment hit count for email marketing
         new_hit_count = (url_conversion.hit_count or 0) + 1
-        url_conversion.hit_count = new_hit_count
-        url_conversion.last_hit_time = datetime.utcnow()
-        db.session.commit()
-        email_campaign_send_url_conversion = EmailCampaignSendUrlConversion.query.filter_by(
-            url_conversion_id=url_conversion.id).first()
+        url_conversion.update(hit_count=new_hit_count, last_hit_time=datetime.utcnow())
+        email_campaign_send_url_conversion = EmailCampaignSendUrlConversion.get_by_url_conversion_id(url_conversion.id)
         email_campaign_send = email_campaign_send_url_conversion.email_campaign_send
-        candidate = Candidate.query.get(email_campaign_send.candidate_id)
+        candidate = Candidate.get_by_id(email_campaign_send.candidate_id)
         is_open = email_campaign_send_url_conversion.type == TRACKING_URL_TYPE
         # If candidate has been deleted, don't make the activity
         if not candidate or candidate.is_archived:
@@ -731,30 +729,43 @@ def update_hit_count(url_conversion):
                                               campaign_name=email_campaign_send.email_campaign.name,
                                               candidate_name=candidate.formatted_name),
                                          'Error occurred while creating activity for email-campaign(id:%s) '
-                                         'open/click.' % email_campaign_send.campaign_id
-                                   )
-
+                                         'open/click.' % email_campaign_send.campaign_id)
             logger.info("Activity is being added for URL redirect for candidate(id:%s). "
                         "email_campaign_send(id:%s)",
                         email_campaign_send.candidate_id, email_campaign_send.id)
 
         # Update email_campaign_blast entry only if it's a new hit
         if new_hit_count == 1:
-            email_campaign_blast = email_campaign_send.associated_blast
-            if email_campaign_blast:
-                if is_open:
-                    email_campaign_blast.opens += 1
-                else:
-                    email_campaign_blast.html_clicks += 1
-                db.session.commit()
-            else:
-                logger.error("Email campaign URL redirect: No email_campaign_blast found matching "
-                             "email_campaign_send.sent_datetime %s, campaign_id=%s"
-                             % (email_campaign_send.sent_datetime,
-                                email_campaign_send.campaign_id))
+            retry(_assert_opens_or_clicks_updated, sleeptime=3, attempts=5, sleepscale=1,
+                  args=(is_open, email_campaign_send), retry_exceptions=(AssertionError, OperationalError))
     except Exception:
         logger.exception("Received exception doing url_redirect (url_conversion_id=%s)",
                          url_conversion.id)
+
+
+def _assert_opens_or_clicks_updated(is_open, email_campaign_send):
+    """
+    This asserts that opens/clicks count has been incremented for the blast object of given send object.
+    :param bool is_open: Identifier if we need to update `opens` or `clicks`
+    :param EmailCampaignSend email_campaign_send: EmailCampaignSend record
+    """
+    db.session.commit()  # To get the latest updates in database
+    email_campaign_blast = EmailCampaignBlast.query.with_for_update(read=True).\
+        filter_by(id=email_campaign_send.blast_id).first()
+    count_updated = False
+    if email_campaign_blast:
+        if is_open:
+            email_campaign_blast.update(opens=email_campaign_blast.opens + 1)
+        else:
+            email_campaign_blast.update(html_clicks=email_campaign_blast.html_clicks + 1)
+        count_updated = True
+    else:
+        logger.error("Email campaign URL redirect: No email_campaign_blast found matching "
+                     "email_campaign_send.sent_datetime %s, campaign_id=%s"
+                     % (email_campaign_send.sent_datetime,
+                        email_campaign_send.campaign_id))
+    assert count_updated, \
+        'There was an error updating opens/clicks count for email_campaign_blast(id:%s)' % email_campaign_blast.id
 
 
 def get_subscription_preference(candidate_id):
@@ -1072,18 +1083,19 @@ def notify_admins(campaign, new_candidates_only, candidate_ids_and_emails):
         raise InternalServerError('Valid EmailCampaign object must be provided.')
     if not candidate_ids_and_emails:
         raise InternalServerError(error_message='Candidate data not provided')
-    with app.app_context():
-        email_notification_to_admins(
-            subject='Marketing batch about to send',
-            body="Marketing email batch about to send, campaign.name=%s, campaign.id=%s, user=%s, "
-                 "new_candidates_only=%s, address list size=%s"
-                 % (campaign.name, campaign.id, campaign.user.email, new_candidates_only,
-                    len(candidate_ids_and_emails))
-                )
-        logger.info("Marketing email batch about to send, campaign.name=%s, campaign.id=%s, user=%s, "
-                    "new_candidates_only=%s, address list size=%s"
-                    % (campaign.name, campaign.id, campaign.user.email, new_candidates_only,
-                        len(candidate_ids_and_emails)))
+    logger.info("Marketing email batch about to send, campaign.name=%s, campaign.id=%s, user=%s, "
+                "new_candidates_only=%s, address list size=%s"
+                % (campaign.name, campaign.id, campaign.user.email, new_candidates_only,
+                    len(candidate_ids_and_emails)))
+    if not CampaignUtils.IS_DEV:  # Notify admins only if it is Production
+        with app.app_context():
+            email_notification_to_admins(
+                subject='Marketing batch about to send',
+                body="Marketing email batch about to send, campaign.name=%s, campaign.id=%s, user=%s, "
+                     "new_candidates_only=%s, address list size=%s"
+                     % (campaign.name, campaign.id, campaign.user.email, new_candidates_only,
+                        len(candidate_ids_and_emails))
+                    )
 
 
 @celery_app.task(name='celery_error_handler')
