@@ -207,7 +207,7 @@ class TestGetCandidate(object):
                 EmailCampaignSendUrlConversion.email_campaign_send_id == campaign_send.id, (
                     or_(EmailCampaignSendUrlConversion.type == TEXT_CLICK_URL_TYPE,
                         EmailCampaignSendUrlConversion.type == TRACKING_URL_TYPE))).all()[0]
-            assert len(url_conversion_ids) == 1, 'Expected length of ur conversion ids: 1, Found: {}'.\
+            assert len(url_conversion_ids) == 1, 'Expected length of url conversion ids: 1, Found: {}'.\
                 format(len(url_conversion_ids))
             url_conversion = UrlConversion.get(url_conversion_ids[0])
             response = requests.get(url_conversion.source_url)
