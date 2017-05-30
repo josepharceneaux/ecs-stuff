@@ -61,12 +61,12 @@ class TestCreateDomainCustomFields(object):
     def test_add_custom_field_to_domain_with_role_user(self, access_token_first, user_first):
         """
         Test:  Add custom fields to domain with role user
+        Expect: 401, Unauthorized
         """
-        user_first.role_id = Role.get_by_name('USER').id
-        db.session.commit()
+        user_first.update(role_id=Role.get_by_name('USER').id)
 
         # Create domain custom field
-        data = {'custom_fields': [{'name': str(uuid.uuid4())[:5]}]}
+        data = {'custom_fields': [{'name': fake.uuid4()}]}
         create_resp = send_request('post', self.URL, access_token_first, data)
         print response_info(create_resp)
 
