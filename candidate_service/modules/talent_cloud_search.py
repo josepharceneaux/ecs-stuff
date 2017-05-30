@@ -1597,6 +1597,15 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     elif request_vars.get('job_title'):
         filter_queries.append("( term field=position '%s')" % request_vars.get('job_title'))
 
+    # Organization
+    organization = request_vars.get('organization')
+    if isinstance(organization, list):
+        # search for exact values in facets
+        org_facets = ["organization:'%s'" % org_facet for org_facet in organization]
+        filter_queries.append("(and %s)" % " ".join(org_facets))
+    elif organization:
+        filter_queries.append("( term field=organization '%s')" % organization)
+
     if isinstance(request_vars.get('skills'), list):
         # search for exact values in facets
         skill_facets = ["skill_description:'%s'" % skill_facet for skill_facet in

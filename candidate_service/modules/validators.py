@@ -354,7 +354,8 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "id": 'digit',
     # is_archived: to check if candidate is activated or archived
     "status": "string",
-    "title": "string"
+    "title": "string",
+    "organization": "string_list"
 }
 
 
