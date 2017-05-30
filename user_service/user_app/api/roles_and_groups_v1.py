@@ -39,11 +39,11 @@ class RolesApi(Resource):
         return (
             {
                 "roles": [{
-                    'id': role_object.id,
-                    'name': role_object.name,
+                    'role_id': role_object.id,
+                    'role_name': role_object.name,
                     'permissions': [{
-                        'id': permission.id,
-                        'name': permission.name
+                        'permission_id': permission.id,
+                        'permission_name': permission.name
                     } for permission in role_object.permissions]
                 } for role_object in roles_prefix]}
         )
