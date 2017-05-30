@@ -173,6 +173,6 @@ DEGREES = [
     ('DScPT', 'D.Sc.PT.', 'D.Sc.PT', 'Doctor of Science in Physical Therapy'),
     ('MD', 'M.D.', 'M.D', 'Doctor of Medicine'),
     ('OD', 'O.D.', 'O.D', 'Doctor of Optometry'),
-    ('PharmD', 'Pharm.D.', 'Pharm.D', 'Doctor of Pharmacy')
+    ('PharmD', 'Pharm.D.', 'Pharm.D', 'DPharm', 'D.Pharm', 'Doctor of Pharmacy')
 ]
 
