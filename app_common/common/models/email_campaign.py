@@ -462,8 +462,9 @@ class EmailCampaignSend(db.Model):
 
         return EmailCampaignSend.query.join(EmailCampaignSendUrlConversion).join(UrlConversion).\
             filter(EmailCampaignSend.candidate_id == candidate_id). \
-            filter((EmailCampaignSendUrlConversion.type == 0) | (EmailCampaignSendUrlConversion.type == 1)). \
-            filter(UrlConversion.hit_count > 0).all()
+            filter((EmailCampaignSendUrlConversion.type == TRACKING_URL_TYPE) |
+                   (EmailCampaignSendUrlConversion.type == TEXT_CLICK_URL_TYPE)).filter(UrlConversion.hit_count > 0)\
+            .all()
 
 
 class EmailClient(db.Model):
