@@ -476,7 +476,7 @@ class EmailCampaignSendUrlConversion(db.Model):
     def get_by_url_conversion_id(cls, url_conversion_id):
         """
         Gets the first matching record for given "url_conversion_id"
-        :param url_conversion_id: Id of UrlConversion record
+        :param positive url_conversion_id: Id of UrlConversion record
         """
         assert str(url_conversion_id).isdigit() and int(url_conversion_id) > 0,\
             'positive `url_conversion_id` expected. Given:{}'.format(url_conversion_id)

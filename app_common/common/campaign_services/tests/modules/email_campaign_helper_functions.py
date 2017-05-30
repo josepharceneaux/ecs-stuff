@@ -124,6 +124,7 @@ def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_coun
                                                           campaign_send.id)
     if campaign_sends:
         # assert on activity for whole campaign send
+        # TODO: commenting this for now, will debug in GET-2471
         CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SEND, campaign.id)
         # TODO: Emails are being delayed, commenting for now
         # if not email_client:

@@ -746,6 +746,8 @@ def update_hit_count(url_conversion):
 def _assert_opens_or_clicks_updated(is_open, email_campaign_send):
     """
     This asserts that opens/clicks count has been incremented for the blast object of given send object.
+    :param bool is_open: Identifier if we need to update `opens` or `clicks`
+    :param EmailCampaignSend email_campaign_send: EmailCampaignSend record
     """
     db.session.commit()  # To get the latest updates in database
     email_campaign_blast = EmailCampaignBlast.query.with_for_update(read=True).\
