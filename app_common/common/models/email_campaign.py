@@ -491,13 +491,18 @@ class UserEmailTemplate(db.Model):
                                                                               cascade="all, delete-orphan"))
 
     @classmethod
-    def get_by_name(cls, template_name):
+    def get_by_name_and_domain_id(cls, template_name, domain_id):
         """
         This filters email-templates for given name and returns first object
         :param string template_name: Name of email-template
+        :param int|long domain_id: Id of domain
         :rtype: UserEmailTemplate
         """
-        return cls.query.filter_by(name=template_name.strip()).first()
+        assert str(domain_id).isdigit() and int(domain_id) > 0, \
+            'positive domain_id expected, given: {}'.format(domain_id)
+        assert isinstance(template_name, basestring) and template_name, 'template_name not given'
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.join(User).filter(User.domain_id == domain_id, cls.name == template_name).first()
 
     @classmethod
     def query_by_domain_id(cls, domain_id):

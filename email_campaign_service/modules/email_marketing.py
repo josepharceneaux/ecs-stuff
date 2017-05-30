@@ -78,7 +78,7 @@ def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
 def create_email_campaign(user_id, oauth_token, name, subject, description, _from, reply_to, body_html,
                           body_text, list_ids, email_client_id=None, frequency_id=None,
                           email_client_credentials_id=None, base_campaign_id=None, start_datetime=None,
-                          end_datetime=None, template_id=None):
+                          end_datetime=None):
     """
     Creates a new email campaign.
     Schedules email campaign.

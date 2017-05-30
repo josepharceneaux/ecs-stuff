@@ -27,7 +27,7 @@ class TestCampaignGet(object):
         """
         query = {'query': self.query_string % fake.random_int()}
         response = requests.get(GRAPHQL_BASE_URL, data=query)
-        assert response.status_code == requests.codes.ok
+        assert response.status_code == requests.codes.ok, response.text
         assert response.json()['errors']
 
     def test_get_campaign_with_auth_header(self, access_token_first, email_campaign_of_user_first):
@@ -36,7 +36,7 @@ class TestCampaignGet(object):
         """
         query = {'query': self.query_string % email_campaign_of_user_first.id}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_first, data=query)
-        assert response.status_code == requests.codes.ok
+        assert response.status_code == requests.codes.ok, response.text
         assert 'errors' not in response.json()
         campaign = response.json()['data']['email_campaign_query']['campaign']
         for expected_field in self.expected_fields_list:

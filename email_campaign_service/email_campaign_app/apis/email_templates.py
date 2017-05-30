@@ -343,9 +343,9 @@ class EmailTemplates(Resource):
         if not template_html_body:
             raise InvalidUsage('Email HTML body is empty')
         # Check if the name is already exists in the domain
-        existing_template = UserEmailTemplate.get_by_name(template_name)
+        existing_template = UserEmailTemplate.get_by_name_and_domain_id(template_name, request.user.domain_id)
         if existing_template:
-            raise InvalidUsage('Email template with name=%s already exists' % template_name)
+            raise InvalidUsage('Email template with name=%s already exists in the domain.' % template_name)
         template_folder_id = data.get('template_folder_id')
         if template_folder_id:
             # Validate parent_id is valid
