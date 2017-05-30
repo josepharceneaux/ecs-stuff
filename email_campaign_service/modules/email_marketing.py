@@ -1072,18 +1072,19 @@ def notify_admins(campaign, new_candidates_only, candidate_ids_and_emails):
         raise InternalServerError('Valid EmailCampaign object must be provided.')
     if not candidate_ids_and_emails:
         raise InternalServerError(error_message='Candidate data not provided')
-    with app.app_context():
-        email_notification_to_admins(
-            subject='Marketing batch about to send',
-            body="Marketing email batch about to send, campaign.name=%s, campaign.id=%s, user=%s, "
-                 "new_candidates_only=%s, address list size=%s"
-                 % (campaign.name, campaign.id, campaign.user.email, new_candidates_only,
-                    len(candidate_ids_and_emails))
-                )
-        logger.info("Marketing email batch about to send, campaign.name=%s, campaign.id=%s, user=%s, "
-                    "new_candidates_only=%s, address list size=%s"
-                    % (campaign.name, campaign.id, campaign.user.email, new_candidates_only,
-                        len(candidate_ids_and_emails)))
+    logger.info("Marketing email batch about to send, campaign.name=%s, campaign.id=%s, user=%s, "
+                "new_candidates_only=%s, address list size=%s"
+                % (campaign.name, campaign.id, campaign.user.email, new_candidates_only,
+                    len(candidate_ids_and_emails)))
+    if not CampaignUtils.IS_DEV:  # Notify admins only if it is Production
+        with app.app_context():
+            email_notification_to_admins(
+                subject='Marketing batch about to send',
+                body="Marketing email batch about to send, campaign.name=%s, campaign.id=%s, user=%s, "
+                     "new_candidates_only=%s, address list size=%s"
+                     % (campaign.name, campaign.id, campaign.user.email, new_candidates_only,
+                        len(candidate_ids_and_emails))
+                    )
 
 
 @celery_app.task(name='celery_error_handler')
