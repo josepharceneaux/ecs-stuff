@@ -32,7 +32,7 @@ class DomainCustomFieldCategoriesResource(Resource):
     decorators = [require_oauth()]
 
     # TODO: update docstring
-    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_DOMAIN_CUSTOM_FIELDS)
     def post(self):
         """
         Function will create custom field categories for user's domain
@@ -67,11 +67,6 @@ class DomainCustomFieldCategoriesResource(Resource):
         """
         # Validate and obtain json data from request body
         body_dict = get_json_data_if_validated(request, cf_schema_post, False)
-
-        # User must be a Talent Admin to create domain custom fields
-        if request.user.role.name not in ('TALENT_ADMIN', 'DOMAIN_ADMIN'):
-            raise ForbiddenError("Not authorized")  # TODO: custom error codes
-
         return {
                    "custom_fields": add_or_update_custom_fields(custom_fields_data=body_dict['custom_fields'],
                                                                 domain_id=request.user.domain_id,
@@ -96,7 +91,7 @@ class DomainCustomFieldCategoriesResource(Resource):
         return retrieve_domain_custom_fields(domain_id=request.user.domain_id, custom_field_id=kwargs.get('id'))
 
     # TODO: update docstring
-    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAIN_CUSTOM_FIELDS)
     def patch(self, **kwargs):
         """
         Function will update domain's custom field category(ies)
