@@ -33,11 +33,11 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
 
     # Adding candidates with 'Talent' as first_name
     candidate_ids = populate_candidates(oauth_token=access_token_first, count=3, first_name='Talent',
-                                              talent_pool_id=talent_pool.id)
+                                        talent_pool_id=talent_pool.id)
 
     # Adding candidates with 'Talent' as first_name and 'Software Engineer' as current title
     sw_engineers_candidate_ids = populate_candidates(oauth_token=access_token_first, count=5,
-                                                     current_title='Electrical Engineer', first_name='Talent',
+                                                     current_title='Software Engineer', first_name='Talent',
                                                      talent_pool_id=talent_pool.id)
 
     # Adding candidates with 'Talent' as first_name and 'Software Engineer' as current title and 'CS' as major
