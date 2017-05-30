@@ -538,6 +538,7 @@ class Permission(db.Model):
 
         # User Roles
         CAN_GET_USER_ROLE = "CAN_GET_USER_ROLE"
+        CAN_ADD_USER_ROLE = "CAN_ADD_USER_ROLE"
         CAN_EDIT_USER_ROLE = "CAN_EDIT_USER_ROLE"
 
         # User Resources
@@ -649,6 +650,7 @@ class Role(db.Model):
     __tablename__ = 'role'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
+    description = db.Column(db.Text)
 
     TALENT_ADMIN = "TALENT_ADMIN"
 

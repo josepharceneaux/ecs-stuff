@@ -1,16 +1,16 @@
-import pytz
+from sqlalchemy import func
 from flask_restful import Resource
 from flask import request, Blueprint
 from user_service.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
 from user_service.common.utils.validators import is_number
-from user_service.common.models.user import User, Domain, UserGroup, db, Role, Permission
+from user_service.common.models.user import User, Domain, UserGroup, db, Role, Permission, PermissionsOfRole
 from user_service.common.utils.auth_utils import require_oauth, require_any_permission, require_all_permissions
 from user_service.user_app.user_service_utilties import get_users_stats_from_mixpanel
 
 
-class GetAllRolesApi(Resource):
+class RolesApi(Resource):
 
     decorators = [require_oauth()]
     # Access token decorator
@@ -22,7 +22,99 @@ class GetAllRolesApi(Resource):
         :param kwargs:
         :return:
         """
-        return {"roles": [{'id': role_object.id, 'name': role_object.name} for role_object in Role.query.all()]}
+        static_roles = Role.query.filter(Role.name.in_(['TALENT_ADMIN', 'DOMAIN_ADMIN', 'ADMIN'])).all()
+        static_roles = {static_role.name: static_role for static_role in static_roles}
+
+        user_role_name = request.user.role.name
+        if user_role_name == 'TALENT_ADMIN':
+            roles_prefix = static_roles.values()
+        elif user_role_name == 'DOMAIN_ADMIN':
+            roles_prefix = [static_roles['DOMAIN_ADMIN'], static_roles['ADMIN']]
+        elif user_role_name == 'ADMIN':
+            roles_prefix = [static_roles['ADMIN']]
+        else:
+            roles_prefix = []
+
+        roles_prefix += Role.query.filter(Role.name.notin_(['TALENT_ADMIN', 'DOMAIN_ADMIN', 'ADMIN']))
+        return (
+            {
+                "roles": [{
+                    'id': role_object.id,
+                    'name': role_object.name,
+                    'permissions': [{
+                        'id': permission.id,
+                        'name': permission.name
+                    } for permission in role_object.permissions]
+                } for role_object in roles_prefix]}
+        )
+
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_USER_ROLE)
+    def post(self, **kwargs):
+        """
+        POST /users/roles Create a New Custom role using existing roles
+        :param kwargs:
+        :return:
+        """
+        posted_data = request.get_json(silent=True)
+        if not posted_data or 'role' not in posted_data or not isinstance(posted_data['role'], dict):
+            raise InvalidUsage("Request body is empty or not provided")
+
+        role_data = posted_data.get('role')
+        role_name = role_data.get('name', '')
+        role_description = role_data.get('description', '')
+        permission_ids = role_data.get('permissions', [])
+        permission_ids = list(set(permission_ids))
+
+        if not role_name:
+            raise InvalidUsage("Valid Role Name should be provided")
+
+        if Permission.query.filter(Permission.id.in_(permission_ids)).count() != len(permission_ids):
+            raise InvalidUsage("Some or All permission ids are not valid")
+
+        if Role.get_by_name(role_name):
+            raise InvalidUsage("Role with name: %s already exists" % role_name)
+
+        # Check if a role already exists with same set of permissions
+        existing_role_with_same_permissions = Role.query.filter(
+            permission_ids.__len__() == (PermissionsOfRole.query.filter(
+                PermissionsOfRole.permission_id.in_(permission_ids),
+                PermissionsOfRole.role_id == Role.id).count()),
+            (permission_ids.__len__() == PermissionsOfRole.query.filter(
+                PermissionsOfRole.role_id == Role.id).count())).first()
+
+        if existing_role_with_same_permissions:
+            raise InvalidUsage("Another role `%s` already exists with same set of "
+                               "permissions" % existing_role_with_same_permissions.name)
+
+        exclusive_permissions = PermissionsOfRole.query.with_entities(PermissionsOfRole.permission_id,
+                                                                      func.count(PermissionsOfRole.role_id)).group_by(
+            PermissionsOfRole.permission_id).having(func.count(PermissionsOfRole.role_id) <= 2).all()
+
+        exclusive_permissions = {exclusive_permission[0]: exclusive_permission[1]
+                                 for exclusive_permission in exclusive_permissions}
+
+        user_role_name = request.user.role.name
+
+        for permission_id in permission_ids:
+            if permission_id in exclusive_permissions and (
+                        (user_role_name == 'DOMAIN_ADMIN' and exclusive_permissions[permission_id] == 1) or
+                        (user_role_name == 'ADMIN' and exclusive_permissions[permission_id] <= 2)):
+                raise UnauthorizedError("Logged-in user is not authorized to create a "
+                                        "role with permission_id: %s" % permission_id)
+
+        role_object = Role(name=role_name, description=role_description)
+        db.session.add(role_object)
+        db.session.flush()
+
+        for permission_id in permission_ids:
+            db.session.add(PermissionsOfRole(role_id=role_object.id, permission_id=permission_id))
+
+        db.session.commit()
+
+        return {
+            'id': role_object.id,
+            'name': role_object.name
+        }
 
 
 class UserRolesApi(Resource):
@@ -44,11 +136,6 @@ class UserRolesApi(Resource):
 
         if not requested_user:
             raise NotFoundError("User with user_id %s doesn't exist" % requested_user_id)
-
-        if (request.user.role.name == 'USER' and requested_user.id != request.user.id) or (
-                        request.user.role.name != 'TALENT_ADMIN' and requested_user.domain_id != request.user.domain_id):
-            raise UnauthorizedError("User %s doesn't have appropriate permission to get roles of user %s" % (
-                request.user.id, requested_user.id))
 
         # GET all roles of given user
         permissions = [permission.name for permission in requested_user.role.get_all_permissions_of_role()]
@@ -89,9 +176,15 @@ class UserRolesApi(Resource):
             else:
                 raise NotFoundError("Role with name:%s doesn't exist in database" % role)
 
-        if request.user.role.name != 'TALENT_ADMIN' and (requested_user.domain_id != request.user.domain_id or role_name == 'TALENT_ADMIN'):
-            raise UnauthorizedError("User %s doesn't have appropriate permission to get roles of user %s" % (
-                request.user.id, requested_user.id))
+        user_role_name = request.user.role.name
+
+        if (user_role_name == 'DOMAIN_ADMIN' and role_name == 'TALENT_ADMIN') or \
+                (user_role_name == 'ADMIN' and role_name in ('DOMAIN_ADMIN', 'TALENT_ADMIN')):
+            raise UnauthorizedError("Logged-in user %s doesn't have appropriate permission to set "
+                                    "role of user %s" % (request.user.id, requested_user.id))
+
+        if user_role_name != 'TALENT_ADMIN' and request.user.domain_id != requested_user.domain_id:
+            raise UnauthorizedError("Logged-in user cannot set roles of users of other domains")
 
         requested_user.role_id = role_id
         db.session.commit()
@@ -279,6 +372,6 @@ class DomainGroupsApi(Resource):
 groups_and_roles_blueprint = Blueprint('groups_and_roles_api', __name__)
 api = TalentApi(groups_and_roles_blueprint)
 api.add_resource(UserRolesApi, UserServiceApi.USER_ROLES)
-api.add_resource(GetAllRolesApi, UserServiceApi.ALL_ROLES)
+api.add_resource(RolesApi, UserServiceApi.ALL_ROLES)
 api.add_resource(UserGroupsApi, UserServiceApi.USER_GROUPS)
 api.add_resource(DomainGroupsApi, UserServiceApi.DOMAIN_GROUPS, UserServiceApi.DOMAIN_GROUPS_UPDATE)

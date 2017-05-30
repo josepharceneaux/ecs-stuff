@@ -1,0 +1,22 @@
+"""
+This script will add new description field in Role Table and also a new permission in Permissions table
+"""
+
+from user_service.common.models.user import db
+from user_service.common.models.user import Permission, PermissionsOfRole, Role
+
+db.session.execute("ALTER TABLE role ADD description text;")
+
+user_role_permission = Permission(name=Permission.PermissionNames.CAN_ADD_USER_ROLE)
+db.session.add(user_role_permission)
+db.session.flush()
+
+talent_admin = Role.get_by_name('TALENT_ADMIN')
+domain_admin = Role.get_by_name('DOMAIN_ADMIN')
+admin = Role.get_by_name('ADMIN')
+
+db.session.add(PermissionsOfRole(role_id=talent_admin.id, permission_id=user_role_permission.id))
+db.session.add(PermissionsOfRole(role_id=domain_admin.id, permission_id=user_role_permission.id))
+db.session.add(PermissionsOfRole(role_id=admin.id, permission_id=user_role_permission.id))
+
+db.session.commit()
