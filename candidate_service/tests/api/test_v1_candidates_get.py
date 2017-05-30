@@ -194,7 +194,7 @@ class TestGetCandidate(object):
                              delete_url_conversion=False)
         email_campaign_send = EmailCampaignSend.filter_by_keywords(campaign_id=campaign.id)
         response = send_request('post', url % campaign.id, access_token_first)
-        assert response.status_code == codes.OK, 'Expected: {}, Found: {}'.format(codes.OK, response.status_code)
+        assert response.status_code == codes.OK, 'Expected status: {}, Found: {}'.format(codes.OK, response.status_code)
         db.session.commit()
         assert_campaign_send(response, campaign, user_first.id, blasts_count=2, total_sends=2,
                              expected_status=codes.OK, email_client=True, delete_url_conversion=False)
@@ -211,11 +211,11 @@ class TestGetCandidate(object):
                 format(len(url_conversion_ids))
             url_conversion = UrlConversion.get(url_conversion_ids[0])
             response = requests.get(url_conversion.source_url)
-            assert response.status_code == codes.OK, 'Expected: {}, Found: {}'.format(codes.OK, response.status_code)
+            assert response.status_code == codes.OK, 'Expected status: {}, Found: {}'.format(codes.OK, response.status_code)
 
         db.session.commit()
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % str(email_campaign_send[0].candidate_id),
                                 access_token_first)
-        assert get_resp.status_code == codes.OK, 'Expected: {}, Found: {}'.format(codes.OK, response.status_code)
+        assert get_resp.status_code == codes.OK, 'Expected status: {}, Found: {}'.format(codes.OK, response.status_code)
         assert len(get_resp.json()['candidate']['contact_history']['timeline']) == 4, 'Expected length: 4, got: {}'\
             .format(len(get_resp.json()['candidate']['contact_history']['timeline']))

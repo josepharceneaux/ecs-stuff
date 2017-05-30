@@ -458,7 +458,7 @@ class EmailCampaignSend(db.Model):
         """
         from ..models.misc import UrlConversion
         if not isinstance(candidate_id, int):
-            raise InternalServerError(error_message='Candidate id must be an integer.')
+            raise InternalServerError(error_message='Candidate id must be an integer, given {}'.format(candidate_id))
 
         return EmailCampaignSend.query.join(EmailCampaignSendUrlConversion).join(UrlConversion).\
             filter(EmailCampaignSend.candidate_id == candidate_id). \

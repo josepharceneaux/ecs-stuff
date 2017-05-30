@@ -93,7 +93,7 @@ def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_coun
         campaign = EmailCampaign.get_by_id(campaign['id'])
 
     msg_ids = ''
-    assert response.status_code == expected_status, 'Expected: {}, Found: {}'.format(expected_status,
+    assert response.status_code == expected_status, 'Expected status: {}, Found: {}'.format(expected_status,
                                                                                      response.status_code)
     assert response.json()
     if not email_client:
@@ -115,8 +115,10 @@ def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_coun
         if not email_client:
             if via_amazon_ses:  # If email-campaign is sent via Amazon SES, we should have message_id and request_id
                 # saved in database table "email_campaign_sends"
-                assert campaign_send.ses_message_id, 'Must be valid ses_message_id'
-                assert campaign_send.ses_request_id, 'Must be valid id ses_request_id'  # TODO: Won't be needed in boto3
+                assert campaign_send.ses_message_id, 'Must be valid ses_message_id, found: {}'\
+                    .format(campaign_send.ses_message_id)
+                assert campaign_send.ses_request_id, 'Must be valid id ses_request_id, found: {}'\
+                    .format(campaign_send.ses_request_id)  # TODO: Won't be needed in boto3
             if campaign.base_campaign_id:
                 CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_EVENT_SEND,
                                                           campaign_send.id)
@@ -140,6 +142,8 @@ def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_coun
             # get URL conversion record from database table 'url_conversion' and delete it
             # delete url_conversion record
             assert str(send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url, \
-                'Did not find url conversion id in source url'
+                'Did not find url conversion id {} in source url {}'.format(send_url_conversion.url_conversion.id,
+                                                                            send_url_conversion.url_conversion
+                                                                            .source_url)
             UrlConversion.delete(send_url_conversion.url_conversion)
     return msg_ids
