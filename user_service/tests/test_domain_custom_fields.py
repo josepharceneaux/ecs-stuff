@@ -58,6 +58,20 @@ class TestCreateDomainCustomFields(object):
         assert len(create_resp.json()['custom_fields']) == len(data['custom_fields'])
         assert 'id' in create_resp.json()['custom_fields'][0]
 
+    def test_add_custom_field_to_domain_with_role_user(self, access_token_first, user_first):
+        """
+        Test:  Add custom fields to domain with role user
+        """
+        user_first.role_id = Role.get_by_name('USER').id
+        db.session.commit()
+
+        # Create domain custom field
+        data = {'custom_fields': [{'name': str(uuid.uuid4())[:5]}]}
+        create_resp = send_request('post', self.URL, access_token_first, data)
+        print response_info(create_resp)
+
+        assert create_resp.status_code == requests.codes.UNAUTHORIZED
+
     def test_add_duplicate_custom_fields_to_domain(self, access_token_first, user_first):
         """
         Test:  Add identical custom fields to the same domain
