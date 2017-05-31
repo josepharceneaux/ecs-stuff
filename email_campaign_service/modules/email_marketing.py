@@ -357,7 +357,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 "campaign_id=%s, user=%s" % (len(subscribed_candidate_ids), len(candidate_ids_and_emails),
                                              campaign.name, campaign.id, campaign.user.email))
     if candidate_ids_and_emails:
-        concurrent_lambdas = 55
+        concurrent_lambdas = 50
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
         if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA]:
             # Get AWS region name
