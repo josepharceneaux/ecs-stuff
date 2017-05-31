@@ -5,31 +5,31 @@ from user_service.common.models.user import Role
 from common_functions import *
 
 
-def test_user_scoped_roles_get(access_token_first, user_first, user_second):
-
-    user_first.role_id = Role.get_by_name('ADMIN').id
-    db.session.commit()
-
-    # Logged-in user getting roles of a non-existing user
-    response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id + 1000)
-    assert status_code == 404
-
-    # Logged-in user getting roles of a user of different domain
-    response, status_code = user_scoped_roles(access_token_first, user_id=user_second.id)
-    assert status_code == 401
-
-    # Logged-in user getting roles of itself
-    response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id)
-    assert status_code == 200
-    assert response.get('role_name') == 'ADMIN'
-
-    user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
-    db.session.commit()
-
-    # Logged-in user getting roles of itself
-    response, status_code = user_scoped_roles(access_token_first, user_id=user_second.id)
-    assert status_code == 200
-    assert response.get('role_name') == 'USER'
+# def test_user_scoped_roles_get(access_token_first, user_first, user_second):
+#
+#     user_first.role_id = Role.get_by_name('ADMIN').id
+#     db.session.commit()
+#
+#     # Logged-in user getting roles of a non-existing user
+#     response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id + 1000)
+#     assert status_code == 404
+#
+#     # Logged-in user getting roles of a user of different domain
+#     response, status_code = user_scoped_roles(access_token_first, user_id=user_second.id)
+#     assert status_code == 401
+#
+#     # Logged-in user getting roles of itself
+#     response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id)
+#     assert status_code == 200
+#     assert response.get('role_name') == 'ADMIN'
+#
+#     user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
+#     db.session.commit()
+#
+#     # Logged-in user getting roles of itself
+#     response, status_code = user_scoped_roles(access_token_first, user_id=user_second.id)
+#     assert status_code == 200
+#     assert response.get('role_name') == 'USER'
 
 
 def test_user_scoped_roles_put(access_token_first, user_first, user_second):
@@ -61,17 +61,17 @@ def test_user_scoped_roles_put(access_token_first, user_first, user_second):
     db.session.commit()
 
 
-def test_get_all_roles(access_token_first, user_first):
-
-    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
-    db.session.commit()
-
-    headers = {'Authorization': 'Bearer %s' % access_token_first}
-
-    # Logged-in user trying to get all given roles in DB
-    response = requests.get(UserServiceApiUrl.ALL_ROLES_API, headers=headers)
-    assert response.status_code == 200
-    assert len(response.json().get('roles')) == Role.query.count()
+# def test_get_all_roles(access_token_first, user_first):
+#
+#     user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+#     db.session.commit()
+#
+#     headers = {'Authorization': 'Bearer %s' % access_token_first}
+#
+#     # Logged-in user trying to get all given roles in DB
+#     response = requests.get(UserServiceApiUrl.ALL_ROLES_API, headers=headers)
+#     assert response.status_code == 200
+#     assert len(response.json().get('roles')) == Role.query.count()
 
 
 def test_user_groups_get(access_token_first, user_first, user_second, first_group, second_group):
