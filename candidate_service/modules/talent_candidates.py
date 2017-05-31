@@ -157,7 +157,6 @@ def fetch_candidate_info(candidate, fields=None):
     if source_product_id:
         source_product = Product.get(source_product_id)
         source_product_info = source_product.to_json()
-
     return {
         'id': candidate_id,
         'owner_id': candidate.user_id,
@@ -549,36 +548,33 @@ def candidate_contact_history(candidate):
         event_datetime = email_campaign_send.sent_datetime
         event_type = ContactHistoryEvent.EMAIL_SEND
 
-        timeline.insert(0, dict(id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
+        timeline.insert(0, dict(id=hashlib.md5('{}{}{}'.format(str(event_datetime), event_type, str(email_campaign.id)))
+                                .hexdigest(),
                                 email_campaign_id=email_campaign.id,
                                 event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
 
-        # Get email campaign sends if its url was clicked by the candidate
-        email_campaign_sends = EmailCampaignSend.query.join(EmailCampaignSendUrlConversion).join(UrlConversion). \
-            filter(EmailCampaignSend.candidate_id == candidate.id). \
-            filter((EmailCampaignSendUrlConversion.type == 0) | (EmailCampaignSendUrlConversion.type == 1)). \
-            filter(UrlConversion.hit_count > 0).all()
+    # Get email campaign sends if its url was clicked by the candidate
+    open_email_campaign_sends = EmailCampaignSend.get_candidate_open_email_campaign_send(int(candidate.id))
 
-        for email_campaign_send_ in email_campaign_sends:
+    for open_email_campaign_send_ in open_email_campaign_sends:
+        # Get email campaign send's url conversion
+        url_conversion_id = EmailCampaignSendUrlConversion.query.filter(
+            EmailCampaignSendUrlConversion.email_campaign_send_id == open_email_campaign_send_.id
+        ).first().url_conversion_id
+        url_conversion = UrlConversion.get(url_conversion_id)
 
-            # Get email campaign send's url conversion
-            url_conversion_id = EmailCampaignSendUrlConversion.query.filter(
-                EmailCampaignSendUrlConversion.email_campaign_send_id == email_campaign_send_.id
-            ).first().url_conversion_id
-            url_conversion = UrlConversion.get(url_conversion_id)
+        event_datetime = url_conversion.last_hit_time
+        event_type = ContactHistoryEvent.EMAIL_OPEN
 
-            event_datetime = url_conversion.last_hit_time
-            event_type = ContactHistoryEvent.EMAIL_OPEN
-
-            timeline.append(dict(
-                id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
-                email_campaign_id=email_campaign.id,
-                campaign_name=email_campaign.name,
-                event_type=event_type,
-                event_datetime=event_datetime
-            ))
+        timeline.append(dict(
+            id=hashlib.md5('{}{}{}'.format(str(event_datetime), event_type, str(email_campaign.id))).hexdigest(),
+            email_campaign_id=email_campaign.id,
+            campaign_name=email_campaign.name,
+            event_type=event_type,
+            event_datetime=event_datetime
+        ))
 
     timeline_with_valid_event_datetime = filter(lambda entry: isinstance(entry['event_datetime'],
                                                                          datetime.datetime), timeline)

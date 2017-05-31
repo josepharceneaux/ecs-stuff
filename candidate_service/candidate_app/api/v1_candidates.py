@@ -682,10 +682,8 @@ class CandidateResource(Resource):
 
         # Check for candidate's existence and web-hidden status
         candidate = get_candidate_if_validated(authed_user, candidate_id)
-
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
         candidate_data_dict['engagement_score'] = calculate_candidate_engagement_score(candidate_id)
-
         logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
         return {'candidate': candidate_data_dict}
 

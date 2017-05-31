@@ -80,7 +80,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject=fak
 
 def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_count=1, total_sends=None,
                          email_client=False, expected_status=codes.OK, abort_time_for_sends=300, via_amazon_ses=True,
-                         delete_email=True):
+                         delete_email=True, delete_url_conversion=True):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -93,7 +93,8 @@ def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_coun
         campaign = EmailCampaign.get_by_id(campaign['id'])
 
     msg_ids = ''
-    assert response.status_code == expected_status
+    assert response.status_code == expected_status, 'Expected status: {}, Found: {}'.format(expected_status,
+                                                                                     response.status_code)
     assert response.json()
     if not email_client:
         json_resp = response.json()
@@ -105,7 +106,7 @@ def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_coun
     CampaignsTestsHelpers.assert_blast_sends(campaign, blast_index=blasts_count - 1, expected_count=blast_sends,
                                              abort_time_for_sends=abort_time_for_sends)
     campaign_sends = campaign.sends.all()
-    assert len(campaign_sends) == total_sends
+    assert len(campaign_sends) == total_sends, 'Expected sends: {}, Found: {}'.format(total_sends, campaign_sends)
     sends_url_conversions = []
     # assert on activity of individual campaign sends
     for campaign_send in campaign_sends:
@@ -114,8 +115,10 @@ def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_coun
         if not email_client:
             if via_amazon_ses:  # If email-campaign is sent via Amazon SES, we should have message_id and request_id
                 # saved in database table "email_campaign_sends"
-                assert campaign_send.ses_message_id
-                assert campaign_send.ses_request_id  # TODO: Won't be needed in boto3
+                assert campaign_send.ses_message_id, 'Must be valid ses_message_id, found: {}'\
+                    .format(campaign_send.ses_message_id)
+                assert campaign_send.ses_request_id, 'Must be valid id ses_request_id, found: {}'\
+                    .format(campaign_send.ses_request_id)  # TODO: Won't be needed in boto3
             if campaign.base_campaign_id:
                 CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_EVENT_SEND,
                                                           campaign_send.id)
@@ -135,9 +138,13 @@ def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_coun
         #     assert msg_ids, "Email with subject %s was not found at time: %s." % (campaign.subject,
         #                                                               str(datetime.utcnow()))
     # For each url_conversion record we assert that source_url is saved correctly
-    for send_url_conversion in sends_url_conversions:
-        # get URL conversion record from database table 'url_conversion' and delete it
-        # delete url_conversion record
-        assert str(send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
-        UrlConversion.delete(send_url_conversion.url_conversion)
+    if delete_url_conversion:
+        for send_url_conversion in sends_url_conversions:
+            # get URL conversion record from database table 'url_conversion' and delete it
+            # delete url_conversion record
+            assert str(send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url, \
+                'Did not find url conversion id {} in source url {}'.format(send_url_conversion.url_conversion.id,
+                                                                            send_url_conversion.url_conversion
+                                                                            .source_url)
+            UrlConversion.delete(send_url_conversion.url_conversion)
     return msg_ids
