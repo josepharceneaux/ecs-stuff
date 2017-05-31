@@ -381,6 +381,10 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 try:
                     invoke_lambda_sender(_lambda, event_data)
                     number_of_lambda_invocations += 1
+                    # If email-campaign occupies all the Lambdas as specified by limit of concurrent Lambdas, and
+                    # someone tries to invoke some Lambda, it will get Throttle error. Our intention here is to avoid
+                    # Throttling. So, we are invoking specific number of Lambda's for email-campaign and then we wait
+                    #  for some time so that all of them finish working and we can invoke next chunk of Lambdas.
                     if number_of_lambda_invocations % max_candidates_in_one_lambda == 0:
                         logger.info("Delaying Lambda invoker at %d" % number_of_lambda_invocations)
                         sleep(max_candidates_in_one_lambda)
