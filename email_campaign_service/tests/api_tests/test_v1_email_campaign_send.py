@@ -101,13 +101,13 @@ class TestSendCampaign(object):
         CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaign, self.HTTP_METHOD, self.URL,
                                                                access_token_first)
 
-    def test_send_old_archived_campaign(self, access_token_first, scheduled_campaign):
+    def test_send_old_archived_campaign(self, access_token_first, email_campaign_of_user_first):
         """
         This is a test to send a campaign which was archived but task was not unscheduled.
         We should get ResourceNotFound error and task should be removed from scheduler-service.
         """
         db.session.commit()
-        email_campaign = EmailCampaign.get_by_id(scheduled_campaign['id'])
+        email_campaign = EmailCampaign.get_by_id(email_campaign_of_user_first['id'])
         # Assert that campaign is scheduled
         assert email_campaign.scheduler_task_id
         email_campaign.update(is_hidden=1)
@@ -143,29 +143,29 @@ class TestSendCampaign(object):
             assert str(campaign_with_candidate_having_no_email.id) in json_resp['message']
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(self, headers, user_first,
-                                                                         campaign_with_two_candidates):
+                                                                         email_campaign_of_user_first):
         """
         Tests sending a campaign with one smartlist. That smartlist has, in turn,
         two candidates associated with it. Those candidates have unique email addresses.
         Campaign emails should be sent to 2 candidates so number of sends should be 2.
         """
         no_of_sends = 2
-        campaign = campaign_with_two_candidates
+        campaign = email_campaign_of_user_first
         response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first.id, no_of_sends)
 
-    def test_campaign_send_with_no_href_in_anchor_tag(self, campaign_with_two_candidates, headers, user_first):
+    def test_campaign_send_with_no_href_in_anchor_tag(self, email_campaign_of_user_first, headers, user_first):
         """
         Here we put an empty anchor tag in body_text of email-campaign. It should not result in any error.
         """
         no_of_sends = 2
-        campaign = campaign_with_two_candidates
+        campaign = email_campaign_of_user_first
         campaign.update(body_html='<html><body><a>%s</a></body></html>' % fake.sentence())
         response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first.id, no_of_sends)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(self, headers, user_first,
-                                                                                    campaign_with_two_candidates):
+                                                                                    email_campaign_of_user_first):
         """
         User auth token is valid, campaign has one smartlist associated. Smartlist has two
         candidates associated (with same email addresses). Email Campaign should be sent to only
@@ -174,11 +174,11 @@ class TestSendCampaign(object):
         same_email = fake.email()
         for candidate in user_first.candidates:
             candidate.emails[0].update(address=same_email)
-        response = requests.post(self.URL % campaign_with_two_candidates.id, headers=headers)
-        assert_campaign_send(response, campaign_with_two_candidates, user_first.id, 1)
-        if not campaign_with_two_candidates.email_client_id:
+        response = requests.post(self.URL % email_campaign_of_user_first.id, headers=headers)
+        assert_campaign_send(response, email_campaign_of_user_first, user_first.id, 1)
+        if not email_campaign_of_user_first.email_client_id:
             json_resp = response.json()
-            assert str(campaign_with_two_candidates.id) in json_resp['message']
+            assert str(email_campaign_of_user_first.id) in json_resp['message']
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
             self, headers, user_first, campaign_with_candidates_having_same_email_in_diff_domain):
@@ -366,7 +366,7 @@ class TestSendCampaign(object):
         response = requests.post(self.URL % campaign['id'], headers=headers)
         assert_campaign_send(response, campaign, user_first.id)
 
-    def test_campaign_send_in_test_domain(self, headers, domain_first, user_first, campaign_with_two_candidates):
+    def test_campaign_send_in_test_domain(self, headers, domain_first, user_first, email_campaign_of_user_first):
         """
         Here we set user's email address to be test email account used in tests.
         We then set domain of user as test domain and send an email campaign to candidates. It should be
@@ -379,8 +379,8 @@ class TestSendCampaign(object):
                                   data=json.dumps(data))
         assert response.ok, response.text
         user_first.update(email=app.config[TalentConfigKeys.GT_GMAIL_ID])
-        response = requests.post(self.URL % campaign_with_two_candidates.id, headers=headers)
-        assert_campaign_send(response, campaign_with_two_candidates, user_first.id, 2)
+        response = requests.post(self.URL % email_campaign_of_user_first.id, headers=headers)
+        assert_campaign_send(response, email_campaign_of_user_first, user_first.id, 2)
         # TODO: Commenting for now
-        # assert_and_delete_email(campaign_with_two_candidates.subject)
+        # assert_and_delete_email(email_campaign_of_user_first.subject)
 

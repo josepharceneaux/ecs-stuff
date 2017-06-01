@@ -517,26 +517,18 @@ def assert_valid_template_folder(template_folder_dict, domain_id, expected_name)
     assert 'parent_id' in template_folder_dict
 
 
-def create_data_for_campaign_creation_with_all_parameters(access_token, talent_pipeline, subject,
-                                                          campaign_name=fake.name(), assert_candidates=True):
+def create_data_for_campaign_creation_with_all_parameters(smartlist_id, subject, campaign_name=fake.name()):
     """
     This function returns the all data to create an email campaign
-    :param access_token: access token of user
-    :param talent_pipeline: talent_pipeline of user
+    :param smartlist_id: Id of smartlist
     :param subject: Subject of campaign
     :param campaign_name: Name of campaign
-    :param assert_candidates: allow to assert candidate
     """
     email_from = 'no-reply@gettalent.com'
     reply_to = fake.safe_email()
     body_text = fake.sentence()
     description = fake.paragraph()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
-    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
-                                                                            talent_pipeline,
-                                                                            emails_list=True,
-                                                                            assert_candidates=assert_candidates,
-                                                                            )
     start_datetime = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=20))
     end_datetime = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=40))
 

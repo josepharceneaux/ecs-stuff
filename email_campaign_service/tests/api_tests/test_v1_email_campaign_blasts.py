@@ -25,19 +25,19 @@ class TestEmailCampaignBlasts(object):
     # Resource for this endpoint
     ENTITY = 'blasts'
 
-    def test_get_with_invalid_token(self, campaign_with_two_candidates):
+    def test_get_with_invalid_token(self, email_campaign_of_user_first):
         """
          User auth token is invalid. It should get Unauthorized error.
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL
-                                                         % campaign_with_two_candidates.id, None)
+                                                         % email_campaign_of_user_first.id, None)
 
-    def test_get_with_no_campaign_sent(self, access_token_first, campaign_with_two_candidates):
+    def test_get_with_no_campaign_sent(self, access_token_first, email_campaign_of_user_first):
         """
         Here we assume that there is no blast saved for given campaign. We should get OK
         response and count should be 0.
         """
-        response = requests.get(self.URL % campaign_with_two_candidates.id,
+        response = requests.get(self.URL % email_campaign_of_user_first.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY)
 

@@ -177,17 +177,19 @@ class TestGetCandidate(object):
         assert get_resp.status_code == 404
         assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_ARCHIVED
 
-    def test_get_candidate_assert_timeline(self, access_token_first, user_first,
-                                    candidate_first, talent_pipeline, smartlist_first):
+    def test_get_candidate_assert_timeline(self, access_token_first, user_first, talent_pipeline):
         """
         This test creates candidate and sends an email campaign to candidate twice. After that gets candidate 
         and asserts its contact history(timeline)
         """
         url = EmailCampaignApiUrl.SEND
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline)
+        smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
+                                                                                count=2, emails_list=True)
+        campaign_data = create_data_for_campaign_creation(smartlist_id=smartlist_id)
         campaign_data['body_html'] = "<html><body><a href=\"{}\">Email campaign test</a></body></html>".format(
             fake.url())
         response = send_request('post', EmailCampaignApiUrl.CAMPAIGNS, access_token_first, campaign_data)
+        assert response.status_code == codes.CREATED, response.text
         db.session.commit()
         campaign = EmailCampaign.get(response.json()['campaign']['id'])
         assert_campaign_send(response, campaign, user_first.id, 1, expected_status=codes.CREATED, email_client=True,
