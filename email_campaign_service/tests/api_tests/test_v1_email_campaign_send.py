@@ -27,7 +27,8 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailCampaignSmartlist)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign_smartlists,
-                                                                  send_campaign_with_client_id, assert_and_delete_email)
+                                                                  send_campaign_with_client_id, assert_and_delete_email,
+                                                                  get_mail_connection, fetch_emails, delete_emails)
 from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
     assert_campaign_send
 
@@ -148,20 +149,18 @@ class TestSendCampaign(object):
         two candidates associated with it. Those candidates have unique email addresses.
         Campaign emails should be sent to 2 candidates so number of sends should be 2.
         """
-        no_of_sends = 2
         campaign = email_campaign_of_user_first
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first.id, no_of_sends)
+        assert_campaign_send(response, campaign, user_first.id)
 
     def test_campaign_send_with_no_href_in_anchor_tag(self, email_campaign_of_user_first, headers, user_first):
         """
         Here we put an empty anchor tag in body_text of email-campaign. It should not result in any error.
         """
-        no_of_sends = 2
         campaign = email_campaign_of_user_first
         campaign.update(body_html='<html><body><a>%s</a></body></html>' % fake.sentence())
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first.id, no_of_sends)
+        assert_campaign_send(response, campaign, user_first.id)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(self, headers, user_first,
                                                                                     email_campaign_of_user_first):
@@ -174,7 +173,7 @@ class TestSendCampaign(object):
         for candidate in user_first.candidates:
             candidate.emails[0].update(address=same_email)
         response = requests.post(self.URL % email_campaign_of_user_first.id, headers=headers)
-        assert_campaign_send(response, email_campaign_of_user_first, user_first.id, 1)
+        assert_campaign_send(response, email_campaign_of_user_first, user_first.id, blast_sends=1)
         if not email_campaign_of_user_first.email_client_id:
             json_resp = response.json()
             assert str(email_campaign_of_user_first.id) in json_resp['message']
@@ -188,7 +187,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first.id, 2)
+        assert_campaign_send(response, campaign, user_first.id)
 
     def test_campaign_send_with_outgoing_email_client(self, email_campaign_with_outgoing_email_client, headers,
                                                       user_first):
@@ -215,16 +214,15 @@ class TestSendCampaign(object):
                                                       candidate_address=candidate_address,
                                                       )
         campaign.update(subject=modified_subject)
-        msg_ids = assert_campaign_send(response, campaign, user_first.id, 1, delete_email=False, via_amazon_ses=False)
-        # TODO: Emails are being delayed, commenting for now
-        # mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
-        #                                       app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
-        # email_bodies = fetch_emails(mail_connection, msg_ids)
-        # assert len(email_bodies) == 1
-        # assert candidate['first_name'] in email_bodies[0]
-        # assert candidate['last_name'] in email_bodies[0]
-        # assert str(candidate['id']) in email_bodies[0]  # This will be in unsubscribe URL.
-        # delete_emails(mail_connection, msg_ids, modified_subject)
+        msg_ids = assert_campaign_send(response, campaign, user_first.id, delete_email=False, via_amazon_ses=False)
+        mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
+                                              app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
+        email_bodies = fetch_emails(mail_connection, msg_ids)
+        assert len(email_bodies) == 1
+        assert candidate['first_name'] in email_bodies[0]
+        assert candidate['last_name'] in email_bodies[0]
+        assert str(candidate['id']) in email_bodies[0]  # This will be in unsubscribe URL.
+        delete_emails(mail_connection, msg_ids, modified_subject)
 
     def test_campaign_send_with_email_client_id(self, send_email_campaign_by_client_id_response, user_first):
         """
@@ -247,7 +245,7 @@ class TestSendCampaign(object):
         """
         response = send_email_campaign_by_client_id_response['response']
         campaign = send_email_campaign_by_client_id_response['campaign']
-        assert_campaign_send(response, campaign, user_first.id, 2, email_client=True)
+        assert_campaign_send(response, campaign, user_first.id, email_client=True)
 
     def test_campaign_send_with_email_client_id_using_merge_tags(self, email_campaign_with_merge_tags, user_first,
                                                                  access_token_first):
@@ -368,7 +366,5 @@ class TestSendCampaign(object):
         assert response.ok, response.text
         user_first.update(email=app.config[TalentConfigKeys.GT_GMAIL_ID])
         response = requests.post(self.URL % email_campaign_of_user_first.id, headers=headers)
-        assert_campaign_send(response, email_campaign_of_user_first, user_first.id, 2)
-        # TODO: Commenting for now
-        # assert_and_delete_email(email_campaign_of_user_first.subject)
-
+        assert_campaign_send(response, email_campaign_of_user_first, user_first.id)
+        assert_and_delete_email(email_campaign_of_user_first.subject)

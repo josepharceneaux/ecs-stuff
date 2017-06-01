@@ -64,7 +64,7 @@ def create_data_for_campaign_creation(smartlist_id, subject=fake.name(), campaig
             }
 
 
-def assert_campaign_send(response, campaign, user_id, blast_sends=1, blasts_count=1, total_sends=None,
+def assert_campaign_send(response, campaign, user_id, blast_sends=2, blasts_count=1, total_sends=None,
                          email_client=False, expected_status=codes.OK, abort_time_for_sends=300, via_amazon_ses=True,
                          delete_email=True, delete_url_conversion=True):
     """

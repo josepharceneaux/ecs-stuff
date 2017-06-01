@@ -36,7 +36,7 @@ from email_campaign_service.common.error_handling import (InvalidUsage, Unproces
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
                                                                   assert_talent_pipeline_response,
-                                                                  create_email_campaign,
+                                                                  create_email_campaign_in_db,
                                                                   EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS,
                                                                   create_data_for_campaign_creation_with_all_parameters)
 from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
@@ -269,9 +269,9 @@ class TestGetCampaigns(object):
         is retrieving all campaigns in descending order according of added_datetime'
         """
         # Test GET api of email campaign
-        create_email_campaign(user_first)
+        create_email_campaign_in_db(user_first)
         time.sleep(2)
-        create_email_campaign(user_same_domain)
+        create_email_campaign_in_db(user_same_domain)
         email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?sort_type=DESC')
         assert email_campaigns[0]['added_datetime'] > email_campaigns[1]['added_datetime']
 
@@ -282,9 +282,9 @@ class TestGetCampaigns(object):
         is retrieving all campaigns in ascending order according of added_datetime'
         """
         # Test GET api of email campaign
-        create_email_campaign(user_first)
+        create_email_campaign_in_db(user_first)
         time.sleep(2)
-        create_email_campaign(user_same_domain)
+        create_email_campaign_in_db(user_same_domain)
         email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?sort_type=ASC')
         assert email_campaigns[0]['added_datetime'] < email_campaigns[1]['added_datetime']
 

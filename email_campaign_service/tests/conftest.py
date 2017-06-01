@@ -24,7 +24,7 @@ from email_campaign_service.common.models.email_campaign import (EmailClient, Us
                                                                  EmailTemplateFolder,
                                                                  EmailClientCredentials)
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, CandidateApiUrl)
-from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
+from email_campaign_service.tests.modules.handy_functions import (create_email_campaign_in_db,
                                                                   create_email_campaign_smartlist,
                                                                   send_campaign_helper,
                                                                   create_smartlist_with_given_email_candidate,
@@ -215,7 +215,7 @@ def campaign_with_same_candidate_in_multiple_smartlists(talent_pipeline, access_
                                                                                  email_list=True)
     campaign_data = create_scheduled_email_campaign_data(smartlist_id=None)
     campaign_data['list_ids'] = smartlist_ids
-    return create_and_get_email_campaign(campaign_data, access_token_other)
+    return create_and_get_email_campaign(campaign_data, access_token_first)
 
 
 @pytest.fixture()

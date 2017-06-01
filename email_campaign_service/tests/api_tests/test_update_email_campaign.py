@@ -3,7 +3,7 @@ This module contains tests for updating an email campaign
 """
 import pytest
 from requests import codes
-from email_campaign_service.common.models import db
+from email_campaign_service.common.models.db import db
 from candidate_service.tests.unit_tests.test_utilities import fake
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.tests.modules.handy_functions import get_campaign_or_campaigns

@@ -91,7 +91,7 @@ class EmailCampaignTypes(object):
     WITHOUT_CLIENT = 'without_client'
 
 
-def create_email_campaign(user, add_subject=True):
+def create_email_campaign_in_db(user, add_subject=True):
     """
     This creates an email campaign for given user
     """
@@ -125,7 +125,7 @@ def create_email_campaign_with_merge_tags(user, add_preference_url=True):
     """
     This function creates an email-campaign containing merge tags.
     """
-    email_campaign = create_email_campaign(user, add_subject=False)
+    email_campaign = create_email_campaign_in_db(user, add_subject=False)
     # Update email-campaign's body text
     starting_string = 'Hello %s %s' % (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG)
     ending_string = ' Thanks, %s' % DEFAULT_USER_NAME_MERGETAG
