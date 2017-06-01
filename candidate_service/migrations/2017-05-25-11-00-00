@@ -1,0 +1,15 @@
+"""
+This migration script will set the ResumeId column for all applicable tables to the default nullable state
+"""
+from candidate_service.common.models.db import db
+from sqlalchemy import text
+
+# Get all tables with a ResumeId column
+result = db.session.execute(text("select table_name from information_schema.columns where column_name = 'ResumeId'"))
+# Convert to list to iterate through
+result = [r for r, in result]
+
+for table_name in result:
+	# Columns are default nullable -- ResumeId was previously explicitly set to NOT NULL
+	# Reset to default state
+	db.session.execute(text("alter table `%s` modify `ResumeId` bigint(20)" % table_name))
