@@ -83,8 +83,7 @@ def test_send_test_email_with_merge_tags(user_first, access_token_first):
     [modified_subject] = do_mergetag_replacements([email_campaign.subject], user_first,
                                                   requested_object=user_first)
     msg_ids = retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1,
-                    args=(modified_subject,),
-                    kwargs=dict(delete_email=False),
+                    args=(modified_subject,), kwargs=dict(delete_email=False),
                     retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.error))
     mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
                                           app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])

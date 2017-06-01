@@ -33,7 +33,8 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   EmailCampaignTypes, data_for_creating_email_clients,
                                                                   send_campaign_with_client_id,
                                                                   create_email_campaign_with_merge_tags,
-                                                                  create_dummy_kaiser_domain)
+                                                                  create_dummy_kaiser_domain,
+                                                                  create_and_get_email_campaign)
 from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
     create_email_campaign_via_api, create_scheduled_email_campaign_data, create_data_for_campaign_creation
 
@@ -80,14 +81,7 @@ def email_campaign_of_user_first(access_token_first, smartlist_first):
     This returns email-campaign for "user_first" scheduled to be sent after some time.
     """
     campaign_data = create_scheduled_email_campaign_data(smartlist_first['id'])
-    response = create_email_campaign_via_api(access_token_first, campaign_data)
-    assert response.status_code == codes.CREATED, response.text
-    resp_object = response.json()
-    assert 'campaign' in resp_object
-    campaign_id = resp_object['campaign']['id']
-    assert campaign_id > 0, 'Expecting positive campaign_id'
-    db.session.commit()
-    return EmailCampaign.get_by_id(campaign_id)
+    return create_and_get_email_campaign(campaign_data, access_token_first)
 
 
 @pytest.fixture()
@@ -96,14 +90,7 @@ def email_campaign_of_user_second(access_token_same, smartlist_second):
     This creates an email-campaign for "user_same_domain" scheduled to be sent after some time..
     """
     campaign_data = create_scheduled_email_campaign_data(smartlist_second['id'])
-    response = create_email_campaign_via_api(access_token_same, campaign_data)
-    assert response.status_code == codes.CREATED, response.text
-    resp_object = response.json()
-    assert 'campaign' in resp_object
-    campaign_id = resp_object['campaign']['id']
-    assert campaign_id > 0, 'Expecting positive campaign_id'
-    db.session.commit()
-    return EmailCampaign.get_by_id(campaign_id)
+    return create_and_get_email_campaign(campaign_data, access_token_same)
 
 
 @pytest.fixture()
@@ -112,14 +99,7 @@ def email_campaign_in_other_domain(access_token_other, smartlist_other):
     This creates an email-campaign for "user_from_diff_domain" scheduled to be sent in future.
     """
     campaign_data = create_scheduled_email_campaign_data(smartlist_other['id'])
-    response = create_email_campaign_via_api(access_token_other, campaign_data)
-    assert response.status_code == codes.CREATED, response.text
-    resp_object = response.json()
-    assert 'campaign' in resp_object
-    campaign_id = resp_object['campaign']['id']
-    assert campaign_id > 0, 'Expecting positive campaign_id'
-    db.session.commit()
-    return EmailCampaign.get_by_id(campaign_id)
+    return create_and_get_email_campaign(campaign_data, access_token_other)
 
 
 @pytest.fixture()
@@ -163,7 +143,7 @@ def campaign_with_and_without_client(request, access_token_first, talent_pipelin
 
 
 @pytest.fixture()
-def campaign_with_multiple_candidates_email(email_campaign_of_user_first, access_token_first, talent_pipeline):
+def campaign_with_multiple_candidates_email(access_token_first, talent_pipeline):
     """
     This returns a campaign which has 2 candidates associated and have 2 email address.
     Email should be send to only one address of both candidates
@@ -177,19 +157,38 @@ def campaign_with_multiple_candidates_email(email_campaign_of_user_first, access
          {'label': 'home', 'address': 'home' + fake.safe_email()}],
     ]
 
-    campaign = create_smartlist_with_given_email_candidate(access_token_first, campaign=email_campaign_of_user_first,
-                                                           talent_pipeline=talent_pipeline, emails=_emails, count=2)
-    return campaign
+    smartlist_id = create_smartlist_with_given_email_candidate(access_token_first, talent_pipeline, emails=_emails,
+                                                               count=2)
+    campaign_data = create_scheduled_email_campaign_data(smartlist_id=None)
+    campaign_data['list_ids'] = [smartlist_id]
+    return create_and_get_email_campaign(campaign_data, access_token_first)
 
 
 @pytest.fixture()
-def campaign_to_ten_candidates_not_sent(email_campaign_of_user_first, access_token_first, talent_pipeline):
+def campaign_to_ten_candidates_not_sent(access_token_first, talent_pipeline):
     """
     This returns a campaign which has ten candidates associated having email addresses.
     """
-    campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
-                                               email_campaign_of_user_first, count=10)
-    return campaign
+    campaign_data = create_scheduled_email_campaign_data(smartlist_id=None)
+    smartlist_ids, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
+                                                                             count=10, emails_list=True)
+    campaign_data['list_ids'] = [smartlist_ids]
+    return create_and_get_email_campaign(campaign_data, access_token_first)
+
+
+@pytest.fixture()
+def campaign_with_two_smartlists(access_token_first, talent_pipeline):
+    """
+    This returns a campaign which has ten candidates associated having email addresses.
+    """
+    smartlist_id1, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
+                                                                             count=20, emails_list=True)
+    smartlist_id2, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
+                                                                             count=20, emails_list=True)
+
+    campaign_data = create_scheduled_email_campaign_data(smartlist_id=None)
+    campaign_data['list_ids'] = [smartlist_id1, smartlist_id2]
+    return create_and_get_email_campaign(campaign_data, access_token_first)
 
 
 @pytest.fixture()
@@ -206,8 +205,7 @@ def campaign_with_candidates_having_same_email_in_diff_domain(email_campaign_of_
 
 
 @pytest.fixture()
-def campaign_with_same_candidate_in_multiple_smartlists(email_campaign_of_user_first, talent_pipeline,
-                                                        access_token_first):
+def campaign_with_same_candidate_in_multiple_smartlists(talent_pipeline, access_token_first):
     """
     This fixture creates an email campaign with two smartlists.
     Smartlist 1 will have two candidates and smartlist 2 will have one candidate (which will be
@@ -215,9 +213,9 @@ def campaign_with_same_candidate_in_multiple_smartlists(email_campaign_of_user_f
     """
     smartlist_ids = CampaignsTestsHelpers.get_two_smartlists_with_same_candidate(talent_pipeline, access_token_first,
                                                                                  email_list=True)
-    create_email_campaign_smartlists(smartlist_ids=smartlist_ids, email_campaign_id=email_campaign_of_user_first.id)
-
-    return email_campaign_of_user_first
+    campaign_data = create_scheduled_email_campaign_data(smartlist_id=None)
+    campaign_data['list_ids'] = smartlist_ids
+    return create_and_get_email_campaign(campaign_data, access_token_other)
 
 
 @pytest.fixture()
@@ -448,7 +446,7 @@ def outgoing_email_client(headers):
 
 
 @pytest.fixture()
-def email_campaign_with_outgoing_email_client(access_token_first, smartlist_first, headers):
+def email_campaign_with_outgoing_email_client(access_token_first, smartlist_first, headers, outgoing_email_client):
     """
     This creates an email-campaign which will be sent via an SMTP server added by user.
     """

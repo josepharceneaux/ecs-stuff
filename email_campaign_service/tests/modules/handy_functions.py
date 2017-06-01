@@ -41,6 +41,8 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.modules.utils import (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_PREFERENCES_URL_MERGETAG,
                                                   DEFAULT_LAST_NAME_MERGETAG, DEFAULT_USER_NAME_MERGETAG)
+from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
+    create_email_campaign_via_api
 
 __author__ = 'basit'
 
@@ -104,6 +106,21 @@ def create_email_campaign(user, add_subject=True):
     return email_campaign
 
 
+def create_and_get_email_campaign(campaign_data, access_token):
+    """
+    This creates an email-campaign using API and returns EmailCampaign object from database.
+    """
+    response = create_email_campaign_via_api(access_token, campaign_data)
+    assert response.status_code == codes.CREATED, response.text
+    resp_object = response.json()
+    assert 'campaign' in resp_object
+    campaign_id = resp_object['campaign']['id']
+    assert campaign_id > 0, 'Expecting positive campaign_id'
+    db.session.commit()
+    campaign = EmailCampaign.get_by_id(campaign_id)
+    return campaign
+
+
 def create_email_campaign_with_merge_tags(user, add_preference_url=True):
     """
     This function creates an email-campaign containing merge tags.
@@ -134,29 +151,19 @@ def create_email_campaign_smartlist(access_token, talent_pipeline, campaign, ema
     return campaign
 
 
-def create_smartlist_with_given_email_candidate(access_token, campaign,
-                                                talent_pipeline, emails_list=True,
-                                                count=1, emails=None):
+def create_smartlist_with_given_email_candidate(access_token, talent_pipeline, emails_list=True, emails=None, count=1):
     """
     This creates candidate(s) as specified by the count, using the email list provided by the user
     and assign it to a smartlist.
     Finally it returns campaign object
     """
     # create candidates data
-    data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
-                                     emails_list=emails_list, count=count)
-
+    data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool, emails_list=emails_list, count=count)
     if emails and emails_list:
         for index, candidate in enumerate(data['candidates']):
             candidate['emails'] = emails[index]
-
-    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
-                                                                            talent_pipeline,
-                                                                            data=data)
-    create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
-                                     email_campaign_id=campaign.id)
-
-    return campaign
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token, talent_pipeline, data=data)
+    return smartlist_id
 
 
 def assert_valid_campaign_get(email_campaign_dict, referenced_campaigns, fields=None):

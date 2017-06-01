@@ -41,7 +41,7 @@ def create_email_campaign_via_api(access_token, data, is_json=True):
 
 def create_scheduled_email_campaign_data(smartlist_id, **kwargs):
     """
-    This returns data to create a scheduled email-campaign.
+    This returns data to create an scheduled email-campaign.
     """
     campaign_data = create_data_for_campaign_creation(smartlist_id, **kwargs)
     campaign_data['frequency_id'] = Frequency.ONCE

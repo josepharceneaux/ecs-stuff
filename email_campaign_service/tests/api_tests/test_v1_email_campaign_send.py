@@ -55,8 +55,8 @@ class TestSendCampaign(object):
         It should get Invalid usage error.
         Custom error should be NoSmartlistAssociatedWithCampaign.
         """
-        CampaignsTestsHelpers.campaign_send_with_no_smartlist(self.URL % email_campaign_of_user_first.id,
-                                                              access_token_first)
+        CampaignsTestsHelpers.campaign_send_with_no_smartlist(EmailCampaignSmartlist, self.URL, access_token_first,
+                                                              campaign_id= email_campaign_of_user_first.id)
 
     def test_campaign_send_with_deleted_smartlist(self, access_token_first, campaign_with_and_without_client):
         """
@@ -106,16 +106,15 @@ class TestSendCampaign(object):
         This is a test to send a campaign which was archived but task was not unscheduled.
         We should get ResourceNotFound error and task should be removed from scheduler-service.
         """
-        db.session.commit()
-        email_campaign = EmailCampaign.get_by_id(email_campaign_of_user_first['id'])
         # Assert that campaign is scheduled
-        assert email_campaign.scheduler_task_id
-        email_campaign.update(is_hidden=1)
-        CampaignsTestsHelpers.request_for_resource_not_found_error(self.HTTP_METHOD, self.URL % email_campaign.id,
+        assert email_campaign_of_user_first.scheduler_task_id
+        email_campaign_of_user_first.update(is_hidden=1)
+        CampaignsTestsHelpers.request_for_resource_not_found_error(self.HTTP_METHOD,
+                                                                   self.URL % email_campaign_of_user_first.id,
                                                                    access_token_first)
         db.session.commit()
         # Assert that scheduled task has been removed
-        assert not email_campaign.scheduler_task_id
+        assert not email_campaign_of_user_first.scheduler_task_id
 
     def test_send_archived_campaign(self, access_token_first, email_campaign_of_user_first):
         """
@@ -318,24 +317,13 @@ class TestSendCampaign(object):
                                                   campaign_send['sends'][0]['id'])
         UrlConversion.delete(url_conversion)
 
-    def test_campaign_send_with_two_smartlists(self, access_token_first, headers, user_first, talent_pipeline,
-                                               email_campaign_of_user_first):
+    def test_campaign_send_with_two_smartlists(self, headers, user_first, campaign_with_two_smartlists):
         """
         This function creates two smartlists with 20 candidates each and associates them
         with a campaign. Sends that campaign and tests if emails are sent to all 40 candidates.
-        :param access_token_first: Access token of user_first
-        :param user_first: Valid user from fist domain
-        :param talent_pipeline: valid talent pipeline
-        :param email_campaign_of_user_first: email campaign associated with user first
         """
-        smartlist_id1, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
-                                                                                 count=20, emails_list=True)
-        smartlist_id2, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
-                                                                                 count=20, emails_list=True)
-        campaign = email_campaign_of_user_first
-        create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2], email_campaign_id=campaign.id)
-        response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first.id, 40)
+        response = requests.post(self.URL % campaign_with_two_smartlists.id, headers=headers)
+        assert_campaign_send(response, campaign_with_two_smartlists, user_first.id, 40)
 
     def test_campaign_send_with_hundred_sends(self, headers, user_first, campaign_to_ten_candidates_not_sent):
         """

@@ -16,6 +16,7 @@ from redo import retry
 from contracts import contract
 
 # Application Specific
+from app_common.common.models.email_campaign import EmailCampaignSmartlist
 from ..models.db import db
 from ..models.smartlist import Smartlist
 from custom_errors import CampaignException
@@ -297,19 +298,21 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def campaign_send_with_no_smartlist(url, access_token):
+    def campaign_send_with_no_smartlist(model, url, access_token, campaign_id):
         """
         This is the test to send a campaign which has no smartlist associated  with it.
         It should get Invalid usage error. Custom error should be NoSmartlistAssociatedWithCampaign.
+        :param type(t) model: SQLAlchemy model for smartlists associated with the campaign
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
+        :param positive campaign_id: Id of campaign
         """
-        response = send_request('post', url, access_token, None)
-        assert response.status_code == InvalidUsage.http_status_code(), \
-            'It should be invalid usage error(400)'
+        campaign_smartlists = model.filter_by_keywords(campaign_id=campaign_id)
+        [model.delete(campaign_smartlist) for campaign_smartlist in campaign_smartlists]
+        response = send_request('post', url % campaign_id, access_token)
+        assert response.status_code == InvalidUsage.http_status_code(), 'It should be invalid usage error(400)'
         error_resp = response.json()['error']
         assert error_resp['code'] == CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
-        assert 'No Smartlist'.lower() in error_resp['message'].lower()
 
     @classmethod
     @contract

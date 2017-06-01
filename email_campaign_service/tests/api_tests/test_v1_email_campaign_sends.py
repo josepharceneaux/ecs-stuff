@@ -65,8 +65,7 @@ class TestEmailCampaignSends(object):
         expected_sends = 2
         expected_blasts = 1
         CampaignsTestsHelpers.assert_campaign_blasts(sent_campaign_multiple_email, expected_blasts,
-                                                     access_token=access_token_first,
-                                                     timeout=100)
+                                                     access_token=access_token_first, timeout=100)
         CampaignsTestsHelpers.assert_blast_sends(sent_campaign_multiple_email, expected_sends)
         response = requests.get(self.URL % sent_campaign_multiple_email.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))

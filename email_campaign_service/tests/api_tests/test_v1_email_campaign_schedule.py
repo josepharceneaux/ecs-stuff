@@ -22,7 +22,7 @@ class TestCampaignSchedule(object):
     """
     This is the test for scheduling a campaign and verify it is sent to candidate as per send time.
     """
-    EXPECTED_SENDS = 1
+    EXPECTED_SENDS = 2
     BLASTS_URL = EmailCampaignApiUrl.BLASTS
     START_DATETIME_OFFSET = 15
 

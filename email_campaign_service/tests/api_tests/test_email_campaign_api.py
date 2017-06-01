@@ -20,7 +20,7 @@ import requests
 from requests import codes
 
 # Application Specific
-from email_campaign_service.tests.conftest import fake
+from email_campaign_service.tests.conftest import fake, db
 from email_campaign_service.common.models.user import Role
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.email_campaign import EmailClient
@@ -491,7 +491,7 @@ class TestCreateCampaign(object):
         """
         Here we assume user has clicked the button "Send Now" from UI, it should send campaign immediately.
         """
-        expected_sends = 1
+        expected_sends = 2
         subject = '%s-send_campaign_now' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(smartlist_first['id'], subject=subject)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
@@ -506,10 +506,10 @@ class TestCreateCampaign(object):
         email_campaign = response.json()['email_campaign']
         campaign_blast = CampaignsTestsHelpers.get_blasts_with_polling(email_campaign, access_token_first,
                                                                        self.BLASTS_URL % email_campaign['id'])
-        CampaignsTestsHelpers.assert_blast_sends(
-            email_campaign, expected_sends,
-            blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'], campaign_blast[0]['id']),
-            access_token=access_token_first)
+        CampaignsTestsHelpers.assert_blast_sends(email_campaign, expected_sends,
+                                                 blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'],
+                                                                                        campaign_blast[0]['id']),
+                                                 access_token=access_token_first)
 
     @pytest.mark.qa
     def test_create_email_campaign_with_optional_parameters(self, access_token_first, smartlist_first):
@@ -543,58 +543,6 @@ class TestCreateCampaign(object):
             resp_object = response.json()
             assert 'campaign' in resp_object
             assert resp_object['campaign']['id']
-
-
-class TestCampaignUpdate(object):
-    """
-    Here we have tests to update an email-campaign. Currently this endpoint only marks an email-campaign
-    as archived.
-    """
-
-    @pytest.mark.qa
-    def test_update_email_campaign_with_allowed_parameter(self, access_token_first, email_campaign_of_user_first):
-        """
-         The test is to make sure that email campaign update functionality with allowed parameters/fields
-         is working properly or not. Should return 200 status ok.
-        """
-        campaign_id = email_campaign_of_user_first.id
-        for param in [True, 1, False, 0]:
-            data = {'is_hidden': param}
-            CampaignsTestsHelpers.request_for_ok_response('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id,
-                                                          access_token_first, data)
-            email_campaign = get_campaign_or_campaigns(access_token_first, campaign_id=campaign_id)
-            assert email_campaign['is_hidden'] == param
-
-    @pytest.mark.qa
-    def test_update_email_campaign_with_invalid_data(self, access_token_first, email_campaign_of_user_first):
-        """
-         This test to make sure that update email campaign with invalid data is not
-         possible, only valid data is acceptable. Should return 400 bad request on invalid data.
-        """
-        campaign_id = email_campaign_of_user_first.id
-        update_with_invalid_data = [fake.word(), fake.random_int(2, )]
-        for param in update_with_invalid_data:
-            data = {'is_hidden': param}
-            response = send_request('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id, access_token_first, data)
-            CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=codes.BAD_REQUEST)
-
-    def test_archive_scheduled_campaign(self, access_token_first, email_campaign_of_user_first):
-        """
-        Here we archive a scheduled campaign. scheduler_task_id of campaign should be set to empty string
-        after successfully archived from API.
-        """
-        # GET email-campaign before archiving it
-        email_campaign = get_campaign_or_campaigns(access_token_first, campaign_id=email_campaign_of_user_first['id'])
-        assert email_campaign['scheduler_task_id']
-
-        # Archive email-campaign
-        data = {'is_hidden': True}
-        CampaignsTestsHelpers.request_for_ok_response('patch',
-                                                      EmailCampaignApiUrl.CAMPAIGN % email_campaign_of_user_first['id'],
-                                                      access_token_first, data)
-        # GET email-campaign after archiving
-        email_campaign = get_campaign_or_campaigns(access_token_first, campaign_id=email_campaign_of_user_first['id'])
-        assert not email_campaign['scheduler_task_id']
 
 
 # Test for healthcheck
