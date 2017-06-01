@@ -20,7 +20,7 @@ import requests
 from requests import codes
 
 # Application Specific
-from email_campaign_service.tests.conftest import fake, db
+from email_campaign_service.tests.conftest import fake
 from email_campaign_service.common.models.user import Role
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.email_campaign import EmailClient
@@ -28,7 +28,6 @@ from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.tests.modules.__init__ import CAMPAIGN_OPTIONAL_FIELDS
 from email_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE, SORT_TYPES
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, HEALTH_CHECK)
-from email_campaign_service.common.campaign_services.tests_helpers import send_request
 from email_campaign_service.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
                                                             PAGINATION_EXCEPT_SINGLE_FIELD)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
@@ -362,7 +361,6 @@ class TestCreateCampaign(object):
         """
         Here we provide email-client of type "incoming". email-campaign should not be created.
         """
-        subject = '%s-test_create_email_campaign_with_incoming_email_client' % fake.uuid4()
         campaign_data = create_scheduled_email_campaign_data(smartlist_first['id'])
         # GET email-client-id
         response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=incoming', headers=headers)

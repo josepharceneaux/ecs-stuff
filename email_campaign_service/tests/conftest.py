@@ -103,13 +103,13 @@ def email_campaign_in_other_domain(access_token_other, smartlist_other):
 
 
 @pytest.fixture()
-def campaign_with_candidate_having_no_email(email_campaign_of_user_first, access_token_first, talent_pipeline):
+def campaign_with_candidate_having_no_email(access_token_first, talent_pipeline):
     """
     This creates a campaign which has candidates associated having no email
     """
-    campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
-                                               email_campaign_of_user_first, emails_list=False)
-    return campaign
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline)
+    campaign_data = create_scheduled_email_campaign_data(smartlist_id=smartlist_id)
+    return create_and_get_email_campaign(campaign_data, access_token_first)
 
 
 @pytest.fixture()

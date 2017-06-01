@@ -8,6 +8,7 @@ In this module, we have tests for following endpoints
     - GET /v1/redirect
 """
 # Packages
+import imaplib
 import json
 import re
 
@@ -15,6 +16,8 @@ import re
 import requests
 
 # Application Specific
+from redo import retry
+
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.tests.conftest import fake, Role
@@ -57,7 +60,7 @@ class TestSendCampaign(object):
         Custom error should be NoSmartlistAssociatedWithCampaign.
         """
         CampaignsTestsHelpers.campaign_send_with_no_smartlist(EmailCampaignSmartlist, self.URL, access_token_first,
-                                                              campaign_id= email_campaign_of_user_first.id)
+                                                              campaign_id=email_campaign_of_user_first.id)
 
     def test_campaign_send_with_deleted_smartlist(self, access_token_first, campaign_with_and_without_client):
         """
@@ -214,7 +217,8 @@ class TestSendCampaign(object):
                                                       candidate_address=candidate_address,
                                                       )
         campaign.update(subject=modified_subject)
-        msg_ids = assert_campaign_send(response, campaign, user_first.id, delete_email=False, via_amazon_ses=False)
+        msg_ids = assert_campaign_send(response, campaign, user_first.id, blast_sends=1,
+                                       delete_email=False, via_amazon_ses=False)
         mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
                                               app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
         email_bodies = fetch_emails(mail_connection, msg_ids)
@@ -341,7 +345,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_same_candidate_in_multiple_smartlists
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first.id)
+        assert_campaign_send(response, campaign, user_first.id, blast_sends=1)
 
     def test_campaign_send_with_archived_candidate(self, headers, user_first, campaign_with_archived_candidate):
         """
@@ -350,7 +354,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_archived_candidate
         response = requests.post(self.URL % campaign['id'], headers=headers)
-        assert_campaign_send(response, campaign, user_first.id)
+        assert_campaign_send(response, campaign, user_first.id, blast_sends=1)
 
     def test_campaign_send_in_test_domain(self, headers, domain_first, user_first, email_campaign_of_user_first):
         """
@@ -367,4 +371,6 @@ class TestSendCampaign(object):
         user_first.update(email=app.config[TalentConfigKeys.GT_GMAIL_ID])
         response = requests.post(self.URL % email_campaign_of_user_first.id, headers=headers)
         assert_campaign_send(response, email_campaign_of_user_first, user_first.id)
-        assert_and_delete_email(email_campaign_of_user_first.subject)
+        retry(assert_and_delete_email, sleeptime=5, attempts=50, sleepscale=1,
+              args=(email_campaign_of_user_first.subject,),
+              retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.error))

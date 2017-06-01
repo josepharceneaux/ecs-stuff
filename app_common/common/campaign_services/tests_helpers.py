@@ -16,7 +16,6 @@ from redo import retry
 from contracts import contract
 
 # Application Specific
-from app_common.common.models.email_campaign import EmailCampaignSmartlist
 from ..models.db import db
 from ..models.smartlist import Smartlist
 from custom_errors import CampaignException

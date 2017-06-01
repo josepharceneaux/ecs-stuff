@@ -23,7 +23,7 @@ class TestEmailBounces(object):
     """
     Contains tests for email bounces.
     """
-    def test_send_campaign_to_invalid_email_address(self, access_token_first,  talent_pipeline):
+    def test_send_campaign_to_invalid_email_address(self, access_token_first, user_first, talent_pipeline):
         """
         In this test, we will send an email campaign to one candidate with invalid email address.
         After bounce, this email will be marked as bounced and when we will try to send this campaign

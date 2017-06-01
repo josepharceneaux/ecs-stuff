@@ -198,7 +198,7 @@ class TestGetCandidate(object):
         response = send_request('post', url % campaign.id, access_token_first)
         assert response.status_code == codes.OK, 'Expected status: {}, Found: {}'.format(codes.OK, response.status_code)
         db.session.commit()
-        assert_campaign_send(response, campaign, user_first.id, blasts_count=2, total_sends=2,
+        assert_campaign_send(response, campaign, user_first.id, blast_sends=1, blasts_count=2, total_sends=2,
                              expected_status=codes.OK, email_client=True, delete_url_conversion=False)
 
         email_campaign_sends = EmailCampaign.get(campaign.id).sends.all()
