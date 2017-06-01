@@ -17,6 +17,8 @@ from candidate_service.common.utils.timeout import Timeout, TimeoutException
 from candidate_service.common.utils.validators import is_number
 from candidate_service.common.talent_celery import OneTimeSQLConnection
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
+from candidate_service.common.models.candidate import CandidateCustomField
+from candidate_service.common.models.misc import CustomFieldCategory
 from candidate_service.common.models.user import User, Domain
 from candidate_service.common.models.tag import Tag
 from candidate_service.common.models.misc import AreaOfInterest
@@ -454,6 +456,21 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
             field_name_to_sql_value['domain_id'] = domain_id
 
+            """
+            ### Custom field categories ###
+            User custom-field-category's description if candidate is linked to a custom-field-category.
+            We can safely assign "custom_field.id|custom_field_category.name" to "custom_field_id_and_value"
+            since client can only add one custom-field-category at a time to a candidate on candidate's profile
+            """
+            candidate_cf = CandidateCustomField.query.filter_by(candidate_id=candidate_id).first()
+
+            # candidate-custom-field's custom-field-category-id may be null
+            if candidate_cf and candidate_cf.custom_field_category_id:
+                cf_category = CustomFieldCategory.get(candidate_cf.custom_field_category_id)
+                if cf_category:
+                    field_name_to_sql_value['custom_field_id_and_value'] = '%s|%s' % (cf_category.custom_field_id,
+                                                                                      cf_category.name)
+
             # Add tag
             tag_ids = field_name_to_sql_value.get('tag_ids')
             if tag_ids:
@@ -506,7 +523,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                         if field_name == 'custom_field_id_and_value':
                             resume_text += ' ' + ' '.join(map(lambda value: value.split('|')[1].strip(), sql_value))
                         else:
-                            # Temporary loggers for debugging, should remove once GET-2018 is resolved -Amir
                             resume_text += ' ' + ' '.join(sql_value)
                     else:
                         if field_name == 'custom_field_id_and_value':
