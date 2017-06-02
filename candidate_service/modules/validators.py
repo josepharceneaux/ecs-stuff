@@ -756,6 +756,7 @@ def is_user_permitted_to_archive_candidate(user, candidate):
     return True if 'ADMIN' in Role.get(user.role_id).name or user.id == candidate.user_id else False
 
 
+# TODO: may need to remove -Amir
 @contract
 def validate_cf_category_and_subcategory_ids(cf_category_id, domain_id, cf_subcategory_id=None):
     """
