@@ -349,7 +349,6 @@ class TestDomainCustomField(object):
         print response_info(r)
 
         # Link candidate to custom field subcategory
-        subcategory = r.json()['custom_field']['categories'][0]['subcategories'][0]
         category = r.json()['custom_field']['categories'][0]
         update_data = {'candidates': [
             {
@@ -357,8 +356,7 @@ class TestDomainCustomField(object):
                 'custom_fields': [
                     {
                         'custom_field_id': custom_field_id,
-                        'custom_field_category_id': category['id'],
-                        'custom_field_subcategory_id': subcategory['id']
+                        'custom_field_category_id': category['id']
                     }
                 ]
             }
@@ -370,4 +368,3 @@ class TestDomainCustomField(object):
         r = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
         print response_info(r)
         candidate_data = r.json()['candidate']
-        assert candidate_data['custom_fields'][0]['custom_field_subcategory']
