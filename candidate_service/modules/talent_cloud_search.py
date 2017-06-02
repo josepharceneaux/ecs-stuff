@@ -458,18 +458,23 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
             """
             ### Custom field categories ###
-            User custom-field-category's description if candidate is linked to a custom-field-category.
             We can safely assign "custom_field.id|custom_field_category.name" to "custom_field_id_and_value"
             since client can only add one custom-field-category at a time to a candidate on candidate's profile
             """
-            candidate_cf = CandidateCustomField.query.filter_by(candidate_id=candidate_id).first()
-
-            # candidate-custom-field's custom-field-category-id may be null
-            if candidate_cf and candidate_cf.custom_field_category_id:
-                cf_category = CustomFieldCategory.get(candidate_cf.custom_field_category_id)
-                if cf_category:
-                    field_name_to_sql_value['custom_field_id_and_value'] = '%s|%s' % (cf_category.custom_field_id,
-                                                                                      cf_category.name)
+            candidate_cfs = CandidateCustomField.query.filter_by(candidate_id=candidate_id)
+            category_ids = [ccf.custom_field_category_id for ccf in candidate_cfs]
+            cf_categories = CustomFieldCategory.query.filter(CustomFieldCategory.id.in_(category_ids))
+            cf_id_and_value_field = field_name_to_sql_value['custom_field_id_and_value']
+            for i, cf_category in enumerate(cf_categories, start=1):
+                if cf_id_and_value_field:
+                    field_name_to_sql_value['custom_field_id_and_value'] += group_concat_separator
+                    field_name_to_sql_value['custom_field_id_and_value'] += '%s|%s' % (cf_category.custom_field_id,
+                                                                                       cf_category.name)
+                else:
+                    field_name_to_sql_value['custom_field_id_and_value'] += '%s|%s' % (cf_category.custom_field_id,
+                                                                                       cf_category.name)
+                    if i < len(cf_categories):
+                        field_name_to_sql_value['custom_field_id_and_value'] += group_concat_separator
 
             # Add tag
             tag_ids = field_name_to_sql_value.get('tag_ids')
@@ -512,6 +517,16 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 index_field_type = index_field_options['IndexFieldType']
                 if 'array' in index_field_type:
                     sql_value_array = sql_value.split(group_concat_separator)
+
+                    """
+                    For now we are indexing candidate's custom-field-values and candidate's custom-field-categories
+                    in custom_field_id_and_value field.
+                    If, however, candidate is updated with only cf-categories we will end up with at least one incorrect
+                    string-value, such as: "1920|", which should be removed. The correct value(s) will be retained,
+                    that is: "1920|cf-category"
+                    """
+                    sql_value_array = [string_value for string_value in sql_value_array if string_value[-1] != '|']
+
                     if index_field_type == 'int-array':
                         # If int-array, turn all values to ints
                         sql_value_array = [int(field_value) for field_value in sql_value_array]
