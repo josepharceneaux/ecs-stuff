@@ -8,23 +8,22 @@ In this module, we have tests for following endpoints
     - GET /v1/redirect
 """
 # Packages
-import imaplib
-import json
 import re
+import json
+import imaplib
 
 # Third Party
 import requests
-
-# Application Specific
 from redo import retry
 
+# Application Specific
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.tests.conftest import fake, Role
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.common.models.misc import UrlConversion, Activity
+from email_campaign_service.tests.conftest import (fake, Role)
 from email_campaign_service.common.models.candidate import Candidate
 from email_campaign_service.modules.utils import do_mergetag_replacements
+from email_campaign_service.common.models.misc import (UrlConversion, Activity)
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.routes import EmailCampaignApiUrl, UserServiceApiUrl
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
