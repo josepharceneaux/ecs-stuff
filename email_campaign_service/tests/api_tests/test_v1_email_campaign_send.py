@@ -29,8 +29,7 @@ from email_campaign_service.common.routes import EmailCampaignApiUrl, UserServic
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailCampaignSmartlist)
-from email_campaign_service.tests.modules.handy_functions import (create_email_campaign_smartlists,
-                                                                  send_campaign_with_client_id, assert_and_delete_email,
+from email_campaign_service.tests.modules.handy_functions import (send_campaign_with_client_id, assert_and_delete_email,
                                                                   get_mail_connection, fetch_emails, delete_emails)
 from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
     assert_campaign_send
@@ -217,8 +216,11 @@ class TestSendCampaign(object):
                                                       candidate_address=candidate_address,
                                                       )
         campaign.update(subject=modified_subject)
-        msg_ids = assert_campaign_send(response, campaign, user_first.id, blast_sends=1,
-                                       delete_email=False, via_amazon_ses=False)
+        assert_campaign_send(response, campaign, user_first.id, blast_sends=1, delete_email=False,
+                             via_amazon_ses=False)
+        msg_ids = retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1,
+                        args=(modified_subject,), kwargs=dict(delete_email=False),
+                        retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.error))
         mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
                                               app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
         email_bodies = fetch_emails(mail_connection, msg_ids)

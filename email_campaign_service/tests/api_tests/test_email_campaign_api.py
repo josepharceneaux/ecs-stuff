@@ -268,9 +268,9 @@ class TestGetCampaigns(object):
         is retrieving all campaigns in descending order according of added_datetime'
         """
         # Test GET api of email campaign
-        create_email_campaign_in_db(user_first)
+        create_email_campaign_in_db(user_first.id)
         time.sleep(2)
-        create_email_campaign_in_db(user_same_domain)
+        create_email_campaign_in_db(user_same_domain.id)
         email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?sort_type=DESC')
         assert email_campaigns[0]['added_datetime'] > email_campaigns[1]['added_datetime']
 
@@ -281,9 +281,9 @@ class TestGetCampaigns(object):
         is retrieving all campaigns in ascending order according of added_datetime'
         """
         # Test GET api of email campaign
-        create_email_campaign_in_db(user_first)
+        create_email_campaign_in_db(user_first.id)
         time.sleep(2)
-        create_email_campaign_in_db(user_same_domain)
+        create_email_campaign_in_db(user_same_domain.id)
         email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?sort_type=ASC')
         assert email_campaigns[0]['added_datetime'] < email_campaigns[1]['added_datetime']
 

@@ -31,7 +31,7 @@ class TestEmailBounces(object):
         his email address has been marked as Bounced.
         """
         with app.app_context():
-            campaign = create_email_campaign_in_db(user_first)
+            campaign = create_email_campaign_in_db(user_first.id)
             # create candidate
             email_campaign_blast, smartlist_id, candidate_ids = create_campaign_data(access_token_first, campaign.id,
                                                                                      talent_pipeline, candidate_count=1)
@@ -70,7 +70,7 @@ class TestEmailBounces(object):
         """
         with app.app_context():
             count = 2
-            campaign = create_email_campaign_in_db(user_first)
+            campaign = create_email_campaign_in_db(user_first.id)
 
             # create candidate, smartlist and campaign blast
             email_campaign_blast, smartlist_id, candidate_ids = create_campaign_data(access_token_first, campaign.id,

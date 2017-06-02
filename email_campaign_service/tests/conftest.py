@@ -24,8 +24,7 @@ from email_campaign_service.common.models.email_campaign import (EmailClient, Us
                                                                  EmailTemplateFolder,
                                                                  EmailClientCredentials)
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, CandidateApiUrl)
-from email_campaign_service.tests.modules.handy_functions import (create_email_campaign_in_db,
-                                                                  create_email_campaign_smartlist,
+from email_campaign_service.tests.modules.handy_functions import (create_email_campaign_smartlist,
                                                                   send_campaign_helper,
                                                                   create_smartlist_with_given_email_candidate,
                                                                   add_email_template,
@@ -113,20 +112,19 @@ def campaign_with_candidate_having_no_email(access_token_first, talent_pipeline)
 
 
 @pytest.fixture()
-def email_campaign_with_merge_tags(user_first, access_token_first, headers, talent_pipeline, outgoing_email_client):
+def email_campaign_with_merge_tags(access_token_first, headers, talent_pipeline, outgoing_email_client):
     """
     This fixture creates an email campaign in which body_text and body_html contains merge tags.
     """
-    email_campaign = create_email_campaign_with_merge_tags(user_first)
-    # We want that campaign is sent via SMTP server
-    email_campaign.update(email_client_credentials_id=outgoing_email_client)
     smartlist_id, candidate_id = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
                                                                                        talent_pipeline,
                                                                                        emails_list=True,
                                                                                        assert_candidates=True)
-    create_email_campaign_smartlists(smartlist_ids=[smartlist_id], email_campaign_id=email_campaign.id)
+    campaign = create_email_campaign_with_merge_tags(smartlist_id=smartlist_id, access_token=access_token_first)
+    # We want that campaign is sent via SMTP server
+    campaign.update(email_client_credentials_id=outgoing_email_client)
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id[0], headers=headers)
-    return email_campaign, candidate_get_response.json()['candidate']
+    return campaign, candidate_get_response.json()['candidate']
 
 
 @pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
@@ -484,7 +482,7 @@ def data_for_email_conversation_importer(email_clients, headers, user_first, can
     assert response.ok
     assert response.json()
     email_client_response = response.json()['email_client_credentials']
-    email_campaign = create_email_campaign_with_merge_tags(user_first)
+    email_campaign = create_email_campaign_with_merge_tags(smartlist_id=None, user_id=user_first.id, in_db_only=True)
     user_first.update(first_name=fake.first_name())
     user_first.update(last_name=fake.last_name())
     [subject, body_text] = do_mergetag_replacements([email_campaign.subject, email_campaign.body_text],

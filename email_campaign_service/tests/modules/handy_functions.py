@@ -42,7 +42,7 @@ from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.modules.utils import (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_PREFERENCES_URL_MERGETAG,
                                                   DEFAULT_LAST_NAME_MERGETAG, DEFAULT_USER_NAME_MERGETAG)
 from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
-    create_email_campaign_via_api
+    create_email_campaign_via_api, create_scheduled_email_campaign_data
 
 __author__ = 'basit'
 
@@ -91,11 +91,11 @@ class EmailCampaignTypes(object):
     WITHOUT_CLIENT = 'without_client'
 
 
-def create_email_campaign_in_db(user, add_subject=True):
+def create_email_campaign_in_db(user_id, add_subject=True):
     """
     This creates an email campaign for given user
     """
-    email_campaign = EmailCampaign(name=fake.name(), user_id=user.id, is_hidden=0,
+    email_campaign = EmailCampaign(name=fake.name(), user_id=user_id, is_hidden=0,
                                    subject=fake.uuid4()[0:8] + 'It is a test campaign' if add_subject else '',
                                    description=fake.paragraph(), _from=TEST_EMAIL_ID,
                                    reply_to=TEST_EMAIL_ID, body_text=fake.sentence(),
@@ -121,11 +121,16 @@ def create_and_get_email_campaign(campaign_data, access_token):
     return campaign
 
 
-def create_email_campaign_with_merge_tags(user, add_preference_url=True):
+def create_email_campaign_with_merge_tags(smartlist_id, access_token=None, add_preference_url=True, in_db_only=False,
+                                          user_id=None):
     """
     This function creates an email-campaign containing merge tags.
     """
-    email_campaign = create_email_campaign_in_db(user, add_subject=False)
+    if in_db_only:
+        email_campaign = create_email_campaign_in_db(user_id, add_subject=False)
+    else:
+        campaign_data = create_scheduled_email_campaign_data(smartlist_id=smartlist_id)
+        email_campaign = create_and_get_email_campaign(campaign_data, access_token)
     # Update email-campaign's body text
     starting_string = 'Hello %s %s' % (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG)
     ending_string = ' Thanks, %s' % DEFAULT_USER_NAME_MERGETAG
