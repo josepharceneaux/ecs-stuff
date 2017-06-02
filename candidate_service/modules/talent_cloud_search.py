@@ -464,7 +464,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             candidate_cfs = CandidateCustomField.query.filter_by(candidate_id=candidate_id)
             category_ids = [ccf.custom_field_category_id for ccf in candidate_cfs]
             cf_categories = CustomFieldCategory.query.filter(CustomFieldCategory.id.in_(category_ids))
-            cf_id_and_value_field = field_name_to_sql_value['custom_field_id_and_value']
+            cf_id_and_value_field = field_name_to_sql_value.get('custom_field_id_and_value')
             for i, cf_category in enumerate(cf_categories, start=1):
                 if cf_id_and_value_field:
                     field_name_to_sql_value['custom_field_id_and_value'] += group_concat_separator
