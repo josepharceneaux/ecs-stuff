@@ -68,9 +68,10 @@ class DomainCustomFieldCategoriesResource(Resource):
         # Validate and obtain json data from request body
         body_dict = get_json_data_if_validated(request, cf_schema_post, False)
         return {
-                   "custom_fields": add_or_update_custom_fields(custom_fields_data=body_dict['custom_fields'],
-                                                                domain_id=request.user.domain_id,
-                                                                is_creating=True)
+                   "custom_fields": [{"id": cf_id} for cf_id in
+                                     add_or_update_custom_fields(custom_fields_data=body_dict['custom_fields'],
+                                                                 domain_id=request.user.domain_id,
+                                                                 is_creating=True)]
                }, requests.codes.CREATED
 
     # TODO: update docstring
