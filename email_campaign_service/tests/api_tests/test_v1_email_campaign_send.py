@@ -43,11 +43,12 @@ class TestSendCampaign(object):
     HTTP_METHOD = 'post'
     URL = EmailCampaignApiUrl.SEND
 
-    def test_campaign_send_with_invalid_token(self, email_campaign_of_user_first):
+    def test_campaign_send_with_invalid_token(self, email_campaign_user1_domain1_in_db):
         """
         Here we try to send email campaign with invalid access token
         """
-        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL % email_campaign_of_user_first.id)
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
+                                                         self.URL % email_campaign_user1_domain1_in_db.id)
 
     def test_campaign_send_with_no_smartlist_associated(self, access_token_first, email_campaign_of_user_first):
         """

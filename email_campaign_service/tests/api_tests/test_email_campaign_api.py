@@ -92,7 +92,7 @@ class TestGetCampaigns(object):
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first, fields=fields)
 
-    def test_get_all_campaigns_in_user_domain(self, email_campaign_of_user_first, email_campaign_of_user_second,
+    def test_get_all_campaigns_in_user_domain(self, email_campaign_user1_domain1_in_db, email_campaign_of_user_second,
                                               email_campaign_in_other_domain, access_token_first, talent_pipeline):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain.
@@ -103,7 +103,7 @@ class TestGetCampaigns(object):
         # Test GET api of email campaign
         email_campaigns = get_campaign_or_campaigns(access_token_first)
         assert len(email_campaigns) == 2
-        reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
+        reference_campaigns = [email_campaign_user1_domain1_in_db, email_campaign_of_user_second]
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
         assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
 
@@ -121,8 +121,8 @@ class TestGetCampaigns(object):
                                                    fields=fields)
         assert_valid_campaign_get(email_campaign, [campaign], fields=fields)
 
-    def test_get_campaigns_with_paginated_response(self, email_campaign_of_user_first,
-                                                   email_campaign_of_user_second, email_campaign_in_other_domain,
+    def test_get_campaigns_with_paginated_response(self, email_campaign_user1_domain1_in_db,
+                                                   email_campaign_of_user_second,
                                                    access_token_first, talent_pipeline):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain using
@@ -132,7 +132,7 @@ class TestGetCampaigns(object):
         # It should return first campaign in response.
         email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?per_page=1')
         assert len(email_campaigns) == 1
-        reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
+        reference_campaigns = [email_campaign_user1_domain1_in_db, email_campaign_of_user_second]
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
@@ -173,7 +173,7 @@ class TestGetCampaigns(object):
         response = requests.get(url, headers=headers)
         assert response.status_code == requests.codes.BAD, response.text
 
-    def test_get_campaigns_with_user_id_of_same_domain(self, email_campaign_of_user_first, access_token_first,
+    def test_get_campaigns_with_user_id_of_same_domain(self, email_campaign_user1_domain1_in_db, access_token_first,
                                                        email_campaign_of_user_second, user_same_domain):
         """
         Test GET API of email_campaigns for getting all campaigns for a particular user_id of same domain.

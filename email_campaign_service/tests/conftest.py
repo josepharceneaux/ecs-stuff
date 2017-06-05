@@ -32,7 +32,8 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   send_campaign_with_client_id,
                                                                   create_email_campaign_with_merge_tags,
                                                                   create_dummy_kaiser_domain,
-                                                                  create_and_get_email_campaign)
+                                                                  create_and_get_email_campaign,
+                                                                  create_email_campaign_in_db)
 from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
     create_email_campaign_via_api, create_scheduled_email_campaign_data, create_data_for_campaign_creation
 
@@ -80,6 +81,15 @@ def email_campaign_of_user_first(access_token_first, smartlist_first):
     """
     campaign_data = create_scheduled_email_campaign_data(smartlist_first['id'])
     return create_and_get_email_campaign(campaign_data, access_token_first)
+
+
+@pytest.fixture()
+def email_campaign_user1_domain1_in_db(user_first):
+    """
+    This creates an email-campaign in database and returns it.
+    We are creating in DB directly because we don't need to wait for creation of smartlist candidates.
+    """
+    return create_email_campaign_in_db(user_id=user_first.id)
 
 
 @pytest.fixture()

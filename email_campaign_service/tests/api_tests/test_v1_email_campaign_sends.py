@@ -21,19 +21,19 @@ class TestEmailCampaignSends(object):
     HTTP_METHOD = 'get'
     ENTITY = 'sends'
 
-    def test_get_with_invalid_token(self, email_campaign_of_user_first):
+    def test_get_with_invalid_token(self, email_campaign_user1_domain1_in_db):
         """
          User auth token is invalid. It should result in Unauthorized error.
         """
-        CampaignsTestsHelpers.request_with_invalid_token(
-            self.HTTP_METHOD, self.URL % email_campaign_of_user_first.id, None)
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
+                                                         self.URL % email_campaign_user1_domain1_in_db.id)
 
-    def test_get_with_no_campaign_sent(self, headers, email_campaign_of_user_first):
+    def test_get_with_no_campaign_sent(self, headers, email_campaign_user1_domain1_in_db):
         """
         Here we are assuming that email campaign has not been sent to any candidate. Sends count
         should be 0.
         """
-        response = requests.get(self.URL % email_campaign_of_user_first.id, headers=headers)
+        response = requests.get(self.URL % email_campaign_user1_domain1_in_db.id, headers=headers)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY)
 
     def test_get_by_sending_campaign(self, access_token_first, sent_campaign):

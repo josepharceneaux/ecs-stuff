@@ -93,7 +93,7 @@ class EmailCampaignTypes(object):
 
 def create_email_campaign_in_db(user_id, add_subject=True):
     """
-    This creates an email campaign for given user
+    This creates an email campaign for given user_id
     """
     email_campaign = EmailCampaign(name=fake.name(), user_id=user_id, is_hidden=0,
                                    subject=fake.uuid4()[0:8] + 'It is a test campaign' if add_subject else '',

@@ -61,7 +61,7 @@ class TestEmailCampaignSendsWithId(object):
             access_token_first)
 
     def test_get_with_send_id_associated_with_not_owned_campaign(
-            self, access_token_first, access_token_other, email_campaign_of_user_first,
+            self, access_token_first, access_token_other, email_campaign_user1_domain1_in_db,
             email_campaign_in_other_domain):
         """
         Here we assume that requested send is associated with such a campaign which does not
@@ -71,8 +71,7 @@ class TestEmailCampaignSendsWithId(object):
                                             access_token_other)
         for send in email_campaign_in_other_domain.sends:
             CampaignsTestsHelpers.request_for_forbidden_error(
-                self.HTTP_METHOD,
-                self.URL % (email_campaign_of_user_first.id, send.id),
+                self.HTTP_METHOD, self.URL % (email_campaign_user1_domain1_in_db.id, send.id),
                 access_token_first)
 
     def test_get_with_invalid_campaign_id(self, access_token_first,

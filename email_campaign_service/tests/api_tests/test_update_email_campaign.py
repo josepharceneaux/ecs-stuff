@@ -17,12 +17,12 @@ class TestCampaignUpdate(object):
     """
 
     @pytest.mark.qa
-    def test_update_email_campaign_with_allowed_parameter(self, access_token_first, email_campaign_of_user_first):
+    def test_update_email_campaign_with_allowed_parameter(self, access_token_first, email_campaign_user1_domain1_in_db):
         """
          The test is to make sure that email campaign update functionality with allowed parameters/fields
          is working properly or not. Should return 200 status ok.
         """
-        campaign_id = email_campaign_of_user_first.id
+        campaign_id = email_campaign_user1_domain1_in_db.id
         for param in [True, 1, False, 0]:
             data = {'is_hidden': param}
             CampaignsTestsHelpers.request_for_ok_response('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id,
@@ -31,12 +31,12 @@ class TestCampaignUpdate(object):
             assert email_campaign['is_hidden'] == param
 
     @pytest.mark.qa
-    def test_update_email_campaign_with_invalid_data(self, access_token_first, email_campaign_of_user_first):
+    def test_update_email_campaign_with_invalid_data(self, access_token_first, email_campaign_user1_domain1_in_db):
         """
          This test to make sure that update email campaign with invalid data is not
          possible, only valid data is acceptable. Should return 400 bad request on invalid data.
         """
-        campaign_id = email_campaign_of_user_first.id
+        campaign_id = email_campaign_user1_domain1_in_db.id
         update_with_invalid_data = [fake.word(), fake.random_int(2, )]
         for param in update_with_invalid_data:
             data = {'is_hidden': param}
