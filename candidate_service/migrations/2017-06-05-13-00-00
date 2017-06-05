@@ -1,0 +1,8 @@
+"""
+This script adds concetration_type and comment columns to the candidate_education_degree table (in preparation of a migration from candidate_education_degree_bullet)
+"""
+
+from candidate_service.common.models.db import db
+
+db.session.execute("ALTER TABLE `candidate_education_degree` ADD COLUMN `ConcentrationType` varchar(200) DEFAULT NULL")
+db.session.execute("ALTER TABLE `candidate_education_degree` ADD COLUMN `Comments` varchar(5000) DEFAULT NULL")

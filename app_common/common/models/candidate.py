@@ -1120,6 +1120,8 @@ class CandidateEducationDegree(db.Model):
     list_order = db.Column('ListOrder', db.SmallInteger)
     degree_type = db.Column('DegreeType', db.String(100))
     degree_title = db.Column('DegreeTitle', db.String(100))
+    concentration_type = db.Column('ConcentrationType', db.String(200))
+    comments = db.Column('Comments', db.String(5000))
     start_year = db.Column('StartYear', YEAR)
     start_month = db.Column('StartMonth', db.SmallInteger)
     end_year = db.Column('EndYear', YEAR)
