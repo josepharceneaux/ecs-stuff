@@ -664,8 +664,6 @@ class CandidateResource(Resource):
 
         :return:    A dict of candidate info
         """
-        start_time = time()
-
         # Get authenticated user
         authed_user = request.user
 
@@ -684,7 +682,7 @@ class CandidateResource(Resource):
         candidate = get_candidate_if_validated(authed_user, candidate_id)
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
         candidate_data_dict['engagement_score'] = calculate_candidate_engagement_score(candidate_id)
-        logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
+
         return {'candidate': candidate_data_dict}
 
     @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CANDIDATES)

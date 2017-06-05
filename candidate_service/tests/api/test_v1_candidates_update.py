@@ -237,7 +237,7 @@ class TestUpdateCandidate(object):
 
         # Retrieve both candidates
         data = {'candidate_ids': candidate_ids}
-        url = CandidateApiUrl.CANDIDATE_SEARCH_URI + '&facets=none'
+        url = CandidateApiUrl.CANDIDATE_SEARCH_URI
         get_resp = send_request('get', url, access_token_first, data)
         candidates = get_resp.json()['candidates']
 
