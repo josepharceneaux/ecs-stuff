@@ -27,12 +27,13 @@ def migrate_bullet_data_to_education_degree():
                 for degree in can_edu_deg:
                     # We only want the first bullet -- other bullets will be discarded
                     can_edu_deg_bul = CandidateEducationDegreeBullet.query.filter_by(candidate_education_degree_id=degree.id).first()
-                    # Merge over concentration_type
-                    if can_edu_deg_bul and can_edu_deg_bul.concentration_type:
-                        degree.concentration_type = can_edu_deg_bul.concentration_type
-                    # Merge over comments
-                    if can_edu_deg_bul and can_edu_deg_bul.comments:
-                        degree.comments = can_edu_deg_bul.comments
+                    if can_edu_deg_bul:
+                        # Merge over concentration_type
+                        if can_edu_deg_bul.concentration_type:
+                            degree.concentration_type = can_edu_deg_bul.concentration_type
+                        # Merge over comments
+                        if can_edu_deg_bul.comments:
+                            degree.comments = can_edu_deg_bul.comments
 
         db.session.commit()
         print "Batch {} updated candidate IDs: {}".format(batch, [candidate.id for candidate in candidates])
