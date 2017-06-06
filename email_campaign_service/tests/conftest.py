@@ -8,22 +8,16 @@ This file contains fixtures for tests of email-campaign-service
 # Standard Library
 from datetime import timedelta
 
-from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
-    create_email_campaign_via_api, create_scheduled_email_campaign_data, create_data_for_campaign_creation
-from email_campaign_service.common.models.candidate import CandidateEmail
-from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
-                                                                 EmailTemplateFolder,
-                                                                 EmailClientCredentials)
-from email_campaign_service.common.models.misc import Frequency
-from email_campaign_service.common.routes import (EmailCampaignApiUrl)
-from email_campaign_service.common.routes import GraphqlServiceApiUrl
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 # Application Specific
 from email_campaign_service.common.tests.conftest import *
-from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.modules.email_clients import SMTP
+from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.modules.utils import do_mergetag_replacements
+from email_campaign_service.common.models.candidate import CandidateEmail
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.common.routes import (EmailCampaignApiUrl, GraphqlServiceApiUrl)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign_smartlist,
                                                                   send_campaign_helper,
                                                                   create_smartlist_with_given_email_candidate,
@@ -36,6 +30,11 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   create_and_get_email_campaign,
                                                                   create_email_campaign_in_db,
                                                                   create_campaign_blast_and_sends)
+from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
+    create_email_campaign_via_api, create_scheduled_email_campaign_data, create_data_for_campaign_creation
+from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
+                                                                 EmailTemplateFolder,
+                                                                 EmailClientCredentials)
 
 __author__ = 'basit'
 
@@ -457,7 +456,8 @@ def outgoing_email_client(headers):
 
 
 @pytest.fixture()
-def email_campaign_with_outgoing_email_client(access_token_first, smartlist_user1_domain1, headers, outgoing_email_client):
+def email_campaign_with_outgoing_email_client(access_token_first, smartlist_user1_domain1, headers,
+                                              outgoing_email_client):
     """
     This creates an email-campaign which will be sent via an SMTP server added by user.
     """
