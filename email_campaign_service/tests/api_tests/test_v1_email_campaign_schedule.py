@@ -26,14 +26,14 @@ class TestCampaignSchedule(object):
     BLASTS_URL = EmailCampaignApiUrl.BLASTS
     START_DATETIME_OFFSET = 15
 
-    def test_one_time_schedule_campaign_and_validate_task_run(self, access_token_first, headers, smartlist_first):
+    def test_one_time_schedule_campaign_and_validate_task_run(self, access_token_first, headers, smartlist_user1_domain1):
         """
         Here we schedule an email campaign one time with all valid parameters. Then we check
         that task is run fine and assert the blast, sends and activity have been created
         in database.
         """
         subject = '%s-test_schedule_one_time' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(smartlist_first['id'], subject=subject)
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1['id'], subject=subject)
         campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow()
                                                                    + timedelta(seconds=self.START_DATETIME_OFFSET))
         response = create_email_campaign_via_api(access_token_first, campaign_data)
@@ -82,13 +82,13 @@ class TestCampaignSchedule(object):
                                                                                         campaign_blast[1]['id']),
                                                  access_token=access_token_first)
 
-    def test_schedule_campaign_daily_and_validate_run(self, headers, access_token_first, smartlist_first):
+    def test_schedule_campaign_daily_and_validate_run(self, headers, access_token_first, smartlist_user1_domain1):
         """
         This is test to schedule an email campaign on daily basis. This should get OK
         response. We also assert that scheduler is sending email-campaigns on expected time.
         """
         subject = '%s-test_schedule_daily' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(smartlist_first['id'], subject=subject)
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1['id'], subject=subject)
         campaign_data['frequency_id'] = Frequency.DAILY
         campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow()
                                                                    + timedelta(seconds=self.START_DATETIME_OFFSET))

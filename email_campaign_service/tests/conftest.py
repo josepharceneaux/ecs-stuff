@@ -45,7 +45,7 @@ START_DATETIME_OFFSET = 15
 
 
 @pytest.fixture()
-def smartlist_first(access_token_first, talent_pipeline):
+def smartlist_user1_domain1(access_token_first, talent_pipeline):
     """
     This fixture creates a smartlist for "user_first"
     """
@@ -76,11 +76,11 @@ def smartlist_other_in_db(user_from_diff_domain, talent_pipeline_other):
 
 
 @pytest.fixture()
-def email_campaign_of_user_first(access_token_first, smartlist_first):
+def email_campaign_of_user_first(access_token_first, smartlist_user1_domain1):
     """
     This returns email-campaign for "user_first" scheduled to be sent after some time.
     """
-    campaign_data = create_scheduled_email_campaign_data(smartlist_first['id'])
+    campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1['id'])
     return create_and_get_email_campaign(campaign_data, access_token_first)
 
 
@@ -457,11 +457,11 @@ def outgoing_email_client(headers):
 
 
 @pytest.fixture()
-def email_campaign_with_outgoing_email_client(access_token_first, smartlist_first, headers, outgoing_email_client):
+def email_campaign_with_outgoing_email_client(access_token_first, smartlist_user1_domain1, headers, outgoing_email_client):
     """
     This creates an email-campaign which will be sent via an SMTP server added by user.
     """
-    campaign_data = create_scheduled_email_campaign_data(smartlist_first['id'])
+    campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1['id'])
     # GET email-client-id
     response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=outgoing', headers=headers)
     assert response.ok
@@ -515,13 +515,13 @@ def data_for_email_conversation_importer(email_clients, headers, user_first, can
 
 
 @pytest.fixture()
-def periodic_scheduled_campaign(request, access_token_first, smartlist_first):
+def periodic_scheduled_campaign(request, access_token_first, smartlist_user1_domain1):
     """
     This creates a periodic scheduled campaign. It finally archives the email-campaign so that it does not
     get sent after the test has finished working.
     """
     subject = 'scheduled_periodic_email_campaign'
-    campaign_data = create_data_for_campaign_creation(smartlist_first['id'], subject=subject)
+    campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1['id'], subject=subject)
     campaign_data['frequency_id'] = Frequency.CUSTOM
     campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow()
                                                                + timedelta(seconds=START_DATETIME_OFFSET))

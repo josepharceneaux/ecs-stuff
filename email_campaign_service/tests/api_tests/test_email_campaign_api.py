@@ -484,13 +484,13 @@ class TestCreateCampaign(object):
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == ForbiddenError.http_status_code()
 
-    def test_create_campaign_and_send_now(self, access_token_first, headers, smartlist_first):
+    def test_create_campaign_and_send_now(self, access_token_first, headers, smartlist_user1_domain1):
         """
         Here we assume user has clicked the button "Send Now" from UI, it should send campaign immediately.
         """
         expected_sends = 2
         subject = '{}-send_campaign_now'.format(fake.uuid4())
-        campaign_data = create_data_for_campaign_creation(smartlist_first['id'], subject=subject)
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1['id'], subject=subject)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == codes.CREATED
         resp_object = response.json()
