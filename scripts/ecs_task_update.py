@@ -57,7 +57,8 @@ try:
     # This returns the latest ACTIVE revision
     task_definition = client.describe_task_definition(taskDefinition=service_td)
     if get_http_status(task_definition) != 200:
-        print "Error Fetching Task Description. HTTP Status: {}".format(get_http_status(response))
+        # TODO: Make a bran new TD for one which doesn't yet exist
+        print "Error Fetching Task Description {}. HTTP Status: {}".format(service_td, get_http_status(response))
         exit(1)
 except Exception as e:
     print "Exception {} searching for task definition {}".format(e.message, service)

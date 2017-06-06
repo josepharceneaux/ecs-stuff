@@ -36,6 +36,7 @@ class TestSearchCandidatePipeline(object):
                                                              return_candidate_ids_only=True)
         number_of_talent_pipelines = 15
         candidate_id = candidate_ids[-1]
+
         # Add Pipelines
         pipeline_data = {"talent_pipelines": [
             {
@@ -44,7 +45,7 @@ class TestSearchCandidatePipeline(object):
                 "date_needed": "2017-11-30",
                 "search_params": {"skills": [skill_name]}
             } for _ in range(number_of_talent_pipelines)
-        ]}
+            ]}
 
         create_resp = send_request('post', PIPELINE_URL, access_token_first, pipeline_data)
         print response_info(create_resp)
@@ -56,7 +57,8 @@ class TestSearchCandidatePipeline(object):
         )
         # Assert on results
         retry(assert_result, sleeptime=3, attempts=10, sleepscale=1,
-              args=(candidate_id, access_token_first), kwargs=dict(expected_count=number_of_talent_pipelines),
+              args=(candidate_id, access_token_first),
+              kwargs=dict(expected_count=number_of_talent_pipelines),
               retry_exceptions=(AssertionError,))
 
     def test_search_for_last_candidate_in_pipeline(self, user_first, access_token_first, talent_pool):
