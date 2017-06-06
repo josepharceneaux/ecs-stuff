@@ -50,7 +50,7 @@ class TestSendCampaign(object):
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
                                                          self.URL % email_campaign_user1_domain1_in_db.id)
 
-    def test_campaign_send_with_no_smartlist_associated(self, access_token_first, email_campaign_of_user_first):
+    def test_campaign_send_with_no_smartlist_associated(self, access_token_first, email_campaign_user1_domain1_in_db):
         """
         User auth token is valid but given email campaign has no associated smartlist with it. So
         up til this point we only have created a user and email campaign of that user
@@ -58,8 +58,8 @@ class TestSendCampaign(object):
         It should get Invalid usage error.
         Custom error should be NoSmartlistAssociatedWithCampaign.
         """
-        CampaignsTestsHelpers.campaign_send_with_no_smartlist(EmailCampaignSmartlist, self.URL, access_token_first,
-                                                              campaign_id=email_campaign_of_user_first.id)
+        CampaignsTestsHelpers.campaign_send_with_no_smartlist(self.URL, access_token_first,
+                                                              campaign_id=email_campaign_user1_domain1_in_db.id)
 
     def test_campaign_send_with_deleted_smartlist(self, access_token_first, campaign_with_and_without_client):
         """
@@ -71,21 +71,21 @@ class TestSendCampaign(object):
         CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL % email_campaign.id,
                                                                   access_token_first, smartlist_ids[0])
 
-    def test_campaign_send_with_no_smartlist_candidate(self, access_token_first, email_campaign_of_user_first,
+    def test_campaign_send_with_no_smartlist_candidate(self, access_token_first, email_campaign_user1_domain1_in_db,
                                                        talent_pipeline):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. Campaign sending should fail and no blasts should be
         created.
         """
+        campaign = email_campaign_user1_domain1_in_db
         with app.app_context():
             response = CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
-                self.URL % email_campaign_of_user_first.id, access_token_first,
-                email_campaign_of_user_first, talent_pipeline.id)
-            CampaignsTestsHelpers.assert_campaign_failure(response, email_campaign_of_user_first)
-            if not email_campaign_of_user_first.email_client_id:
+                self.URL % campaign.id, access_token_first, campaign, talent_pipeline.id)
+            CampaignsTestsHelpers.assert_campaign_failure(response, campaign)
+            if not campaign.email_client_id:
                 json_resp = response.json()
-                assert str(email_campaign_of_user_first.id) in json_resp['message']
+                assert str(campaign.id) in json_resp['message']
 
     def test_campaign_send_with_campaign_in_some_other_domain(self, access_token_first,
                                                               email_campaign_user1_domain2_in_db):
@@ -357,6 +357,26 @@ class TestSendCampaign(object):
         campaign = campaign_with_archived_candidate
         response = requests.post(self.URL % campaign['id'], headers=headers)
         assert_campaign_send(response, campaign, user_first.id, blast_sends=1)
+
+    def test_campaign_send_with_unsubscribed_candidate(self, headers, user_first,
+                                                       campaign_with_unsubscribed_candidate):
+        """
+        We try to send campaign to a smartlist which contains 2 candidates. One of the candidate has unsubscribed
+        toc campaigns, So, campaign should only be sent to 1 candidate.
+        """
+        campaign = campaign_with_unsubscribed_candidate
+        response = requests.post(self.URL % campaign.id, headers=headers)
+        assert_campaign_send(response, campaign, user_first.id, blast_sends=1)
+
+    def test_campaign_send_with_multiple_emails_of_candidates(self, headers, user_first,
+                                                              campaign_with_multiple_candidates_email):
+        """
+        The test sends email to two candidates each having two emails.
+        But email-campaign should be sent to only primary-email-addresses of candidates.
+        If primary email is not found then email-campaign will be sent to latest emails added for candidates.
+        """
+        response = requests.post(self.URL % campaign_with_multiple_candidates_email.id, headers=headers)
+        assert_campaign_send(response, campaign_with_multiple_candidates_email, user_first.id)
 
     def test_campaign_send_in_test_domain(self, headers, domain_first, user_first, email_campaign_of_user_first):
         """

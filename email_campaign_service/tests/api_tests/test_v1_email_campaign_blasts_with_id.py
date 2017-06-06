@@ -28,51 +28,42 @@ class TestEmailCampaignBlastsWithId(object):
         """
         blast_id = sent_campaign.blasts[0].id
         CampaignsTestsHelpers.request_with_invalid_token(
-            self.HTTP_METHOD,
-            self.URL % (sent_campaign.id, blast_id),
-            None)
+            self.HTTP_METHOD, self.URL % (sent_campaign.id, blast_id))
 
-    def test_get_with_valid_token(self, access_token_first, sent_campaign):
+    def test_get_with_valid_token(self, headers, sent_campaign):
         """
         Here we use `sent_campaign` fixture to send campaign with and without email-client-id
         to 2 candidates. This is the test where we get campaign's blast with valid
         access token. It should get OK response and number of sends should be 2.
         """
         expected_count = 2
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_count, abort_time_for_sends=100)
         blast_id = sent_campaign.blasts[0].id
-        response = requests.get(
-            self.URL % (sent_campaign.id, blast_id),
-            headers=dict(Authorization='Bearer %s' % access_token_first))
-        CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY,
-                                                            check_count=False)
+        response = requests.get(self.URL % (sent_campaign.id, blast_id), headers=headers)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY, check_count=False)
         json_resp = response.json()[self.ENTITY]
         assert json_resp['id'] == blast_id
         assert json_resp['campaign_id'] == sent_campaign.id
         assert json_resp['sends'] == expected_count
 
-    def test_get_campaign_of_some_other_domain(self, access_token_first,
-                                               email_campaign_user1_domain2_in_db):
+    def test_get_campaign_of_some_other_domain(self, access_token_first, email_campaign_user1_domain2_in_db):
         """
         This is the case where we try to get blast of a campaign which was created by
         user of some other domain. It should result in Forbidden error.
         """
-        CampaignsTestsHelpers.request_for_forbidden_error(
-            self.HTTP_METHOD, self.URL % (email_campaign_user1_domain2_in_db.id,
-                                          fake.random_int() + 1),
-            access_token_first)
+        CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
+                                                          self.URL % (email_campaign_user1_domain2_in_db.id,
+                                                                      fake.random_int() + 1),
+                                                          access_token_first)
 
-    def test_get_with_blast_id_associated_with_not_owned_campaign(
-            self, access_token_first, sent_campaign_in_other_domain):
+    def test_get_with_blast_id_associated_with_not_owned_campaign(self, access_token_other, sent_campaign):
         """
         Here we assume that requested blast_id is associated with such a campaign which does not
         belong to domain of logged-in user. It should result in Forbidden error.
         """
-        blast_id = sent_campaign_in_other_domain.blasts[0].id
-        CampaignsTestsHelpers.request_for_forbidden_error(
-            self.HTTP_METHOD,
-            self.URL % (sent_campaign_in_other_domain.id, blast_id),
-            access_token_first)
+        blast_id = sent_campaign.blasts[0].id
+        CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
+                                                          self.URL % (sent_campaign.id, blast_id),
+                                                          access_token_other)
 
     def test_get_with_invalid_campaign_id(self, access_token_first, sent_campaign):
         """
@@ -80,14 +71,11 @@ class TestEmailCampaignBlastsWithId(object):
         """
         blast_id = sent_campaign.blasts[0].id
         CampaignsTestsHelpers.request_with_invalid_resource_id(
-            EmailCampaign, self.HTTP_METHOD, self.URL % ('%s', blast_id),
-            access_token_first)
+            EmailCampaign, self.HTTP_METHOD, self.URL % ('%s', blast_id), access_token_first)
 
     def test_get_with_invalid_blast_id(self, access_token_first, sent_campaign):
         """
         This is a test to get blasts of a campaign using non-existing blast_id
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(
-            EmailCampaignBlast, self.HTTP_METHOD,
-            self.URL % (sent_campaign.id, '%s'),
-            access_token_first)
+            EmailCampaignBlast, self.HTTP_METHOD, self.URL % (sent_campaign.id, '%s'), access_token_first)

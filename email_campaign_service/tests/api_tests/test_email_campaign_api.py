@@ -314,37 +314,37 @@ class TestCreateCampaign(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
 
-    def test_create_email_campaign_without_client_id(self, access_token_first, smartlist_first):
+    def test_create_email_campaign_without_client_id(self, access_token_first, smartlist_first_in_db):
         """
         Here we provide valid data to create an email-campaign without email_client_id.
         It should get OK response.
         """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_first['id'])
+        campaign_data = create_scheduled_email_campaign_data(smartlist_first_in_db['id'])
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object
         assert resp_object['campaign']['id']
 
-    def test_create_email_campaign_with_client_id(self, access_token_first, smartlist_first):
+    def test_create_email_campaign_with_client_id(self, access_token_first, smartlist_first_in_db):
         """
         Here we provide valid data to create an email-campaign with email_client_id.
         It should get OK response.
         """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_first['id'])
+        campaign_data = create_scheduled_email_campaign_data(smartlist_first_in_db['id'])
         campaign_data['email_client_id'] = EmailClient.get_id_by_name('Browser')
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object
 
-    def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, smartlist_first,
+    def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, smartlist_first_in_db,
                                                               outgoing_email_client, headers):
         """
         Here we provide valid data to create an email-campaign with email_client_credentials_id.
         It should get OK response.
         """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_first['id'])
+        campaign_data = create_scheduled_email_campaign_data(smartlist_first_in_db['id'])
         # GET email-client-id
         response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=outgoing', headers=headers)
         assert response.ok

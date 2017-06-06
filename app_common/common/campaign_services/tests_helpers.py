@@ -297,17 +297,14 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def campaign_send_with_no_smartlist(model, url, access_token, campaign_id):
+    def campaign_send_with_no_smartlist(url, access_token, campaign_id):
         """
         This is the test to send a campaign which has no smartlist associated  with it.
         It should get Invalid usage error. Custom error should be NoSmartlistAssociatedWithCampaign.
-        :param type(t) model: SQLAlchemy model for smartlists associated with the campaign
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param positive campaign_id: Id of campaign
         """
-        campaign_smartlists = model.filter_by_keywords(campaign_id=campaign_id)
-        [model.delete(campaign_smartlist) for campaign_smartlist in campaign_smartlists]
         response = send_request('post', url % campaign_id, access_token)
         assert response.status_code == InvalidUsage.http_status_code(), 'It should be invalid usage error(400)'
         error_resp = response.json()['error']
@@ -328,11 +325,8 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
         smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token, talent_pipeline_id)
         campaign_type = campaign.__tablename__
-        #  Need to do this because cannot make changes until prod is stable
-        campaign_smartlist_model = get_model(campaign_type,
-                                             campaign_type + '_smartlist')
-        campaign_smartlist_obj = campaign_smartlist_model(campaign_id=campaign.id,
-                                                          smartlist_id=smartlist_id)
+        campaign_smartlist_model = get_model(campaign_type, campaign_type + '_smartlist')
+        campaign_smartlist_obj = campaign_smartlist_model(campaign_id=campaign.id, smartlist_id=smartlist_id)
         campaign_smartlist_model.save(campaign_smartlist_obj)
         response_post = send_request('post', url, access_token)
         return response_post

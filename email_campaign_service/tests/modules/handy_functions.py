@@ -32,7 +32,7 @@ from email_campaign_service.common.utils.amazon_ses import (send_email,
                                                             get_default_email_info)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailClient, EmailCampaignSend,
-                                                                 EmailClientCredentials)
+                                                                 EmailClientCredentials, EmailCampaignBlast)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.handy_functions import define_and_send_request
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
@@ -655,3 +655,14 @@ def create_dummy_kaiser_domain():
     domain = Domain(name='test_domain_{}_{}'.format('kaiser', fake.uuid4()))
     domain.save()
     return domain.id
+
+
+def create_campaign_blast_and_sends(campaign_id, candidate_id, number_of_sends):
+    """
+    This creates records in email_campaign_blast and email_campaign_send for given campaign_id.
+    """
+    blast = EmailCampaignBlast(campaign_id=campaign_id, sends=number_of_sends)
+    EmailCampaignBlast.save(blast)
+    for _ in xrange(number_of_sends):
+        send = EmailCampaignSend(campaign_id=campaign_id, blast_id=blast.id, candidate_id=candidate_id)
+        EmailCampaignSend.save(send)
