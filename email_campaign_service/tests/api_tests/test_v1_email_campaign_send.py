@@ -88,13 +88,13 @@ class TestSendCampaign(object):
                 assert str(email_campaign_of_user_first.id) in json_resp['message']
 
     def test_campaign_send_with_campaign_in_some_other_domain(self, access_token_first,
-                                                              email_campaign_in_other_domain):
+                                                              email_campaign_user1_domain2_in_db):
         """
         User auth token is valid but given campaign does not belong to domain
         of logged-in user. It should get Forbidden error.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
-                                                          self.URL % email_campaign_in_other_domain.id,
+                                                          self.URL % email_campaign_user1_domain2_in_db.id,
                                                           access_token_first)
 
     def test_campaign_send_with_invalid_campaign_id(self, access_token_first):

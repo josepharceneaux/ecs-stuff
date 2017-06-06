@@ -27,10 +27,8 @@ class TestEmailCampaignSendsWithId(object):
          User auth token is invalid. It should result in Unauthorized error.
         """
         for send in sent_campaign.sends:
-            CampaignsTestsHelpers.request_with_invalid_token(
-                self.HTTP_METHOD,
-                self.URL % (sent_campaign.id, send.id),
-                None)
+            CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
+                                                             self.URL % (sent_campaign.id, send.id))
 
     def test_get_with_valid_token(self, access_token_first, sent_campaign):
         """
@@ -50,13 +48,13 @@ class TestEmailCampaignSendsWithId(object):
             assert json_resp['candidate_id'] == send.candidate_id
 
     def test_get_campaign_of_some_other_domain(self, access_token_first,
-                                               email_campaign_in_other_domain):
+                                               email_campaign_user1_domain2_in_db):
         """
         This is the case where we try to get send object of such a campaign which was created by
         user of some other domain. It should result in Forbidden error.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            self.HTTP_METHOD, self.URL % (email_campaign_in_other_domain.id,
+            self.HTTP_METHOD, self.URL % (email_campaign_user1_domain2_in_db.id,
                                           fake.random_int() + 1),
             access_token_first)
 
@@ -74,23 +72,17 @@ class TestEmailCampaignSendsWithId(object):
                 self.HTTP_METHOD, self.URL % (email_campaign_user1_domain1_in_db.id, send.id),
                 access_token_first)
 
-    def test_get_with_invalid_campaign_id(self, access_token_first,
-                                          sent_campaign):
+    def test_get_with_invalid_campaign_id(self, access_token_first, sent_campaign):
         """
         This is a test to get send object of a campaign which does not exist in database.
         """
         for send in sent_campaign.sends:
             CampaignsTestsHelpers.request_with_invalid_resource_id(
-                EmailCampaign, self.HTTP_METHOD, self.URL % ('%s', send.id),
-                access_token_first,
-                None)
+                EmailCampaign, self.HTTP_METHOD, self.URL % ('%s', send.id), access_token_first)
 
-    def test_get_with_invalid_send_id(self, access_token_first,
-                                      sent_campaign):
+    def test_get_with_invalid_send_id(self, access_token_first, sent_campaign):
         """
         This is a test to get send object of a campaign using non-existing send_id
         """
-        CampaignsTestsHelpers.request_with_invalid_resource_id(
-            EmailCampaignSend, self.HTTP_METHOD,
-            self.URL % (sent_campaign.id, '%s'),
-            access_token_first, None)
+        CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaignSend, self.HTTP_METHOD,
+                                                               self.URL % (sent_campaign.id, '%s'), access_token_first)

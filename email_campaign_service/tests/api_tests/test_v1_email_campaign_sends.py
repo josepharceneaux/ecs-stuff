@@ -117,20 +117,17 @@ class TestEmailCampaignSends(object):
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=0, entity=self.ENTITY)
 
-    def test_get_not_owned_campaign(self, access_token_first, email_campaign_in_other_domain):
+    def test_get_not_owned_campaign(self, access_token_first, email_campaign_user1_domain2_in_db):
         """
         This is the case where we try to get sends of a campaign which was created by
         some other user. It should result in 'forbidden' error.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            self.HTTP_METHOD, self.URL % email_campaign_in_other_domain.id, access_token_first)
+            self.HTTP_METHOD, self.URL % email_campaign_user1_domain2_in_db.id, access_token_first)
 
     def test_with_invalid_campaign_id(self, access_token_first):
         """
         This is a test to get the sends of a campaign which does not exist in database.
         """
-        CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaign,
-                                                               self.HTTP_METHOD,
-                                                               self.URL,
-                                                               access_token_first,
-                                                               None)
+        CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaign, self.HTTP_METHOD,
+                                                               self.URL, access_token_first)

@@ -96,7 +96,8 @@ def create_email_campaign_in_db(user_id, add_subject=True):
     This creates an email campaign for given user
     """
     email_campaign = EmailCampaign(name=fake.name(), user_id=user_id, is_hidden=0,
-                                   subject=fake.uuid4()[0:8] + 'It is a test campaign' if add_subject else '',
+                                   subject='{}-{}'.format('Test campaign created in db', fake.uuid4()[0:8])
+                                   if add_subject else '',
                                    description=fake.paragraph(), _from=TEST_EMAIL_ID,
                                    reply_to=TEST_EMAIL_ID, body_text=fake.sentence(),
                                    body_html="<html><body><a href=%s>Email campaign test</a></body></html>"

@@ -55,6 +55,16 @@ def smartlist_first(access_token_first, talent_pipeline):
 
 
 @pytest.fixture()
+def smartlist_first_in_db(user_first, talent_pipeline):
+    """
+    Fixture creates a smartlist which is owned by user_first and posses talent_pipeline
+    """
+    smartlist = Smartlist(name=fake.word(), user_id=user_first.id, talent_pipeline_id=talent_pipeline.id)
+    Smartlist.save(smartlist)
+    return {'id': smartlist.id}
+
+
+@pytest.fixture()
 def smartlist_second(access_token_same, talent_pipeline):
     """
     This fixture creates a smartlist for "user_second"
@@ -72,6 +82,17 @@ def smartlist_other(access_token_other, talent_pipeline_other):
     smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_other, talent_pipeline_other,
                                                                             count=2, emails_list=True)
     return {'id': smartlist_id}
+
+
+@pytest.fixture()
+def smartlist_other_in_db(user_from_diff_domain, talent_pipeline_other):
+    """
+    Fixture creates a smartlist which is owned by user_first and posses talent_pipeline
+    """
+    smartlist = Smartlist(name=fake.word(), user_id=user_from_diff_domain.id,
+                          talent_pipeline_id=talent_pipeline_other.id)
+    Smartlist.save(smartlist)
+    return {'id': smartlist.id}
 
 
 @pytest.fixture()
@@ -102,12 +123,30 @@ def email_campaign_of_user_second(access_token_same, smartlist_second):
 
 
 @pytest.fixture()
+def email_campaign_user2_domain1_in_db(user_same_domain):
+    """
+    This creates an email-campaign in database and returns it.
+    We are creating in DB directly because we don't need to wait for creation of smartlist candidates.
+    """
+    return create_email_campaign_in_db(user_id=user_same_domain.id)
+
+
+@pytest.fixture()
 def email_campaign_in_other_domain(access_token_other, smartlist_other):
     """
     This creates an email-campaign for "user_from_diff_domain" scheduled to be sent in future.
     """
     campaign_data = create_scheduled_email_campaign_data(smartlist_other['id'])
     return create_and_get_email_campaign(campaign_data, access_token_other)
+
+
+@pytest.fixture()
+def email_campaign_user1_domain2_in_db(user_from_diff_domain):
+    """
+    This creates an email-campaign in database and returns it.
+    We are creating in DB directly because we don't need to wait for creation of smartlist candidates.
+    """
+    return create_email_campaign_in_db(user_id=user_from_diff_domain.id)
 
 
 @pytest.fixture()

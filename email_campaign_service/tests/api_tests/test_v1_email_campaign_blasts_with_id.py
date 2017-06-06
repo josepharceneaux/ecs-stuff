@@ -52,13 +52,13 @@ class TestEmailCampaignBlastsWithId(object):
         assert json_resp['sends'] == expected_count
 
     def test_get_campaign_of_some_other_domain(self, access_token_first,
-                                               email_campaign_in_other_domain):
+                                               email_campaign_user1_domain2_in_db):
         """
         This is the case where we try to get blast of a campaign which was created by
         user of some other domain. It should result in Forbidden error.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            self.HTTP_METHOD, self.URL % (email_campaign_in_other_domain.id,
+            self.HTTP_METHOD, self.URL % (email_campaign_user1_domain2_in_db.id,
                                           fake.random_int() + 1),
             access_token_first)
 
@@ -81,8 +81,7 @@ class TestEmailCampaignBlastsWithId(object):
         blast_id = sent_campaign.blasts[0].id
         CampaignsTestsHelpers.request_with_invalid_resource_id(
             EmailCampaign, self.HTTP_METHOD, self.URL % ('%s', blast_id),
-            access_token_first,
-            None)
+            access_token_first)
 
     def test_get_with_invalid_blast_id(self, access_token_first, sent_campaign):
         """
@@ -91,4 +90,4 @@ class TestEmailCampaignBlastsWithId(object):
         CampaignsTestsHelpers.request_with_invalid_resource_id(
             EmailCampaignBlast, self.HTTP_METHOD,
             self.URL % (sent_campaign.id, '%s'),
-            access_token_first, None)
+            access_token_first)

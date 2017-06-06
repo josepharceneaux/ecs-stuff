@@ -113,34 +113,34 @@ class TestCampaignSchedule(object):
             blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'], campaign_blast[0]['id']),
             access_token=access_token_first)
 
-    def test_schedule_campaign_with_no_start_datetime(self, access_token_first, smartlist_first):
+    def test_schedule_campaign_with_no_start_datetime(self, access_token_first, smartlist_first_in_db):
         """
         This is test to schedule an email campaign periodically with no start_datetime. It should result in
         unprocessable entity.
         """
-        campaign_data = create_data_for_campaign_creation(smartlist_first['id'])
+        campaign_data = create_data_for_campaign_creation(smartlist_first_in_db['id'])
         campaign_data['frequency_id'] = Frequency.DAILY
         campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == codes.unprocessable_entity
 
-    def test_schedule_campaign_with_no_end_datetime(self, access_token_first, smartlist_first):
+    def test_schedule_campaign_with_no_end_datetime(self, access_token_first, smartlist_first_in_db):
         """
         This is test to schedule an email campaign periodically with no end_datetime. It should result in
         unprocessable entity.
         """
-        campaign_data = create_data_for_campaign_creation(smartlist_first['id'])
+        campaign_data = create_data_for_campaign_creation(smartlist_first_in_db['id'])
         campaign_data['frequency_id'] = Frequency.DAILY
         campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == codes.unprocessable_entity
 
-    def test_with_start_datetime_greater_than_end_datetime(self, access_token_first, smartlist_first):
+    def test_with_start_datetime_greater_than_end_datetime(self, access_token_first, smartlist_first_in_db):
         """
         This is test to schedule an email campaign periodically with start_datetime to be greater than end_datetime.
         It should result in unprocessable entity.
         """
-        campaign_data = create_data_for_campaign_creation(smartlist_first['id'])
+        campaign_data = create_data_for_campaign_creation(smartlist_first_in_db['id'])
         campaign_data['frequency_id'] = Frequency.DAILY
         campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(days=10))
         campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))

@@ -30,11 +30,11 @@ class TestCampaignGet(object):
         assert response.status_code == requests.codes.ok, response.text
         assert response.json()['errors']
 
-    def test_get_campaign_with_auth_header(self, access_token_first, email_campaign_of_user_first):
+    def test_get_campaign_with_auth_header(self, access_token_first, email_campaign_user1_domain1_in_db):
         """
         Test to get campaign created by logged-in user with auth header. It should not get any error.
         """
-        query = {'query': self.query_string % email_campaign_of_user_first.id}
+        query = {'query': self.query_string % email_campaign_user1_domain1_in_db.id}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_first, data=query)
         assert response.status_code == requests.codes.ok, response.text
         assert 'errors' not in response.json()
@@ -42,11 +42,11 @@ class TestCampaignGet(object):
         for expected_field in self.expected_fields_list:
             assert expected_field in campaign, '%s not present in response' % expected_field
 
-    def test_get_campaign_in_same_domain(self, access_token_first, email_campaign_of_user_second):
+    def test_get_campaign_in_same_domain(self, access_token_first, email_campaign_user2_domain1_in_db):
         """
         Test to get campaign created by some other user of same domain. It should not get any error.
         """
-        query = {'query': self.query_string % email_campaign_of_user_second.id}
+        query = {'query': self.query_string % email_campaign_user2_domain1_in_db.id}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_first, data=query)
         assert response.status_code == requests.codes.ok
         assert 'errors' not in response.json()
