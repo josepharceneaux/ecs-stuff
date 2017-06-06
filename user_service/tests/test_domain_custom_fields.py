@@ -320,7 +320,7 @@ class TestDomainCustomField(object):
         r = send_request('post', CFCS_URL, access_token_first, data)
         print response_info(r)
         assert r.status_code == requests.codes.created
-        custom_field_id = r.json()['custom_fields'][0]
+        custom_field_id = r.json()['custom_fields'][0]['id']
 
         # Retrieve one of domain's custom fields
         r = send_request('get', CFC_URL % custom_field_id, access_token_first)
