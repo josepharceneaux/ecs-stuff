@@ -314,37 +314,37 @@ class TestCreateCampaign(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
 
-    def test_create_email_campaign_without_client_id(self, access_token_first, smartlist_first_in_db):
+    def test_create_email_campaign_without_client_id(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we provide valid data to create an email-campaign without email_client_id.
         It should get OK response.
         """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_first_in_db['id'])
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object
         assert resp_object['campaign']['id']
 
-    def test_create_email_campaign_with_client_id(self, access_token_first, smartlist_first_in_db):
+    def test_create_email_campaign_with_client_id(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we provide valid data to create an email-campaign with email_client_id.
         It should get OK response.
         """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_first_in_db['id'])
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         campaign_data['email_client_id'] = EmailClient.get_id_by_name('Browser')
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object
 
-    def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, smartlist_first_in_db,
+    def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, smartlist_user1_domain1_in_db,
                                                               outgoing_email_client, headers):
         """
         Here we provide valid data to create an email-campaign with email_client_credentials_id.
         It should get OK response.
         """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_first_in_db['id'])
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         # GET email-client-id
         response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=outgoing', headers=headers)
         assert response.ok
@@ -357,12 +357,12 @@ class TestCreateCampaign(object):
         resp_object = response.json()
         assert 'campaign' in resp_object and resp_object['campaign']
 
-    def test_create_email_campaign_with_incoming_email_client(self, access_token_first, smartlist_first_in_db,
+    def test_create_email_campaign_with_incoming_email_client(self, access_token_first, smartlist_user1_domain1_in_db,
                                                               email_clients, headers):
         """
         Here we provide email-client of type "incoming". email-campaign should not be created.
         """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_first_in_db['id'])
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         # GET email-client-id
         response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=incoming', headers=headers)
         assert response.ok
@@ -431,44 +431,44 @@ class TestCreateCampaign(object):
                                                                                access_token_first,
                                                                                campaign_data, key='list_ids')
 
-    def test_create_email_campaign_with_deleted_smartlist_id(self, access_token_first, smartlist_first_in_db):
+    def test_create_email_campaign_with_deleted_smartlist_id(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         This is a test to create email-campaign with deleted smartlist id. It should result in
         Resource not found error.
         """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_first_in_db['id'])
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL, access_token_first,
                                                                   campaign_data['list_ids'][0], campaign_data)
 
-    def test_create_email_campaign_with_no_start_datetime(self, access_token_first, smartlist_first_in_db):
+    def test_create_email_campaign_with_no_start_datetime(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we try to create an email-campaign with frequency DAILY for which start_datetime will be
         a required field. But we are not giving start_datetime. It should result in
         UnprocessableEntity error.
         """
-        campaign_data = create_data_for_campaign_creation(smartlist_first_in_db['id'])
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'])
         campaign_data['frequency_id'] = Frequency.DAILY
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == UnprocessableEntity.http_status_code()
 
-    def test_create_email_campaign_with_invalid_start_and_end_datetime(self, access_token_first, smartlist_first_in_db):
+    def test_create_email_campaign_with_invalid_start_and_end_datetime(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we try to create an email-campaign with frequency DAILY. Here we provide start_datetime
         to be ahead of end_datetime. It should result in UnprocessableEntity error.
         """
-        campaign_data = create_data_for_campaign_creation(smartlist_first_in_db['id'])
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'])
         campaign_data['frequency_id'] = Frequency.DAILY
         campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow())
         campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() - timedelta(minutes=2))
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == UnprocessableEntity.http_status_code()
 
-    def test_create_email_campaign_with_invalid_email_client_id(self, access_token_first, smartlist_first_in_db):
+    def test_create_email_campaign_with_invalid_email_client_id(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we try to create an email-campaign with invalid email-client-id. It should
         result in invalid usage error.
         """
-        campaign_data = create_data_for_campaign_creation(smartlist_first_in_db['id'])
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'])
         campaign_data['email_client_id'] = CampaignsTestsHelpers.get_non_existing_id(EmailClient)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == InvalidUsage.http_status_code()
@@ -509,13 +509,13 @@ class TestCreateCampaign(object):
                                                  access_token=access_token_first)
 
     @pytest.mark.qa
-    def test_create_email_campaign_with_optional_parameters(self, access_token_first, smartlist_first_in_db):
+    def test_create_email_campaign_with_optional_parameters(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         The test is to examine that the email-campaign is created with optional parameter or not.
         It should get OK response.
         """
         subject = '%s-test_create_email_campaign_with_optional_parameters' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(smartlist_first_in_db['id'], subject=subject)
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'], subject=subject)
         for param in EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS:
             campaign_data.update(param)
             response = create_email_campaign_via_api(access_token_first, campaign_data)
@@ -525,13 +525,13 @@ class TestCreateCampaign(object):
             assert resp_object['campaign']['id']
 
     @pytest.mark.qa
-    def test_create_email_campaign_except_single_parameter(self, access_token_first, smartlist_first_in_db):
+    def test_create_email_campaign_except_single_parameter(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we provide valid data to create an email-campaign with all parameter except single parameter.
         It should get OK response.
         """
         subject = '%s-test_create_email_campaign_except_single_parameter' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation_with_all_parameters(smartlist_first_in_db['id'],
+        campaign_data = create_data_for_campaign_creation_with_all_parameters(smartlist_user1_domain1_in_db['id'],
                                                                               subject=subject)
         for param in CAMPAIGN_OPTIONAL_FIELDS:
             campaign_test_data = campaign_data.copy()

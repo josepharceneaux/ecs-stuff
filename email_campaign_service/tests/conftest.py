@@ -55,7 +55,7 @@ def smartlist_user1_domain1(access_token_first, talent_pipeline):
 
 
 @pytest.fixture()
-def smartlist_first_in_db(user_first, talent_pipeline):
+def smartlist_user1_domain1_in_db(user_first, talent_pipeline):
     """
     Fixture creates a smartlist which is owned by user_first and posses talent_pipeline
     """
