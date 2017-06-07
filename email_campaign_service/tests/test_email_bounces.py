@@ -159,4 +159,3 @@ def assert_is_bounced(email):
     """
     db.session.commit()
     assert email.is_bounced
-    return email.is_bounced
