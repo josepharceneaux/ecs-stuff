@@ -62,11 +62,11 @@ class TestCampaignBlasts(object):
             for expected_field in self.expected_fields_list:
                 assert expected_field in blast_edge['node'], '%s not present in response' % expected_field
 
-    def test_get_blasts_from_other_domain(self, access_token_other, email_campaign_of_user_first):
+    def test_get_blasts_from_other_domain(self, access_token_other, email_campaign_user1_domain1_in_db):
         """
         Test to get campaign by user of some other domain. It should not get any blasts.
         """
-        query = {'query': self.query_string % email_campaign_of_user_first.id}
+        query = {'query': self.query_string % email_campaign_user1_domain1_in_db.id}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_other, data=query)
         assert response.status_code == requests.codes.ok
         assert 'errors' in response.json()

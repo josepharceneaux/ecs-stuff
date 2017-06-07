@@ -16,7 +16,7 @@ def test_mergetag_replacements(user_first, candidate_first):
     Here we test the functionality of function do_mergetag_replacement()
     """
     # Merge tags for user
-    campaign = create_email_campaign_with_merge_tags(user_first)
+    campaign = create_email_campaign_with_merge_tags(user_id=user_first.id, in_db_only=True)
     user_first.update(first_name=fake.first_name())
     user_first.update(last_name=fake.last_name())
     [subject, body_text, body_html] = do_mergetag_replacements([campaign.subject, campaign.body_text,
@@ -30,7 +30,7 @@ def test_mergetag_replacements(user_first, candidate_first):
     for item in [body_text, body_html]:
         assert TEST_PREFERENCE_URL in item
     # Merge tags for candidate
-    campaign = create_email_campaign_with_merge_tags(user_first)
+    campaign = create_email_campaign_with_merge_tags(user_id=user_first.id, in_db_only=True)
 
     [subject, body_text, body_html] = do_mergetag_replacements([campaign.subject, campaign.body_text,
                                                                 campaign.body_html], user_first,

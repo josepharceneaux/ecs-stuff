@@ -28,7 +28,6 @@ from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.tests.modules.__init__ import CAMPAIGN_OPTIONAL_FIELDS
 from email_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE, SORT_TYPES
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, HEALTH_CHECK)
-from email_campaign_service.common.campaign_services.tests_helpers import send_request
 from email_campaign_service.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
                                                             PAGINATION_EXCEPT_SINGLE_FIELD)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
@@ -36,11 +35,11 @@ from email_campaign_service.common.error_handling import (InvalidUsage, Unproces
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
                                                                   assert_talent_pipeline_response,
-                                                                  create_email_campaign,
+                                                                  create_email_campaign_in_db,
                                                                   EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS,
                                                                   create_data_for_campaign_creation_with_all_parameters)
 from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
-    create_email_campaign_via_api, create_data_for_campaign_creation
+    create_email_campaign_via_api, create_data_for_campaign_creation, create_scheduled_email_campaign_data
 
 
 class TestGetCampaigns(object):
@@ -55,46 +54,45 @@ class TestGetCampaigns(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token('get', EmailCampaignApiUrl.CAMPAIGNS, None)
 
-    def test_get_campaign_of_other_domain(self, email_campaign_in_other_domain, access_token_first):
+    def test_get_campaign_of_other_domain(self, email_campaign_user1_domain1_in_db, access_token_other):
         """
         Here we try to GET a campaign which is in some other domain. It should result-in
          ForbiddenError.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            'get', EmailCampaignApiUrl.CAMPAIGN % email_campaign_in_other_domain.id,
-            access_token_first)
+            'get', EmailCampaignApiUrl.CAMPAIGN % email_campaign_user1_domain1_in_db.id,
+            access_token_other)
 
-    def test_get_by_campaign_id(self, campaign_with_candidate_having_no_email, access_token_first, talent_pipeline):
+    def test_get_by_campaign_id(self, email_campaign_user1_domain1_in_db, access_token_first, talent_pipeline):
         """
         This is the test to GET the campaign by providing campaign_id. It should get OK response
         """
         email_campaign = get_campaign_or_campaigns(
-            access_token_first, campaign_id=campaign_with_candidate_having_no_email.id)
-        assert_valid_campaign_get(email_campaign, [campaign_with_candidate_having_no_email])
+            access_token_first, campaign_id=email_campaign_user1_domain1_in_db.id)
+        assert_valid_campaign_get(email_campaign, [email_campaign_user1_domain1_in_db])
 
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
-    def test_get_by_campaign_id_with_fields(self, campaign_with_candidate_having_no_email, access_token_first,
+    def test_get_by_campaign_id_with_fields(self, email_campaign_user1_domain1_in_db, access_token_first,
                                             talent_pipeline):
         """
-        This is the test to GET the campaign by providing campaign_id & filters.
-        It should get OK response
+        This is the test to GET the campaign by providing campaign_id & filters. It should get OK response
         """
         fields = ['id', 'subject', 'body_html', 'body_text', 'is_hidden']
 
         email_campaign = get_campaign_or_campaigns(
             access_token_first,
-            campaign_id=campaign_with_candidate_having_no_email.id,
+            campaign_id=email_campaign_user1_domain1_in_db.id,
             fields=fields)
-        assert_valid_campaign_get(email_campaign, [campaign_with_candidate_having_no_email],
+        assert_valid_campaign_get(email_campaign, [email_campaign_user1_domain1_in_db],
                                   fields=fields)
 
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first, fields=fields)
 
-    def test_get_all_campaigns_in_user_domain(self, email_campaign_of_user_first, email_campaign_of_user_second,
-                                              email_campaign_in_other_domain, access_token_first, talent_pipeline):
+    def test_get_all_campaigns_in_user_domain(self, email_campaign_user1_domain1_in_db,
+                                              email_campaign_user2_domain1_in_db, access_token_first, talent_pipeline):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain.
         Here two campaigns have been created by different users of same domain. Total count
@@ -104,7 +102,7 @@ class TestGetCampaigns(object):
         # Test GET api of email campaign
         email_campaigns = get_campaign_or_campaigns(access_token_first)
         assert len(email_campaigns) == 2
-        reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
+        reference_campaigns = [email_campaign_user1_domain1_in_db, email_campaign_user2_domain1_in_db]
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
         assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
 
@@ -122,8 +120,8 @@ class TestGetCampaigns(object):
                                                    fields=fields)
         assert_valid_campaign_get(email_campaign, [campaign], fields=fields)
 
-    def test_get_campaigns_with_paginated_response(self, email_campaign_of_user_first,
-                                                   email_campaign_of_user_second, email_campaign_in_other_domain,
+    def test_get_campaigns_with_paginated_response(self, email_campaign_user1_domain1_in_db,
+                                                   email_campaign_user2_domain1_in_db,
                                                    access_token_first, talent_pipeline):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain using
@@ -133,7 +131,7 @@ class TestGetCampaigns(object):
         # It should return first campaign in response.
         email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?per_page=1')
         assert len(email_campaigns) == 1
-        reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
+        reference_campaigns = [email_campaign_user1_domain1_in_db, email_campaign_user2_domain1_in_db]
         assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
@@ -167,15 +165,15 @@ class TestGetCampaigns(object):
     def test_get_campaigns_with_invalid_user_id(self, headers):
         """
         Test GET API of email_campaigns for getting all campaigns for particular user_id where user_id
-        is not in valid format. i.e. we are passing string rather that integer value. It should result in Bad Request 
+        is not in valid format. i.e. we are passing string rather that integer value. It should result in Bad Request
         Error.
         """
         url = EmailCampaignApiUrl.CAMPAIGNS + '?user_id={}'.format(fake.word())
         response = requests.get(url, headers=headers)
         assert response.status_code == requests.codes.BAD, response.text
 
-    def test_get_campaigns_with_user_id_of_same_domain(self, email_campaign_of_user_first, access_token_first,
-                                                       email_campaign_of_user_second, user_same_domain):
+    def test_get_campaigns_with_user_id_of_same_domain(self, email_campaign_user1_domain1_in_db, access_token_first,
+                                                       email_campaign_user2_domain1_in_db, user_same_domain):
         """
         Test GET API of email_campaigns for getting all campaigns for a particular user_id of same domain.
         It should return one campaign.
@@ -183,6 +181,7 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     query_params='?user_id={}'.format(user_same_domain.id))
         assert len(email_campaigns) == 1  # As we have only 1 campaign created by other user of same domain
+        assert email_campaigns[0]['id'] == email_campaign_user2_domain1_in_db.id
         assert email_campaigns[0]['user_id'] == user_same_domain.id
 
     def test_get_campaigns_with_user_id_of_other_domain(self, headers, user_from_diff_domain):
@@ -196,7 +195,7 @@ class TestGetCampaigns(object):
 
     def test_get_campaigns_with_user_id_of_other_domain_with_talent_admin_role(self, user_first, access_token_first,
                                                                                user_from_diff_domain,
-                                                                               email_campaign_in_other_domain):
+                                                                               email_campaign_user1_domain2_in_db):
         """
         Test GET API of email_campaigns for getting all campaigns for a particular user_id of some other domain.
         It should return the campaign created by that user as requested user has appropriate role.
@@ -205,6 +204,7 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     query_params='?user_id={}'.format(user_from_diff_domain.id))
         assert len(email_campaigns) == 1  # As we have only 1 campaign created by the user of other domain
+        assert email_campaigns[0]['id'] == email_campaign_user1_domain2_in_db.id
         assert email_campaigns[0]['user_id'] == user_from_diff_domain.id
 
     def test_get_campaigns_with_invalid_sort_type(self, headers):
@@ -269,9 +269,9 @@ class TestGetCampaigns(object):
         is retrieving all campaigns in descending order according of added_datetime'
         """
         # Test GET api of email campaign
-        create_email_campaign(user_first)
+        create_email_campaign_in_db(user_first.id)
         time.sleep(2)
-        create_email_campaign(user_same_domain)
+        create_email_campaign_in_db(user_same_domain.id)
         email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?sort_type=DESC')
         assert email_campaigns[0]['added_datetime'] > email_campaigns[1]['added_datetime']
 
@@ -282,9 +282,9 @@ class TestGetCampaigns(object):
         is retrieving all campaigns in ascending order according of added_datetime'
         """
         # Test GET api of email campaign
-        create_email_campaign(user_first)
+        create_email_campaign_in_db(user_first.id)
         time.sleep(2)
-        create_email_campaign(user_same_domain)
+        create_email_campaign_in_db(user_same_domain.id)
         email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?sort_type=ASC')
         assert email_campaigns[0]['added_datetime'] < email_campaigns[1]['added_datetime']
 
@@ -314,42 +314,37 @@ class TestCreateCampaign(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
 
-    def test_create_email_campaign_without_client_id(self, access_token_first, talent_pipeline):
+    def test_create_email_campaign_without_client_id(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we provide valid data to create an email-campaign without email_client_id.
         It should get OK response.
         """
-        subject = '%s-test_create_email_campaign' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object
         assert resp_object['campaign']['id']
 
-    def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline):
+    def test_create_email_campaign_with_client_id(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we provide valid data to create an email-campaign with email_client_id.
         It should get OK response.
         """
-        subject = '%s-test_create_email_campaign_with_client_id' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject, assert_candidates=False)
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         campaign_data['email_client_id'] = EmailClient.get_id_by_name('Browser')
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object
 
-    def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, talent_pipeline,
+    def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, smartlist_user1_domain1_in_db,
                                                               outgoing_email_client, headers):
         """
         Here we provide valid data to create an email-campaign with email_client_credentials_id.
         It should get OK response.
         """
-        subject = '%s-test_email_campaign_with_outgoing_email_client' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject, assert_candidates=False)
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         # GET email-client-id
         response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=outgoing', headers=headers)
         assert response.ok
@@ -362,14 +357,12 @@ class TestCreateCampaign(object):
         resp_object = response.json()
         assert 'campaign' in resp_object and resp_object['campaign']
 
-    def test_create_email_campaign_with_incoming_email_client(self, access_token_first, talent_pipeline,
+    def test_create_email_campaign_with_incoming_email_client(self, access_token_first, smartlist_user1_domain1_in_db,
                                                               email_clients, headers):
         """
         Here we provide email-client of type "incoming". email-campaign should not be created.
         """
-        subject = '%s-test_create_email_campaign_with_incoming_email_client' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject, assert_candidates=False)
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         # GET email-client-id
         response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=incoming', headers=headers)
         assert response.ok
@@ -389,15 +382,13 @@ class TestCreateCampaign(object):
                                                  {'campaign_data': 'data'}, is_json=False)
         assert response.status_code == InvalidUsage.http_status_code()
 
-    def test_create_email_campaign_with_whitespace_campaign_name(self, access_token_first, talent_pipeline):
+    def test_create_email_campaign_with_whitespace_campaign_name(self, access_token_first):
         """
         This tries to create an email campaign with whitespace as campaign name.
         It should result in invalid usage error as campaign_name is required field.
         """
         name = '       '
-        subject = '%s-test_create_email_campaign_whitespace_campaign_name' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject, name, assert_candidates=False)
+        campaign_data = create_scheduled_email_campaign_data(campaign_name=name)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         resp_object = response.json()
         assert response.status_code == InvalidUsage.http_status_code()
@@ -417,15 +408,12 @@ class TestCreateCampaign(object):
         json_response = response.json()
         assert missing_key in json_response['error']['message']
 
-    def test_create_email_campaign_with_invalid_format_of_smartlist_ids(self, access_token_first,
-                                                                        talent_pipeline):
+    def test_create_email_campaign_with_invalid_format_of_smartlist_ids(self, access_token_first):
         """
         Here we try to create an email-campaign with list_ids not in list format. It should
         result in invalid usage error.
         """
-        subject = '%s-test_with_non_list_smartlist_ids' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject, assert_candidates=False)
+        campaign_data = create_scheduled_email_campaign_data()
         campaign_data['list_ids'] = fake.random_number()  # 'list_ids' must be a list
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == InvalidUsage.http_status_code()
@@ -438,85 +426,71 @@ class TestCreateCampaign(object):
         Invalid smartlist ids include Non-existing id, non-integer id, empty list, duplicate items in list etc.
         Status code should be 400 and campaign should not be created.
         """
-        campaign_data = create_data_for_campaign_creation('', '', fake.sentence(), create_smartlist=False)
+        campaign_data = create_scheduled_email_campaign_data()
         CampaignsTestsHelpers.campaign_create_or_update_with_invalid_smartlist(self.HTTP_METHOD, self.URL,
                                                                                access_token_first,
                                                                                campaign_data, key='list_ids')
 
-    def test_create_email_campaign_with_deleted_smartlist_id(self, access_token_first, talent_pipeline):
+    def test_create_email_campaign_with_deleted_smartlist_id(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         This is a test to create email-campaign with deleted smartlist id. It should result in
         Resource not found error.
         """
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, fake.sentence())
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL, access_token_first,
                                                                   campaign_data['list_ids'][0], campaign_data)
 
-    def test_create_email_campaign_with_no_start_datetime(self, access_token_first, talent_pipeline):
+    def test_create_email_campaign_with_no_start_datetime(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we try to create an email-campaign with frequency DAILY for which start_datetime will be
         a required field. But we are not giving start_datetime. It should result in
         UnprocessableEntity error.
         """
-        subject = '%s-test_with_no_start_datetime' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject, assert_candidates=False)
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'])
         campaign_data['frequency_id'] = Frequency.DAILY
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == UnprocessableEntity.http_status_code()
 
-    def test_create_email_campaign_with_invalid_start_and_end_datetime(self, access_token_first,
-                                                                       talent_pipeline):
+    def test_create_email_campaign_with_invalid_start_and_end_datetime(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we try to create an email-campaign with frequency DAILY. Here we provide start_datetime
         to be ahead of end_datetime. It should result in UnprocessableEntity error.
         """
-        subject = '%s-test_with_invalid_start_and_end_datetime' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject, assert_candidates=False)
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'])
         campaign_data['frequency_id'] = Frequency.DAILY
         campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow())
-        campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(
-            datetime.utcnow() - timedelta(minutes=2))
+        campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() - timedelta(minutes=2))
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == UnprocessableEntity.http_status_code()
 
-    def test_create_email_campaign_with_invalid_email_client_id(self, access_token_first,
-                                                                talent_pipeline):
+    def test_create_email_campaign_with_invalid_email_client_id(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we try to create an email-campaign with invalid email-client-id. It should
         result in invalid usage error.
         """
-        subject = '%s-test_with_invalid_email_client_id' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject, assert_candidates=False)
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'])
         campaign_data['email_client_id'] = CampaignsTestsHelpers.get_non_existing_id(EmailClient)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == InvalidUsage.http_status_code()
         json_response = response.json()
         assert 'email_client_id' in json_response['error']['message']
 
-    def test_create_email_campaign_with_smartlist_id_of_other_domain(self,
-                                                                     talent_pipeline_other,
-                                                                     access_token_first,
-                                                                     access_token_other):
+    def test_create_email_campaign_with_smartlist_id_of_other_domain(self, smartlist_other_in_db, access_token_first):
         """
         Here we try to create an email-campaign with smartlist_ids belonging to some other domain.
         It should result in ForbiddenError.
         """
-        subject = '%s-test_email_campaign_with_list_id_of_other_domain' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_other, talent_pipeline_other,
-                                                          subject, assert_candidates=False)
+        campaign_data = create_data_for_campaign_creation(smartlist_other_in_db['id'])
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == ForbiddenError.http_status_code()
 
-    def test_create_campaign_and_send_now(self, access_token_first, headers, talent_pipeline):
+    def test_create_campaign_and_send_now(self, access_token_first, headers, smartlist_user1_domain1):
         """
         Here we assume user has clicked the button "Send Now" from UI, it should send campaign immediately.
         """
-        expected_sends = 1
-        subject = '%s-send_campaign_now' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
+        expected_sends = 2
+        subject = '{}-send_campaign_now'.format(fake.uuid4())
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1['id'], subject=subject)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == codes.CREATED
         resp_object = response.json()
@@ -529,20 +503,19 @@ class TestCreateCampaign(object):
         email_campaign = response.json()['email_campaign']
         campaign_blast = CampaignsTestsHelpers.get_blasts_with_polling(email_campaign, access_token_first,
                                                                        self.BLASTS_URL % email_campaign['id'])
-        CampaignsTestsHelpers.assert_blast_sends(
-            email_campaign, expected_sends,
-            blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'], campaign_blast[0]['id']),
-            access_token=access_token_first)
+        CampaignsTestsHelpers.assert_blast_sends(email_campaign, expected_sends,
+                                                 blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'],
+                                                                                        campaign_blast[0]['id']),
+                                                 access_token=access_token_first)
 
     @pytest.mark.qa
-    def test_create_email_campaign_with_optional_parameters(self, access_token_first, talent_pipeline):
+    def test_create_email_campaign_with_optional_parameters(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         The test is to examine that the email-campaign is created with optional parameter or not.
         It should get OK response.
         """
         subject = '%s-test_create_email_campaign_with_optional_parameters' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject)
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'], subject=subject)
         for param in EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS:
             campaign_data.update(param)
             response = create_email_campaign_via_api(access_token_first, campaign_data)
@@ -552,14 +525,14 @@ class TestCreateCampaign(object):
             assert resp_object['campaign']['id']
 
     @pytest.mark.qa
-    def test_create_email_campaign_except_single_parameter(self, access_token_first, talent_pipeline):
+    def test_create_email_campaign_except_single_parameter(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we provide valid data to create an email-campaign with all parameter except single parameter.
         It should get OK response.
         """
         subject = '%s-test_create_email_campaign_except_single_parameter' % fake.uuid4()
-        campaign_data = create_data_for_campaign_creation_with_all_parameters(access_token_first, talent_pipeline,
-                                                                              subject)
+        campaign_data = create_data_for_campaign_creation_with_all_parameters(smartlist_user1_domain1_in_db['id'],
+                                                                              subject=subject)
         for param in CAMPAIGN_OPTIONAL_FIELDS:
             campaign_test_data = campaign_data.copy()
             del campaign_test_data[param]
@@ -568,58 +541,6 @@ class TestCreateCampaign(object):
             resp_object = response.json()
             assert 'campaign' in resp_object
             assert resp_object['campaign']['id']
-
-
-class TestCampaignUpdate(object):
-    """
-    Here we have tests to update an email-campaign. Currently this endpoint only marks an email-campaign
-    as archived.
-    """
-
-    @pytest.mark.qa
-    def test_update_email_campaign_with_allowed_parameter(self, access_token_first, email_campaign_of_user_first):
-        """
-         The test is to make sure that email campaign update functionality with allowed parameters/fields
-         is working properly or not. Should return 200 status ok.
-        """
-        campaign_id = email_campaign_of_user_first.id
-        for param in [True, 1, False, 0]:
-            data = {'is_hidden': param}
-            CampaignsTestsHelpers.request_for_ok_response('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id,
-                                                          access_token_first, data)
-            email_campaign = get_campaign_or_campaigns(access_token_first, campaign_id=campaign_id)
-            assert email_campaign['is_hidden'] == param
-
-    @pytest.mark.qa
-    def test_update_email_campaign_with_invalid_data(self, access_token_first, email_campaign_of_user_first):
-        """
-         This test to make sure that update email campaign with invalid data is not
-         possible, only valid data is acceptable. Should return 400 bad request on invalid data.
-        """
-        campaign_id = email_campaign_of_user_first.id
-        update_with_invalid_data = [fake.word(), fake.random_int(2, )]
-        for param in update_with_invalid_data:
-            data = {'is_hidden': param}
-            response = send_request('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id, access_token_first, data)
-            CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=codes.BAD_REQUEST)
-
-    def test_archive_scheduled_campaign(self, access_token_first, scheduled_campaign):
-        """
-        Here we archive a scheduled campaign. scheduler_task_id of campaign should be set to empty string
-        after successfully archived from API.
-        """
-        # GET email-campaign before archiving it
-        email_campaign = get_campaign_or_campaigns(access_token_first, campaign_id=scheduled_campaign['id'])
-        assert email_campaign['scheduler_task_id']
-
-        # Archive email-campaign
-        data = {'is_hidden': True}
-        CampaignsTestsHelpers.request_for_ok_response('patch',
-                                                      EmailCampaignApiUrl.CAMPAIGN % scheduled_campaign['id'],
-                                                      access_token_first, data)
-        # GET email-campaign after archiving
-        email_campaign = get_campaign_or_campaigns(access_token_first, campaign_id=scheduled_campaign['id'])
-        assert not email_campaign['scheduler_task_id']
 
 
 # Test for healthcheck

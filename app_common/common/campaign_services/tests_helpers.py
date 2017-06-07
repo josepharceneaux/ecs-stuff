@@ -297,19 +297,18 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def campaign_send_with_no_smartlist(url, access_token):
+    def campaign_send_with_no_smartlist(url, access_token, campaign_id):
         """
         This is the test to send a campaign which has no smartlist associated  with it.
         It should get Invalid usage error. Custom error should be NoSmartlistAssociatedWithCampaign.
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
+        :param positive campaign_id: Id of campaign
         """
-        response = send_request('post', url, access_token, None)
-        assert response.status_code == InvalidUsage.http_status_code(), \
-            'It should be invalid usage error(400)'
+        response = send_request('post', url % campaign_id, access_token)
+        assert response.status_code == InvalidUsage.http_status_code(), 'It should be invalid usage error(400)'
         error_resp = response.json()['error']
         assert error_resp['code'] == CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
-        assert 'No Smartlist'.lower() in error_resp['message'].lower()
 
     @classmethod
     @contract
@@ -326,11 +325,8 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
         smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token, talent_pipeline_id)
         campaign_type = campaign.__tablename__
-        #  Need to do this because cannot make changes until prod is stable
-        campaign_smartlist_model = get_model(campaign_type,
-                                             campaign_type + '_smartlist')
-        campaign_smartlist_obj = campaign_smartlist_model(campaign_id=campaign.id,
-                                                          smartlist_id=smartlist_id)
+        campaign_smartlist_model = get_model(campaign_type, campaign_type + '_smartlist')
+        campaign_smartlist_obj = campaign_smartlist_model(campaign_id=campaign.id, smartlist_id=smartlist_id)
         campaign_smartlist_model.save(campaign_smartlist_obj)
         response_post = send_request('post', url, access_token)
         return response_post
@@ -591,10 +587,9 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract(talent_pipeline=TalentPipeline)
-    def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None,
-                                        emails_list=False, create_phone=False,
-                                        assert_candidates=True, smartlist_name=fake.word(),
-                                        candidate_ids=(), timeout=300):
+    def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None, emails_list=False,
+                                        create_phone=False, assert_candidates=True, smartlist_name=fake.word(),
+                                        candidate_ids=None, timeout=600):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -605,7 +600,7 @@ class CampaignsTestsHelpers(object):
         :param bool create_phone: If True will create phone for candidates
         :param bool assert_candidates: If True will assert that candidates have been uploaded on cloud
         :param string smartlist_name: Name of smartlist
-        :param list|tuple candidate_ids: List of candidate ids
+        :param list|tuple|None candidate_ids: List of candidate ids
         :param int timeout: timeout for retry function
         """
         if not data:
