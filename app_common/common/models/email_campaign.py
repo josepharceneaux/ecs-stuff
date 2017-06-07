@@ -3,6 +3,8 @@ from datetime import datetime
 from contracts import contract
 from sqlalchemy.orm import relationship
 from sqlalchemy import or_, desc, extract, and_
+
+from app_common.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
@@ -130,7 +132,8 @@ class EmailCampaign(db.Model):
         if not email_campaign:
             raise ResourceNotFound("Email campaign with id: %s does not exist" % email_campaign_id)
         if not email_campaign.user.domain_id == domain_id:
-            raise ForbiddenError("Email campaign doesn't belongs to user's domain")
+            raise ForbiddenError(EMAIL_CAMPAIGN_FORBIDDEN[0],
+                                 error_code=EMAIL_CAMPAIGN_FORBIDDEN[1])
         return email_campaign
 
     @classmethod

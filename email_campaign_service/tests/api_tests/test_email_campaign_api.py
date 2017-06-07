@@ -20,6 +20,7 @@ import requests
 from requests import codes
 
 # Application Specific
+from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
 from email_campaign_service.tests.conftest import fake
 from email_campaign_service.common.models.user import Role
 from email_campaign_service.common.models.misc import Frequency
@@ -62,7 +63,7 @@ class TestGetCampaigns(object):
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
             'get', EmailCampaignApiUrl.CAMPAIGN % email_campaign_in_other_domain.id,
-            access_token_first)
+            access_token_first, expected_error_code=EMAIL_CAMPAIGN_FORBIDDEN[1])
 
     def test_get_by_campaign_id(self, campaign_with_candidate_having_no_email, access_token_first, talent_pipeline):
         """

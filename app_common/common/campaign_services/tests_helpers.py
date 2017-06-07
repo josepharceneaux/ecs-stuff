@@ -54,16 +54,20 @@ class CampaignsTestsHelpers(object):
 
     @classmethod
     @contract
-    def request_for_forbidden_error(cls, method, url, access_token, data=None):
+    def request_for_forbidden_error(cls, method, url, access_token, data=None, expected_error_code=None):
         """
         This should get forbidden error because requested campaign does not belong to logged-in user's domain.
         :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict|None data: Data to be send in HTTP request
+        :param int|None expected_error_code: Expected error code
         """
         response = send_request(method, url, access_token, data=data)
         cls.assert_non_ok_response(response, expected_status_code=ForbiddenError.http_status_code())
+        error = response.json()['error']
+        assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                                error['code'])
 
     @classmethod
     @contract

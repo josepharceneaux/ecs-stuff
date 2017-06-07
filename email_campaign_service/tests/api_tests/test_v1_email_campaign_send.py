@@ -15,6 +15,7 @@ import re
 import requests
 
 # Application Specific
+from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.tests.conftest import fake, Role
@@ -92,7 +93,8 @@ class TestSendCampaign(object):
         """
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
                                                           self.URL % email_campaign_in_other_domain.id,
-                                                          access_token_first)
+                                                          access_token_first,
+                                                          expected_error_code=EMAIL_CAMPAIGN_FORBIDDEN[1])
 
     def test_campaign_send_with_invalid_campaign_id(self, access_token_first):
         """
