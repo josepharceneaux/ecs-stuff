@@ -37,8 +37,7 @@ from email_campaign_service.common.campaign_services.campaign_utils import Campa
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
                                                             raise_if_not_positive_int_or_long)
 from email_campaign_service.common.models.email_campaign import (EmailCampaignSendUrlConversion, EmailCampaignSend,
-                                                                 TRACKING_URL_TYPE, TEXT_CLICK_URL_TYPE,
-                                                                 HTML_CLICK_URL_TYPE)
+                                                                 TRACKING_URL_TYPE, HTML_CLICK_URL_TYPE)
 from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 

@@ -69,11 +69,11 @@ class TestCampaignSend(object):
         assert 'errors' in response.json()
         assert response.json()['data']['email_campaign_query']['send'] is None
 
-    def test_get_non_existing_send(self, access_token_first, email_campaign_of_user_first):
+    def test_get_non_existing_send(self, access_token_first, email_campaign_user1_domain1_in_db):
         """
         Test to get send of non-existing send. It should not get any send.
         """
-        query = {'query': self.query_string % (email_campaign_of_user_first.id,
+        query = {'query': self.query_string % (email_campaign_user1_domain1_in_db.id,
                                                CampaignsTestsHelpers.get_non_existing_id(EmailCampaignSend),
                                                )}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_first, data=query)

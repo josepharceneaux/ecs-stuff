@@ -8,27 +8,29 @@ In this module, we have tests for following endpoints
     - GET /v1/redirect
 """
 # Packages
-import json
 import re
+import json
+import imaplib
 
 # Third Party
 import requests
+from redo import retry
 
 # Application Specific
 from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.tests.conftest import fake, Role
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.common.models.misc import UrlConversion, Activity
+from email_campaign_service.tests.conftest import (fake, Role)
 from email_campaign_service.common.models.candidate import Candidate
 from email_campaign_service.modules.utils import do_mergetag_replacements
+from email_campaign_service.common.models.misc import (UrlConversion, Activity)
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.routes import EmailCampaignApiUrl, UserServiceApiUrl
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailCampaignSmartlist)
-from email_campaign_service.tests.modules.handy_functions import (create_email_campaign_smartlists,
-                                                                  send_campaign_with_client_id, assert_and_delete_email)
+from email_campaign_service.tests.modules.handy_functions import (send_campaign_with_client_id, assert_and_delete_email,
+                                                                  get_mail_connection, fetch_emails, delete_emails)
 from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
     assert_campaign_send
 
@@ -42,13 +44,14 @@ class TestSendCampaign(object):
     HTTP_METHOD = 'post'
     URL = EmailCampaignApiUrl.SEND
 
-    def test_campaign_send_with_invalid_token(self, email_campaign_of_user_first):
+    def test_campaign_send_with_invalid_token(self, email_campaign_user1_domain1_in_db):
         """
         Here we try to send email campaign with invalid access token
         """
-        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL % email_campaign_of_user_first.id)
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
+                                                         self.URL % email_campaign_user1_domain1_in_db.id)
 
-    def test_campaign_send_with_no_smartlist_associated(self, access_token_first, email_campaign_of_user_first):
+    def test_campaign_send_with_no_smartlist_associated(self, access_token_first, email_campaign_user1_domain1_in_db):
         """
         User auth token is valid but given email campaign has no associated smartlist with it. So
         up til this point we only have created a user and email campaign of that user
@@ -56,8 +59,8 @@ class TestSendCampaign(object):
         It should get Invalid usage error.
         Custom error should be NoSmartlistAssociatedWithCampaign.
         """
-        CampaignsTestsHelpers.campaign_send_with_no_smartlist(self.URL % email_campaign_of_user_first.id,
-                                                              access_token_first)
+        CampaignsTestsHelpers.campaign_send_with_no_smartlist(self.URL, access_token_first,
+                                                              campaign_id=email_campaign_user1_domain1_in_db.id)
 
     def test_campaign_send_with_deleted_smartlist(self, access_token_first, campaign_with_and_without_client):
         """
@@ -69,30 +72,30 @@ class TestSendCampaign(object):
         CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL % email_campaign.id,
                                                                   access_token_first, smartlist_ids[0])
 
-    def test_campaign_send_with_no_smartlist_candidate(self, access_token_first, email_campaign_of_user_first,
+    def test_campaign_send_with_no_smartlist_candidate(self, access_token_first, email_campaign_user1_domain1_in_db,
                                                        talent_pipeline):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. Campaign sending should fail and no blasts should be
         created.
         """
+        campaign = email_campaign_user1_domain1_in_db
         with app.app_context():
             response = CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
-                self.URL % email_campaign_of_user_first.id, access_token_first,
-                email_campaign_of_user_first, talent_pipeline.id)
-            CampaignsTestsHelpers.assert_campaign_failure(response, email_campaign_of_user_first)
-            if not email_campaign_of_user_first.email_client_id:
+                self.URL % campaign.id, access_token_first, campaign, talent_pipeline.id)
+            CampaignsTestsHelpers.assert_campaign_failure(response, campaign)
+            if not campaign.email_client_id:
                 json_resp = response.json()
-                assert str(email_campaign_of_user_first.id) in json_resp['message']
+                assert str(campaign.id) in json_resp['message']
 
     def test_campaign_send_with_campaign_in_some_other_domain(self, access_token_first,
-                                                              email_campaign_in_other_domain):
+                                                              email_campaign_user1_domain2_in_db):
         """
         User auth token is valid but given campaign does not belong to domain
         of logged-in user. It should get Forbidden error.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
-                                                          self.URL % email_campaign_in_other_domain.id,
+                                                          self.URL % email_campaign_user1_domain2_in_db.id,
                                                           access_token_first,
                                                           expected_error_code=EMAIL_CAMPAIGN_FORBIDDEN[1])
 
@@ -103,21 +106,20 @@ class TestSendCampaign(object):
         CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaign, self.HTTP_METHOD, self.URL,
                                                                access_token_first)
 
-    def test_send_old_archived_campaign(self, access_token_first, scheduled_campaign):
+    def test_send_old_archived_campaign(self, access_token_first, email_campaign_of_user_first):
         """
         This is a test to send a campaign which was archived but task was not unscheduled.
         We should get ResourceNotFound error and task should be removed from scheduler-service.
         """
-        db.session.commit()
-        email_campaign = EmailCampaign.get_by_id(scheduled_campaign['id'])
         # Assert that campaign is scheduled
-        assert email_campaign.scheduler_task_id
-        email_campaign.update(is_hidden=1)
-        CampaignsTestsHelpers.request_for_resource_not_found_error(self.HTTP_METHOD, self.URL % email_campaign.id,
+        assert email_campaign_of_user_first.scheduler_task_id
+        email_campaign_of_user_first.update(is_hidden=1)
+        CampaignsTestsHelpers.request_for_resource_not_found_error(self.HTTP_METHOD,
+                                                                   self.URL % email_campaign_of_user_first.id,
                                                                    access_token_first)
         db.session.commit()
         # Assert that scheduled task has been removed
-        assert not email_campaign.scheduler_task_id
+        assert not email_campaign_of_user_first.scheduler_task_id
 
     def test_send_archived_campaign(self, access_token_first, email_campaign_of_user_first):
         """
@@ -145,29 +147,27 @@ class TestSendCampaign(object):
             assert str(campaign_with_candidate_having_no_email.id) in json_resp['message']
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(self, headers, user_first,
-                                                                         campaign_with_two_candidates):
+                                                                         email_campaign_of_user_first):
         """
         Tests sending a campaign with one smartlist. That smartlist has, in turn,
         two candidates associated with it. Those candidates have unique email addresses.
         Campaign emails should be sent to 2 candidates so number of sends should be 2.
         """
-        no_of_sends = 2
-        campaign = campaign_with_two_candidates
+        campaign = email_campaign_of_user_first
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first.id, no_of_sends)
+        assert_campaign_send(response, campaign, user_first.id)
 
-    def test_campaign_send_with_no_href_in_anchor_tag(self, campaign_with_two_candidates, headers, user_first):
+    def test_campaign_send_with_no_href_in_anchor_tag(self, email_campaign_of_user_first, headers, user_first):
         """
         Here we put an empty anchor tag in body_text of email-campaign. It should not result in any error.
         """
-        no_of_sends = 2
-        campaign = campaign_with_two_candidates
+        campaign = email_campaign_of_user_first
         campaign.update(body_html='<html><body><a>%s</a></body></html>' % fake.sentence())
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first.id, no_of_sends)
+        assert_campaign_send(response, campaign, user_first.id)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(self, headers, user_first,
-                                                                                    campaign_with_two_candidates):
+                                                                                    email_campaign_of_user_first):
         """
         User auth token is valid, campaign has one smartlist associated. Smartlist has two
         candidates associated (with same email addresses). Email Campaign should be sent to only
@@ -176,11 +176,11 @@ class TestSendCampaign(object):
         same_email = fake.email()
         for candidate in user_first.candidates:
             candidate.emails[0].update(address=same_email)
-        response = requests.post(self.URL % campaign_with_two_candidates.id, headers=headers)
-        assert_campaign_send(response, campaign_with_two_candidates, user_first.id, 1)
-        if not campaign_with_two_candidates.email_client_id:
+        response = requests.post(self.URL % email_campaign_of_user_first.id, headers=headers)
+        assert_campaign_send(response, email_campaign_of_user_first, user_first.id, blast_sends=1)
+        if not email_campaign_of_user_first.email_client_id:
             json_resp = response.json()
-            assert str(campaign_with_two_candidates.id) in json_resp['message']
+            assert str(email_campaign_of_user_first.id) in json_resp['message']
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
             self, headers, user_first, campaign_with_candidates_having_same_email_in_diff_domain):
@@ -191,7 +191,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first.id, 2)
+        assert_campaign_send(response, campaign, user_first.id)
 
     def test_campaign_send_with_outgoing_email_client(self, email_campaign_with_outgoing_email_client, headers,
                                                       user_first):
@@ -218,16 +218,19 @@ class TestSendCampaign(object):
                                                       candidate_address=candidate_address,
                                                       )
         campaign.update(subject=modified_subject)
-        msg_ids = assert_campaign_send(response, campaign, user_first.id, 1, delete_email=False, via_amazon_ses=False)
-        # TODO: Emails are being delayed, commenting for now
-        # mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
-        #                                       app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
-        # email_bodies = fetch_emails(mail_connection, msg_ids)
-        # assert len(email_bodies) == 1
-        # assert candidate['first_name'] in email_bodies[0]
-        # assert candidate['last_name'] in email_bodies[0]
-        # assert str(candidate['id']) in email_bodies[0]  # This will be in unsubscribe URL.
-        # delete_emails(mail_connection, msg_ids, modified_subject)
+        assert_campaign_send(response, campaign, user_first.id, blast_sends=1, delete_email=False,
+                             via_amazon_ses=False)
+        msg_ids = retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1,
+                        args=(modified_subject,), kwargs=dict(delete_email=False),
+                        retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.error))
+        mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
+                                              app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
+        email_bodies = fetch_emails(mail_connection, msg_ids)
+        assert len(email_bodies) == 1
+        assert candidate['first_name'] in email_bodies[0]
+        assert candidate['last_name'] in email_bodies[0]
+        assert str(candidate['id']) in email_bodies[0]  # This will be in unsubscribe URL.
+        delete_emails(mail_connection, msg_ids, modified_subject)
 
     def test_campaign_send_with_email_client_id(self, send_email_campaign_by_client_id_response, user_first):
         """
@@ -250,7 +253,7 @@ class TestSendCampaign(object):
         """
         response = send_email_campaign_by_client_id_response['response']
         campaign = send_email_campaign_by_client_id_response['campaign']
-        assert_campaign_send(response, campaign, user_first.id, 2, email_client=True)
+        assert_campaign_send(response, campaign, user_first.id, email_client=True)
 
     def test_campaign_send_with_email_client_id_using_merge_tags(self, email_campaign_with_merge_tags, user_first,
                                                                  access_token_first):
@@ -320,24 +323,13 @@ class TestSendCampaign(object):
                                                   campaign_send['sends'][0]['id'])
         UrlConversion.delete(url_conversion)
 
-    def test_campaign_send_with_two_smartlists(self, access_token_first, headers, user_first, talent_pipeline,
-                                               email_campaign_of_user_first):
+    def test_campaign_send_with_two_smartlists(self, headers, user_first, campaign_with_two_smartlists):
         """
         This function creates two smartlists with 20 candidates each and associates them
         with a campaign. Sends that campaign and tests if emails are sent to all 40 candidates.
-        :param access_token_first: Access token of user_first
-        :param user_first: Valid user from fist domain
-        :param talent_pipeline: valid talent pipeline
-        :param email_campaign_of_user_first: email campaign associated with user first
         """
-        smartlist_id1, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
-                                                                                 count=20, emails_list=True)
-        smartlist_id2, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
-                                                                                 count=20, emails_list=True)
-        campaign = email_campaign_of_user_first
-        create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2], email_campaign_id=campaign.id)
-        response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first.id, 40)
+        response = requests.post(self.URL % campaign_with_two_smartlists.id, headers=headers)
+        assert_campaign_send(response, campaign_with_two_smartlists, user_first.id, 40)
 
     def test_campaign_send_with_hundred_sends(self, headers, user_first, campaign_to_ten_candidates_not_sent):
         """
@@ -357,7 +349,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_same_candidate_in_multiple_smartlists
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first.id)
+        assert_campaign_send(response, campaign, user_first.id, blast_sends=1)
 
     def test_campaign_send_with_archived_candidate(self, headers, user_first, campaign_with_archived_candidate):
         """
@@ -366,9 +358,29 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_archived_candidate
         response = requests.post(self.URL % campaign['id'], headers=headers)
-        assert_campaign_send(response, campaign, user_first.id)
+        assert_campaign_send(response, campaign, user_first.id, blast_sends=1)
 
-    def test_campaign_send_in_test_domain(self, headers, domain_first, user_first, campaign_with_two_candidates):
+    def test_campaign_send_with_unsubscribed_candidate(self, headers, user_first,
+                                                       campaign_with_unsubscribed_candidate):
+        """
+        We try to send campaign to a smartlist which contains 2 candidates. One of the candidate has unsubscribed
+        toc campaigns, So, campaign should only be sent to 1 candidate.
+        """
+        campaign = campaign_with_unsubscribed_candidate
+        response = requests.post(self.URL % campaign.id, headers=headers)
+        assert_campaign_send(response, campaign, user_first.id, blast_sends=1)
+
+    def test_campaign_send_with_multiple_emails_of_candidates(self, headers, user_first,
+                                                              campaign_with_multiple_candidates_email):
+        """
+        The test sends email to two candidates each having two emails.
+        But email-campaign should be sent to only primary-email-addresses of candidates.
+        If primary email is not found then email-campaign will be sent to latest emails added for candidates.
+        """
+        response = requests.post(self.URL % campaign_with_multiple_candidates_email.id, headers=headers)
+        assert_campaign_send(response, campaign_with_multiple_candidates_email, user_first.id)
+
+    def test_campaign_send_in_test_domain(self, headers, domain_first, user_first, email_campaign_of_user_first):
         """
         Here we set user's email address to be test email account used in tests.
         We then set domain of user as test domain and send an email campaign to candidates. It should be
@@ -381,8 +393,8 @@ class TestSendCampaign(object):
                                   data=json.dumps(data))
         assert response.ok, response.text
         user_first.update(email=app.config[TalentConfigKeys.GT_GMAIL_ID])
-        response = requests.post(self.URL % campaign_with_two_candidates.id, headers=headers)
-        assert_campaign_send(response, campaign_with_two_candidates, user_first.id, 2)
-        # TODO: Commenting for now
-        # assert_and_delete_email(campaign_with_two_candidates.subject)
-
+        response = requests.post(self.URL % email_campaign_of_user_first.id, headers=headers)
+        assert_campaign_send(response, email_campaign_of_user_first, user_first.id)
+        retry(assert_and_delete_email, sleeptime=5, attempts=50, sleepscale=1,
+              args=(email_campaign_of_user_first.subject,),
+              retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.error))

@@ -177,26 +177,28 @@ class TestGetCandidate(object):
         assert get_resp.status_code == 404
         assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_ARCHIVED
 
-    def test_get_candidate_assert_timeline(self, access_token_first, user_first,
-                                    candidate_first, talent_pipeline, smartlist_first):
+    def test_get_candidate_assert_timeline(self, access_token_first, user_first, talent_pipeline):
         """
         This test creates candidate and sends an email campaign to candidate twice. After that gets candidate 
         and asserts its contact history(timeline)
         """
         url = EmailCampaignApiUrl.SEND
-        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline)
+        smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
+                                                                                emails_list=True)
+        campaign_data = create_data_for_campaign_creation(smartlist_id=smartlist_id)
         campaign_data['body_html'] = "<html><body><a href=\"{}\">Email campaign test</a></body></html>".format(
             fake.url())
         response = send_request('post', EmailCampaignApiUrl.CAMPAIGNS, access_token_first, campaign_data)
+        assert response.status_code == codes.CREATED, response.text
         db.session.commit()
         campaign = EmailCampaign.get(response.json()['campaign']['id'])
-        assert_campaign_send(response, campaign, user_first.id, 1, expected_status=codes.CREATED, email_client=True,
-                             delete_url_conversion=False)
+        assert_campaign_send(response, campaign, user_first.id, blast_sends=1, expected_status=codes.CREATED,
+                             email_client=True, delete_url_conversion=False)
         email_campaign_send = EmailCampaignSend.filter_by_keywords(campaign_id=campaign.id)
         response = send_request('post', url % campaign.id, access_token_first)
         assert response.status_code == codes.OK, 'Expected status: {}, Found: {}'.format(codes.OK, response.status_code)
         db.session.commit()
-        assert_campaign_send(response, campaign, user_first.id, blasts_count=2, total_sends=2,
+        assert_campaign_send(response, campaign, user_first.id, blast_sends=1, blasts_count=2, total_sends=2,
                              expected_status=codes.OK, email_client=True, delete_url_conversion=False)
 
         email_campaign_sends = EmailCampaign.get(campaign.id).sends.all()
@@ -216,6 +218,6 @@ class TestGetCandidate(object):
         db.session.commit()
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % str(email_campaign_send[0].candidate_id),
                                 access_token_first)
-        assert get_resp.status_code == codes.OK, 'Expected status: {}, Found: {}'.format(codes.OK, response.status_code)
+        assert get_resp.status_code == codes.OK, 'Expected status: {}, Found: {}'.format(codes.OK, get_resp.status_code)
         assert len(get_resp.json()['candidate']['contact_history']['timeline']) == 4, 'Expected length: 4, got: {}'\
             .format(len(get_resp.json()['candidate']['contact_history']['timeline']))
