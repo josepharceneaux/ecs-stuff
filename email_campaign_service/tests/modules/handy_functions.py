@@ -122,8 +122,8 @@ def create_and_get_email_campaign(campaign_data, access_token):
     return campaign
 
 
-def create_email_campaign_with_merge_tags(smartlist_id, access_token=None, add_preference_url=True, in_db_only=False,
-                                          user_id=None):
+def create_email_campaign_with_merge_tags(smartlist_id=None, access_token=None, add_preference_url=True,
+                                          in_db_only=False, user_id=None):
     """
     This function creates an email-campaign containing merge tags.
     """

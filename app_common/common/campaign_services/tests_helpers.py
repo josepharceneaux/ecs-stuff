@@ -587,10 +587,9 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract(talent_pipeline=TalentPipeline)
-    def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None,
-                                        emails_list=False, create_phone=False,
-                                        assert_candidates=True, smartlist_name=fake.word(),
-                                        candidate_ids=(), timeout=600):
+    def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None, emails_list=False,
+                                        create_phone=False, assert_candidates=True, smartlist_name=fake.word(),
+                                        candidate_ids=None, timeout=300):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -601,7 +600,7 @@ class CampaignsTestsHelpers(object):
         :param bool create_phone: If True will create phone for candidates
         :param bool assert_candidates: If True will assert that candidates have been uploaded on cloud
         :param string smartlist_name: Name of smartlist
-        :param list|tuple candidate_ids: List of candidate ids
+        :param list|tuple|None candidate_ids: List of candidate ids
         :param int timeout: timeout for retry function
         """
         if not data:

@@ -39,7 +39,7 @@ def create_email_campaign_via_api(access_token, data, is_json=True):
     return response
 
 
-def create_scheduled_email_campaign_data(smartlist_id, **kwargs):
+def create_scheduled_email_campaign_data(smartlist_id=None, **kwargs):
     """
     This returns data to create an scheduled email-campaign.
     """

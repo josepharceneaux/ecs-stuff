@@ -167,7 +167,7 @@ def campaign_with_multiple_candidates_email(access_token_first, talent_pipeline)
 
     smartlist_id = create_smartlist_with_given_email_candidate(access_token_first, talent_pipeline, emails=_emails,
                                                                count=2)
-    campaign_data = create_scheduled_email_campaign_data(smartlist_id=None)
+    campaign_data = create_scheduled_email_campaign_data()
     campaign_data['list_ids'] = [smartlist_id]
     return create_and_get_email_campaign(campaign_data, access_token_first)
 
@@ -177,7 +177,7 @@ def campaign_to_ten_candidates_not_sent(access_token_first, talent_pipeline):
     """
     This returns a campaign which has ten candidates associated having email addresses.
     """
-    campaign_data = create_scheduled_email_campaign_data(smartlist_id=None)
+    campaign_data = create_scheduled_email_campaign_data()
     smartlist_ids, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
                                                                              count=10, emails_list=True)
     campaign_data['list_ids'] = [smartlist_ids]
@@ -194,7 +194,7 @@ def campaign_with_two_smartlists(access_token_first, talent_pipeline):
     smartlist_id2, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
                                                                              count=20, emails_list=True)
 
-    campaign_data = create_scheduled_email_campaign_data(smartlist_id=None)
+    campaign_data = create_scheduled_email_campaign_data()
     campaign_data['list_ids'] = [smartlist_id1, smartlist_id2]
     return create_and_get_email_campaign(campaign_data, access_token_first)
 
@@ -221,7 +221,7 @@ def campaign_with_same_candidate_in_multiple_smartlists(talent_pipeline, access_
     """
     smartlist_ids = CampaignsTestsHelpers.get_two_smartlists_with_same_candidate(talent_pipeline, access_token_first,
                                                                                  email_list=True)
-    campaign_data = create_scheduled_email_campaign_data(smartlist_id=None)
+    campaign_data = create_scheduled_email_campaign_data()
     campaign_data['list_ids'] = smartlist_ids
     return create_and_get_email_campaign(campaign_data, access_token_first)
 
@@ -495,7 +495,7 @@ def data_for_email_conversation_importer(email_clients, headers, user_first, can
     assert response.ok
     assert response.json()
     email_client_response = response.json()['email_client_credentials']
-    email_campaign = create_email_campaign_with_merge_tags(smartlist_id=None, user_id=user_first.id, in_db_only=True)
+    email_campaign = create_email_campaign_with_merge_tags(user_id=user_first.id, in_db_only=True)
     user_first.update(first_name=fake.first_name())
     user_first.update(last_name=fake.last_name())
     [subject, body_text] = do_mergetag_replacements([email_campaign.subject, email_campaign.body_text],

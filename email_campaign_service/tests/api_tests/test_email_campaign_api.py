@@ -388,7 +388,7 @@ class TestCreateCampaign(object):
         It should result in invalid usage error as campaign_name is required field.
         """
         name = '       '
-        campaign_data = create_scheduled_email_campaign_data(smartlist_id=None, campaign_name=name)
+        campaign_data = create_scheduled_email_campaign_data(campaign_name=name)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         resp_object = response.json()
         assert response.status_code == InvalidUsage.http_status_code()
@@ -413,7 +413,7 @@ class TestCreateCampaign(object):
         Here we try to create an email-campaign with list_ids not in list format. It should
         result in invalid usage error.
         """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_id=None)
+        campaign_data = create_scheduled_email_campaign_data()
         campaign_data['list_ids'] = fake.random_number()  # 'list_ids' must be a list
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == InvalidUsage.http_status_code()
@@ -426,7 +426,7 @@ class TestCreateCampaign(object):
         Invalid smartlist ids include Non-existing id, non-integer id, empty list, duplicate items in list etc.
         Status code should be 400 and campaign should not be created.
         """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_id=None)
+        campaign_data = create_scheduled_email_campaign_data()
         CampaignsTestsHelpers.campaign_create_or_update_with_invalid_smartlist(self.HTTP_METHOD, self.URL,
                                                                                access_token_first,
                                                                                campaign_data, key='list_ids')

@@ -73,7 +73,7 @@ def test_send_test_email_with_merge_tags(user_first, access_token_first):
     """
     user_first.update(first_name=fake.first_name())
     user_first.update(last_name=fake.last_name())
-    email_campaign = create_email_campaign_with_merge_tags(smartlist_id=None, user_id=user_first.id, in_db_only=True)
+    email_campaign = create_email_campaign_with_merge_tags(user_id=user_first.id, in_db_only=True)
     data = TEST_MAIL_DATA.copy()
     data.update({'subject': email_campaign.subject,
                  'body_html': email_campaign.body_html,
