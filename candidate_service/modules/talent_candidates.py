@@ -1284,6 +1284,12 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     return candidate.id
 
 
+def get_v(value):
+    v = value
+    if v:
+        v = v.strip()
+
+
 def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updating):
     """
     Function will update CandidateAddress or create a new one.
@@ -1297,9 +1303,15 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
 
     for i, address in enumerate(remove_duplicates(addresses)):
 
-        zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
-        city = address['city'].strip() if address.get('city') else None
+        # Sanitize zip code if it's provided. If zip code is empty string, we assume it should be removed
+        zip_code = address.get('zip_code')
+        if zip_code:
+            zip_code = sanitize_zip_code(zip_code)
+
+        city = address.get('city')
+        subdivision_code = address.get('subdivision_code')
         country_code = address.get('country_code')
+
         if country_code:
             country_code = get_country_code_from_name(country_code)
             if country_code:
@@ -1307,22 +1319,21 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
             else:
                 logger.info("Country code was not found ... %s" % country_code)
 
-        subdivision_code = address['subdivision_code'].upper() if address.get('subdivision_code') else None
         address_dict = dict(
-            address_line_1=address['address_line_1'].strip() if address.get('address_line_1') else None,
-            address_line_2=address['address_line_2'].strip() if address.get('address_line_2') else None,
+            address_line_1=address.get('address_line_1'),
+            address_line_2=address.get('address_line_2'),
             city=city,
-            state=(address.get('state') or '').strip(),
+            state=address.get('state'),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
             zip_code=zip_code,
-            po_box=address['po_box'].strip() if address.get('po_box') else None,
+            po_box=address.get('po_box'),
             is_default=i == 0 if address_has_default else address.get('is_default'),
             coordinates=get_coordinates(zipcode=zip_code, city=city, state=subdivision_code)
         )
 
         # Remove keys that have None values
-        address_dict = purge_dict(address_dict)
+        address_dict = remove_nulls(address_dict)
 
         # Prevent adding empty records to db
         if not address_dict:
@@ -2754,3 +2765,12 @@ class CachedData(object):
     """
     country_codes = []
     candidate_emails = []
+
+
+def remove_nulls(dict_data):
+    """
+    Function will create a dict object from dict_data without the None values
+    :type dict_data: dict
+    :rtype: dict
+    """
+    return {k: v.strip() if isinstance(v, basestring) else v for k, v in dict_data.items() if v is not None}
