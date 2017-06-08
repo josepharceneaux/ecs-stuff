@@ -40,6 +40,7 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaignSe
                                                                  TRACKING_URL_TYPE, HTML_CLICK_URL_TYPE)
 from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
+from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
 
 SIX_MONTHS_EXPIRATION_TIME = 15768000
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
@@ -359,8 +360,7 @@ def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_ty
     raise_if_not_instance_of(current_user, User)
     raise_if_not_instance_of(campaign_type, basestring)
     # Validate that campaign belongs to user's domain
-    CampaignBase.get_campaign_if_domain_is_valid(requested_campaign_id,
-                                                 current_user, campaign_type)
+    EmailCampaignBase.get_campaign_if_domain_is_valid(requested_campaign_id, current_user, campaign_type)
     return EmailCampaignSend.get_valid_send_object(send_id, requested_campaign_id)
 
 

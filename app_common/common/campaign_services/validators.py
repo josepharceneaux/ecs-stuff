@@ -153,16 +153,12 @@ def validate_form_data(form_data, current_user, required_fields=('name', 'body_t
     # validate smartlist ids to create campaign
     validate_smartlist_ids(form_data['smartlist_ids'], current_user)
 
-
+@contract
 def raise_if_dict_values_are_not_int_or_long(data):
     """
-    This validates if values in given dict are int or long. If not, it raises Invalid usage
-    error.
-    :param data: data to validate
-    :type data: dict
+    This validates if values in given dict are int or long. If not, it raises Invalid usage error.
+    :param dict data: data to validate
     """
-    if not isinstance(data, dict):
-        raise InvalidUsage('Include data as dictionary.')
     for key, value in data.iteritems():
         if not isinstance(value, (int, long)) or not value:
             raise InvalidUsage('Include %s as int|long. It cannot be 0.' % key)

@@ -11,6 +11,7 @@ import requests
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN, EMAIL_CAMPAIGN_NOT_FOUND
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import create_campaign_blast_and_sends
 
@@ -139,11 +140,14 @@ class TestEmailCampaignBlasts(object):
         some other user. It should result in 'forbidden' error.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            self.HTTP_METHOD, self.URL % email_campaign_user1_domain2_in_db.id, access_token_first)
+            self.HTTP_METHOD, self.URL % email_campaign_user1_domain2_in_db.id, access_token_first,
+            expected_error_code=EMAIL_CAMPAIGN_FORBIDDEN[1]
+        )
 
-    def test_with_invalid_campaign_id(self, access_token_first):
+    def test_get_with_non_existing_campaign_id(self, access_token_first):
         """
         This is a test to get the blasts of a campaign which does not exist in database.
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaign, self.HTTP_METHOD,
-                                                               self.URL, access_token_first)
+                                                               self.URL, access_token_first,
+                                                               expected_error_code=EMAIL_CAMPAIGN_NOT_FOUND[1])

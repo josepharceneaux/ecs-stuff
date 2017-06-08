@@ -10,6 +10,7 @@ import json
 import requests
 
 # Service Specific
+from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (assert_campaign_delete, assert_valid_campaign_get,
                                                                  generate_campaign_data)
@@ -63,7 +64,8 @@ class TestSmsCampaignWithIdHTTPGET(object):
         """
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
                                                           self.URL % sms_campaign_in_other_domain['id'],
-                                                          access_token_first)
+                                                          access_token_first,
+                                                          expected_error_code=EMAIL_CAMPAIGN_FORBIDDEN[1])
 
     def test_get_deleted_campaign(self, access_token_first, sms_campaign_of_user_first):
         """

@@ -55,6 +55,7 @@ from flask import request, Blueprint, jsonify
 # Service Specific
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.user import (User, Role)
+from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.validations import validate_and_format_request_data
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
@@ -365,8 +366,9 @@ class EmailCampaignBlasts(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         # Get a campaign that was created by this user
-        campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.EMAIL)
+        campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.EMAIL)
         # get paginated response
         page, per_page = get_pagination_params(request)
         return get_paginated_response('blasts', campaign.blasts, page, per_page)
@@ -424,9 +426,8 @@ class EmailCampaignBlastById(Resource):
                     404 (Campaign not found OR blast_obj with given id not found)
                     500 (Internal server error)
         """
-        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Get valid blast object
-        blast_obj = CampaignBase.get_valid_blast_obj(campaign_id, blast_id, request.user, CampaignUtils.EMAIL)
+        blast_obj = EmailCampaignBase.get_valid_blast_obj(campaign_id, blast_id, request.user, CampaignUtils.EMAIL)
         return dict(blast=blast_obj.to_json()), codes.OK
 
 
@@ -490,8 +491,9 @@ class EmailCampaignSends(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         # Get a campaign that was created by this user
-        campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.EMAIL)
+        campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.EMAIL)
         # get paginated response
         page, per_page = get_pagination_params(request)
         return get_paginated_response('sends', campaign.sends, page, per_page)
@@ -546,7 +548,6 @@ class EmailCampaignSendById(Resource):
                     404 (Campaign not found or send object with given id not found)
                     500 (Internal server error)
         """
-        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, send_id=send_id))
         # Get valid send object
         send_obj = get_valid_send_obj(campaign_id, send_id, request.user, CampaignUtils.EMAIL)
         return dict(send=send_obj.to_json()), codes.OK

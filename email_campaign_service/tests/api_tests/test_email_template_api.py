@@ -8,13 +8,15 @@ import requests
 from requests import codes
 import pytest
 # Application Specific
-from email_campaign_service.common.routes import EmailCampaignApiUrl
-from email_campaign_service.common.models.email_campaign import UserEmailTemplate
-from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.tests.conftest import fake
-from email_campaign_service.common.models.email_campaign import EmailTemplateFolder
 from email_campaign_service.email_campaign_app import app
+from email_campaign_service.common.tests.conftest import fake
+from email_campaign_service.common.routes import EmailCampaignApiUrl
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.common.models.email_campaign import UserEmailTemplate
+from email_campaign_service.common.models.email_campaign import EmailTemplateFolder
+from email_campaign_service.common.custom_errors.campaign import (TEMPLATE_FOLDER_FORBIDDEN,
+                                                                  TEMPLATES_FEATURE_NOT_ALLOWED)
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (request_to_email_template_resource,
                                                                   EMAIL_TEMPLATE_BODY, update_email_template,
                                                                   add_email_template, assert_valid_template_object,
@@ -87,16 +89,17 @@ class TestEmailTemplateFolders(object):
         CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.NOT_FOUND)
 
     @pytest.mark.qa
-    def test_create_email_template_folder_with_parent_id_other_domain(self, create_email_template_folder,
-                                                                      access_token_other):
+    def test_create_email_template_folder_with_parent_id_of_other_domain(self, create_email_template_folder,
+                                                                         access_token_other):
         """
         This test is to assure that email template folder can't be created through
-        parent_id of the other domain folder. Should return 400 bad request.
+        parent_id of the other domain folder. Should result in 403.
         """
         template_folder_id, template_folder_name = create_email_template_folder
         data = {'name': fake.sentence(), 'is_immutable': 1, 'parent_id': template_folder_id}
         CampaignsTestsHelpers.request_for_forbidden_error('post', EmailCampaignApiUrl.TEMPLATE_FOLDERS,
-                                                          access_token_other, data)
+                                                          access_token_other, data,
+                                                          expected_error_code=TEMPLATE_FOLDER_FORBIDDEN[1])
 
     def test_create_email_template_folder_with_invalid_domain(self, access_token_other):
         """
@@ -105,7 +108,8 @@ class TestEmailTemplateFolders(object):
         """
         data = {'name': fake.sentence()}
         CampaignsTestsHelpers.request_for_forbidden_error('post', EmailCampaignApiUrl.TEMPLATE_FOLDERS,
-                                                          access_token_other, data)
+                                                          access_token_other, data,
+                                                          expected_error_code=TEMPLATES_FEATURE_NOT_ALLOWED[1])
 
     def test_get_email_template_folders_in_domain(self, headers_for_email_templates):
         """
@@ -136,7 +140,8 @@ class TestEmailTemplateFolders(object):
         than Kaiser's. Should result in Forbidden error.
         """
         CampaignsTestsHelpers.request_for_forbidden_error('get', EmailCampaignApiUrl.TEMPLATE_FOLDERS,
-                                                          access_token_other)
+                                                          access_token_other,
+                                                          expected_error_code=TEMPLATES_FEATURE_NOT_ALLOWED[1])
 
     def test_get_email_template_folder_with_user_of_other_domain(self, create_email_template_folder,
                                                                     access_token_other):
@@ -148,7 +153,8 @@ class TestEmailTemplateFolders(object):
         template_folder_id, _ = create_email_template_folder
         CampaignsTestsHelpers.request_for_forbidden_error('get',
                                                           EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id,
-                                                          access_token_other)
+                                                          access_token_other,
+                                                          expected_error_code=TEMPLATES_FEATURE_NOT_ALLOWED[1])
 
     def test_delete_email_template_folder(self, headers_for_email_templates, create_email_template_folder):
         """
@@ -185,7 +191,8 @@ class TestEmailTemplateFolders(object):
         template_folder_id, _ = create_email_template_folder
         CampaignsTestsHelpers.request_for_forbidden_error('delete',
                                                           EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id,
-                                                          access_token_other)
+                                                          access_token_other,
+                                                          expected_error_code=TEMPLATES_FEATURE_NOT_ALLOWED[1])
 
 class TestEmailTemplatesInFolders(object):
     """
@@ -261,7 +268,8 @@ class TestEmailTemplates(object):
         than Kaiser's. Should result in Forbidden error.
         """
         CampaignsTestsHelpers.request_for_forbidden_error('post', EmailCampaignApiUrl.TEMPLATES,
-                                                          access_token_other)
+                                                          access_token_other,
+                                                          expected_error_code=TEMPLATES_FEATURE_NOT_ALLOWED[1])
 
     def test_create_email_template_with_same_name(self, user_first, headers_for_email_templates,
                                                   headers_other_for_email_templates, user_from_diff_domain):

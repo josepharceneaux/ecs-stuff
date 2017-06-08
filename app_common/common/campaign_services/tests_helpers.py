@@ -26,7 +26,8 @@ from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..tests.fake_testing_data_generator import FakeCandidatesData
-from ..utils.test_utils import (get_fake_dict, get_and_assert_zero, delete_smartlist, fake)
+from ..utils.test_utils import (get_fake_dict, get_and_assert_zero, delete_smartlist, fake, search_candidates,
+                                get_smartlist_candidates)
 from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl, EmailCampaignApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
                               ResourceNotFound, UnprocessableEntity, InternalServerError)
@@ -71,16 +72,20 @@ class CampaignsTestsHelpers(object):
 
     @classmethod
     @contract
-    def request_for_resource_not_found_error(cls, method, url, access_token, data=None):
+    def request_for_resource_not_found_error(cls, method, url, access_token, data=None, expected_error_code=None):
         """
         This should get Resource not found error because requested resource has been deleted.
         :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict|None data: Data to be posted
+        :param int|None expected_error_code: Expected error code
         """
         response = send_request(method, url, access_token, data=data)
         cls.assert_non_ok_response(response, expected_status_code=ResourceNotFound.http_status_code())
+        error = response.json()['error']
+        assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                                error['code'])
 
     @classmethod
     @contract
@@ -219,7 +224,7 @@ class CampaignsTestsHelpers(object):
 
     @classmethod
     @contract
-    def request_with_invalid_resource_id(cls, model, method, url, access_token, data=None):
+    def request_with_invalid_resource_id(cls, model, method, url, access_token, expected_error_code=None, data=None):
         """
         This makes HTTP request (as specified by method) on given URL.
         It creates two invalid ids for requested resource, 0 and some large number(non-existing id)
@@ -229,6 +234,7 @@ class CampaignsTestsHelpers(object):
         :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
+        :param positive|None expected_error_code: Expected custom error code
         :param dict|None data: Data to be posted
         """
         assert db.Model in model.__mro__
@@ -236,7 +242,10 @@ class CampaignsTestsHelpers(object):
         invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
         for _id, status_code in invalid_id_and_status_code:
             response = send_request(method, url % _id, access_token, data)
-            assert response.status_code == status_code
+            cls.assert_non_ok_response(response, expected_status_code=status_code)
+            if status_code in (ResourceNotFound.http_status_code(),):
+                error_resp = response.json()['error']
+                assert error_resp['code'] == expected_error_code
 
     @staticmethod
     def get_last_id(model):
@@ -593,7 +602,7 @@ class CampaignsTestsHelpers(object):
     @contract(talent_pipeline=TalentPipeline)
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None, emails_list=False,
                                         create_phone=False, assert_candidates=True, smartlist_name=fake.word(),
-                                        candidate_ids=None, timeout=600):
+                                        candidate_ids=None, timeout=300):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -616,7 +625,9 @@ class CampaignsTestsHelpers(object):
             candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                                  return_candidate_ids_only=True)
             if assert_candidates:
-                time.sleep(30)
+                retry(search_candidates, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                      args=(candidate_ids, access_token))
+        time.sleep(10)
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
@@ -625,8 +636,9 @@ class CampaignsTestsHelpers(object):
         smartlist_id = smartlists['smartlist']['id']
         if assert_candidates:
             attempts = timeout / 3 + 1
-            retry(assert_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
-                  args=(smartlist_id, len(candidate_ids), access_token), retry_exceptions=(AssertionError,))
+            retry(get_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
+                  retry_exceptions=(AssertionError,), args=(smartlist_id, access_token),
+                  kwargs={'count': len(candidate_ids)})
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         return smartlist_id, candidate_ids
 

@@ -20,7 +20,6 @@ import requests
 from requests import codes
 
 # Application Specific
-from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
 from email_campaign_service.tests.conftest import fake
 from email_campaign_service.common.models.user import Role
 from email_campaign_service.common.models.misc import Frequency
@@ -31,8 +30,10 @@ from email_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE, SORT_TY
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, HEALTH_CHECK)
 from email_campaign_service.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
                                                             PAGINATION_EXCEPT_SINGLE_FIELD)
+from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
+from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
+                                                          ForbiddenError)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity, ForbiddenError)
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
                                                                   assert_talent_pipeline_response,

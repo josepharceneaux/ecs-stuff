@@ -6,6 +6,8 @@ from sqlalchemy import or_, desc, extract, and_
 
 from app_common.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
 from db import db
+from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_SEND_FORBIDDEN, \
+    EMAIL_CAMPAIGN_SEND_NOT_FOUND
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
@@ -391,11 +393,12 @@ class EmailCampaignSend(db.Model):
         send_obj = EmailCampaignSend.get_by_id(send_id)
         if not send_obj:
             raise ResourceNotFound("Send object(id:%s) for email-campaign(id:%s) does not "
-                                   "exist in database."
-                                   % (send_id, requested_campaign_id))
+                                   "exist in database." % (send_id, requested_campaign_id),
+                                   error_code=EMAIL_CAMPAIGN_SEND_NOT_FOUND[1])
         if not send_obj.campaign_id == requested_campaign_id:
             raise ForbiddenError("Send object(id:%s) is not associated with email-campaign(id:%s)."
-                                 % (send_id, requested_campaign_id))
+                                 % (send_id, requested_campaign_id),
+                                 error_code=EMAIL_CAMPAIGN_SEND_FORBIDDEN[1])
         return send_obj
 
     @classmethod

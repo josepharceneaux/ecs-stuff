@@ -6,8 +6,16 @@ This file contains custom exceptions for campaign services like Email campaign-s
 """
 
 # Email campaign generic custom errors, range 1401-1430
+
+EMAIL_CAMPAIGN_FORBIDDEN = ("Email campaign doesn't belongs to user's domain", 1401)
+EMAIL_CAMPAIGN_NOT_FOUND = ("Email campaign not found", 1402)
+EMAIL_CAMPAIGN_BLAST_FORBIDDEN = ("Requested blast doesn't belongs to user's domain", 1403)
+EMAIL_CAMPAIGN_BLAST_NOT_FOUND = ("Requested blast not found", 1404)
+EMAIL_CAMPAIGN_SEND_FORBIDDEN = ("Requested blast doesn't belongs to user's domain", 1405)
+EMAIL_CAMPAIGN_SEND_NOT_FOUND = ("Requested blast not found", 1406)
+
+NOT_POSITIVE_NUMBER = ("Expecting positive int|long", 1403)
 MISSING_FIELD = ("{} field is required", 1401)
-EMAIL_CAMPAIGN_FORBIDDEN = ("Email campaign doesn't belongs to user's domain", 1402)
 NOT_NUMBER = ("Campaign {} can not be a number", 1403)
 INVALID_DATETIME_VALUE = ("Expecting datetime value to be in future", 1404)
 NON_EXISTING_ENTITY = ("Resource {} not found in database", 1405)
