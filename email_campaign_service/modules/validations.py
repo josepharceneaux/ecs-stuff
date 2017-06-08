@@ -24,6 +24,7 @@ from email_campaign_service.common.models.user import (User, ForbiddenError, Dom
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity)
 from email_campaign_service.common.campaign_services.validators import validate_smartlist_ids
 from email_campaign_service.common.talent_config_manager import (TalentConfigKeys, TalentEnvs)
+from email_campaign_service.common.custom_errors.campaign import TEMPLATES_FEATURE_NOT_ALLOWED
 from email_campaign_service.common.campaign_services.validators import validate_base_campaign_id
 from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient)
 
@@ -172,7 +173,8 @@ def validate_domain_id_for_email_templates():
                     if value:
                         valid_domain_ids.append(int(key))
             if request.user.domain_id not in valid_domain_ids:
-                raise ForbiddenError('You are not allowed to view this feature')
+                raise ForbiddenError(TEMPLATES_FEATURE_NOT_ALLOWED[0],
+                                     TEMPLATES_FEATURE_NOT_ALLOWED[1])
             return func(*args, **kwargs)
 
         return validate

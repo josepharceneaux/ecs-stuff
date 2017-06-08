@@ -14,8 +14,7 @@ from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.models.email_campaign import UserEmailTemplate
 from email_campaign_service.common.models.email_campaign import EmailTemplateFolder
-from email_campaign_service.common.custom_errors.campaign import (TEMPLATE_FOLDER_FORBIDDEN,
-                                                                  TEMPLATES_FEATURE_NOT_ALLOWED)
+from email_campaign_service.common.custom_errors.campaign import TEMPLATES_FEATURE_NOT_ALLOWED
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (request_to_email_template_resource,
                                                                   EMAIL_TEMPLATE_BODY, update_email_template,
@@ -99,7 +98,7 @@ class TestEmailTemplateFolders(object):
         data = {'name': fake.sentence(), 'is_immutable': 1, 'parent_id': template_folder_id}
         CampaignsTestsHelpers.request_for_forbidden_error('post', EmailCampaignApiUrl.TEMPLATE_FOLDERS,
                                                           access_token_other, data,
-                                                          expected_error_code=TEMPLATE_FOLDER_FORBIDDEN[1])
+                                                          expected_error_code=TEMPLATES_FEATURE_NOT_ALLOWED[1])
 
     def test_create_email_template_folder_with_invalid_domain(self, access_token_other):
         """
@@ -144,7 +143,7 @@ class TestEmailTemplateFolders(object):
                                                           expected_error_code=TEMPLATES_FEATURE_NOT_ALLOWED[1])
 
     def test_get_email_template_folder_with_user_of_other_domain(self, create_email_template_folder,
-                                                                    access_token_other):
+                                                                 access_token_other):
         """
         Test for retrieving email template folder with user of some other domain.
         It should result in Forbidden error.
