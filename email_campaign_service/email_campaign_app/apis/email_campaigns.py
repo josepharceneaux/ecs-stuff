@@ -58,7 +58,9 @@ from email_campaign_service.common.models.user import (User, Role)
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
 from email_campaign_service.modules.validations import validate_and_format_request_data
-from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_NOT_FOUND
+from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_NOT_FOUND,
+                                                                  EMAIL_CAMPAIGN_FORBIDDEN,
+                                                                  NOT_NON_ZERO_NUMBER)
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
                                                             update_hit_count, send_test_email)
 
@@ -74,8 +76,7 @@ from email_campaign_service.common.models.misc import UrlConversion, Activity
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, ActivityApiUrl)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignSend)
-from email_campaign_service.common.error_handling import (ForbiddenError, InvalidUsage, MethodNotAllowedError,
-                                                          ResourceNotFound)
+from email_campaign_service.common.error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response, get_pagination_params,
                                                            SORT_TYPES)
 from email_campaign_service.common.campaign_services.campaign_utils import (CampaignUtils, INVITATION_STATUSES)
@@ -105,13 +106,14 @@ class EmailCampaigns(Resource):
         search_keyword = request.args.get('search', '')
         sort_by = request.args.get('sort_by', 'added_datetime')
         is_hidden = request.args.get('is_hidden', 0)
-        user_id = request.args.get('user_id')
-        if user_id:
-            if not is_number(user_id):
-                raise InvalidUsage('`user_id` should be a non-negative int|long')
+        user_id = request.args.get('user_id', None)
+        if isinstance(user_id, basestring):
+            if not user_id.strip().isdigit() or int(user_id) <= 0:
+                raise InvalidUsage(NOT_NON_ZERO_NUMBER[0], error_code=NOT_NON_ZERO_NUMBER[1])
             if request.user.role.name != Role.TALENT_ADMIN \
                     and User.get_domain_id(user_id) != request.user.domain_id:
-                raise ForbiddenError("Logged-in user and requested user_id are of different domains")
+                raise ForbiddenError("Logged-in user and requested user_id are of different domains",
+                                     EMAIL_CAMPAIGN_FORBIDDEN[1])
             user_id = int(user_id)
 
         if not is_number(is_hidden) or int(is_hidden) not in (0, 1):

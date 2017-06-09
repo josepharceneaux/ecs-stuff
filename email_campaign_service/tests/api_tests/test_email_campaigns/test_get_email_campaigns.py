@@ -15,14 +15,13 @@ import pytest
 import requests
 
 # Application Specific
+from email_campaign_service.tests.conftest import fake
 from email_campaign_service.common.models.user import Role
-from email_campaign_service.tests.conftest import fake, EmailCampaign
-from email_campaign_service.common.error_handling import ForbiddenError
 from email_campaign_service.common.routes import (EmailCampaignApiUrl)
 from email_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE, SORT_TYPES
 from email_campaign_service.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
                                                             PAGINATION_EXCEPT_SINGLE_FIELD)
-from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
+from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN, NOT_NON_ZERO_NUMBER
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
@@ -109,9 +108,11 @@ class TestGetCampaigns(object):
         is not in valid format. i.e. we are passing string rather that integer value. It should result in Bad Request
         Error.
         """
-        url = EmailCampaignApiUrl.CAMPAIGNS + '?user_id={}'.format(fake.word())
-        response = requests.get(url, headers=headers)
-        assert response.status_code == requests.codes.BAD, response.text
+        for user_id in CampaignsTestsHelpers.INVALID_IDS:
+            url = EmailCampaignApiUrl.CAMPAIGNS + '?user_id={}'.format(user_id)
+            response = requests.get(url, headers=headers)
+            CampaignsTestsHelpers.assert_non_ok_response(response)
+            assert response.json()['error']['code'] == NOT_NON_ZERO_NUMBER[1]
 
     def test_get_campaigns_with_user_id_of_same_domain(self, email_campaign_user1_domain1_in_db, access_token_first,
                                                        email_campaign_user2_domain1_in_db, user_same_domain):
@@ -125,14 +126,14 @@ class TestGetCampaigns(object):
         assert email_campaigns[0]['id'] == email_campaign_user2_domain1_in_db.id
         assert email_campaigns[0]['user_id'] == user_same_domain.id
 
-    def test_get_campaigns_with_user_id_of_other_domain(self, headers, user_from_diff_domain):
+    def test_get_campaigns_with_user_id_of_other_domain(self, access_token_first, user_from_diff_domain):
         """
         Test GET API of email_campaigns for getting all campaigns for a particular user_id of some other domain.
         It should result in Forbidden Error.
         """
-        url = EmailCampaignApiUrl.CAMPAIGNS + '?user_id={}'.format(user_from_diff_domain.id)
-        response = requests.get(url, headers=headers)
-        assert response.status_code == ForbiddenError.http_status_code()
+        url = self.URL + '?user_id={}'.format(user_from_diff_domain.id)
+        CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD, url, access_token_first,
+                                                          expected_error_code=EMAIL_CAMPAIGN_FORBIDDEN[1])
 
     def test_get_campaigns_with_user_id_of_other_domain_with_talent_admin_role(self, user_first, access_token_first,
                                                                                user_from_diff_domain,
