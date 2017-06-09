@@ -442,8 +442,12 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             
             action_dict = dict(type='add', id=str(candidate_id))
 
+            is_archived = field_name_to_sql_value['is_archived']
+
             # Remove keys with empty values
             field_name_to_sql_value = {k: v for k, v in field_name_to_sql_value.items() if v}
+
+            field_name_to_sql_value['is_archived'] = is_archived
 
             # Set candidate engagement score
             field_name_to_sql_value['candidate_engagement_score'] = (1.0 if str(candidate_id) in
