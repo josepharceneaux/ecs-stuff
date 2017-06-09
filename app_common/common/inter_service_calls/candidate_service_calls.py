@@ -16,12 +16,10 @@ from ..utils.handy_functions import create_oauth_headers, http_request, send_req
 from ..error_handling import InternalServerError, InvalidUsage, ForbiddenError
 from ..utils.validators import raise_if_not_positive_int_or_long
 
-__author__ = 'jitesh'
-
 MAX_WORKERS = 20
 
 
-def search_candidates_from_params(search_params, access_token, url_args=None, user_id=None):
+def search_candidates_from_params(search_params, access_token, url_args=None, user_id=None, facets=None):
     """
     Calls the candidate_service's Search API with given search criteria and returns the Future object.
     We can get the result from future object by applying .result() on it.
@@ -29,6 +27,8 @@ def search_candidates_from_params(search_params, access_token, url_args=None, us
     :param access_token: Oauth-based or JWT-based token
     :param  url_args:  accepted arguments sent via the url; e.g. "?user_ids=2,3,4"
     :param user_id: Id of logged-in user
+    :param facets: string | a comma separated string-values for calculating and returning search facets.
+                            Should be "none" if no facet is needed.
     :return: future object for search result based on search criteria.
     """
     if not access_token:
@@ -41,6 +41,10 @@ def search_candidates_from_params(search_params, access_token, url_args=None, us
 
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI
     session = FuturesSession(max_workers=MAX_WORKERS)
+
+    # Search facet selections
+    url_args += '&facets={}'.format(facets)
+
     future = session.get(url=(url + url_args) if url_args else url, params=search_params, headers=headers)
     return future
 

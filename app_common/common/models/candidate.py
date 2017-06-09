@@ -1171,6 +1171,8 @@ class CandidateEducationDegree(db.Model):
     list_order = db.Column('ListOrder', db.SmallInteger)
     degree_type = db.Column('DegreeType', db.String(100))
     degree_title = db.Column('DegreeTitle', db.String(100))
+    concentration_type = db.Column('ConcentrationType', db.String(200))
+    comments = db.Column('Comments', db.String(5000))
     start_year = db.Column('StartYear', YEAR)
     start_month = db.Column('StartMonth', db.SmallInteger)
     end_year = db.Column('EndYear', YEAR)
@@ -1249,6 +1251,7 @@ class CandidateExperience(db.Model):
     is_current = db.Column('IsCurrent', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
+    description = db.Column('Description', db.String(10000))
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)

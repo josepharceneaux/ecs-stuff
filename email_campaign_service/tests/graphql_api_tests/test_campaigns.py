@@ -38,8 +38,8 @@ class TestCampaignsGet(object):
         assert 'errors' not in response.json()
         assert len(response.json()['data']['email_campaign_query']['campaigns']['edges']) == expected_campaigns
 
-    def test_get_campaigns_in_same_domain(self, access_token_first, email_campaign_of_user_first,
-                                          email_campaign_of_user_second):
+    def test_get_campaigns_in_same_domain(self, access_token_first, email_campaign_user1_domain1_in_db,
+                                          email_campaign_user2_domain1_in_db):
         """
         Test to get campaigns created by different users of same domain. It should not get any error.
         Total number of campaigns should be 2.

@@ -34,7 +34,7 @@ from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
     EmailCampaignSendUrlConversion
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product, CustomFieldSubCategory
+from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product, CustomFieldCategory
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.user import User, Permission
@@ -159,7 +159,6 @@ def fetch_candidate_info(candidate, fields=None):
     if source_product_id:
         source_product = Product.get(source_product_id)
         source_product_info = source_product.to_json()
-
     return {
         'id': candidate_id,
         'owner_id': candidate.user_id,
@@ -493,12 +492,13 @@ def candidate_custom_fields(candidate):
     candidate_custom_fields_data = []
 
     for candidate_custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id):
-        subcategory_id = candidate_custom_field.custom_field_subcategory_id
-        if subcategory_id:
-            sub_cat = CustomFieldSubCategory.get(subcategory_id)  # type: CustomFieldSubCategory
-            sub_cat_data = {'id': sub_cat.id, 'name': sub_cat.name}
-        else:
-            sub_cat_data = None
+        # TODO: Product has decided to punt cf-subcategories for later -Amir
+        # subcategory_id = candidate_custom_field.custom_field_subcategory_id
+        # if subcategory_id:
+        #     sub_cat = CustomFieldSubCategory.get(subcategory_id)  # type: CustomFieldSubCategory
+        #     sub_cat_data = {'id': sub_cat.id, 'name': sub_cat.name}
+        # else:
+        #     sub_cat_data = None
 
         candidate_custom_fields_data.append(
             {
@@ -506,8 +506,8 @@ def candidate_custom_fields(candidate):
                 'custom_field_id': candidate_custom_field.custom_field_id,
                 'value': candidate_custom_field.value,
                 'created_at_datetime': candidate_custom_field.added_time.isoformat(),
-                'custom_field_category_id': candidate_custom_field.custom_field_category_id,
-                'custom_field_subcategory': sub_cat_data
+                'custom_field_category_id': candidate_custom_field.custom_field_category_id
+                # 'custom_field_subcategory': sub_cat_data
             }
         )
 
@@ -551,36 +551,33 @@ def candidate_contact_history(candidate):
         event_datetime = email_campaign_send.sent_datetime
         event_type = ContactHistoryEvent.EMAIL_SEND
 
-        timeline.insert(0, dict(id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
+        timeline.insert(0, dict(id=hashlib.md5('{}{}{}'.format(str(event_datetime), event_type, str(email_campaign.id)))
+                                .hexdigest(),
                                 email_campaign_id=email_campaign.id,
                                 event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
 
-        # Get email campaign sends if its url was clicked by the candidate
-        email_campaign_sends = EmailCampaignSend.query.join(EmailCampaignSendUrlConversion).join(UrlConversion). \
-            filter(EmailCampaignSend.candidate_id == candidate.id). \
-            filter((EmailCampaignSendUrlConversion.type == 0) | (EmailCampaignSendUrlConversion.type == 1)). \
-            filter(UrlConversion.hit_count > 0).all()
+    # Get email campaign sends if its url was clicked by the candidate
+    open_email_campaign_sends = EmailCampaignSend.get_candidate_open_email_campaign_send(int(candidate.id))
 
-        for email_campaign_send_ in email_campaign_sends:
+    for open_email_campaign_send_ in open_email_campaign_sends:
+        # Get email campaign send's url conversion
+        url_conversion_id = EmailCampaignSendUrlConversion.query.filter(
+            EmailCampaignSendUrlConversion.email_campaign_send_id == open_email_campaign_send_.id
+        ).first().url_conversion_id
+        url_conversion = UrlConversion.get(url_conversion_id)
 
-            # Get email campaign send's url conversion
-            url_conversion_id = EmailCampaignSendUrlConversion.query.filter(
-                EmailCampaignSendUrlConversion.email_campaign_send_id == email_campaign_send_.id
-            ).first().url_conversion_id
-            url_conversion = UrlConversion.get(url_conversion_id)
+        event_datetime = url_conversion.last_hit_time
+        event_type = ContactHistoryEvent.EMAIL_OPEN
 
-            event_datetime = url_conversion.last_hit_time
-            event_type = ContactHistoryEvent.EMAIL_OPEN
-
-            timeline.append(dict(
-                id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
-                email_campaign_id=email_campaign.id,
-                campaign_name=email_campaign.name,
-                event_type=event_type,
-                event_datetime=event_datetime
-            ))
+        timeline.append(dict(
+            id=hashlib.md5('{}{}{}'.format(str(event_datetime), event_type, str(email_campaign.id))).hexdigest(),
+            email_campaign_id=email_campaign.id,
+            campaign_name=email_campaign.name,
+            event_type=event_type,
+            event_datetime=event_datetime
+        ))
 
     timeline_with_valid_event_datetime = filter(lambda entry: isinstance(entry['event_datetime'],
                                                                          datetime.datetime), timeline)
@@ -1354,13 +1351,27 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
             custom_field_subcategory_id=custom_field.get('custom_field_subcategory_id'),
             custom_field_category_id=custom_field.get('custom_field_category_id')
         )
-        if custom_field_dict['custom_field_subcategory_id']:
-            if custom_field_dict['custom_field_category_id'] is None:
-                raise InvalidUsage("No Custom Field Category Provided", custom_error.NO_CUSTOM_FIELD_CATEGORY_PROVIDED)
-        if custom_field_dict['custom_field_category_id']:
-            validate_cf_category_and_subcategory_ids(custom_field_dict['custom_field_category_id'],
-                                                     domain_id_from_user_id(user_id),
-                                                     custom_field_dict['custom_field_subcategory_id'])
+
+        # Remove empty values
+        custom_field_dict = {k: v for k, v in custom_field_dict.items() if v}
+
+        # TODO: Product decided to punt subcategory feature to a later time -Amir
+        # if custom_field_dict.get('custom_field_subcategory_id'):
+        #     if custom_field_dict['custom_field_category_id'] is None:
+        #         raise InvalidUsage("No Custom Field Category Provided",
+        #                           custom_error.NO_CUSTOM_FIELD_CATEGORY_PROVIDED)
+
+        custom_field_category_id = custom_field_dict.get('custom_field_category_id')
+
+        if custom_field_category_id:
+            # Custom field category ID must be recognized
+            cf_category = CustomFieldCategory.get(custom_field_category_id)
+            if not cf_category:
+                raise NotFoundError("Custom field category ID not recognized")
+
+            # Custom field category must belong to custom field
+            if cf_category.custom_field_id != custom_field_dict['custom_field_id']:
+                raise ForbiddenError("Custom field category does not belong to custom field")
 
         candidate_custom_field_id = custom_field.get('id')
 
@@ -1394,19 +1405,18 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                             column_name='value')
 
                 # Update CandidateCustomField
-                can_custom_field_obj.update(value=value, custom_field_subcategory_id=custom_field_dict
-                                            .get('custom_field_subcategory_id'),
-                                            custom_field_category_id=custom_field_dict.get('custom_field_category_id'))
+                can_custom_field_obj.update(value=value, custom_field_category_id=custom_field_category_id)
 
             else:  # Add
                 custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
                 custom_field_id = custom_field_dict.get('custom_field_id')
-                custom_field_subcategory_id = custom_field_dict.get('custom_field_subcategory_id')
-                custom_field_category_id = custom_field_dict.get('custom_field_category_id')
+
+                # TODO: Product decided to punt subcategory feature to a later time -Amir
+                # custom_field_subcategory_id = custom_field_dict.get('custom_field_subcategory_id')
 
                 # Prevent duplicate insertions
-                if not does_candidate_cf_exist(candidate, custom_field_id, value, custom_field_subcategory_id,
-                                               custom_field_category_id):
+                if not does_candidate_cf_exist(candidate=candidate, custom_field_id=custom_field_id,
+                                               value=value, custom_field_category_id=custom_field_category_id):
                     custom_field_dict['value'] = value
                     custom_field_dict.pop('values', None)
                     db.session.add(CandidateCustomField(**custom_field_dict))

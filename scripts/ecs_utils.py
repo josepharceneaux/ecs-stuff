@@ -483,8 +483,11 @@ def garbage_collect_ecs(service, cluster):
     # Find the currently running task definition
     response = ecs_client.describe_services(cluster=cluster, services=[ service_name ])
     validate_http_status('describe_services', response)
-    if len(response['services']) != 1:
-        raise Exception("garbage_collect_ecs: More than one service returned for {}".format(service_name))
+    if len(response['services']) > 1:
+        raise Exception("garbage_collect_ecs: More than one task definition returned service for {}".format(service_name))
+    if len(response['services']) == 0:
+        return
+
     current_td = response['services'][0]['taskDefinition']
     current_image = task_definition_image(ecs_client, current_td)
 

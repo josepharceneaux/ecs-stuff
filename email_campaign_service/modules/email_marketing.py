@@ -28,7 +28,7 @@ from email_campaign_service.json_schema.test_email import TEST_EMAIL_SCHEMA
 from email_campaign_service.modules.validations import get_or_set_valid_value
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 
-from email_campaign_service.modules.utils import (TRACKING_URL_TYPE, get_candidates_from_smartlist,
+from email_campaign_service.modules.utils import (get_candidates_from_smartlist,
                                                   do_mergetag_replacements, create_email_campaign_url_conversions,
                                                   decrypt_password, get_priority_emails, get_topic_arn_and_region_name)
 
@@ -46,7 +46,7 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSmartlist,
                                                                  EmailCampaignBlast,
                                                                  EmailCampaignSend,
-                                                                 EmailCampaignSendUrlConversion)
+                                                                 EmailCampaignSendUrlConversion, TRACKING_URL_TYPE)
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
                                                             CandidateSubscriptionPreference)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
@@ -357,7 +357,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 "campaign_id=%s, user=%s" % (len(subscribed_candidate_ids), len(candidate_ids_and_emails),
                                              campaign.name, campaign.id, campaign.user.email))
     if candidate_ids_and_emails:
-        concurrent_lambdas = 55
+        max_candidates_in_one_lambda = 50
         notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
         if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.QA]:
             # Get AWS region name
@@ -367,8 +367,8 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
             except Exception as error:
                 logger.error("Couldn't get boto3 lambda client Error: %s" % error.message)
                 return
-            chunks_of_candidate_ids_list = (candidate_ids_and_emails[x:x + concurrent_lambdas] for x in
-                                            xrange(0, len(candidate_ids_and_emails), concurrent_lambdas))
+            chunks_of_candidate_ids_list = (candidate_ids_and_emails[x:x + max_candidates_in_one_lambda] for x in
+                                            xrange(0, len(candidate_ids_and_emails), max_candidates_in_one_lambda))
             number_of_lambda_invocations = 0
             for chunk in chunks_of_candidate_ids_list:
                 chunk_of_candidate_ids_and_address = []
@@ -381,9 +381,13 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
                 try:
                     invoke_lambda_sender(_lambda, event_data)
                     number_of_lambda_invocations += 1
-                    if number_of_lambda_invocations % concurrent_lambdas == 0:
+                    # If email-campaign occupies all the Lambdas as specified by limit of concurrent Lambdas, and
+                    # someone tries to invoke some Lambda, it will get Throttle error. Our intention here is to avoid
+                    # Throttling. So, we are invoking specific number of Lambda's for email-campaign and then we wait
+                    #  for some time so that all of them finish working and we can invoke next chunk of Lambdas.
+                    if number_of_lambda_invocations % max_candidates_in_one_lambda == 0:
                         logger.info("Delaying Lambda invoker at %d" % number_of_lambda_invocations)
-                        sleep(concurrent_lambdas)
+                        sleep(max_candidates_in_one_lambda)
                 except Exception as error:
                     logger.error('Could not invoke Lambda. Error:%s, blast_id:%s, candidate_ids:%s'
                                  % (error.message, blast_id, chunk_of_candidate_ids_and_address))

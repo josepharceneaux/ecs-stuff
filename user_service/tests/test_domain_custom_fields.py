@@ -58,6 +58,20 @@ class TestCreateDomainCustomFields(object):
         assert len(create_resp.json()['custom_fields']) == len(data['custom_fields'])
         assert 'id' in create_resp.json()['custom_fields'][0]
 
+    def test_add_custom_field_to_domain_with_role_user(self, access_token_first, user_first):
+        """
+        Test:  Add custom fields to domain with role user
+        Expect: 401, Unauthorized
+        """
+        user_first.update(role_id=Role.get_by_name('USER').id)
+
+        # Create domain custom field
+        data = {'custom_fields': [{'name': fake.uuid4()}]}
+        create_resp = send_request('post', self.URL, access_token_first, data)
+        print response_info(create_resp)
+
+        assert create_resp.status_code == requests.codes.UNAUTHORIZED
+
     def test_add_duplicate_custom_fields_to_domain(self, access_token_first, user_first):
         """
         Test:  Add identical custom fields to the same domain
@@ -306,7 +320,7 @@ class TestDomainCustomField(object):
         r = send_request('post', CFCS_URL, access_token_first, data)
         print response_info(r)
         assert r.status_code == requests.codes.created
-        custom_field_id = r.json()['custom_fields'][0]
+        custom_field_id = r.json()['custom_fields'][0]['id']
 
         # Retrieve one of domain's custom fields
         r = send_request('get', CFC_URL % custom_field_id, access_token_first)
@@ -335,7 +349,6 @@ class TestDomainCustomField(object):
         print response_info(r)
 
         # Link candidate to custom field subcategory
-        subcategory = r.json()['custom_field']['categories'][0]['subcategories'][0]
         category = r.json()['custom_field']['categories'][0]
         update_data = {'candidates': [
             {
@@ -343,8 +356,7 @@ class TestDomainCustomField(object):
                 'custom_fields': [
                     {
                         'custom_field_id': custom_field_id,
-                        'custom_field_category_id': category['id'],
-                        'custom_field_subcategory_id': subcategory['id']
+                        'custom_field_category_id': category['id']
                     }
                 ]
             }
@@ -356,4 +368,3 @@ class TestDomainCustomField(object):
         r = send_request('get', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
         print response_info(r)
         candidate_data = r.json()['candidate']
-        assert candidate_data['custom_fields'][0]['custom_field_subcategory']

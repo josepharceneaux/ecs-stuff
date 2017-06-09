@@ -92,7 +92,9 @@ class CandidatePipelineResource(Resource):
                 search_future = search_candidates_from_params(
                         search_params=format_search_params(talent_pipeline.search_params),
                         access_token=request.oauth_token,
-                        url_args='?id={}&talent_pool_id={}'.format(candidate_id, talent_pipeline.talent_pool_id))
+                        url_args='?id={}&talent_pool_id={}'.format(candidate_id, talent_pipeline.talent_pool_id),
+                        facets='none'
+                )
                 search_future.talent_pipeline = talent_pipeline
                 search_future.search_params = search_params
                 futures.append(search_future)

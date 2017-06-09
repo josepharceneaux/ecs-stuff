@@ -32,7 +32,7 @@ from email_campaign_service.common.utils.amazon_ses import (send_email,
                                                             get_default_email_info)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailClient, EmailCampaignSend,
-                                                                 EmailClientCredentials)
+                                                                 EmailClientCredentials, EmailCampaignBlast)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.handy_functions import define_and_send_request
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
@@ -41,6 +41,8 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.modules.utils import (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_PREFERENCES_URL_MERGETAG,
                                                   DEFAULT_LAST_NAME_MERGETAG, DEFAULT_USER_NAME_MERGETAG)
+from email_campaign_service.common.campaign_services.tests.modules.email_campaign_helper_functions import \
+    create_email_campaign_via_api, create_scheduled_email_campaign_data
 
 __author__ = 'basit'
 
@@ -89,12 +91,13 @@ class EmailCampaignTypes(object):
     WITHOUT_CLIENT = 'without_client'
 
 
-def create_email_campaign(user, add_subject=True):
+def create_email_campaign_in_db(user_id, add_subject=True):
     """
     This creates an email campaign for given user
     """
-    email_campaign = EmailCampaign(name=fake.name(), user_id=user.id, is_hidden=0,
-                                   subject=fake.uuid4()[0:8] + 'It is a test campaign' if add_subject else '',
+    email_campaign = EmailCampaign(name=fake.name(), user_id=user_id, is_hidden=0,
+                                   subject='{}-{}'.format('Test campaign created in db', fake.uuid4()[0:8])
+                                   if add_subject else '',
                                    description=fake.paragraph(), _from=TEST_EMAIL_ID,
                                    reply_to=TEST_EMAIL_ID, body_text=fake.sentence(),
                                    body_html="<html><body><a href=%s>Email campaign test</a></body></html>"
@@ -104,11 +107,31 @@ def create_email_campaign(user, add_subject=True):
     return email_campaign
 
 
-def create_email_campaign_with_merge_tags(user, add_preference_url=True):
+def create_and_get_email_campaign(campaign_data, access_token):
+    """
+    This creates an email-campaign using API and returns EmailCampaign object from database.
+    """
+    response = create_email_campaign_via_api(access_token, campaign_data)
+    assert response.status_code == codes.CREATED, response.text
+    resp_object = response.json()
+    assert 'campaign' in resp_object
+    campaign_id = resp_object['campaign']['id']
+    assert campaign_id > 0, 'Expecting positive campaign_id'
+    db.session.commit()
+    campaign = EmailCampaign.get_by_id(campaign_id)
+    return campaign
+
+
+def create_email_campaign_with_merge_tags(smartlist_id=None, access_token=None, add_preference_url=True,
+                                          in_db_only=False, user_id=None):
     """
     This function creates an email-campaign containing merge tags.
     """
-    email_campaign = create_email_campaign(user, add_subject=False)
+    if in_db_only:
+        email_campaign = create_email_campaign_in_db(user_id, add_subject=False)
+    else:
+        campaign_data = create_scheduled_email_campaign_data(smartlist_id=smartlist_id)
+        email_campaign = create_and_get_email_campaign(campaign_data, access_token)
     # Update email-campaign's body text
     starting_string = 'Hello %s %s' % (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG)
     ending_string = ' Thanks, %s' % DEFAULT_USER_NAME_MERGETAG
@@ -134,29 +157,19 @@ def create_email_campaign_smartlist(access_token, talent_pipeline, campaign, ema
     return campaign
 
 
-def create_smartlist_with_given_email_candidate(access_token, campaign,
-                                                talent_pipeline, emails_list=True,
-                                                count=1, emails=None):
+def create_smartlist_with_given_email_candidate(access_token, talent_pipeline, emails_list=True, emails=None, count=1):
     """
     This creates candidate(s) as specified by the count, using the email list provided by the user
     and assign it to a smartlist.
     Finally it returns campaign object
     """
     # create candidates data
-    data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
-                                     emails_list=emails_list, count=count)
-
+    data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool, emails_list=emails_list, count=count)
     if emails and emails_list:
         for index, candidate in enumerate(data['candidates']):
             candidate['emails'] = emails[index]
-
-    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
-                                                                            talent_pipeline,
-                                                                            data=data)
-    create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
-                                     email_campaign_id=campaign.id)
-
-    return campaign
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token, talent_pipeline, data=data)
+    return smartlist_id
 
 
 def assert_valid_campaign_get(email_campaign_dict, referenced_campaigns, fields=None):
@@ -288,6 +301,7 @@ def fetch_emails(mail_connection, msg_ids):
     body = []
     for num in msg_ids:
         typ, data = mail_connection.fetch(num, '(RFC822)')
+        print "Data:%s" % data
         raw_email = data[0][1]
         raw_email_string = raw_email.decode('utf-8')
         # converts byte literal to string removing b''
@@ -517,26 +531,18 @@ def assert_valid_template_folder(template_folder_dict, domain_id, expected_name)
     assert 'parent_id' in template_folder_dict
 
 
-def create_data_for_campaign_creation_with_all_parameters(access_token, talent_pipeline, subject,
-                                                          campaign_name=fake.name(), assert_candidates=True):
+def create_data_for_campaign_creation_with_all_parameters(smartlist_id, subject, campaign_name=fake.name()):
     """
     This function returns the all data to create an email campaign
-    :param access_token: access token of user
-    :param talent_pipeline: talent_pipeline of user
+    :param smartlist_id: Id of smartlist
     :param subject: Subject of campaign
     :param campaign_name: Name of campaign
-    :param assert_candidates: allow to assert candidate
     """
     email_from = 'no-reply@gettalent.com'
     reply_to = fake.safe_email()
     body_text = fake.sentence()
     description = fake.paragraph()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
-    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
-                                                                            talent_pipeline,
-                                                                            emails_list=True,
-                                                                            assert_candidates=assert_candidates,
-                                                                            )
     start_datetime = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=20))
     end_datetime = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=40))
 
@@ -649,3 +655,14 @@ def create_dummy_kaiser_domain():
     domain = Domain(name='test_domain_{}_{}'.format('kaiser', fake.uuid4()))
     domain.save()
     return domain.id
+
+
+def create_campaign_blast_and_sends(campaign_id, candidate_id, number_of_sends):
+    """
+    This creates records in email_campaign_blast and email_campaign_send for given campaign_id.
+    """
+    blast = EmailCampaignBlast(campaign_id=campaign_id, sends=number_of_sends)
+    EmailCampaignBlast.save(blast)
+    for _ in xrange(number_of_sends):
+        send = EmailCampaignSend(campaign_id=campaign_id, blast_id=blast.id, candidate_id=candidate_id)
+        EmailCampaignSend.save(send)

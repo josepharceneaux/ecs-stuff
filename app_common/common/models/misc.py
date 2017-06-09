@@ -7,9 +7,6 @@ from sqlalchemy.dialects.mysql import DOUBLE
 from contracts import contract
 
 from ..error_handling import InvalidUsage
-from candidate import CandidateMilitaryService
-from sms_campaign import SmsCampaign
-from email_campaign import EmailCampaign
 from push_campaign import (PushCampaign, PushCampaignBlast,
                            PushCampaignSend, PushCampaignSendUrlConversion)
 from ..utils.scheduler_utils import SchedulerUtils

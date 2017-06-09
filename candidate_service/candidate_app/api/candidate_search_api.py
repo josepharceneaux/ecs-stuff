@@ -86,7 +86,6 @@ class CandidateSearch(Resource):
 
 
 class CandidateDocuments(Resource):
-
     decorators = [require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)

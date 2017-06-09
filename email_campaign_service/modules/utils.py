@@ -36,7 +36,8 @@ from email_campaign_service.common.routes import (EmailCampaignApiUrl, get_web_a
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
                                                             raise_if_not_positive_int_or_long)
-from email_campaign_service.common.models.email_campaign import (EmailCampaignSendUrlConversion, EmailCampaignSend)
+from email_campaign_service.common.models.email_campaign import (EmailCampaignSendUrlConversion, EmailCampaignSend,
+                                                                 TRACKING_URL_TYPE, HTML_CLICK_URL_TYPE)
 from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
@@ -47,9 +48,6 @@ DEFAULT_USER_NAME_MERGETAG = "*|USERNAME|*"
 DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
 TEST_PREFERENCE_URL = get_web_app_url() + "/account/subscription-preferences"
 TRACKING_PIXEL_URL = "https://s3-us-west-1.amazonaws.com/gettalent-static/pixel.png"
-TRACKING_URL_TYPE = 0
-TEXT_CLICK_URL_TYPE = 1
-HTML_CLICK_URL_TYPE = 2
 TASK_ALREADY_SCHEDULED = 6057
 
 
