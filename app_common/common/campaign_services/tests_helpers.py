@@ -92,6 +92,24 @@ class CampaignsTestsHelpers(object):
 
     @classmethod
     @contract
+    def request_with_invalid_input(cls, method, url, access_token, data=None, expected_error_code=None):
+        """
+        This should get Invalid Usage error because we are requesting with invalid input.
+        :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        :param dict|None data: Data to be posted
+        :param int|None expected_error_code: Expected error code
+        """
+        response = send_request(method, url, access_token, data=data)
+        cls.assert_non_ok_response(response)
+        error = response.json()['error']
+        assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                                error['code'])
+        return response
+
+    @classmethod
+    @contract
     def request_after_deleting_campaign(cls, campaign, url_to_delete_campaign, url_after_delete,
                                         method_after_delete, access_token, data=None):
         """

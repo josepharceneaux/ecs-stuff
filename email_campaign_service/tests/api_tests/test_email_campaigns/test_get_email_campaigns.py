@@ -11,7 +11,6 @@ import time
 from random import randint
 
 # Third Party
-import pytest
 import requests
 
 # Application Specific
@@ -21,7 +20,9 @@ from email_campaign_service.common.routes import (EmailCampaignApiUrl)
 from email_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE, SORT_TYPES
 from email_campaign_service.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
                                                             PAGINATION_EXCEPT_SINGLE_FIELD)
-from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN, NOT_NON_ZERO_NUMBER
+from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_FORBIDDEN,
+                                                                  NOT_NON_ZERO_NUMBER,
+                                                                  INVALID_INPUT)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
@@ -102,17 +103,16 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?page=2')
         assert len(email_campaigns) == 0
 
-    def test_get_campaigns_with_invalid_user_id(self, headers):
+    def test_get_campaigns_with_invalid_user_id(self, access_token_first):
         """
         Test GET API of email_campaigns for getting all campaigns for particular user_id where user_id
         is not in valid format. i.e. we are passing string rather that integer value. It should result in Bad Request
         Error.
         """
         for user_id in CampaignsTestsHelpers.INVALID_IDS:
-            url = EmailCampaignApiUrl.CAMPAIGNS + '?user_id={}'.format(user_id)
-            response = requests.get(url, headers=headers)
-            CampaignsTestsHelpers.assert_non_ok_response(response)
-            assert response.json()['error']['code'] == NOT_NON_ZERO_NUMBER[1]
+            url = self.URL + '?user_id={}'.format(user_id)
+            CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
+                                                             expected_error_code=NOT_NON_ZERO_NUMBER[1])
 
     def test_get_campaigns_with_user_id_of_same_domain(self, email_campaign_user1_domain1_in_db, access_token_first,
                                                        email_campaign_user2_domain1_in_db, user_same_domain):
@@ -149,58 +149,59 @@ class TestGetCampaigns(object):
         assert email_campaigns[0]['id'] == email_campaign_user1_domain2_in_db.id
         assert email_campaigns[0]['user_id'] == user_from_diff_domain.id
 
-    def test_get_campaigns_with_invalid_sort_type(self, headers):
+    def test_get_campaigns_with_invalid_sort_type(self, access_token_first):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain with invalid value
         of parameter sort_type. Valid values are "ASC" or "DESC"
         This should result in invalid usage error.
         """
-        url = EmailCampaignApiUrl.CAMPAIGNS + '?sort_type=%s' % fake.word()
-        response = requests.get(url, headers=headers)
-        assert response.status_code == requests.codes.BAD
+        url = self.URL + '?sort_type=%s' % fake.word()
+        response = CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
+                                                                    expected_error_code=INVALID_INPUT[1])
         for sort_type in SORT_TYPES:
             assert sort_type in response.json()['error']['message']
 
-    def test_get_campaigns_with_invalid_value_of_sort_by(self, headers):
+    def test_get_campaigns_with_invalid_value_of_sort_by(self, access_token_first):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain with invalid value
         of parameter sort_by. Valid values are "name" and "added_datetime".
         This should result in invalid usage error.
         """
-        url = EmailCampaignApiUrl.CAMPAIGNS + '?sort_by=%s' % fake.sentence()
-        response = requests.get(url, headers=headers)
-        assert response.status_code == requests.codes.BAD
+        url = self.URL + '?sort_by=%s' % fake.sentence()
+        CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
+                                                         expected_error_code=INVALID_INPUT[1])
 
-    def test_get_campaigns_with_invalid_value_of_is_hidden(self, headers):
+    def test_get_campaigns_with_invalid_value_of_is_hidden(self, access_token_first):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain with invalid value
         of parameter is_hidden. Valid values are 0 or 1.
         This should result in invalid usage error.
         """
-        url = EmailCampaignApiUrl.CAMPAIGNS + '?is_hidden=%d' % randint(2, 10)
-        response = requests.get(url, headers=headers)
-        assert response.status_code == requests.codes.BAD
+        url = self.URL + '?is_hidden=%d' % randint(2, 10)
+        CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
+                                                         expected_error_code=INVALID_INPUT[1])
 
-    def test_get_campaigns_with_paginated_response_using_invalid_per_page(self, headers):
+    def test_get_campaigns_with_paginated_response_using_invalid_per_page(self, access_token_first):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain using
         paginated response. Here we use per_page to be greater than maximum allowed value. It should
         result in invalid usage error.
         """
-        url = EmailCampaignApiUrl.CAMPAIGNS + '?per_page=%d' % randint(MAX_PAGE_SIZE + 1, 2 * MAX_PAGE_SIZE)
-        response = requests.get(url, headers=headers)
-        assert response.status_code == requests.codes.BAD
+        url = self.URL + '?per_page=%d' % randint(MAX_PAGE_SIZE + 1, 2 * MAX_PAGE_SIZE)
+        response = CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
+                                                                    expected_error_code=INVALID_INPUT[1])
         assert str(MAX_PAGE_SIZE) in response.json()['error']['message']
 
-    def test_get_campaigns_with_invalid_field_one_by_one(self, headers):
+    def test_get_campaigns_with_invalid_field_one_by_one(self, access_token_first):
         """
          This test make sure that data is not retrieved with invalid fields and also
          assure us of all possible checks are handled for every field. That's why the
          test is executed with one by one invalid field.
         """
         for param in PAGINATION_INVALID_FIELDS:
-            response = requests.get(url=self.URL + param, headers=headers)
-            assert response.status_code == requests.codes.BAD_REQUEST
+            url = self.URL + param
+            CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
+                                                             expected_error_code=INVALID_INPUT[1])
 
     def test_get_all_campaigns_in_desc(self, user_first, user_same_domain, access_token_first):
         """
@@ -233,5 +234,5 @@ class TestGetCampaigns(object):
         """
         for param in PAGINATION_EXCEPT_SINGLE_FIELD:
             # sort_by name is for email campaign pagination
-            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGNS + param % 'name', headers=headers)
+            response = requests.get(url=self.URL + param % 'name', headers=headers)
             assert response.status_code == requests.codes.OK

@@ -36,7 +36,6 @@ from flask_restful import Resource
 from flask import request, Blueprint
 
 # Service Specific
-from email_campaign_service.common.custom_errors.campaign import EMAIL_CLIENT_NOT_FOUND, EMAIL_CLIENT_FORBIDDEN
 from email_campaign_service.email_campaign_app import logger, app
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
 from email_campaign_service.modules.utils import (TASK_ALREADY_SCHEDULED, format_email_client_data)
@@ -45,16 +44,17 @@ from email_campaign_service.modules.email_clients import (EmailClientBase, impor
 # Common utils
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.talent_api import TalentApi
-from email_campaign_service.common.utils.api_utils import api_route, ApiResponse
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.common.utils.api_utils import api_route, ApiResponse
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.utils.validators import (get_json_data_if_validated,
-                                                            raise_if_not_positive_int_or_long)
+from email_campaign_service.common.utils.validators import get_json_data_if_validated
 from email_campaign_service.common.models.email_campaign import EmailClientCredentials, EmailCampaign
 from email_campaign_service.common.routes import (EmailCampaignApi, EmailCampaignApiUrl, SchedulerApiUrl)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound,
                                                           ForbiddenError)
+from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
+from email_campaign_service.common.custom_errors.campaign import (EMAIL_CLIENT_NOT_FOUND, EMAIL_CLIENT_FORBIDDEN)
 
 # Blueprint for email-clients API
 email_clients_blueprint = Blueprint('email_clients_api', __name__)
@@ -196,7 +196,7 @@ class EmailClientsWithId(Resource):
                     404 (Resource not found)
                     500 (Internal server error)
         """
-        raise_if_not_positive_int_or_long(email_client_id)
+        raise_if_dict_values_are_not_int_or_long(dict(email_client_id=email_client_id))
         client_in_db = EmailClientCredentials.get_by_id(email_client_id)
         if not client_in_db:
             raise ResourceNotFound(EMAIL_CLIENT_NOT_FOUND[0], error_code=EMAIL_CLIENT_NOT_FOUND[1])

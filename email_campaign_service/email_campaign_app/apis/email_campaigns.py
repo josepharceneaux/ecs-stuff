@@ -60,7 +60,7 @@ from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
 from email_campaign_service.modules.validations import validate_and_format_request_data
 from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_NOT_FOUND,
                                                                   EMAIL_CAMPAIGN_FORBIDDEN,
-                                                                  NOT_NON_ZERO_NUMBER)
+                                                                  NOT_NON_ZERO_NUMBER, INVALID_INPUT)
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
                                                             update_hit_count, send_test_email)
 
@@ -101,7 +101,10 @@ class EmailCampaigns(Resource):
         GET /v1/email-campaigns         Fetches all EmailCampaign objects from auth user's domain
         """
         user = request.user
-        page, per_page = get_pagination_params(request)
+        try:
+            page, per_page = get_pagination_params(request)
+        except InvalidUsage as error:
+            raise InvalidUsage(error_message=error.message, error_code=INVALID_INPUT[1])
         sort_type = request.args.get('sort_type', 'DESC')
         search_keyword = request.args.get('search', '')
         sort_by = request.args.get('sort_by', 'added_datetime')
@@ -117,14 +120,14 @@ class EmailCampaigns(Resource):
             user_id = int(user_id)
 
         if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
-            raise InvalidUsage('`is_hidden` can be either 0 or 1')
+            raise InvalidUsage('`is_hidden` can be either 0 or 1', error_code=INVALID_INPUT[1])
 
         if sort_by not in ('added_datetime', 'name'):
-            raise InvalidUsage('Value of sort_by parameter is not valid')
+            raise InvalidUsage('Value of sort_by parameter is not valid', error_code=INVALID_INPUT[1])
 
         if sort_type not in SORT_TYPES:
             raise InvalidUsage('Value of sort_type parameter is not valid. Valid values are %s'
-                               % list(SORT_TYPES))
+                               % list(SORT_TYPES), error_code=INVALID_INPUT[1])
 
         # Get all email campaigns from logged in user's domain
         query = EmailCampaign.get_by_domain_id_and_filter_by_name(
