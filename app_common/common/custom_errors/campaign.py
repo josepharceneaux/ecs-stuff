@@ -7,22 +7,31 @@ This file contains custom error codes  for campaign services like Email campaign
 
 """
 # Email campaign custom errors, range 1401-1450
+
+# Campaigns 1401-1430
 EMAIL_CAMPAIGN_FORBIDDEN = ("Email campaign doesn't belongs to user's domain", 1401)
 EMAIL_CAMPAIGN_NOT_FOUND = ("Email campaign not found", 1402)
-EMAIL_CAMPAIGN_BLAST_FORBIDDEN = ("Requested blast doesn't belongs to user's domain", 1403)
-EMAIL_CAMPAIGN_BLAST_NOT_FOUND = ("Requested blast not found", 1404)
-EMAIL_CAMPAIGN_SEND_FORBIDDEN = ("Requested blast doesn't belongs to user's domain", 1405)
-EMAIL_CAMPAIGN_SEND_NOT_FOUND = ("Requested blast not found", 1406)
-EMAIL_CLIENT_FORBIDDEN = ("Email client not found", 1407)
-EMAIL_CLIENT_NOT_FOUND = ("Email client not found", 1408)
-INVALID_INPUT = ("Got invalid value for {}", 1409)
-NOT_NON_ZERO_NUMBER = ("Expecting positive int|long", 1410)
 
 # Input Validations
+INVALID_INPUT = ("Got invalid value for {}", 1403)
+NOT_NON_ZERO_NUMBER = ("Expecting positive int|long", 1404)
+
 MISSING_FIELD = ("{} field is required", 1401)
 NOT_NUMBER = ("Campaign {} can not be a number", 1403)
 INVALID_DATETIME_VALUE = ("Expecting datetime value to be in future", 1404)
 NON_EXISTING_ENTITY = ("Resource {} not found in database", 1405)
+
+# Blasts 1421-1430
+EMAIL_CAMPAIGN_BLAST_FORBIDDEN = ("Requested blast doesn't belongs to user's domain", 1421)
+EMAIL_CAMPAIGN_BLAST_NOT_FOUND = ("Requested blast not found", 1422)
+
+# Sends 1431-1440
+EMAIL_CAMPAIGN_SEND_FORBIDDEN = ("Requested blast doesn't belongs to user's domain", 1431)
+EMAIL_CAMPAIGN_SEND_NOT_FOUND = ("Requested blast not found", 1432)
+
+# Clients 1441-1450
+EMAIL_CLIENT_FORBIDDEN = ("Email client not found", 1441)
+EMAIL_CLIENT_NOT_FOUND = ("Email client not found", 1442)
 
 # Email templates custom errors, range 1451-1470
 TEMPLATES_FEATURE_NOT_ALLOWED = ("You are not allowed to view this feature", 1451)
