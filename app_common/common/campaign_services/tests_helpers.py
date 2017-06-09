@@ -26,9 +26,11 @@ from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..tests.fake_testing_data_generator import FakeCandidatesData
-from ..utils.test_utils import (get_fake_dict, get_and_assert_zero, delete_smartlist, fake, search_candidates,
+from ..utils.test_utils import (get_fake_dict, get_and_assert_zero,
+                                delete_smartlist, fake, search_candidates,
                                 get_smartlist_candidates)
-from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl, EmailCampaignApiUrl)
+from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl,
+                      EmailCampaignApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
                               ResourceNotFound, UnprocessableEntity, InternalServerError)
 from ..inter_service_calls.candidate_pool_service_calls import (create_smartlist_from_api,
@@ -408,7 +410,7 @@ class CampaignsTestsHelpers(object):
         :param string entity: Name of expected entity
         :param bool check_count: If True, will check number of objects
         """
-        assert response.status_code == requests.codes.OK, 'Response should be "OK" (200)'
+        assert response.status_code == requests.codes.OK, 'Expecing:200, Found:{}'.format(response.status_code)
         json_response = response.json()
         assert entity in json_response
         if check_count:

@@ -436,7 +436,6 @@ def get_smartlist_candidates(smartlist_id, token, expected_status=(200,), count=
     :type expected_status: tuple[int]
     :rtype dict
     """
-
     response = send_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % smartlist_id, token)
     print('common_tests : get_smartlist_candidates: ', response.content)
     assert response.status_code in expected_status

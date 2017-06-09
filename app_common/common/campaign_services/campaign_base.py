@@ -565,7 +565,7 @@ class CampaignBase(object):
         return campaign_obj
 
     @classmethod
-    def get_valid_blast_obj(cls, requested_campaign_id, blast_id, current_user, campaign_type):
+    def get_valid_blast_obj(cls, requested_campaign_id, blast_id, current_user):
         """
         This gets the blast object from SmsCampaignBlast or EmailCampaignBlast database table
         depending on campaign_type. If no object is found corresponding to given blast_id,
@@ -588,19 +588,17 @@ class CampaignBase(object):
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=requested_campaign_id,
                                                       blast_id=blast_id))
         raise_if_not_instance_of(current_user, User)
-        raise_if_not_instance_of(campaign_type, basestring)
         # Validate that campaign belongs to user's domain
-        campaign = cls.get_campaign_if_domain_is_valid(requested_campaign_id, current_user,
-                                                       campaign_type)
-        blast_model = get_model(campaign_type, campaign_type + '_blast')
+        campaign = cls.get_campaign_if_domain_is_valid(requested_campaign_id, current_user)
+        blast_model = get_model(cls.CAMPAIGN_TYPE, cls.CAMPAIGN_TYPE + '_blast')
         blast_obj = blast_model.get_by_id(blast_id)
         if not blast_obj:
             raise ResourceNotFound("Blast(id:%s) for %s(id:%s) does not exist in database."
-                                   % (blast_id, campaign_type, campaign.id),
+                                   % (blast_id, cls.CAMPAIGN_TYPE, campaign.id),
                                    error_code=cls.CustomErrors.BLAST_NOT_FOUND[1])
         if not blast_obj.campaign_id == requested_campaign_id:
             raise ForbiddenError("Blast(id:%s) is not associated with %s(id:%s)."
-                                 % (blast_id, campaign_type, requested_campaign_id),
+                                 % (blast_id, cls.CAMPAIGN_TYPE, requested_campaign_id),
                                  error_code=cls.CustomErrors.BLAST_FORBIDDEN[1])
         return blast_obj
 
