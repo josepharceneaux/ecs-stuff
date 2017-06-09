@@ -22,6 +22,7 @@ from ..models.email_campaign import EmailCampaignBlast
 
 # Common utils
 from ..utils.datetime_utils import DatetimeUtils
+from ..custom_errors.campaign import NOT_NON_ZERO_NUMBER
 from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
 from ..utils.handy_functions import (find_missing_items, get_valid_json_data)
 
@@ -153,6 +154,7 @@ def validate_form_data(form_data, current_user, required_fields=('name', 'body_t
     # validate smartlist ids to create campaign
     validate_smartlist_ids(form_data['smartlist_ids'], current_user)
 
+
 @contract
 def raise_if_dict_values_are_not_int_or_long(data):
     """
@@ -161,7 +163,7 @@ def raise_if_dict_values_are_not_int_or_long(data):
     """
     for key, value in data.iteritems():
         if not isinstance(value, (int, long)) or not value:
-            raise InvalidUsage('Include %s as int|long. It cannot be 0.' % key)
+            raise InvalidUsage('Include %s as int|long. It cannot be 0.' % key, error_code=NOT_NON_ZERO_NUMBER[1])
 
 
 @contract

@@ -23,6 +23,7 @@ from ..models.misc import (Frequency, Activity)
 from ..utils.datetime_utils import DatetimeUtils
 from campaign_utils import get_model, CampaignUtils
 from ..utils.validators import raise_if_not_instance_of
+from ..custom_errors.campaign import NOT_NON_ZERO_NUMBER
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..tests.fake_testing_data_generator import FakeCandidatesData
@@ -245,9 +246,11 @@ class CampaignsTestsHelpers(object):
         for _id, status_code in invalid_id_and_status_code:
             response = send_request(method, url % _id, access_token, data)
             cls.assert_non_ok_response(response, expected_status_code=status_code)
-            if status_code in (ResourceNotFound.http_status_code(),):
-                error_resp = response.json()['error']
+            error_resp = response.json()['error']
+            if status_code  == ResourceNotFound.http_status_code():
                 assert error_resp['code'] == expected_error_code
+            elif status_code == InvalidUsage.http_status_code():
+                assert error_resp['code'] == NOT_NON_gZERO_NUMBER[1]
 
     @staticmethod
     def get_last_id(model):
@@ -410,7 +413,7 @@ class CampaignsTestsHelpers(object):
         :param string entity: Name of expected entity
         :param bool check_count: If True, will check number of objects
         """
-        assert response.status_code == requests.codes.OK, 'Expecing:200, Found:{}'.format(response.status_code)
+        assert response.status_code == requests.codes.OK, 'Expecting:200, Found:{}'.format(response.status_code)
         json_response = response.json()
         assert entity in json_response
         if check_count:
@@ -638,9 +641,8 @@ class CampaignsTestsHelpers(object):
         smartlist_id = smartlists['smartlist']['id']
         if assert_candidates:
             attempts = timeout / 3 + 1
-            retry(get_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
-                  retry_exceptions=(AssertionError,), args=(smartlist_id, access_token),
-                  kwargs={'count': len(candidate_ids)})
+            retry(assert_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
+                  retry_exceptions=(AssertionError,), args=(smartlist_id, len(candidate_ids), access_token))
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         return smartlist_id, candidate_ids
 

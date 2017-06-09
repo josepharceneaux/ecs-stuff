@@ -565,6 +565,7 @@ class CampaignBase(object):
         return campaign_obj
 
     @classmethod
+    @contract
     def get_valid_blast_obj(cls, requested_campaign_id, blast_id, current_user):
         """
         This gets the blast object from SmsCampaignBlast or EmailCampaignBlast database table
@@ -572,21 +573,13 @@ class CampaignBase(object):
         it raises ResourceNotFound.
         If campaign_id associated with blast_obj is not same as the requested campaign id,
         it raises forbidden error.
-        :param requested_campaign_id: Id of requested campaign object
-        :param blast_id: Id of blast object of a particular campaign
-        :param current_user: logged-in user's object
-        :param campaign_type: Type of campaign. e.g. sms_camapign | email_campaign etc
-        :type requested_campaign_id: int | long
-        :type blast_id: int | long
-        :type current_user: User
-        :type campaign_type: str
+        :param positive requested_campaign_id: Id of requested campaign object
+        :param positive blast_id: Id of blast object of a particular campaign
+        :param type(t) current_user: logged-in user's object
         :exception: ResourceNotFound
         :exception: ForbiddenError
         :return: campaign blast object
-        :rtype: SmsCampaignBlast | EmailCampaignBlast
         """
-        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=requested_campaign_id,
-                                                      blast_id=blast_id))
         raise_if_not_instance_of(current_user, User)
         # Validate that campaign belongs to user's domain
         campaign = cls.get_campaign_if_domain_is_valid(requested_campaign_id, current_user)

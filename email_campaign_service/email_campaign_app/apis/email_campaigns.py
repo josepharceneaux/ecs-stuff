@@ -186,8 +186,6 @@ class SingleEmailCampaign(Resource):
         :param int|long campaign_id: Id of campaign
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
-        # if not campaign_id:
-        #     raise MethodNotAllowedError('Campaign id is not given')
         # Get and validate request data
         data = request.get_json(silent=True)
         if not data:
@@ -434,6 +432,8 @@ class EmailCampaignBlastById(Resource):
                     404 (Campaign not found OR blast_obj with given id not found)
                     500 (Internal server error)
         """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id,
+                                                      blast_id=blast_id))
         # Get valid blast object
         blast_obj = EmailCampaignBase.get_valid_blast_obj(campaign_id, blast_id, request.user)
         return dict(blast=blast_obj.to_json()), codes.OK
