@@ -13,6 +13,8 @@ EMAIL_CAMPAIGN_BLAST_FORBIDDEN = ("Requested blast doesn't belongs to user's dom
 EMAIL_CAMPAIGN_BLAST_NOT_FOUND = ("Requested blast not found", 1404)
 EMAIL_CAMPAIGN_SEND_FORBIDDEN = ("Requested blast doesn't belongs to user's domain", 1405)
 EMAIL_CAMPAIGN_SEND_NOT_FOUND = ("Requested blast not found", 1406)
+EMAIL_CLIENT_FORBIDDEN = ("Email client not found", 1402)
+EMAIL_CLIENT_NOT_FOUND = ("Email client not found", 1402)
 
 NOT_POSITIVE_NUMBER = ("Expecting positive int|long", 1403)
 MISSING_FIELD = ("{} field is required", 1401)

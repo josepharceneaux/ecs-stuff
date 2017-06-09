@@ -14,6 +14,7 @@ class EmailCampaignBase(CampaignBase):
     """
     Class containing methods to create/schedule an email-campaign and send that to candidates.
     """
+    CAMPAIGN_TYPE = CampaignUtils.EMAIL
 
     def __init__(self, user_id, campaign_id=None):
         """

@@ -55,9 +55,10 @@ from flask import request, Blueprint, jsonify
 # Service Specific
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.user import (User, Role)
-from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
 from email_campaign_service.modules.utils import get_valid_send_obj
+from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
 from email_campaign_service.modules.validations import validate_and_format_request_data
+from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_NOT_FOUND
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
                                                             update_hit_count, send_test_email)
 
@@ -72,14 +73,13 @@ from email_campaign_service.common.utils.handy_functions import send_request
 from email_campaign_service.common.models.misc import UrlConversion, Activity
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, ActivityApiUrl)
-from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignSend, EmailCampaignBlast)
+from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignSend)
 from email_campaign_service.common.error_handling import (ForbiddenError, InvalidUsage, MethodNotAllowedError,
                                                           ResourceNotFound)
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response, get_pagination_params,
                                                            SORT_TYPES)
 from email_campaign_service.common.campaign_services.campaign_utils import (CampaignUtils, INVITATION_STATUSES)
-from email_campaign_service.common.campaign_services.validators import \
-    raise_if_dict_values_are_not_int_or_long
+from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 
 
 # Blueprint for email-campaign API
@@ -89,55 +89,46 @@ api.init_app(email_campaign_blueprint)
 api.route = types.MethodType(api_route, api)
 
 
-@api.route(EmailCampaignApi.CAMPAIGNS, EmailCampaignApi.CAMPAIGN)
+@api.route(EmailCampaignApi.CAMPAIGNS)
 class EmailCampaigns(Resource):
 
     # Access token decorator
     decorators = [require_oauth()]
 
-    def get(self, **kwargs):
+    def get(self):
         """
-        GET /v1/email-campaigns/<id>    Fetch EmailCampaign object
         GET /v1/email-campaigns         Fetches all EmailCampaign objects from auth user's domain
-
         """
         user = request.user
-        email_campaign_id = kwargs.get('id')
-        include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
-        if email_campaign_id:
-            email_campaign = EmailCampaign.search_by_id_in_domain(email_campaign_id, user.domain_id)
-            return {"email_campaign": email_campaign.to_dict(include_fields=include_fields)}
-        else:
-            page, per_page = get_pagination_params(request)
-            sort_type = request.args.get('sort_type', 'DESC')
-            search_keyword = request.args.get('search', '')
-            sort_by = request.args.get('sort_by', 'added_datetime')
-            is_hidden = request.args.get('is_hidden', 0)
-            user_id = request.args.get('user_id')
+        page, per_page = get_pagination_params(request)
+        sort_type = request.args.get('sort_type', 'DESC')
+        search_keyword = request.args.get('search', '')
+        sort_by = request.args.get('sort_by', 'added_datetime')
+        is_hidden = request.args.get('is_hidden', 0)
+        user_id = request.args.get('user_id')
+        if user_id:
+            if not is_number(user_id):
+                raise InvalidUsage('`user_id` should be a non-negative int|long')
+            if request.user.role.name != Role.TALENT_ADMIN \
+                    and User.get_domain_id(user_id) != request.user.domain_id:
+                raise ForbiddenError("Logged-in user and requested user_id are of different domains")
+            user_id = int(user_id)
 
-            if user_id:
-                if not is_number(user_id):
-                    raise InvalidUsage('`user_id` should be a non-negative int|long')
-                if request.user.role.name != Role.TALENT_ADMIN \
-                        and User.get_domain_id(user_id) != request.user.domain_id:
-                    raise ForbiddenError("Logged-in user and requested user_id are of different domains")
-                user_id = int(user_id)
+        if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
+            raise InvalidUsage('`is_hidden` can be either 0 or 1')
 
-            if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
-                raise InvalidUsage('`is_hidden` can be either 0 or 1')
+        if sort_by not in ('added_datetime', 'name'):
+            raise InvalidUsage('Value of sort_by parameter is not valid')
 
-            if sort_by not in ('added_datetime', 'name'):
-                raise InvalidUsage('Value of sort_by parameter is not valid')
+        if sort_type not in SORT_TYPES:
+            raise InvalidUsage('Value of sort_type parameter is not valid. Valid values are %s'
+                               % list(SORT_TYPES))
 
-            if sort_type not in SORT_TYPES:
-                raise InvalidUsage('Value of sort_type parameter is not valid. Valid values are %s'
-                                   % list(SORT_TYPES))
+        # Get all email campaigns from logged in user's domain
+        query = EmailCampaign.get_by_domain_id_and_filter_by_name(
+                user.domain_id, search_keyword, sort_by, sort_type, int(is_hidden), user_id=user_id)
 
-            # Get all email campaigns from logged in user's domain
-            query = EmailCampaign.get_by_domain_id_and_filter_by_name(
-                    user.domain_id, search_keyword, sort_by, sort_type, int(is_hidden), user_id=user_id)
-
-            return get_paginated_response('email_campaigns', query, page, per_page, parser=EmailCampaign.to_dict)
+        return get_paginated_response('email_campaigns', query, page, per_page, parser=EmailCampaign.to_dict)
 
     def post(self):
         """
@@ -173,14 +164,30 @@ class EmailCampaigns(Resource):
 
         return {'campaign': campaign}, codes.CREATED
 
-    def patch(self, **kwargs):
+
+@api.route(EmailCampaignApi.CAMPAIGN)
+class SingleEmailCampaign(Resource):
+
+    # Access token decorator
+    decorators = [require_oauth()]
+
+    def get(self, campaign_id):
+        """
+        GET /v1/email-campaigns/<id>    Fetch EmailCampaign object
+        """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
+        include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
+        email_campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user)
+        return {"email_campaign": email_campaign.to_dict(include_fields=include_fields)}
+
+    def patch(self, campaign_id):
         """
         This endpoint updates an existing campaign
-        :param dict kwargs: dictionary containing campaign id
+        :param int|long campaign_id: Id of campaign
         """
-        campaign_id = kwargs.get('id')
-        if not campaign_id:
-            raise MethodNotAllowedError('Campaign id is not given')
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
+        # if not campaign_id:
+        #     raise MethodNotAllowedError('Campaign id is not given')
         # Get and validate request data
         data = request.get_json(silent=True)
         if not data:
@@ -188,7 +195,7 @@ class EmailCampaigns(Resource):
         is_hidden = data.get('is_hidden', False)
         if is_hidden not in (True, False, 1, 0):
             raise InvalidUsage("is_hidden field should be a boolean, given: %s" % is_hidden)
-        email_campaign = EmailCampaign.search_by_id_in_domain(campaign_id, request.user.domain_id)
+        email_campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user)
         # Unschedule task from scheduler_service
         if email_campaign.scheduler_task_id:
             headers = {'Authorization': request.oauth_token}
@@ -242,7 +249,7 @@ class EmailCampaignSendApi(Resource):
         :param int|long campaign_id: Campaign id
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
-        email_campaign = EmailCampaign.search_by_id_in_domain(campaign_id, request.user.domain_id)
+        email_campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user)
         if email_campaign.is_hidden:
             logger.info("Email campaign(id:%s) is archived, it cannot be sent." % campaign_id)
             # Unschedule task from scheduler_service
@@ -251,7 +258,8 @@ class EmailCampaignSendApi(Resource):
                 # campaign was scheduled, remove task from scheduler_service
                 if CampaignUtils.delete_scheduled_task(email_campaign.scheduler_task_id, headers):
                     email_campaign.update(scheduler_task_id='')  # Delete scheduler task id
-            raise ResourceNotFound("Email campaign(id:%s) has been deleted." % campaign_id)
+            raise ResourceNotFound("Email campaign(id:%s) has been deleted." % campaign_id,
+                                   error_code=EMAIL_CAMPAIGN_NOT_FOUND[1])
         email_client_id = email_campaign.email_client_id
         results_send = send_email_campaign(request.user, email_campaign, new_candidates_only=False)
         if email_client_id:
@@ -368,7 +376,7 @@ class EmailCampaignBlasts(Resource):
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         # Get a campaign that was created by this user
-        campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.EMAIL)
+        campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user)
         # get paginated response
         page, per_page = get_pagination_params(request)
         return get_paginated_response('blasts', campaign.blasts, page, per_page)
@@ -427,7 +435,7 @@ class EmailCampaignBlastById(Resource):
                     500 (Internal server error)
         """
         # Get valid blast object
-        blast_obj = EmailCampaignBase.get_valid_blast_obj(campaign_id, blast_id, request.user, CampaignUtils.EMAIL)
+        blast_obj = EmailCampaignBase.get_valid_blast_obj(campaign_id, blast_id, request.user)
         return dict(blast=blast_obj.to_json()), codes.OK
 
 
@@ -493,7 +501,7 @@ class EmailCampaignSends(Resource):
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         # Get a campaign that was created by this user
-        campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.EMAIL)
+        campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user)
         # get paginated response
         page, per_page = get_pagination_params(request)
         return get_paginated_response('sends', campaign.sends, page, per_page)
@@ -549,7 +557,7 @@ class EmailCampaignSendById(Resource):
                     500 (Internal server error)
         """
         # Get valid send object
-        send_obj = get_valid_send_obj(campaign_id, send_id, request.user, CampaignUtils.EMAIL)
+        send_obj = get_valid_send_obj(campaign_id, send_id, request.user)
         return dict(send=send_obj.to_json()), codes.OK
 
 
@@ -574,7 +582,7 @@ class InvitationStatus(Resource):
         user = request.user
         email_campaign_send_id = None
         invitation_status = INVITATION_STATUSES['Not-Delivered']
-        email_campaign = EmailCampaign.search_by_id_in_domain(email_campaign_id, user.domain_id)
+        email_campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(email_campaign_id, request.user)
         # Check if candidate has received the email-campaign
         for send in email_campaign.sends.all():
             if candidate_id == send.candidate_id:

@@ -179,6 +179,7 @@ class SmsCampaignBase(CampaignBase):
     """
 
     REQUIRED_FIELDS = ('name', 'body_text', 'smartlist_ids')
+    CAMPAIGN_TYPE = CampaignUtils.SMS
 
     def __init__(self, user_id, campaign_id=None):
         """

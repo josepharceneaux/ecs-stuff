@@ -36,6 +36,7 @@ from flask_restful import Resource
 from flask import request, Blueprint
 
 # Service Specific
+from email_campaign_service.common.custom_errors.campaign import EMAIL_CLIENT_NOT_FOUND, EMAIL_CLIENT_FORBIDDEN
 from email_campaign_service.email_campaign_app import logger, app
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
 from email_campaign_service.modules.utils import (TASK_ALREADY_SCHEDULED, format_email_client_data)
@@ -198,9 +199,9 @@ class EmailClientsWithId(Resource):
         raise_if_not_positive_int_or_long(email_client_id)
         client_in_db = EmailClientCredentials.get_by_id(email_client_id)
         if not client_in_db:
-            raise ResourceNotFound('Email client with id:%s not found in database' % email_client_id)
+            raise ResourceNotFound(EMAIL_CLIENT_NOT_FOUND[0], error_code=EMAIL_CLIENT_NOT_FOUND[1])
         if not client_in_db.user.domain_id == request.user.domain_id:
-            raise ForbiddenError('Email client(id:%s) not owned by requested user`s domain' % email_client_id)
+            raise ForbiddenError(EMAIL_CLIENT_FORBIDDEN[0], error_code=EMAIL_CLIENT_FORBIDDEN[1])
         return {'email_client_credentials': client_in_db.to_json()}, codes.OK
 
 

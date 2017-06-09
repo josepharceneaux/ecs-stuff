@@ -96,7 +96,7 @@ class TestEmailCampaignSends(object):
                                                           access_token_first,
                                                           expected_error_code=EMAIL_CAMPAIGN_FORBIDDEN[1])
 
-    def test_with_non_existing_campaign_id(self, access_token_first):
+    def test_with_invalid_campaign_id(self, access_token_first):
         """
         This is a test to get the sends of a campaign which does not exist in database.
         """

@@ -336,7 +336,7 @@ def convert_html_tag_attributes(soup, conversion_function, tag="a",
     return replacements
 
 
-def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_type):
+def get_valid_send_obj(requested_campaign_id, send_id, current_user):
     """
     This gets the send object from EmailCampaignSend database table. If no object is found
     corresponding to given campaign_id, it raises ResourceNotFound.
@@ -345,11 +345,9 @@ def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_ty
     :param requested_campaign_id: Id of requested campaign object
     :param send_id: Id of send object of a particular campaign
     :param current_user: logged-in user's object
-    :param campaign_type: Type of campaign. e.g. email_campaign etc
     :type requested_campaign_id: int | long
     :type send_id: int | long
     :type current_user: User
-    :type campaign_type: str
     :exception: ResourceNotFound
     :exception: ForbiddenError
     :return: campaign blast object
@@ -358,9 +356,8 @@ def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_ty
     raise_if_dict_values_are_not_int_or_long(dict(campaign_id=requested_campaign_id,
                                                   send_id=send_id))
     raise_if_not_instance_of(current_user, User)
-    raise_if_not_instance_of(campaign_type, basestring)
     # Validate that campaign belongs to user's domain
-    EmailCampaignBase.get_campaign_if_domain_is_valid(requested_campaign_id, current_user, campaign_type)
+    EmailCampaignBase.get_campaign_if_domain_is_valid(requested_campaign_id, current_user)
     return EmailCampaignSend.get_valid_send_object(send_id, requested_campaign_id)
 
 

@@ -442,7 +442,7 @@ def get_smartlist_candidates(smartlist_id, token, expected_status=(200,), count=
     assert response.status_code in expected_status
     response = response.json()
     if count:
-        assert len(response['candidates']) == count
+        assert response['total_found'] == count
     return response
 
 

@@ -261,6 +261,7 @@ class CampaignBase(object):
 
     # Child classes will set value of this.
     REQUIRED_FIELDS = ()
+    CAMPAIGN_TYPE = None
 
     def __init__(self, user_id, campaign_id=None):
         """
@@ -541,22 +542,20 @@ class CampaignBase(object):
 
     @classmethod
     @contract
-    def get_campaign_if_domain_is_valid(cls, campaign_id, current_user, campaign_type):
+    def get_campaign_if_domain_is_valid(cls, campaign_id, current_user):
         """
         This function returns campaign object if campaign lies in the domain of logged-in user.
         Otherwise it raises the Forbidden error.
         :param positive campaign_id: id of campaign form getTalent database
         :param type(t) current_user: logged in user's object
-        :param string campaign_type: Type of campaign
         :exception: ForbiddenError
         :return: Campaign obj if campaign belongs to user's domain
         """
-        CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         raise_if_not_instance_of(current_user, User)
-        campaign_model = get_model(campaign_type, campaign_type)
+        campaign_model = get_model(cls.CAMPAIGN_TYPE, cls.CAMPAIGN_TYPE)
         campaign_obj = campaign_model.query.get(campaign_id)
         if not campaign_obj:
-            raise ResourceNotFound('%s(id=%s) not found.' % (campaign_type, campaign_id),
+            raise ResourceNotFound('%s(id=%s) not found.' % (cls.CAMPAIGN_TYPE, campaign_id),
                                    error_code=cls.CustomErrors.CAMPAIGN_NOT_FOUND[1])
         domain_id_of_campaign = cls.get_domain_id_of_campaign(campaign_obj, current_user.domain_id)
         if domain_id_of_campaign != current_user.domain_id:

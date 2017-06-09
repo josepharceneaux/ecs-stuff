@@ -1,5 +1,13 @@
 """
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+In this module, we have tests for following endpoint(s)
+
+    - POST /v1/email-campaigns
+
 This file contains tests for creation of an email-campaign
+
 """
 
 # Packages

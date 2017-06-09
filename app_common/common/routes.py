@@ -874,7 +874,7 @@ class EmailCampaignApi(object):
     """
     VERSION = 'v1'
     CAMPAIGNS = '/' + VERSION + '/email-campaigns'
-    CAMPAIGN = '/' + VERSION + '/email-campaigns/<int:id>'
+    CAMPAIGN = '/' + VERSION + '/email-campaigns/<int:campaign_id>'
     # endpoint /v1/email-campaigns/:id/send
     # Send the campaign as specified by the id
     SEND = '/' + VERSION + '/email-campaigns/<int:campaign_id>/send'

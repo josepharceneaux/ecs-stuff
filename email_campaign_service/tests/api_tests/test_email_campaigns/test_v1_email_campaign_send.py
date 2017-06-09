@@ -25,7 +25,8 @@ from email_campaign_service.modules.utils import do_mergetag_replacements
 from email_campaign_service.common.models.misc import (UrlConversion, Activity)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.routes import EmailCampaignApiUrl, UserServiceApiUrl
-from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
+from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_FORBIDDEN,
+                                                                  EMAIL_CAMPAIGN_NOT_FOUND)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailCampaignSmartlist)
@@ -104,7 +105,8 @@ class TestSendCampaign(object):
         This is a test to send a campaign which does not exists in database.
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaign, self.HTTP_METHOD, self.URL,
-                                                               access_token_first)
+                                                               access_token_first,
+                                                               expected_error_code=EMAIL_CAMPAIGN_NOT_FOUND[1])
 
     def test_send_old_archived_campaign(self, access_token_first, email_campaign_of_user_first):
         """
@@ -116,7 +118,8 @@ class TestSendCampaign(object):
         email_campaign_of_user_first.update(is_hidden=1)
         CampaignsTestsHelpers.request_for_resource_not_found_error(self.HTTP_METHOD,
                                                                    self.URL % email_campaign_of_user_first.id,
-                                                                   access_token_first)
+                                                                   access_token_first,
+                                                                   expected_error_code=EMAIL_CAMPAIGN_NOT_FOUND[1])
         db.session.commit()
         # Assert that scheduled task has been removed
         assert not email_campaign_of_user_first.scheduler_task_id
@@ -127,11 +130,12 @@ class TestSendCampaign(object):
         """
         campaign_id = email_campaign_of_user_first.id
         data = {'is_hidden': True}
-        CampaignsTestsHelpers.request_for_ok_response('patch',
-                                                      EmailCampaignApiUrl.CAMPAIGN % campaign_id,
+        # We are using PATCH so that campaign also gets unscheduled
+        CampaignsTestsHelpers.request_for_ok_response('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id,
                                                       access_token_first, data)
         CampaignsTestsHelpers.request_for_resource_not_found_error(self.HTTP_METHOD, self.URL % campaign_id,
-                                                                   access_token_first)
+                                                                   access_token_first,
+                                                                   expected_error_code=EMAIL_CAMPAIGN_NOT_FOUND[1])
 
     def test_campaign_send_with_one_smartlist_one_candidate_with_no_email(self, headers,
                                                                           campaign_with_candidate_having_no_email):
@@ -360,8 +364,7 @@ class TestSendCampaign(object):
         response = requests.post(self.URL % campaign['id'], headers=headers)
         assert_campaign_send(response, campaign, user_first.id, blast_sends=1)
 
-    def test_campaign_send_with_unsubscribed_candidate(self, headers, user_first,
-                                                       campaign_with_unsubscribed_candidate):
+    def test_campaign_send_with_unsubscribed_candidate(self, headers, user_first, campaign_with_unsubscribed_candidate):
         """
         We try to send campaign to a smartlist which contains 2 candidates. One of the candidate has unsubscribed
         toc campaigns, So, campaign should only be sent to 1 candidate.

@@ -120,7 +120,7 @@ class CampaignsTestsHelpers(object):
         :param dict|None data: Data to be posted
         """
         response = send_request(method, url, access_token, data)
-        assert response.ok
+        assert response.ok, response.text
 
     @classmethod
     @contract
@@ -958,7 +958,7 @@ def _assert_unauthorized(method, url, access_token, data=None):
      """
     response = send_request(method, url, access_token, data)
     assert response.status_code == UnauthorizedError.http_status_code(), \
-        'It should not be authorized (401)'
+        'Expecting:401, Found:{}'.format(response.status_code)
 
 
 @contract

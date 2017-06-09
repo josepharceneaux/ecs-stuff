@@ -4,29 +4,26 @@
 
 In this module, we have tests for following endpoints
 
-    1 - GET /v1/email-campaigns
-    2 - GET /v1/email-campaigns/:id
-    3 - POST /v1/email-campaigns
-
+    - GET /v1/email-campaigns
 """
 # Packages
 import time
 from random import randint
 
-import pytest
 # Third Party
+import pytest
 import requests
 
-from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
-from email_campaign_service.common.error_handling import ForbiddenError
+# Application Specific
 from email_campaign_service.common.models.user import Role
+from email_campaign_service.tests.conftest import fake, EmailCampaign
+from email_campaign_service.common.error_handling import ForbiddenError
 from email_campaign_service.common.routes import (EmailCampaignApiUrl)
 from email_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE, SORT_TYPES
 from email_campaign_service.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
                                                             PAGINATION_EXCEPT_SINGLE_FIELD)
-# Application Specific
-from email_campaign_service.tests.conftest import fake
+from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
                                                                   assert_talent_pipeline_response,
@@ -38,49 +35,13 @@ class TestGetCampaigns(object):
     Here are the tests of /v1/email-campaigns
     """
     URL = EmailCampaignApiUrl.CAMPAIGNS
+    HTTP_METHOD = 'get'
 
     def test_get_with_invalid_token(self):
         """
          User auth token is invalid. It should get Unauthorized error.
         """
-        CampaignsTestsHelpers.request_with_invalid_token('get', EmailCampaignApiUrl.CAMPAIGNS, None)
-
-    def test_get_campaign_of_other_domain(self, email_campaign_user1_domain1_in_db, access_token_other):
-        """
-        Here we try to GET a campaign which is in some other domain. It should result-in
-         ForbiddenError.
-        """
-        CampaignsTestsHelpers.request_for_forbidden_error(
-            'get', EmailCampaignApiUrl.CAMPAIGN % email_campaign_user1_domain1_in_db.id,
-            access_token_other, expected_error_code=EMAIL_CAMPAIGN_FORBIDDEN[1])
-
-    def test_get_by_campaign_id(self, email_campaign_user1_domain1_in_db, access_token_first, talent_pipeline):
-        """
-        This is the test to GET the campaign by providing campaign_id. It should get OK response
-        """
-        email_campaign = get_campaign_or_campaigns(
-            access_token_first, campaign_id=email_campaign_user1_domain1_in_db.id)
-        assert_valid_campaign_get(email_campaign, [email_campaign_user1_domain1_in_db])
-
-        # Test GET api of talent-pipelines/:id/campaigns
-        assert_talent_pipeline_response(talent_pipeline, access_token_first)
-
-    def test_get_by_campaign_id_with_fields(self, email_campaign_user1_domain1_in_db, access_token_first,
-                                            talent_pipeline):
-        """
-        This is the test to GET the campaign by providing campaign_id & filters. It should get OK response
-        """
-        fields = ['id', 'subject', 'body_html', 'body_text', 'is_hidden']
-
-        email_campaign = get_campaign_or_campaigns(
-            access_token_first,
-            campaign_id=email_campaign_user1_domain1_in_db.id,
-            fields=fields)
-        assert_valid_campaign_get(email_campaign, [email_campaign_user1_domain1_in_db],
-                                  fields=fields)
-
-        # Test GET api of talent-pipelines/:id/campaigns
-        assert_talent_pipeline_response(talent_pipeline, access_token_first, fields=fields)
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
 
     def test_get_all_campaigns_in_user_domain(self, email_campaign_user1_domain1_in_db,
                                               email_campaign_user2_domain1_in_db, access_token_first, talent_pipeline):
@@ -99,17 +60,6 @@ class TestGetCampaigns(object):
 
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
-
-    def test_get_campaign_with_email_client(self, email_campaign_with_outgoing_email_client, access_token_first):
-        """
-        Here we try to GET a campaign which is created by email-client. It should not get any error.
-        """
-        campaign = email_campaign_with_outgoing_email_client
-        fields = ['email_client_credentials_id']
-        email_campaign = get_campaign_or_campaigns(access_token_first,
-                                                   campaign_id=campaign['id'],
-                                                   fields=fields)
-        assert_valid_campaign_get(email_campaign, [campaign], fields=fields)
 
     def test_get_campaigns_with_paginated_response(self, email_campaign_user1_domain1_in_db,
                                                    email_campaign_user2_domain1_in_db,
@@ -241,8 +191,7 @@ class TestGetCampaigns(object):
         assert response.status_code == requests.codes.BAD
         assert str(MAX_PAGE_SIZE) in response.json()['error']['message']
 
-    @pytest.mark.qa
-    def test_get_campaign_with_invalid_field_one_by_one(self, headers):
+    def test_get_campaigns_with_invalid_field_one_by_one(self, headers):
         """
          This test make sure that data is not retrieved with invalid fields and also
          assure us of all possible checks are handled for every field. That's why the
@@ -252,9 +201,7 @@ class TestGetCampaigns(object):
             response = requests.get(url=self.URL + param, headers=headers)
             assert response.status_code == requests.codes.BAD_REQUEST
 
-    @pytest.mark.qa
     def test_get_all_campaigns_in_desc(self, user_first, user_same_domain, access_token_first):
-
         """
         This test is to make sure the GET endpoint get_all_email_campaigns
         is retrieving all campaigns in descending order according of added_datetime'
@@ -266,7 +213,6 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?sort_type=DESC')
         assert email_campaigns[0]['added_datetime'] > email_campaigns[1]['added_datetime']
 
-    @pytest.mark.qa
     def test_get_all_campaigns_in_asc(self, user_first, user_same_domain, access_token_first):
         """
         This test is to make sure the GET endpoint get_all_email_campaigns
@@ -279,8 +225,7 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first, query_params='?sort_type=ASC')
         assert email_campaigns[0]['added_datetime'] < email_campaigns[1]['added_datetime']
 
-    @pytest.mark.qa
-    def test_get_campaign_except_single_field(self, headers):
+    def test_get_campaigns_except_single_field(self, headers):
         """
         This test certify that data of campaign is retrieved with url having all fields except single field.
         Should return 200 ok status.
