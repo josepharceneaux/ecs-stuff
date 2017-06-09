@@ -1,20 +1,23 @@
+# Standard imports
 from datetime import datetime
 
+# Thrid party
 from contracts import contract
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy import or_, desc, extract, and_
 
-from app_common.common.custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN
+# Application Specific
 from db import db
-from email_campaign_service.common.custom_errors.campaign import EMAIL_CAMPAIGN_SEND_FORBIDDEN, \
-    EMAIL_CAMPAIGN_SEND_NOT_FOUND
 from ..utils.datetime_utils import DatetimeUtils
+from ..utils.talentbot_utils import OWNED, get_paginated_objects
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
-from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage, NotFoundError)
-from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE, get_paginated_objects
+from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError,
+                              InvalidUsage, NotFoundError)
+from ..custom_errors.campaign import (EMAIL_CAMPAIGN_SEND_FORBIDDEN, EMAIL_CAMPAIGN_FORBIDDEN,
+                                      EMAIL_CAMPAIGN_SEND_NOT_FOUND)
 
-from sqlalchemy.dialects.mysql import LONGTEXT
 
 __author__ = 'jitesh'
 

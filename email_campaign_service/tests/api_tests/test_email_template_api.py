@@ -3,10 +3,12 @@
 # Standard Library
 import json
 import datetime
+
 # Third Party
+import pytest
 import requests
 from requests import codes
-import pytest
+
 # Application Specific
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import fake
