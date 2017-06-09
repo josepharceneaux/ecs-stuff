@@ -1,11 +1,13 @@
 """
 Here are the unit test for email-campaign-service
 """
+import requests
 from contracts import ContractNotRespected
-from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.error_handling import InvalidUsage
+from email_campaign_service.common.routes import EmailCampaignApiUrl, HEALTH_CHECK
 from email_campaign_service.modules.utils import do_mergetag_replacements, TEST_PREFERENCE_URL
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import create_email_campaign_with_merge_tags
 
 __author__ = 'basit'
@@ -85,3 +87,13 @@ def test_candidate_name(candidate_first):
     candidate_first.update(first_name=first_name)
     candidate_first.update(last_name=last_name)
     assert candidate_first.name == first_name + ' ' + last_name
+
+
+# Test for healthcheck
+def test_health_check():
+    response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK)
+    assert response.status_code == requests.codes.OK
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK + '/')
+    assert response.status_code == requests.codes.OK
