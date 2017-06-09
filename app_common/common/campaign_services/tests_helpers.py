@@ -250,7 +250,7 @@ class CampaignsTestsHelpers(object):
             if status_code  == ResourceNotFound.http_status_code():
                 assert error_resp['code'] == expected_error_code
             elif status_code == InvalidUsage.http_status_code():
-                assert error_resp['code'] == NOT_NON_gZERO_NUMBER[1]
+                assert error_resp['code'] == NOT_NON_ZERO_NUMBER[1]
 
     @staticmethod
     def get_last_id(model):
