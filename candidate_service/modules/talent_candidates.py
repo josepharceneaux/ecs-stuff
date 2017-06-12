@@ -38,7 +38,7 @@ from candidate_service.common.models.talent_pools_pipelines import TalentPoolCan
 from candidate_service.common.models.user import User, Permission
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.utils.handy_functions import purge_dict
-from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name, get_country_code_from_name
+from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name, country_code_if_valid
 from candidate_service.common.utils.talent_s3 import get_s3_url
 from candidate_service.common.utils.validators import sanitize_zip_code, is_number, parse_phone_number
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
@@ -1313,11 +1313,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
         country_code = address.get('country_code')
 
         if country_code:
-            country_code = get_country_code_from_name(country_code)
-            if country_code:
-                country_code = country_code.upper()
-            else:
-                logger.info("Country code was not found ... %s" % country_code)
+            country_code = country_code_if_valid(country_code)
 
         address_dict = dict(
             address_line_1=address.get('address_line_1'),
@@ -1332,7 +1328,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
             coordinates=get_coordinates(zipcode=zip_code, city=city, state=subdivision_code)
         )
 
-        # Remove keys that have None values
+        # Remove keys that have None values (keep all other falsy-values)
         address_dict = remove_nulls(address_dict)
 
         # Prevent adding empty records to db
