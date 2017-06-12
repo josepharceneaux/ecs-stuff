@@ -1284,12 +1284,6 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     return candidate.id
 
 
-def get_v(value):
-    v = value
-    if v:
-        v = v.strip()
-
-
 def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updating):
     """
     Function will update CandidateAddress or create a new one.
@@ -1329,7 +1323,10 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
         )
 
         # Remove keys that have None values (keep all other falsy-values)
-        address_dict = remove_nulls(address_dict)
+        if is_updating:
+            address_dict = remove_nulls(address_dict)
+        else:
+            address_dict = remove_null_and_empty_string(address_dict)
 
         # Prevent adding empty records to db
         if not address_dict:
@@ -2763,6 +2760,7 @@ class CachedData(object):
     candidate_emails = []
 
 
+# TODO: Combine `remove_nulls` and `remove_null_and_empty_string` into one function/class
 def remove_nulls(dict_data):
     """
     Function will create a dict object from dict_data without the None values
@@ -2770,3 +2768,20 @@ def remove_nulls(dict_data):
     :rtype: dict
     """
     return {k: v.strip() if isinstance(v, basestring) else v for k, v in dict_data.items() if v is not None}
+
+
+def remove_null_and_empty_string(dict_data):
+    """
+    Function will create a dict object form dict_data without the None values and the empty string values
+    :type dict_data: dict
+    :rtype: dict
+    """
+    r = dict()
+    for k, v in dict_data.items():
+        if isinstance(v, basestring):
+            v = v.strip()
+            if v != '':
+                r[k] = v
+        elif v is not None:
+            r[k] = v
+    return r
