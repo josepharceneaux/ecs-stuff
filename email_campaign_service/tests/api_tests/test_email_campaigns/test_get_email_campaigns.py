@@ -16,13 +16,14 @@ import requests
 # Application Specific
 from email_campaign_service.tests.conftest import fake
 from email_campaign_service.common.models.user import Role
-from email_campaign_service.common.routes import (EmailCampaignApiUrl)
-from email_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE, SORT_TYPES
-from email_campaign_service.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
+from email_campaign_service.common.routes import EmailCampaignApiUrl
+from email_campaign_service.common.utils.api_utils import SORT_TYPES
+from email_campaign_service.common.utils.test_utils import (INVALID_PAGINATION_PARAMS,
                                                             PAGINATION_EXCEPT_SINGLE_FIELD)
 from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_FORBIDDEN,
-                                                                  NOT_NON_ZERO_NUMBER, INVALID_INPUT,
-                                                                  INVALID_VALUE_OF_PAGINATION_PARAMS)
+                                                                  NOT_NON_ZERO_NUMBER,
+                                                                  INVALID_VALUE_OF_QUERY_PARAM,
+                                                                  INVALID_VALUE_OF_PAGINATION_PARAM)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
@@ -152,12 +153,11 @@ class TestGetCampaigns(object):
     def test_get_campaigns_with_invalid_sort_type(self, access_token_first):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain with invalid value
-        of parameter sort_type. Valid values are "ASC" or "DESC"
-        This should result in invalid usage error.
+        of parameter sort_type. Valid values are "ASC" or "DESC". This should result in invalid usage error.
         """
         url = self.URL + '?sort_type=%s' % fake.word()
         response = CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
-                                                                    expected_error_code=INVALID_INPUT[1])
+                                                                    expected_error_code=INVALID_VALUE_OF_QUERY_PARAM[1])
         for sort_type in SORT_TYPES:
             assert sort_type in response.json()['error']['message']
 
@@ -169,7 +169,7 @@ class TestGetCampaigns(object):
         """
         url = self.URL + '?sort_by=%s' % fake.sentence()
         CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
-                                                         expected_error_code=INVALID_INPUT[1])
+                                                         expected_error_code=INVALID_VALUE_OF_QUERY_PARAM[1])
 
     def test_get_campaigns_with_invalid_value_of_is_hidden(self, access_token_first):
         """
@@ -179,30 +179,18 @@ class TestGetCampaigns(object):
         """
         url = self.URL + '?is_hidden=%d' % randint(2, 10)
         CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
-                                                         expected_error_code=INVALID_INPUT[1])
+                                                         expected_error_code=INVALID_VALUE_OF_QUERY_PARAM[1])
 
     # TODO: GET-1608: Add test for large value of param "page"
-    def test_get_campaigns_with_paginated_response_using_invalid_per_page(self, access_token_first):
+    def test_get_campaigns_with_invalid_pagination_params(self, access_token_first):
         """
-        Test GET API of email_campaigns for getting all campaigns in logged-in user's domain using
-        paginated response. Here we use per_page to be greater than maximum allowed value. It should
-        result in invalid usage error.
+        Test GET API of getting email_campaign using paginated response. Here we use invalid value of "per_page" to
+        be 1) greater than maximum allowed value 2) Negative. It should result in invalid usage error.
         """
-        url = self.URL + '?per_page=%d' % randint(MAX_PAGE_SIZE + 1, 2 * MAX_PAGE_SIZE)
-        response = CampaignsTestsHelpers.request_with_invalid_input(
-            self.HTTP_METHOD, url, access_token_first, expected_error_code=INVALID_VALUE_OF_PAGINATION_PARAMS[1])
-        assert str(MAX_PAGE_SIZE) in response.json()['error']['message']
-
-    def test_get_campaigns_with_invalid_field_one_by_one(self, access_token_first):
-        """
-         This test make sure that data is not retrieved with invalid fields and also
-         assure us of all possible checks are handled for every field. That's why the
-         test is executed with one by one invalid field.
-        """
-        for param in PAGINATION_INVALID_FIELDS:
+        for param in INVALID_PAGINATION_PARAMS:
             url = self.URL + param
             CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
-                                                             expected_error_code=INVALID_INPUT[1])
+                                                             expected_error_code=INVALID_VALUE_OF_PAGINATION_PARAM[1])
 
     def test_get_all_campaigns_in_desc(self, user_first, user_same_domain, access_token_first):
         """

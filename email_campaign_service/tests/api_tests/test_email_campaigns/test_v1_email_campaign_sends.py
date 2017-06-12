@@ -3,20 +3,17 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests for endpoint /v1/email-campaigns/:id/sends of email-campaign API.
 """
-# Standard Imports
-from random import randint
-
 # Third Party
 import requests
 
 # Common Utils
 from email_campaign_service.common.routes import EmailCampaignApiUrl
-from email_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_FORBIDDEN,
                                                                   EMAIL_CAMPAIGN_NOT_FOUND,
-                                                                  INVALID_VALUE_OF_PAGINATION_PARAMS)
+                                                                  INVALID_VALUE_OF_PAGINATION_PARAM)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.common.utils.test_utils import INVALID_PAGINATION_PARAMS
 
 
 class TestEmailCampaignSends(object):
@@ -116,8 +113,7 @@ class TestEmailCampaignSends(object):
         Test GET API of getting sends of email_campaign using paginated response. Here we use per_page to be greater
         than maximum allowed value. It should result in invalid usage error.
         """
-        url = '{}?per_page={}'.format(self.URL % email_campaign_user1_domain1_in_db.id,
-                                      randint(MAX_PAGE_SIZE + 1, 2 * MAX_PAGE_SIZE))
-        response = CampaignsTestsHelpers.request_with_invalid_input(
-            self.HTTP_METHOD, url, access_token_first, expected_error_code=INVALID_VALUE_OF_PAGINATION_PARAMS[1])
-        assert str(MAX_PAGE_SIZE) in response.json()['error']['message']
+        for page_param in INVALID_PAGINATION_PARAMS:
+            url = '{}?per_page={}'.format(self.URL % email_campaign_user1_domain1_in_db.id, page_param)
+            CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
+                                                             expected_error_code=INVALID_VALUE_OF_PAGINATION_PARAM[1])

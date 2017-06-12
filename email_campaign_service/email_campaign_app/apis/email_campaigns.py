@@ -53,6 +53,7 @@ from werkzeug.utils import redirect
 from flask import request, Blueprint, jsonify
 
 # Service Specific
+from app_common.common.custom_errors.campaign import INVALID_VALUE_OF_QUERY_PARAM
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.user import (User, Role)
 from email_campaign_service.modules.utils import get_valid_send_obj
@@ -61,7 +62,7 @@ from email_campaign_service.modules.validations import validate_and_format_reque
 from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_NOT_FOUND,
                                                                   EMAIL_CAMPAIGN_FORBIDDEN,
                                                                   NOT_NON_ZERO_NUMBER, INVALID_INPUT,
-                                                                  INVALID_VALUE_OF_PAGINATION_PARAMS)
+                                                                  INVALID_VALUE_OF_PAGINATION_PARAM)
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
                                                             update_hit_count, send_test_email)
 
@@ -102,15 +103,17 @@ class EmailCampaigns(Resource):
         GET /v1/email-campaigns         Fetches all EmailCampaign objects from auth user's domain
         """
         user = request.user
-        page, per_page = get_pagination_params(request, error_code=INVALID_VALUE_OF_PAGINATION_PARAMS[1])
+        page, per_page = get_pagination_params(request, error_code=INVALID_VALUE_OF_PAGINATION_PARAM[1])
         sort_type = request.args.get('sort_type', 'DESC')
         search_keyword = request.args.get('search', '')
         sort_by = request.args.get('sort_by', 'added_datetime')
         is_hidden = request.args.get('is_hidden', 0)
-        user_id = request.args.get('user_id', None)
+        user_id = request.args.get('user_id')
+
+        # Validation of query parameters
         if isinstance(user_id, basestring):
             if not user_id.strip().isdigit() or int(user_id) <= 0:
-                raise InvalidUsage(NOT_NON_ZERO_NUMBER[0], error_code=NOT_NON_ZERO_NUMBER[1])
+                raise InvalidUsage(NOT_NON_ZERO_NUMBER[0].format('`user_id`'), error_code=NOT_NON_ZERO_NUMBER[1])
             if request.user.role.name != Role.TALENT_ADMIN \
                     and User.get_domain_id(user_id) != request.user.domain_id:
                 raise ForbiddenError("Logged-in user and requested user_id are of different domains",
@@ -118,14 +121,14 @@ class EmailCampaigns(Resource):
             user_id = int(user_id)
 
         if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
-            raise InvalidUsage('`is_hidden` can be either 0 or 1', error_code=INVALID_INPUT[1])
+            raise InvalidUsage('`is_hidden` can be either 0 or 1', error_code=INVALID_VALUE_OF_QUERY_PARAM[1])
 
         if sort_by not in ('added_datetime', 'name'):
-            raise InvalidUsage('Value of sort_by parameter is not valid', error_code=INVALID_INPUT[1])
+            raise InvalidUsage('Value of sort_by parameter is not valid', error_code=INVALID_VALUE_OF_QUERY_PARAM[1])
 
         if sort_type not in SORT_TYPES:
             raise InvalidUsage('Value of sort_type parameter is not valid. Valid values are %s'
-                               % list(SORT_TYPES), error_code=INVALID_INPUT[1])
+                               % list(SORT_TYPES), error_code=INVALID_VALUE_OF_QUERY_PARAM[1])
 
         # Get all email campaigns from logged in user's domain
         query = EmailCampaign.get_by_domain_id_and_filter_by_name(
@@ -379,7 +382,7 @@ class EmailCampaignBlasts(Resource):
         # Get a campaign that was created by this user
         campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user)
         # get paginated response
-        page, per_page = get_pagination_params(request, error_code=INVALID_VALUE_OF_PAGINATION_PARAMS[1])
+        page, per_page = get_pagination_params(request, error_code=INVALID_VALUE_OF_PAGINATION_PARAM[1])
         return get_paginated_response('blasts', campaign.blasts, page, per_page)
 
 
@@ -506,7 +509,7 @@ class EmailCampaignSends(Resource):
         # Get a campaign that was created by this user
         campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user)
         # get paginated response
-        page, per_page = get_pagination_params(request, error_code=INVALID_VALUE_OF_PAGINATION_PARAMS[1])
+        page, per_page = get_pagination_params(request, error_code=INVALID_VALUE_OF_PAGINATION_PARAM[1])
         return get_paginated_response('sends', campaign.sends, page, per_page)
 
 

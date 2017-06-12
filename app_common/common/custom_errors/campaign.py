@@ -13,9 +13,10 @@ EMAIL_CAMPAIGN_FORBIDDEN = ("Email campaign doesn't belongs to user's domain", 1
 EMAIL_CAMPAIGN_NOT_FOUND = ("Email campaign not found", 1402)
 
 # Input Validations
-INVALID_VALUE_OF_PAGINATION_PARAMS = ("Invalid value for pagination params", 1403)
+INVALID_VALUE_OF_PAGINATION_PARAM = ("Invalid value for pagination param", 1403)
+INVALID_VALUE_OF_QUERY_PARAM = ("Invalid value of query param", 1404)
 INVALID_INPUT = ("Got invalid value for {}", 1403)
-NOT_NON_ZERO_NUMBER = ("Expecting positive int|long", 1404)
+NOT_NON_ZERO_NUMBER = ("Expecting positive int|long value for {}", 1404)
 
 MISSING_FIELD = ("{} field is required", 1401)
 NOT_NUMBER = ("Campaign {} can not be a number", 1403)

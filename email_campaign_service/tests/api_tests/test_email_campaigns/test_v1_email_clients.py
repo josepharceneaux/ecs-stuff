@@ -251,6 +251,5 @@ class TestGetEmailClientsWithId(object):
         Here we GET only email-clients from endpoint using 0 and non-existing id.
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(EmailClientCredentials,
-                                                               self.HTTP_METHOD, self.URL,
-                                                               access_token_first,
+                                                               self.HTTP_METHOD, self.URL, access_token_first,
                                                                expected_error_code=EMAIL_CLIENT_NOT_FOUND[1])
