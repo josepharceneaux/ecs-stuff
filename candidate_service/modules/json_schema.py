@@ -179,6 +179,9 @@ candidates_resource_schema_post = {
                                     "items": {
                                         "type": "string"
                                     }
+                                },
+                                "categories": {
+                                    "type": ["array", "null"]
                                 }
                             }
                         }
@@ -791,7 +794,10 @@ candidates_resource_schema_patch = {
                                 },
                                 "value": {
                                     "type": ["string", "null"]
-                                }
+                                },
+                                "categories": {
+                                    "type": ["array", "null"]
+                                },
                             }
                         }
                     },
