@@ -9,7 +9,6 @@ In this module, we have tests for following endpoint(s)
 This file contains tests for creation of an email-campaign
 
 """
-
 # Packages
 import pytest
 from datetime import datetime, timedelta
@@ -23,10 +22,12 @@ from email_campaign_service.tests.conftest import fake
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import EmailClient
-from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.tests.modules.__init__ import CAMPAIGN_OPTIONAL_FIELDS
-from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
-                                                          ForbiddenError)
+from app_common.common.custom_errors.campaign import (INVALID_REQUEST_BODY, MISSING_FIELD,
+                                                      INVALID_DATETIME_VALUE, INVALID_INPUT,
+                                                      INVALID_DATETIME_FORMAT, SMARTLIST_NOT_FOUND,
+                                                      SMARTLIST_FORBIDDEN)
+from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS,
                                                                   create_data_for_campaign_creation_with_all_parameters)
@@ -47,6 +48,16 @@ class TestCreateCampaign(object):
         Here we try to create email campaign with invalid access token
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
+
+    def test_campaign_creation_with_invalid_data(self, access_token_first):
+        """
+        Trying to create a campaign with 1) no data and 2) Non-JSON data. It should result in invalid usage error,
+        """
+        campaign_data = create_scheduled_email_campaign_data()
+        for data in (campaign_data, None):
+            CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL, access_token_first,
+                                                             data=data, is_json=False,
+                                                             expected_error_code=INVALID_REQUEST_BODY[1])
 
     def test_create_email_campaign_without_client_id(self, access_token_first, smartlist_user1_domain1_in_db):
         """
@@ -90,135 +101,6 @@ class TestCreateCampaign(object):
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object and resp_object['campaign']
-
-    def test_create_email_campaign_with_incoming_email_client(self, access_token_first, smartlist_user1_domain1_in_db,
-                                                              email_clients, headers):
-        """
-        Here we provide email-client of type "incoming". email-campaign should not be created.
-        """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
-        # GET email-client-id
-        response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=incoming', headers=headers)
-        assert response.ok
-        assert response.json()
-        email_client_response = response.json()['email_client_credentials']
-        assert len(email_client_response) == 2
-        campaign_data['email_client_credentials_id'] = email_client_response[0]['id']
-        response = create_email_campaign_via_api(access_token_first, campaign_data)
-        assert response.status_code == requests.codes.BAD
-
-    def test_create_campaign_with_non_json_data(self, access_token_first):
-        """
-        Here we try to create email campaign with non-JSON data. It should result in
-        invalid usage error.
-        """
-        response = create_email_campaign_via_api(access_token_first,
-                                                 {'campaign_data': 'data'}, is_json=False)
-        assert response.status_code == InvalidUsage.http_status_code()
-
-    def test_create_email_campaign_with_whitespace_campaign_name(self, access_token_first):
-        """
-        This tries to create an email campaign with whitespace as campaign name.
-        It should result in invalid usage error as campaign_name is required field.
-        """
-        name = '       '
-        campaign_data = create_scheduled_email_campaign_data(campaign_name=name)
-        response = create_email_campaign_via_api(access_token_first, campaign_data)
-        resp_object = response.json()
-        assert response.status_code == InvalidUsage.http_status_code()
-        assert 'error' in resp_object
-        assert resp_object['error']['message'] == 'name is required'
-
-    def test_create_email_campaign_with_missing_required_fields(self, access_token_first,
-                                                                invalid_data_for_campaign_creation):
-        """
-        Here we try to create an email-campaign with missing required fields. It should
-        result in invalid usage error for each missing field.
-        Required fields are 'name', 'subject', 'body_html', 'frequency_id', 'list_ids'.
-        """
-        campaign_data, missing_key = invalid_data_for_campaign_creation
-        response = create_email_campaign_via_api(access_token_first, campaign_data)
-        assert response.status_code == InvalidUsage.http_status_code()
-        json_response = response.json()
-        assert missing_key in json_response['error']['message']
-
-    def test_create_email_campaign_with_invalid_format_of_smartlist_ids(self, access_token_first):
-        """
-        Here we try to create an email-campaign with list_ids not in list format. It should
-        result in invalid usage error.
-        """
-        campaign_data = create_scheduled_email_campaign_data()
-        campaign_data['list_ids'] = fake.random_number()  # 'list_ids' must be a list
-        response = create_email_campaign_via_api(access_token_first, campaign_data)
-        assert response.status_code == InvalidUsage.http_status_code()
-        json_response = response.json()
-        assert 'list_ids' in json_response['error']['message']
-
-    def test_create_email_campaign_with_invalid_smartlist_ids(self, access_token_first):
-        """
-        This is a test to create email-campaign with invalid smartlist_ids.
-        Invalid smartlist ids include Non-existing id, non-integer id, empty list, duplicate items in list etc.
-        Status code should be 400 and campaign should not be created.
-        """
-        campaign_data = create_scheduled_email_campaign_data()
-        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_smartlist(self.HTTP_METHOD, self.URL,
-                                                                               access_token_first,
-                                                                               campaign_data, key='list_ids')
-
-    def test_create_email_campaign_with_deleted_smartlist_id(self, access_token_first, smartlist_user1_domain1_in_db):
-        """
-        This is a test to create email-campaign with deleted smartlist id. It should result in
-        Resource not found error.
-        """
-        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
-        CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL, access_token_first,
-                                                                  campaign_data['list_ids'][0], campaign_data)
-
-    def test_create_email_campaign_with_no_start_datetime(self, access_token_first, smartlist_user1_domain1_in_db):
-        """
-        Here we try to create an email-campaign with frequency DAILY for which start_datetime will be
-        a required field. But we are not giving start_datetime. It should result in
-        UnprocessableEntity error.
-        """
-        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'])
-        campaign_data['frequency_id'] = Frequency.DAILY
-        response = create_email_campaign_via_api(access_token_first, campaign_data)
-        assert response.status_code == UnprocessableEntity.http_status_code()
-
-    def test_create_email_campaign_with_invalid_start_and_end_datetime(self, access_token_first,
-                                                                       smartlist_user1_domain1_in_db):
-        """
-        Here we try to create an email-campaign with frequency DAILY. Here we provide start_datetime
-        to be ahead of end_datetime. It should result in UnprocessableEntity error.
-        """
-        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'])
-        campaign_data['frequency_id'] = Frequency.DAILY
-        campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow())
-        campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() - timedelta(minutes=2))
-        response = create_email_campaign_via_api(access_token_first, campaign_data)
-        assert response.status_code == UnprocessableEntity.http_status_code()
-
-    def test_create_email_campaign_with_invalid_email_client_id(self, access_token_first,
-                                                                smartlist_user1_domain1_in_db):
-        """
-        Here we try to create an email-campaign with invalid email-client-id. It should
-        result in invalid usage error.
-        """
-        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'])
-        campaign_data['email_client_id'] = CampaignsTestsHelpers.get_non_existing_id(EmailClient)
-        response = create_email_campaign_via_api(access_token_first, campaign_data)
-        assert response.status_code == InvalidUsage.http_status_code()
-        json_response = response.json()
-        assert 'email_client_id' in json_response['error']['message']
-
-    def test_create_email_campaign_with_smartlist_id_of_other_domain(self, smartlist_other_in_db, access_token_first):
-        """
-        Here we try to create an email-campaign with smartlist_ids belonging to some other domain.
-        It should result in ForbiddenError.
-        """
-        campaign_data = create_data_for_campaign_creation(smartlist_other_in_db['id'])
-        response = create_email_campaign_via_api(access_token_first, campaign_data)
-        assert response.status_code == ForbiddenError.http_status_code()
 
     def test_create_campaign_and_send_now(self, access_token_first, headers, smartlist_user1_domain1):
         """
@@ -277,3 +159,159 @@ class TestCreateCampaign(object):
             resp_object = response.json()
             assert 'campaign' in resp_object
             assert resp_object['campaign']['id']
+
+    def test_create_email_campaign_with_incoming_email_client(self, access_token_first, smartlist_user1_domain1_in_db,
+                                                              email_clients, headers):
+        """
+        Here we provide email-client of type "incoming". email-campaign should not be created.
+        """
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
+        # GET email-client-id
+        response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=incoming', headers=headers)
+        assert response.ok
+        assert response.json()
+        email_client_response = response.json()['email_client_credentials']
+        assert len(email_client_response) == 2
+        campaign_data['email_client_credentials_id'] = email_client_response[0]['id']
+        response = create_email_campaign_via_api(access_token_first, campaign_data)
+        assert response.status_code == requests.codes.BAD
+
+    def test_create_email_campaign_with_invalid_string_values(self, access_token_first, smartlist_user1_domain1_in_db):
+        """
+        This tries to create an email campaign with invalid string value of fields `name`, `subject` and `body_html`.
+        It should result in invalid usage error.
+        """
+        campaign_data = create_scheduled_email_campaign_data(smartlist_id=smartlist_user1_domain1_in_db['id'])
+        for field in ('name', 'subject', 'body_html'):
+            CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD, self.URL,
+                                                                                access_token_first, campaign_data,
+                                                                                field=field,
+                                                                                expected_error_code=(INVALID_INPUT[1],
+                                                                                                     MISSING_FIELD[1]))
+
+    def test_create_email_campaign_with_missing_required_fields(self, access_token_first,
+                                                                invalid_data_for_campaign_creation):
+        """
+        Here we try to create an email-campaign with missing required fields. It should
+        result in invalid usage error for each missing field.
+        Required fields are 'name', 'subject', 'body_html', 'frequency_id', 'list_ids'.
+        """
+        campaign_data, missing_key = invalid_data_for_campaign_creation
+        response = CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL, access_token_first,
+                                                                    data=campaign_data,
+                                                                    expected_error_code=MISSING_FIELD[1])
+        assert missing_key in response.json()['error']['message']
+
+    def test_create_email_campaign_with_invalid_format_of_smartlist_ids(self, access_token_first):
+        """
+        Here we try to create an email-campaign with list_ids not in list format. It should
+        result in invalid usage error.
+        """
+        campaign_data = create_scheduled_email_campaign_data()
+        campaign_data['list_ids'] = fake.random_number()  # 'list_ids' must be a list
+        CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL, access_token_first,
+                                                         data=campaign_data, expected_error_code=INVALID_INPUT[1])
+
+    def test_create_email_campaign_with_invalid_smartlist_ids(self, access_token_first):
+        """
+        This is a test to create email-campaign with invalid smartlist_ids.
+        Invalid smartlist ids include  non-integer id, empty list, duplicate items in list etc.
+        Status code should be 400 and campaign should not be created.
+        """
+        campaign_data = create_scheduled_email_campaign_data()
+        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_smartlist(self.HTTP_METHOD, self.URL,
+                                                                               access_token_first,
+                                                                               campaign_data, key='list_ids',
+                                                                               expected_error_code=INVALID_INPUT[1])
+
+    def test_create_email_campaign_with_deleted_smartlist_id(self, access_token_first, smartlist_user1_domain1_in_db):
+        """
+        This is a test to create email-campaign with deleted smartlist id. It should result in
+        Resource not found error.
+        """
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL, access_token_first,
+                                                                  campaign_data['list_ids'][0], campaign_data,
+                                                                  expected_error_code=SMARTLIST_NOT_FOUND[1])
+
+    def test_create_email_campaign_with_smartlist_id_of_other_domain(self, access_token_first,
+                                                                     smartlist_other_in_db):
+        """
+        This is a test to create email-campaign with deleted smartlist id. It should result in
+        Resource not found error.
+        """
+        campaign_data = create_scheduled_email_campaign_data(smartlist_other_in_db['id'])
+        CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD, self.URL, access_token_first, campaign_data,
+                                                          expected_error_code=SMARTLIST_FORBIDDEN[1])
+
+    def test_create_campaign_with_invalid_frequency_id(self, access_token_first, smartlist_user1_domain1_in_db):
+        """
+        Trying to schedule a campaign with invalid frequency_id. It should result in bad request error.
+        """
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
+        CampaignsTestsHelpers.campaign_schedule_or_reschedule_with_invalid_frequency_id(
+            self.HTTP_METHOD, self.URL, access_token_first, campaign_data, expected_error_code=(MISSING_FIELD[1],
+                                                                                                INVALID_INPUT[1]))
+
+    def test_create_campaign_with_invalid_datetime_format(self, access_token_first, smartlist_user1_domain1_in_db):
+        """
+        This is a test to schedule a campaign with invalid datetime formats. It should result in invalid usage error.
+        """
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
+        CampaignsTestsHelpers.invalid_datetime_format(self.HTTP_METHOD, self.URL, access_token_first, campaign_data,
+                                                      expected_error_code=INVALID_DATETIME_FORMAT[1])
+
+    def test_create_periodic_email_campaign_with_missing_start_and_end_datetime(self, access_token_first,
+                                                                                smartlist_user1_domain1_in_db):
+        """
+        Here we try to create an email-campaign with frequency DAILY for which start_datetime and end_datetime
+        will be required fields. But we are not giving those fields. It should result in UnprocessableEntity error.
+        """
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
+        expected_status_code = UnprocessableEntity.http_status_code()
+        campaign_data['frequency_id'] = Frequency.DAILY
+        CampaignsTestsHelpers.missing_fields_in_schedule_data(self.HTTP_METHOD, self.URL, access_token_first,
+                                                              campaign_data,
+                                                              expected_status_code=expected_status_code,
+                                                              expected_error_code=MISSING_FIELD[1])
+
+    def test_create_periodic_email_campaign_with_past_start_and_end_datetime(self, access_token_first,
+                                                                             smartlist_user1_domain1_in_db):
+        """
+        Here we try to create an email-campaign with frequency DAILY for which start_datetime and end_datetime
+        are expected to be in past. It should result in UnprocessableEntity error.
+        """
+        campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
+        expected_status_code = UnprocessableEntity.http_status_code()
+        campaign_data['frequency_id'] = Frequency.DAILY
+        CampaignsTestsHelpers.request_with_past_start_and_end_datetime(self.HTTP_METHOD, self.URL, access_token_first,
+                                                                       campaign_data,
+                                                                       expected_status_code=expected_status_code,
+                                                                       expected_error_code=INVALID_DATETIME_VALUE[1])
+
+    def test_create_email_campaign_with_start_datetime_ahead_of_end_datetime(self, access_token_first,
+                                                                             smartlist_user1_domain1_in_db):
+        """
+        Here we try to create an email-campaign with frequency DAILY. Here we provide start_datetime
+        to be ahead of end_datetime. It should result in UnprocessableEntity error.
+        """
+        expected_status_code = UnprocessableEntity.http_status_code()
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'])
+        campaign_data['frequency_id'] = Frequency.DAILY
+        CampaignsTestsHelpers.start_datetime_greater_than_end_datetime(self.HTTP_METHOD, self.URL, access_token_first,
+                                                                       data=campaign_data,
+                                                                       expected_status_code=expected_status_code,
+                                                                       expected_error_code=INVALID_DATETIME_VALUE[1])
+
+    def test_create_email_campaign_with_invalid_email_client_id(self, access_token_first,
+                                                                smartlist_user1_domain1_in_db):
+        """
+        Here we try to create an email-campaign with invalid email-client-id. It should
+        result in invalid usage error.
+        """
+        campaign_data = create_data_for_campaign_creation(smartlist_user1_domain1_in_db['id'])
+        campaign_data['email_client_id'] = CampaignsTestsHelpers.get_non_existing_id(EmailClient)
+        response = create_email_campaign_via_api(access_token_first, campaign_data)
+        assert response.status_code == InvalidUsage.http_status_code()
+        json_response = response.json()
+        assert 'email_client_id' in json_response['error']['message']

@@ -10,6 +10,7 @@ Functions in this file are
 """
 # Packages
 from contracts import contract
+from collections import Counter
 
 # Database Models
 from ..models.user import User
@@ -102,32 +103,40 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
     return campaign_blast_obj.campaign
 
 
-def validate_smartlist_ids(smartlist_ids, current_user):
+def validate_smartlist_ids(smartlist_ids, current_user, error_code=None, resource_not_found_error_code=None,
+                           forbidden_error_code=None):
     """
     This validates smartlist_ids on following criterion.
     1- If any of the smartlist_ids does not belong to user's domain, it raises ForbiddenError exception.
     2- If any of the smartlist_ids is not found in database, it raises ResourceNotFound exception.
     3- If any of the smartlist_ids is invalid (e.g. not int | long), it raises InvalidUsage exception.
-    :param smartlist_ids: List of Ids of smartlists
-    :param current_user: logged-in user's object
-    :type smartlist_ids: list
-    :type current_user: User
+    :param list smartlist_ids: List of Ids of smartlists
+    :param User current_user: logged-in user's object
+    :param int|None error_code: Custom error code
+    :param int|None resource_not_found_error_code: Custom error code for Smartlist not found
+    :param int|None forbidden_error_code: Custom error code for Smartlist is forbidden
     """
     if not isinstance(smartlist_ids, list):
         raise InvalidUsage('Include smartlist id(s) in a list.')
+    # Validate all items are valid integer or long
+    if filter(lambda smartlist_id: not isinstance(smartlist_id, (int, long)) or smartlist_id <= 0, smartlist_ids):
+        raise InvalidUsage("`list_ids` should be a list of integers", error_code=error_code)
+
+    # Validation for duplicate `list_ids`
+    if [item for item, count in Counter(smartlist_ids).items() if count > 1]:
+        raise InvalidUsage('Duplicate `list_ids` found in data.', error_code=error_code)
+
     for smartlist_id in smartlist_ids:
-        if not isinstance(smartlist_id, (int, long)) or not smartlist_id > 0:
-            raise InvalidUsage('Include smartlist id as int|long')
         smartlist = Smartlist.get_by_id(smartlist_id)
         if not smartlist:
             raise ResourceNotFound('validate_smartlist_ids: Smartlist(id:%s) not found in database.'
-                                   % str(smartlist_id))
+                                   % str(smartlist_id), error_code=resource_not_found_error_code)
         if not smartlist.user.domain_id == current_user.domain_id:
             raise ForbiddenError("validate_smartlist_ids: Smartlist(id:%s) do not belong to "
-                                 "user's domain'" % str(smartlist_id))
+                                 "user's domain'" % str(smartlist_id), forbidden_error_code)
         if smartlist.is_hidden:
             raise InvalidUsage('Associated Smartlist (id: %s) is deleted and can not be accessed'
-                               % smartlist.id)
+                               % smartlist.id, error_code=resource_not_found_error_code)
 
 
 def validate_form_data(form_data, current_user, required_fields=('name', 'body_text', 'smartlist_ids')):

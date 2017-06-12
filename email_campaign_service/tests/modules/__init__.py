@@ -34,3 +34,5 @@ EMAIL_CLIENTS_ALL_FIELDS = ['name',
                             'password']
 
 EMAIL_CLIENTS_OPTIONAL_FIELDS = ['port']
+
+CAMPAIGN_REQUIRED_FIELDS = ['name', 'subject', 'body_html', 'frequency_id', 'list_ids']

@@ -27,15 +27,14 @@ class DatetimeUtils(object):
         self.value = value
 
     @staticmethod
-    def validate_datetime_format(str_datetime, valid_format=ISO8601_FORMAT):
+    def validate_datetime_format(str_datetime, valid_format=ISO8601_FORMAT, error_code=None):
         """
         This validates the given string of datetime is in given format or not.
         Default value of valid_format is ISO UTC format i.e."%Y-%m-%dT%H:%M:%S.%fZ"
         One can pass any desire format.
-        :param str_datetime: str
-        :param valid_format: Format of datetime string
-        :type str_datetime: str
-        :type valid_format: str
+        :param string str_datetime: Input string of datetime
+        :param string valid_format: Format of datetime string
+        :param int|None error_code: Custom error code to be raised with exception
         :exception: Invalid Usage
         :return: True if given datetime is valid, raises Invalid usage otherwise.
         :rtype: bool | InvalidUsage
@@ -47,7 +46,7 @@ class DatetimeUtils(object):
             datetime.strptime(str_datetime, valid_format)
         except ValueError:
             raise InvalidUsage('Invalid dateTime format: Kindly specify UTC datetime in %s format.'
-                               ' Given datetime is %s' % (valid_format, str_datetime))
+                               ' Given datetime is %s' % (valid_format, str_datetime), error_code=error_code)
         return True
 
     def is_in_future(self, neg_offset=0, pos_offset=0):
@@ -75,21 +74,20 @@ class DatetimeUtils(object):
         return self.value > current_datetime
 
     @classmethod
-    def get_datetime_obj_if_format_is_valid(cls, str_datetime, valid_format=ISO8601_FORMAT):
+    def get_datetime_obj_if_format_is_valid(cls, str_datetime, valid_format=ISO8601_FORMAT, error_code=None):
         """
         This converts given string datetime into UTC datetime obj.
         This uses validate_datetime_format() to validate the format of given str.
         Default value of valid_format is something like 2015-10-08T06:16:55.000Z
-        :param str_datetime: datetime object in string
-        :param valid_format: Format of datetime string
-        :type str_datetime: str
-        :type valid_format: str
+        :param string str_datetime: datetime object in string
+        :param string valid_format: Format of datetime string
+        :param int|None error_code: Custom error code to be raised with exception
         :return: datetime obj
         :rtype: datetime
         """
         raise_if_not_instance_of(str_datetime, basestring)
         raise_if_not_instance_of(valid_format, basestring)
-        cls.validate_datetime_format(str_datetime, valid_format=valid_format)
+        cls.validate_datetime_format(str_datetime, valid_format=valid_format, error_code=error_code)
         return parse(str_datetime).replace(tzinfo=tzutc())
 
     @staticmethod

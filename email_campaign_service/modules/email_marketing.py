@@ -25,9 +25,8 @@ from sqlalchemy.exc import OperationalError
 from email_campaign_service.modules.email_clients import SMTP
 from email_campaign_service.modules import aws_constants as aws
 from email_campaign_service.json_schema.test_email import TEST_EMAIL_SCHEMA
-from email_campaign_service.modules.validations import get_or_set_valid_value
+from email_campaign_service.modules.validators import get_or_set_valid_value
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
-
 from email_campaign_service.modules.utils import (get_candidates_from_smartlist,
                                                   do_mergetag_replacements, create_email_campaign_url_conversions,
                                                   decrypt_password, get_priority_emails, get_topic_arn_and_region_name)
@@ -37,7 +36,8 @@ from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import Domain, User
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
+from email_campaign_service.common.talent_config_manager import (TalentConfigKeys,
+                                                                 TalentEnvs)
 from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignApiUrl
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
@@ -46,7 +46,8 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSmartlist,
                                                                  EmailCampaignBlast,
                                                                  EmailCampaignSend,
-                                                                 EmailCampaignSendUrlConversion, TRACKING_URL_TYPE)
+                                                                 EmailCampaignSendUrlConversion,
+                                                                 TRACKING_URL_TYPE)
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
                                                             CandidateSubscriptionPreference)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)

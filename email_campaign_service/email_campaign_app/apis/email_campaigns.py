@@ -53,16 +53,18 @@ from werkzeug.utils import redirect
 from flask import request, Blueprint, jsonify
 
 # Service Specific
-from app_common.common.custom_errors.campaign import INVALID_VALUE_OF_QUERY_PARAM
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.user import (User, Role)
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
-from email_campaign_service.modules.validations import validate_and_format_request_data
-from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_NOT_FOUND,
+from email_campaign_service.modules.validators import validate_and_format_request_data
+from email_campaign_service.common.custom_errors.campaign import (NOT_NON_ZERO_NUMBER,
+                                                                  INVALID_REQUEST_BODY,
+                                                                  EMAIL_CAMPAIGN_NOT_FOUND,
                                                                   EMAIL_CAMPAIGN_FORBIDDEN,
-                                                                  NOT_NON_ZERO_NUMBER, INVALID_INPUT,
-                                                                  INVALID_VALUE_OF_PAGINATION_PARAM)
+                                                                  INVALID_VALUE_OF_QUERY_PARAM,
+                                                                  INVALID_VALUE_OF_PAGINATION_PARAM,
+                                                                  )
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
                                                             update_hit_count, send_test_email)
 
@@ -84,7 +86,6 @@ from email_campaign_service.common.utils.api_utils import (api_route, get_pagina
 from email_campaign_service.common.campaign_services.campaign_utils import (CampaignUtils, INVITATION_STATUSES)
 from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 
-
 # Blueprint for email-campaign API
 email_campaign_blueprint = Blueprint('email_campaign_api', __name__)
 api = TalentApi()
@@ -94,7 +95,6 @@ api.route = types.MethodType(api_route, api)
 
 @api.route(EmailCampaignApi.CAMPAIGNS)
 class EmailCampaigns(Resource):
-
     # Access token decorator
     decorators = [require_oauth()]
 
@@ -132,7 +132,7 @@ class EmailCampaigns(Resource):
 
         # Get all email campaigns from logged in user's domain
         query = EmailCampaign.get_by_domain_id_and_filter_by_name(
-                user.domain_id, search_keyword, sort_by, sort_type, int(is_hidden), user_id=user_id)
+            user.domain_id, search_keyword, sort_by, sort_type, int(is_hidden), user_id=user_id)
 
         return get_paginated_response('email_campaigns', query, page, per_page, parser=EmailCampaign.to_dict)
 
@@ -148,7 +148,7 @@ class EmailCampaigns(Resource):
         # Get and validate request data
         data = request.get_json(silent=True)
         if not data:
-            raise InvalidUsage("Received empty request body")
+            raise InvalidUsage(INVALID_REQUEST_BODY[0], INVALID_REQUEST_BODY[1])
         data = validate_and_format_request_data(data, request.user)
 
         campaign = create_email_campaign(user_id=request.user.id,
@@ -173,7 +173,6 @@ class EmailCampaigns(Resource):
 
 @api.route(EmailCampaignApi.CAMPAIGN)
 class SingleEmailCampaign(Resource):
-
     # Access token decorator
     decorators = [require_oauth()]
 

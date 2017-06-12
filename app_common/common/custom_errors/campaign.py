@@ -15,12 +15,16 @@ EMAIL_CAMPAIGN_NOT_FOUND = ("Email campaign not found", 1402)
 # Input Validations
 INVALID_VALUE_OF_PAGINATION_PARAM = ("Invalid value for pagination param", 1403)
 INVALID_VALUE_OF_QUERY_PARAM = ("Invalid value of query param", 1404)
-INVALID_INPUT = ("Got invalid value for {}", 1403)
-NOT_NON_ZERO_NUMBER = ("Expecting positive int|long value for {}", 1404)
+INVALID_REQUEST_BODY = ("Received invalid request body", 1405)
+NOT_NON_ZERO_NUMBER = ("Expecting positive int|long value for {}", 1406)
+MISSING_FIELD = ("{} field is required", 1407)
+INVALID_INPUT = ("Got invalid value for {}", 1408)
+INVALID_DATETIME_VALUE = ("Expecting datetime value to be in future", 1409)
+INVALID_DATETIME_FORMAT = ("Expecting ISO8601_FORMAT of datetime", 1410)
+SMARTLIST_FORBIDDEN = ("Smartlist doesn't belongs to user's domain", 1411)
+SMARTLIST_NOT_FOUND = ("Smartlist not found", 1412)
 
-MISSING_FIELD = ("{} field is required", 1401)
 NOT_NUMBER = ("Campaign {} can not be a number", 1403)
-INVALID_DATETIME_VALUE = ("Expecting datetime value to be in future", 1404)
 NON_EXISTING_ENTITY = ("Resource {} not found in database", 1405)
 
 # Blasts 1421-1430

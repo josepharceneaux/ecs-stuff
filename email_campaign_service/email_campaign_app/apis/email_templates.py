@@ -21,7 +21,7 @@ from email_campaign_service.common.utils.api_utils import (api_route, get_pagina
 from email_campaign_service.common.utils.validators import validate_and_return_immutable_value
 from email_campaign_service.common.utils.auth_utils import (require_oauth, require_all_permissions)
 from email_campaign_service.common.models.email_campaign import (UserEmailTemplate, EmailTemplateFolder)
-from email_campaign_service.modules.validations import validate_domain_id_for_email_templates
+from email_campaign_service.modules.validators import validate_domain_id_for_email_templates
 
 # Blueprint for email-templates API
 template_blueprint = Blueprint('email_templates', __name__)
