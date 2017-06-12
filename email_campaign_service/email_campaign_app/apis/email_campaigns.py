@@ -60,7 +60,8 @@ from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
 from email_campaign_service.modules.validations import validate_and_format_request_data
 from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_NOT_FOUND,
                                                                   EMAIL_CAMPAIGN_FORBIDDEN,
-                                                                  NOT_NON_ZERO_NUMBER, INVALID_INPUT)
+                                                                  NOT_NON_ZERO_NUMBER, INVALID_INPUT,
+                                                                  INVALID_VALUE_OF_PAGINATION_PARAMS)
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
                                                             update_hit_count, send_test_email)
 
@@ -101,10 +102,7 @@ class EmailCampaigns(Resource):
         GET /v1/email-campaigns         Fetches all EmailCampaign objects from auth user's domain
         """
         user = request.user
-        try:
-            page, per_page = get_pagination_params(request)
-        except InvalidUsage as error:
-            raise InvalidUsage(error_message=error.message, error_code=INVALID_INPUT[1])
+        page, per_page = get_pagination_params(request, error_code=INVALID_VALUE_OF_PAGINATION_PARAMS[1])
         sort_type = request.args.get('sort_type', 'DESC')
         search_keyword = request.args.get('search', '')
         sort_by = request.args.get('sort_by', 'added_datetime')
@@ -381,7 +379,7 @@ class EmailCampaignBlasts(Resource):
         # Get a campaign that was created by this user
         campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user)
         # get paginated response
-        page, per_page = get_pagination_params(request)
+        page, per_page = get_pagination_params(request, error_code=INVALID_VALUE_OF_PAGINATION_PARAMS[1])
         return get_paginated_response('blasts', campaign.blasts, page, per_page)
 
 
@@ -508,7 +506,7 @@ class EmailCampaignSends(Resource):
         # Get a campaign that was created by this user
         campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user)
         # get paginated response
-        page, per_page = get_pagination_params(request)
+        page, per_page = get_pagination_params(request, error_code=INVALID_VALUE_OF_PAGINATION_PARAMS[1])
         return get_paginated_response('sends', campaign.sends, page, per_page)
 
 

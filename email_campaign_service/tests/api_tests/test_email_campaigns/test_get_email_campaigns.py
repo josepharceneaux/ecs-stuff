@@ -21,8 +21,8 @@ from email_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE, SORT_TY
 from email_campaign_service.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
                                                             PAGINATION_EXCEPT_SINGLE_FIELD)
 from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_FORBIDDEN,
-                                                                  NOT_NON_ZERO_NUMBER,
-                                                                  INVALID_INPUT)
+                                                                  NOT_NON_ZERO_NUMBER, INVALID_INPUT,
+                                                                  INVALID_VALUE_OF_PAGINATION_PARAMS)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
@@ -181,6 +181,7 @@ class TestGetCampaigns(object):
         CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
                                                          expected_error_code=INVALID_INPUT[1])
 
+    # TODO: GET-1608: Add test for large value of param "page"
     def test_get_campaigns_with_paginated_response_using_invalid_per_page(self, access_token_first):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain using
@@ -188,8 +189,8 @@ class TestGetCampaigns(object):
         result in invalid usage error.
         """
         url = self.URL + '?per_page=%d' % randint(MAX_PAGE_SIZE + 1, 2 * MAX_PAGE_SIZE)
-        response = CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
-                                                                    expected_error_code=INVALID_INPUT[1])
+        response = CampaignsTestsHelpers.request_with_invalid_input(
+            self.HTTP_METHOD, url, access_token_first, expected_error_code=INVALID_VALUE_OF_PAGINATION_PARAMS[1])
         assert str(MAX_PAGE_SIZE) in response.json()['error']['message']
 
     def test_get_campaigns_with_invalid_field_one_by_one(self, access_token_first):
