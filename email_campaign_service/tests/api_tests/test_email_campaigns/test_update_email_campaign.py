@@ -8,7 +8,8 @@ from candidate_service.tests.unit_tests.test_utilities import fake
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_FORBIDDEN,
-                                                                  EMAIL_CAMPAIGN_NOT_FOUND)
+                                                                  EMAIL_CAMPAIGN_NOT_FOUND, INVALID_REQUEST_BODY,
+                                                                  INVALID_INPUT)
 from email_campaign_service.tests.modules.handy_functions import get_campaign_or_campaigns
 from email_campaign_service.common.campaign_services.tests_helpers import (CampaignsTestsHelpers, send_request)
 
@@ -20,6 +21,21 @@ class TestCampaignUpdate(object):
     """
     HTTP_METHOD = 'patch'
     URL = EmailCampaignApiUrl.CAMPAIGN
+
+    def test_with_invalid_token(self):
+        """
+        Here we try to update an email campaign with invalid access token.
+        """
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL % fake.random_int(2, ))
+
+    def test_campaign_creation_with_invalid_data(self, access_token_first):
+        """
+        Trying to update a campaign with 1) no data and 2) Non-JSON data. It should result in invalid usage error.
+        """
+        for data in ({}, None):
+            CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL % fake.random_int(2, ),
+                                                             access_token_first, data=data, is_json=False,
+                                                             expected_error_code=INVALID_REQUEST_BODY[1])
 
     @pytest.mark.qa
     def test_update_email_campaign_with_allowed_parameter(self, access_token_first, email_campaign_user1_domain1_in_db):
@@ -45,8 +61,9 @@ class TestCampaignUpdate(object):
         update_with_invalid_data = [fake.word(), fake.random_int(2, )]
         for param in update_with_invalid_data:
             data = {'is_hidden': param}
-            response = send_request(self.HTTP_METHOD, self.URL % campaign_id, access_token_first, data)
-            CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=codes.BAD_REQUEST)
+            CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL % campaign_id,
+                                                             access_token_first, data,
+                                                             expected_error_code=INVALID_INPUT[1])
 
     def test_archive_scheduled_campaign(self, access_token_first, email_campaign_of_user_first):
         """

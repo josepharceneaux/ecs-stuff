@@ -64,7 +64,7 @@ from email_campaign_service.common.custom_errors.campaign import (NOT_NON_ZERO_N
                                                                   EMAIL_CAMPAIGN_FORBIDDEN,
                                                                   INVALID_VALUE_OF_QUERY_PARAM,
                                                                   INVALID_VALUE_OF_PAGINATION_PARAM,
-                                                                  )
+                                                                  INVALID_INPUT)
 from email_campaign_service.modules.email_marketing import (create_email_campaign, send_email_campaign,
                                                             update_hit_count, send_test_email)
 
@@ -194,10 +194,11 @@ class SingleEmailCampaign(Resource):
         # Get and validate request data
         data = request.get_json(silent=True)
         if not data:
-            raise InvalidUsage("Received empty request body")
+            raise InvalidUsage("Received empty request body", error_code=INVALID_REQUEST_BODY[1])
         is_hidden = data.get('is_hidden', False)
         if is_hidden not in (True, False, 1, 0):
-            raise InvalidUsage("is_hidden field should be a boolean, given: %s" % is_hidden)
+            raise InvalidUsage("is_hidden field should be a boolean, given: %s" % is_hidden,
+                               error_code=INVALID_INPUT[1])
         email_campaign = EmailCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user)
         # Unschedule task from scheduler_service
         if email_campaign.scheduler_task_id:

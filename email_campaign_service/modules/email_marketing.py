@@ -30,7 +30,7 @@ from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (get_candidates_from_smartlist,
                                                   do_mergetag_replacements, create_email_campaign_url_conversions,
                                                   decrypt_password, get_priority_emails, get_topic_arn_and_region_name)
-
+from email_campaign_service.common.custom_errors.campaign import (INVALID_REQUEST_BODY, INVALID_INPUT)
 # Common Utils
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import Domain, User
@@ -1140,7 +1140,12 @@ def send_test_email(user, request):
     :param request: Flask request object
     """
     # Get and validate request data
-    data = get_json_data_if_validated(request, TEST_EMAIL_SCHEMA)
+    try:
+        data = get_json_data_if_validated(request, TEST_EMAIL_SCHEMA, custom_error_code=INVALID_INPUT[1])
+    except InvalidUsage as error:
+        raise InvalidUsage(error.message,
+                           error_code=error.status_code if error.status_code else INVALID_REQUEST_BODY[1])
+
     body_text = data.get('body_text', '')
     reply_address = data.get('reply_to', '')
     [new_html, new_text, subject] = do_mergetag_replacements([data['body_html'], body_text, data['subject']],

@@ -11,7 +11,6 @@ This file contains tests for creation of an email-campaign
 """
 # Packages
 import pytest
-from datetime import datetime, timedelta
 
 # Third Party
 import requests
@@ -45,19 +44,9 @@ class TestCreateCampaign(object):
 
     def test_create_campaign_with_invalid_token(self):
         """
-        Here we try to create email campaign with invalid access token
+        Here we try to create email campaign with invalid access token.
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
-
-    def test_campaign_creation_with_invalid_data(self, access_token_first):
-        """
-        Trying to create a campaign with 1) no data and 2) Non-JSON data. It should result in invalid usage error,
-        """
-        campaign_data = create_scheduled_email_campaign_data()
-        for data in (campaign_data, None):
-            CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL, access_token_first,
-                                                             data=data, is_json=False,
-                                                             expected_error_code=INVALID_REQUEST_BODY[1])
 
     def test_create_email_campaign_without_client_id(self, access_token_first, smartlist_user1_domain1_in_db):
         """
@@ -159,6 +148,16 @@ class TestCreateCampaign(object):
             resp_object = response.json()
             assert 'campaign' in resp_object
             assert resp_object['campaign']['id']
+
+    def test_campaign_creation_with_invalid_data(self, access_token_first):
+        """
+        Trying to create a campaign with 1) no data and 2) Non-JSON data. It should result in invalid usage error.
+        """
+        campaign_data = create_scheduled_email_campaign_data()
+        for data in (campaign_data, None):
+            CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL, access_token_first,
+                                                             data=data, is_json=False,
+                                                             expected_error_code=INVALID_REQUEST_BODY[1])
 
     def test_create_email_campaign_with_incoming_email_client(self, access_token_first, smartlist_user1_domain1_in_db,
                                                               email_clients, headers):
