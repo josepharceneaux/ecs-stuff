@@ -87,7 +87,7 @@ echo "Beginning tests."
 # Commenting out due to talent_pool issues (passing locally)
 # py.test widget_service/tests
 
-py.test -n 48 auth_service/tests candidate_service/tests user_service/tests candidate_pool_service/tests spreadsheet_import_service/tests app_common/common/tests talentbot_service/tests email_campaign_service/tests scheduler_service/tests
+py.test -n 48 auth_service/testsc
 
 # social_network_service/tests
 # Commented out due to ActivitySearching failures
