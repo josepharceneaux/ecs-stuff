@@ -30,7 +30,8 @@ from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (get_candidates_from_smartlist,
                                                   do_mergetag_replacements, create_email_campaign_url_conversions,
                                                   decrypt_password, get_priority_emails, get_topic_arn_and_region_name)
-from email_campaign_service.common.custom_errors.campaign import (INVALID_REQUEST_BODY, INVALID_INPUT)
+from email_campaign_service.common.custom_errors.campaign import (INVALID_REQUEST_BODY, INVALID_INPUT,
+                                                                  ERROR_SENDING_EMAIL)
 # Common Utils
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import Domain, User
@@ -1165,4 +1166,5 @@ def send_test_email(user, request):
                     % (data['email_address_list'], request.user.id))
     except Exception as e:
         logger.error('Error occurred while sending test email. Error: %s', e)
-        raise InternalServerError('Unable to send emails to test email addresses:%s.' % data['email_address_list'])
+        raise InternalServerError('Unable to send emails to test email addresses:%s.' % data['email_address_list'],
+                                  error_code=ERROR_SENDING_EMAIL[1])

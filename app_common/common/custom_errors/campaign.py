@@ -11,18 +11,19 @@ This file contains custom error codes  for campaign services like Email campaign
 # Campaigns 1401-1430
 EMAIL_CAMPAIGN_FORBIDDEN = ("Email campaign doesn't belongs to user's domain", 1401)
 EMAIL_CAMPAIGN_NOT_FOUND = ("Email campaign not found", 1402)
+ERROR_SENDING_EMAIL = ("Error occurred while sending email to given address(es)", 1403)
 
-# Input Validations
-INVALID_VALUE_OF_PAGINATION_PARAM = ("Invalid value for pagination param", 1403)
-INVALID_VALUE_OF_QUERY_PARAM = ("Invalid value of query param", 1404)
-INVALID_REQUEST_BODY = ("Received invalid request body", 1405)
-NOT_NON_ZERO_NUMBER = ("Expecting positive int|long value for {}", 1406)
-MISSING_FIELD = ("{} field is required", 1407)
-INVALID_INPUT = ("Got invalid value for {}", 1408)
-INVALID_DATETIME_VALUE = ("Expecting datetime value to be in future", 1409)
-INVALID_DATETIME_FORMAT = ("Expecting ISO8601_FORMAT of datetime", 1410)
-SMARTLIST_FORBIDDEN = ("Smartlist doesn't belongs to user's domain", 1411)
-SMARTLIST_NOT_FOUND = ("Smartlist not found", 1412)
+# Input Validations 1406 - 1420
+INVALID_VALUE_OF_PAGINATION_PARAM = ("Invalid value for pagination param", 1406)
+INVALID_VALUE_OF_QUERY_PARAM = ("Invalid value of query param", 1407)
+INVALID_REQUEST_BODY = ("Received invalid request body", 1408)
+NOT_NON_ZERO_NUMBER = ("Expecting positive int|long value for {}", 1409)
+MISSING_FIELD = ("{} field is required", 1410)
+INVALID_INPUT = ("Got invalid value for {}", 1411)
+INVALID_DATETIME_VALUE = ("Expecting datetime value to be in future", 1412)
+INVALID_DATETIME_FORMAT = ("Expecting ISO8601_FORMAT of datetime", 1413)
+SMARTLIST_FORBIDDEN = ("Smartlist doesn't belongs to user's domain", 1414)
+SMARTLIST_NOT_FOUND = ("Smartlist not found", 1415)
 
 # Blasts 1421-1430
 EMAIL_CAMPAIGN_BLAST_FORBIDDEN = ("Requested blast doesn't belongs to user's domain", 1421)

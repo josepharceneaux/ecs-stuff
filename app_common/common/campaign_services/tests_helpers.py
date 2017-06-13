@@ -1033,6 +1033,8 @@ def _assert_unauthorized(method, url, access_token, data=None):
     response = send_request(method, url, access_token, data)
     assert response.status_code == UnauthorizedError.http_status_code(), \
         'Expecting:401, Found:{}'.format(response.status_code)
+    assert response.json()['error']['code'] == 11, \
+        'Expecting error_code:11, Found:{}'.format(response.json()['error']['code'])
 
 
 @contract

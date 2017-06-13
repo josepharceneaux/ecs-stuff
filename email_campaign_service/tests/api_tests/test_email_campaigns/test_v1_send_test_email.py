@@ -15,12 +15,14 @@ import requests
 from redo import retry
 
 # Application Specific
+from requests import codes
+
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.custom_errors.campaign import (INVALID_REQUEST_BODY,
-                                                                  INVALID_INPUT)
+                                                                  INVALID_INPUT, ERROR_SENDING_EMAIL)
 from email_campaign_service.common.campaign_services.tests_helpers import (send_request,
                                                                            CampaignsTestsHelpers)
 from email_campaign_service.modules.utils import do_mergetag_replacements, TEST_PREFERENCE_URL
@@ -60,21 +62,11 @@ class TestSendTestEmail(object):
         """
         data = TEST_MAIL_DATA.copy()
         del data['reply_to']  # user's email should be used as default value
-        response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
+        response = send_request(self.HTTP_METHOD, self.URL, access_token_first, data)
         assert response.status_code == requests.codes.OK
         assert retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1, args=(data['subject'],),
                      kwargs=dict(search_criteria='(HEADER REPLY-TO "{}")'.format(user_first.email)),
                      retry_exceptions=(AssertionError,))
-
-    def test_send_test_email_with_invalid_reply_to_email_address(self, access_token_first):
-        """
-        In this test, we will try send a test email with invalid format of reply_to email-address. It should result
-        in Bad Request error.
-        """
-        data = TEST_MAIL_DATA.copy()
-        data['reply_to'] = fake.word()
-        CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL, access_token_first,
-                                                         data, expected_error_code=INVALID_INPUT[1])
 
     def test_send_test_mail_without_optional_parameter(self, access_token_first):
         """
@@ -85,7 +77,7 @@ class TestSendTestEmail(object):
         data = TEST_MAIL_DATA.copy()
         del data['body_text']  # This parameter is optional
         data['subject'] = subject
-        response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
+        response = send_request(self.HTTP_METHOD, self.URL, access_token_first, data)
         assert response.status_code == requests.codes.OK
 
     def test_send_test_email_with_merge_tags(self, user_first, access_token_first):
@@ -119,6 +111,16 @@ class TestSendTestEmail(object):
         except Exception:
             pass
 
+    def test_send_test_email_with_invalid_reply_to_email_address(self, access_token_first):
+        """
+        In this test, we will try send a test email with invalid format of reply_to email-address. It should result
+        in Bad Request error.
+        """
+        data = TEST_MAIL_DATA.copy()
+        data['reply_to'] = fake.word()
+        CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL, access_token_first,
+                                                         data, expected_error_code=INVALID_INPUT[1])
+
     def test_test_email_with_invalid_email_address(self, access_token_first):
         """
         In this test we will send a test email to an invalid email address which will cause failure while sending email
@@ -129,8 +131,9 @@ class TestSendTestEmail(object):
         data = TEST_MAIL_DATA.copy()
         data['subject'] = subject
         data['email_address_list'] = ['some_invalid_email_%s' % fake.uuid4()]
-        response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
-        assert response.status_code == requests.codes.INTERNAL_SERVER_ERROR
+        CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL, access_token_first, data=data,
+                                                         expected_status_code=codes.INTERNAL_SERVER_ERROR,
+                                                         expected_error_code=ERROR_SENDING_EMAIL[1])
 
     def test_test_email_with_invalid_fields(self, access_token_first):
         """
@@ -148,6 +151,5 @@ class TestSendTestEmail(object):
                 print "Iterating key:{}, value:{}".format(key, value)
                 data = TEST_MAIL_DATA.copy()
                 data[key] = value
-                CampaignsTestsHelpers.request_with_invalid_input(
-                    self.HTTP_METHOD, self.URL, access_token_first, data=data,
-                    expected_error_code=INVALID_INPUT[1])
+                CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL, access_token_first,
+                                                                 data=data, expected_error_code=INVALID_INPUT[1])
