@@ -1,0 +1,14 @@
+"""
+This script will enable null values to be inserted for listOrder column in corresponding tables
+"""
+
+from candidate_service.common.models.db import db
+
+
+tables = (
+    "candidate_education", "candidate_education_degree", "candidate_education_degree_bullet",
+    "candidate_experience", "candidate_experience_bullet"
+)
+
+for table in tables:
+    db.session.execute("ALTER TABLE `%s` MODIFY listorder tinyint(4) null;" % table)

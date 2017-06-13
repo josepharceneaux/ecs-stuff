@@ -38,7 +38,7 @@ from candidate_service.common.models.talent_pools_pipelines import TalentPoolCan
 from candidate_service.common.models.user import User, Permission
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.utils.handy_functions import purge_dict
-from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name, get_country_code_from_name
+from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name, country_code_if_valid
 from candidate_service.common.utils.talent_s3 import get_s3_url
 from candidate_service.common.utils.validators import sanitize_zip_code, is_number, parse_phone_number
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
@@ -1297,32 +1297,36 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
 
     for i, address in enumerate(remove_duplicates(addresses)):
 
-        zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
-        city = address['city'].strip() if address.get('city') else None
-        country_code = address.get('country_code')
-        if country_code:
-            country_code = get_country_code_from_name(country_code)
-            if country_code:
-                country_code = country_code.upper()
-            else:
-                logger.info("Country code was not found ... %s" % country_code)
+        # Sanitize zip code if it's provided. If zip code is empty string, we assume it should be removed
+        zip_code = address.get('zip_code')
+        if zip_code:
+            zip_code = sanitize_zip_code(zip_code)
 
-        subdivision_code = address['subdivision_code'].upper() if address.get('subdivision_code') else None
+        city = address.get('city')
+        subdivision_code = address.get('subdivision_code')
+        country_code = address.get('country_code')
+
+        if country_code:
+            country_code = country_code_if_valid(country_code)
+
         address_dict = dict(
-            address_line_1=address['address_line_1'].strip() if address.get('address_line_1') else None,
-            address_line_2=address['address_line_2'].strip() if address.get('address_line_2') else None,
+            address_line_1=address.get('address_line_1'),
+            address_line_2=address.get('address_line_2'),
             city=city,
-            state=(address.get('state') or '').strip(),
+            state=address.get('state'),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
             zip_code=zip_code,
-            po_box=address['po_box'].strip() if address.get('po_box') else None,
+            po_box=address.get('po_box'),
             is_default=i == 0 if address_has_default else address.get('is_default'),
             coordinates=get_coordinates(zipcode=zip_code, city=city, state=subdivision_code)
         )
 
-        # Remove keys that have None values
-        address_dict = purge_dict(address_dict)
+        # Remove keys that have None values (keep all other falsy-values)
+        if is_updating:
+            address_dict = remove_nulls(address_dict)
+        else:
+            address_dict = remove_null_and_empty_string(address_dict)
 
         # Prevent adding empty records to db
         if not address_dict:
@@ -2754,3 +2758,30 @@ class CachedData(object):
     """
     country_codes = []
     candidate_emails = []
+
+
+# TODO: Combine `remove_nulls` and `remove_null_and_empty_string` into one function/class
+def remove_nulls(dict_data):
+    """
+    Function will create a dict object from dict_data without the None values
+    :type dict_data: dict
+    :rtype: dict
+    """
+    return {k: v.strip() if isinstance(v, basestring) else v for k, v in dict_data.items() if v is not None}
+
+
+def remove_null_and_empty_string(dict_data):
+    """
+    Function will create a dict object form dict_data without the None values and the empty string values
+    :type dict_data: dict
+    :rtype: dict
+    """
+    r = dict()
+    for k, v in dict_data.items():
+        if isinstance(v, basestring):
+            v = v.strip()
+            if v != '':
+                r[k] = v
+        elif v is not None:
+            r[k] = v
+    return r
