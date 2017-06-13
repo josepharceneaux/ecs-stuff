@@ -24,9 +24,6 @@ INVALID_DATETIME_FORMAT = ("Expecting ISO8601_FORMAT of datetime", 1410)
 SMARTLIST_FORBIDDEN = ("Smartlist doesn't belongs to user's domain", 1411)
 SMARTLIST_NOT_FOUND = ("Smartlist not found", 1412)
 
-NOT_NUMBER = ("Campaign {} can not be a number", 1403)
-NON_EXISTING_ENTITY = ("Resource {} not found in database", 1405)
-
 # Blasts 1421-1430
 EMAIL_CAMPAIGN_BLAST_FORBIDDEN = ("Requested blast doesn't belongs to user's domain", 1421)
 EMAIL_CAMPAIGN_BLAST_NOT_FOUND = ("Requested blast not found", 1422)

@@ -16,8 +16,10 @@ import requests
 from flask import request
 
 # Application Specific
+from email_campaign_service.common.utils.handy_functions import find_missing_items, validate_required_fields
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.misc import Frequency
+from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
 from email_campaign_service.modules.email_clients import EmailClientBase
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.user import (User, ForbiddenError, Domain)
@@ -63,13 +65,13 @@ def validate_data_to_schedule_campaign(campaign_data):
     # Validate format and value
     if start_datetime:
         start_datetime_obj = DatetimeUtils.get_datetime_obj_if_format_is_valid(start_datetime,
-                                                                           error_code=INVALID_DATETIME_FORMAT[1])
+                                                                               error_code=INVALID_DATETIME_FORMAT[1])
         if not DatetimeUtils(start_datetime_obj).is_in_future():
             raise UnprocessableEntity('`start_datetime` must be in future. Given %s' % start_datetime,
                                       error_code=INVALID_DATETIME_VALUE[1])
     if end_datetime:
         end_datetime_obj = DatetimeUtils.get_datetime_obj_if_format_is_valid(end_datetime,
-                                                                         error_code=INVALID_DATETIME_FORMAT[1])
+                                                                             error_code=INVALID_DATETIME_FORMAT[1])
         if not DatetimeUtils(end_datetime_obj).is_in_future():
             raise UnprocessableEntity('`end_datetime` must be in future. Given %s' % end_datetime,
                                       error_code=INVALID_DATETIME_VALUE[1])
@@ -102,21 +104,15 @@ def validate_and_format_request_data(data, current_user):
     email_client_credentials_id = data.get('email_client_credentials_id')
     base_campaign_id = data.get('base_campaign_id')
 
-    # Raise errors if invalid input
-    if filter(lambda item: not isinstance(item, basestring), [name, subject, body_html]):
-        raise InvalidUsage("Expecting `name`, `subject` and `body_html` as string", error_code=INVALID_INPUT[1])
-    if name is None or name.strip() == '':
-        raise InvalidUsage(MISSING_FIELD[0].format("`name`"), error_code=MISSING_FIELD[1])  # 400 Bad request
-    if subject is None or subject.strip() == '':
-        raise InvalidUsage(MISSING_FIELD[0].format("`subject`"), error_code=MISSING_FIELD[1])  # 400 Bad request
-    # if description is None or description.strip() == '':
-    #     raise InvalidUsage('description is required')
-    if body_html is None or body_html.strip() == '':
-        raise InvalidUsage(MISSING_FIELD[0].format("`body_html`"), error_code=MISSING_FIELD[1])  # 400 Bad request
-    if not list_ids:
-        raise InvalidUsage(MISSING_FIELD[0].format("`list_ids`"), error_code=MISSING_FIELD[1])  # 400 Bad request
+    # Find if any required key has no valid value
+    validate_required_fields(data, EmailCampaignBase.REQUIRED_FIELDS, error_code=MISSING_FIELD[1])
+
+    # Raise errors if invalid input of string inputs
+    if filter(lambda item: not isinstance(item, basestring) or str(item).strip() == '', [name, subject, body_html]):
+        raise InvalidUsage("Expecting `name`, `subject` and `body_html` as non-empty string",
+                           error_code=INVALID_INPUT[1])
     if not frequency_id:
-        raise InvalidUsage(MISSING_FIELD[0].format("`frequency_id`"), error_code=MISSING_FIELD[1])  # 400 Bad request
+        raise InvalidUsage(INVALID_INPUT[0].format("`frequency_id`"), error_code=INVALID_INPUT[1])
 
     # Validation for list ids belonging to same domain
     validate_smartlist_ids(list_ids, current_user, error_code=INVALID_INPUT[1],

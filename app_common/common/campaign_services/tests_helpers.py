@@ -752,7 +752,7 @@ class CampaignsTestsHelpers(object):
         :param string access_token: Access token of user
         :param dict campaign_data: Data to be passed in HTTP request
         :param string field: Field in campaign data
-        :param list|tuple|None expected_error_code: Expected error code
+        :param int|None expected_error_code: Expected error code
         """
         for invalid_campaign_name in CampaignsTestsHelpers.INVALID_STRING:
             print "Iterating {} as {}".format(invalid_campaign_name, field)
@@ -760,7 +760,7 @@ class CampaignsTestsHelpers(object):
             campaign_data[field] = invalid_campaign_name
             response = send_request(method, url, access_token, data=campaign_data)
             error = CampaignsTestsHelpers.assert_non_ok_response(response)
-            assert error['code'] in expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+            assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
                                                                                                     error['code'])
             campaign_data[field] = old_value
 

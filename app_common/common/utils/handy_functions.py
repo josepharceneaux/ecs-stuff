@@ -282,14 +282,13 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                                    headers, data))
 
 
-def validate_required_fields(data_dict, required_fields):
+def validate_required_fields(data_dict, required_fields, error_code=InvalidUsage.http_status_code()):
     """
     This function returns the keys as specified by required_fields, that are not present in
     the data_dict. If any of the field is missing, it raises missing
-    :param data_dict:
-    :param required_fields:
-    :type data_dict: dict
-    :type required_fields: list
+    :param dict data_dict:
+    :param list|tuple required_fields:
+    :param int error_code: Custom error code
     :exception: Invalid Usage
     """
     if not isinstance(data_dict, dict):
@@ -298,8 +297,7 @@ def validate_required_fields(data_dict, required_fields):
         raise InvalidUsage('required_fields must be instance of list.')
     missing_keys = list(set(required_fields) - set(data_dict.keys()))
     if missing_keys:
-        raise InvalidUsage('Required fields are missing from given data.%s' % missing_keys,
-                           error_code=InvalidUsage.http_status_code())
+        raise InvalidUsage('Required fields are missing from given data.%s' % missing_keys, error_code=error_code)
 
 
 def find_missing_items(data_dict, required_fields=None, verify_all=False):

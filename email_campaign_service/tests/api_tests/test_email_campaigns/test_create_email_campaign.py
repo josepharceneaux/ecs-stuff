@@ -186,8 +186,7 @@ class TestCreateCampaign(object):
             CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD, self.URL,
                                                                                 access_token_first, campaign_data,
                                                                                 field=field,
-                                                                                expected_error_code=(INVALID_INPUT[1],
-                                                                                                     MISSING_FIELD[1]))
+                                                                                expected_error_code=INVALID_INPUT[1])
 
     def test_create_email_campaign_with_missing_required_fields(self, access_token_first,
                                                                 invalid_data_for_campaign_creation):
