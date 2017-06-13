@@ -1427,8 +1427,9 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                 raise NotFoundError("Custom field category ID not recognized")
 
             # Custom field category must belong to custom field
-            if cf_category.custom_field_id != custom_field_dict['custom_field_id']:
-                raise ForbiddenError("Custom field category does not belong to custom field")
+            if custom_field_dict.get('custom_field_id'):
+                if cf_category.custom_field_id != custom_field_dict['custom_field_id']:
+                    raise ForbiddenError("Custom field category does not belong to custom field")
 
         candidate_custom_field_id = custom_field.get('id')
 
