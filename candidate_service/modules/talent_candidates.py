@@ -1469,6 +1469,12 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                 custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
                 custom_field_id = custom_field_dict.get('custom_field_id')
 
+                # Making sure no candidate_custom_field should be added without it's parent custom_field
+                if not custom_field_id:
+                    raise InvalidUsage(
+                        error_message='No custom_field_id provided.',
+                        error_code=custom_error.NO_CUSTOM_FIELD_ID_PROVIDED
+                    )
                 # TODO: Product decided to punt subcategory feature to a later time -Amir
                 # custom_field_subcategory_id = custom_field_dict.get('custom_field_subcategory_id')
 
