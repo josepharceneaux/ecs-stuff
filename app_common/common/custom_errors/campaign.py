@@ -8,7 +8,9 @@ This file contains custom error codes  for campaign services like Email campaign
 """
 # Email campaign custom errors, range 1401-1450
 
-# Campaigns 1401-1430
+# Campaigns 1401 - 1430
+
+# General messages 1401-1405
 EMAIL_CAMPAIGN_FORBIDDEN = ("Email campaign doesn't belongs to user's domain", 1401)
 EMAIL_CAMPAIGN_NOT_FOUND = ("Email campaign not found", 1402)
 ERROR_SENDING_EMAIL = ("Error occurred while sending email to given address(es)", 1403)

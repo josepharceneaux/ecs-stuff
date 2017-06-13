@@ -4,7 +4,7 @@ Here are the unit test for email-campaign-service
 import requests
 from contracts import ContractNotRespected
 from email_campaign_service.common.tests.conftest import fake
-from email_campaign_service.common.error_handling import InvalidUsage
+from email_campaign_service.common.error_handling import InternalServerError
 from email_campaign_service.common.routes import EmailCampaignApiUrl, HEALTH_CHECK
 from email_campaign_service.modules.utils import do_mergetag_replacements, TEST_PREFERENCE_URL
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
@@ -49,7 +49,7 @@ def test_mergetag_replacements(user_first, candidate_first):
     try:
         do_mergetag_replacements([campaign.subject], campaign)
         assert None, 'It should raise Invalid usage error'
-    except InvalidUsage as error:
+    except InternalServerError as error:
         assert 'Invalid' in error.message
 
     # Test with non-list item as first argument

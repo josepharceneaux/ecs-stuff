@@ -567,7 +567,7 @@ class EmailCampaignSendById(Resource):
         send_obj = get_valid_send_obj(campaign_id, send_id, request.user)
         return dict(send=send_obj.to_json()), codes.OK
 
-
+# TODO: Fix this endpoint in GET-2555
 @api.route(EmailCampaignApi.INVITATION_STATUS)
 class InvitationStatus(Resource):
     """
@@ -586,6 +586,7 @@ class InvitationStatus(Resource):
             Accepted: Candidate RSVP'd YES to the promoted event
             Rejected: Candidate RSVP'd NO to the promoted event
         """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=email_campaign_id, candidate_id=candidate_id))
         user = request.user
         email_campaign_send_id = None
         invitation_status = INVITATION_STATUSES['Not-Delivered']

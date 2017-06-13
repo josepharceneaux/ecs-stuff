@@ -4,9 +4,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 Here we have tests for API
     - /v1/email-campaigns/:email-campaign_id/:candidate_id
 """
-# Packages
-from requests import codes
-
 # Service Specific
 from ...models.misc import Activity
 from ...constants import HttpMethods
@@ -14,9 +11,10 @@ from ...tests.sample_data import fake
 from ..campaign_base import CampaignBase
 from ...routes import EmailCampaignApiUrl
 from ..campaign_utils import INVITATION_STATUSES
-from ...models.email_campaign import EmailCampaignSend, EmailCampaign
-from ..tests_helpers import (CampaignsTestsHelpers, send_request)
 from modules.helper_functions import create_an_rsvp_in_database
+from ..tests_helpers import (CampaignsTestsHelpers, send_request)
+from ...models.email_campaign import EmailCampaignSend, EmailCampaign
+from ...custom_errors.campaign import EMAIL_CAMPAIGN_FORBIDDEN, EMAIL_CAMPAIGN_NOT_FOUND
 
 __author__ = 'basit'
 
@@ -62,7 +60,8 @@ class TestGetInvitationStatus(object):
         for activity in (Activity.MessageIds.CAMPAIGN_EMAIL_OPEN, Activity.MessageIds.CAMPAIGN_EMAIL_CLICK):
             CampaignBase.create_activity(user_first['id'], activity, email_campaign_send[0],
                                          dict(candidateId=candidate_first['id']))
-            response = send_request(self.HTTP_METHOD, self.URL % (email_campaign_with_base_id['id'], candidate_first['id']),
+            response = send_request(self.HTTP_METHOD, self.URL % (email_campaign_with_base_id['id'],
+                                                                  candidate_first['id']),
                                     token_first)
             assert response.ok, response.text
             assert response.json()['invitation_status'] == INVITATION_STATUSES['Opened']
@@ -95,15 +94,17 @@ class TestGetInvitationStatus(object):
         This hits the API with non-existing email_campaign_id. This should result in ResourceNotFound
         error.
         """
-        non_existing_email_campaign_id = CampaignsTestsHelpers.get_non_existing_id(EmailCampaign)
-        response = send_request(self.HTTP_METHOD,
-                                self.URL % (non_existing_email_campaign_id, fake.random_int()), token_first)
-        assert response.status_code == codes.NOT_FOUND
+        CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaign, self.HTTP_METHOD,
+                                                               self.URL % ('%s', fake.random_int(2,)),
+                                                               token_first,
+                                                               expected_error_code=EMAIL_CAMPAIGN_NOT_FOUND[1])
 
     def test_get_with_not_owned_email_campaign(self, email_campaign_with_base_id, token_second):
         """
         This hits the API with not-owned email_campaign_id. This should result in Forbidden error.
         """
-        response = send_request(self.HTTP_METHOD,
-                                self.URL % (email_campaign_with_base_id['id'], fake.random_int()), token_second)
-        assert response.status_code == codes.FORBIDDEN
+        CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
+                                                          self.URL % (
+                                                              email_campaign_with_base_id['id'], fake.random_int()),
+                                                          token_second,
+                                                          expected_error_code=EMAIL_CAMPAIGN_FORBIDDEN[1])

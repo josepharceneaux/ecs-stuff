@@ -92,6 +92,7 @@ py.test -n 48 auth_service/tests candidate_service/tests user_service/tests cand
 # social_network_service/tests
 # Commented out due to ActivitySearching failures
 # sms_campaign_service/tests
+# TODO: Fix tests for invitation statuses in GET-2555
 # Commented out due to app_common/common/campaign_services/tests/test_invitation_statuses constant failures.
 # app_common/common/campaign_services/tests
 
