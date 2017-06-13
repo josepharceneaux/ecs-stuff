@@ -351,18 +351,20 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def campaign_send_with_no_smartlist(url, access_token, campaign_id):
+    def campaign_send_with_no_smartlist(url, access_token, campaign_id, expected_error_code):
         """
         This is the test to send a campaign which has no smartlist associated  with it.
         It should get Invalid usage error. Custom error should be NoSmartlistAssociatedWithCampaign.
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param positive campaign_id: Id of campaign
+        :param int expected_error_code: Expected error code
         """
         response = send_request('post', url % campaign_id, access_token)
         assert response.status_code == InvalidUsage.http_status_code(), 'It should be invalid usage error(400)'
         error_resp = response.json()['error']
-        assert error_resp['code'] == CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
+        assert error_resp['code'] == expected_error_code, "Expecting:{}, Found:{}".format(expected_error_code,
+                                                                                          error_resp['code'])
 
     @classmethod
     @contract
@@ -420,10 +422,11 @@ class CampaignsTestsHelpers(object):
         if campaign_service_urls and campaign_service_urls not in (PushCampaignApiUrl, SmsCampaignApiUrl,
                                                                    EmailCampaignApiUrl):
             raise InternalServerError('see docs for valid value of campaign_service_urls')
-        response_post = send_request('post', url, access_token)
+        response_post = send_request('post', url % campaign_id, access_token)
         assert response_post.status_code == requests.codes.OK, response_post.text
         assert getattr(campaign_service_urls, 'SENDS')
         get_and_assert_zero(getattr(campaign_service_urls, 'SENDS') % campaign_id, 'sends', access_token)
+        return response_post
 
     @staticmethod
     @contract

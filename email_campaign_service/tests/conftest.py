@@ -111,7 +111,7 @@ def email_campaign_user1_domain2_in_db(user_from_diff_domain):
     return create_email_campaign_in_db(user_id=user_from_diff_domain.id)
 
 
-@pytest.fixture()
+@pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
 def campaign_with_candidate_having_no_email(access_token_first, talent_pipeline):
     """
     This creates a campaign which has candidates associated having no email

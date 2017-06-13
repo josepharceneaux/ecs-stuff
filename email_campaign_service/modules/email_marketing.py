@@ -9,13 +9,12 @@ This file contains function used by email-campaign-api.
 import re
 import json
 import uuid
-
-import boto3
 import getpass
-from datetime import datetime
 from time import sleep
+from datetime import datetime
 
 # Third Party
+import boto3
 from celery import chord
 from requests import codes
 from redo import retrier, retry
@@ -27,11 +26,10 @@ from email_campaign_service.modules import aws_constants as aws
 from email_campaign_service.json_schema.test_email import TEST_EMAIL_SCHEMA
 from email_campaign_service.modules.validators import get_or_set_valid_value
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
+from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
 from email_campaign_service.modules.utils import (get_candidates_from_smartlist,
                                                   do_mergetag_replacements, create_email_campaign_url_conversions,
                                                   decrypt_password, get_priority_emails, get_topic_arn_and_region_name)
-from email_campaign_service.common.custom_errors.campaign import (INVALID_REQUEST_BODY, INVALID_INPUT,
-                                                                  ERROR_SENDING_EMAIL)
 # Common Utils
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import Domain, User
@@ -61,6 +59,8 @@ from email_campaign_service.common.utils.validators import (raise_if_not_instanc
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 from email_campaign_service.common.inter_service_calls.candidate_service_calls import \
     get_candidate_subscription_preference
+from email_campaign_service.common.custom_errors.campaign import (INVALID_REQUEST_BODY, INVALID_INPUT,
+                                                                  ERROR_SENDING_EMAIL)
 
 
 def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
@@ -74,8 +74,7 @@ def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
     for smartlist_id in smartlist_ids:
         email_campaign_smartlist = EmailCampaignSmartlist(smartlist_id=smartlist_id,
                                                           campaign_id=email_campaign_id)
-        db.session.add(email_campaign_smartlist)
-    db.session.commit()
+        EmailCampaignSmartlist.save(email_campaign_smartlist)
 
 
 def create_email_campaign(user_id, oauth_token, name, subject, description, _from, reply_to, body_html,
@@ -130,9 +129,10 @@ def create_email_campaign(user_id, oauth_token, name, subject, description, _fro
 
     if not start_datetime:  # Send campaign immediately
         send_response = http_request('post', send_url, headers=headers, user_id=user_id)
-        if send_response.status_code != codes.OK:
+        if send_response.status_code != codes.OK:  # If failed to send the campaign
             raise InternalServerError("Error occurred while sending email-campaign. Status Code: %s, Response: %s"
-                                      % (send_response.status_code, send_response.json()))
+                                      % (send_response.status_code, send_response.json()),
+                                      ERROR_SENDING_EMAIL[1])
         logger.info('Email campaign(id:%s) is being sent immediately.' % email_campaign.id)
     else:  # Schedule the sending of emails & update email_campaign scheduler fields
         schedule_task_params = {"url": send_url}
@@ -173,12 +173,10 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
     actual emails and just send the required fields (new_html, new_text etc) back in response.
     Otherwise we get candidates from smartlists through celery and also send emails to those
     candidates via celery.
-    :param current_user: User object
-    :param campaign: Valid EmailCampaign object.
-    :param new_candidates_only: True if email needs to be sent to those candidates whom emails were not sent previously
-    :type user_id: int | long
-    :type campaign: EmailCampaign
-    :type new_candidates_only: bool
+    :param User current_user: User object
+    :param EmailCampaign campaign: Valid EmailCampaign object.
+    :param bool new_candidates_only: True if email needs to be sent to those candidates whom emails were not
+                                    sent previously
     """
     if not isinstance(campaign, EmailCampaign):
         raise InternalServerError(error_message='Must provide valid EmailCampaign object.')
@@ -188,8 +186,8 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
     # Get smartlists of this campaign
     smartlist_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign_id, smartlist_ids_only=True)
     if not smartlist_ids:
-        raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
-                           error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
+        raise InvalidUsage(EmailCampaignBase.CustomErrors.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN[0],
+                           error_code=EmailCampaignBase.CustomErrors.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN[1])
     # Validation for list ids belonging to same domain
     validate_smartlist_ids(smartlist_ids, current_user)
 
@@ -199,37 +197,37 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
             get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids,
                                                         new_candidates_only=new_candidates_only)
 
-        # Check if the smartlist has more than 0 candidates
+        # Check if the valid candidates are present
         if not candidate_ids_and_emails:
             raise InvalidUsage('No candidates with emails found for email_campaign(id:%s).' % campaign.id,
-                               error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
-        else:
-            notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
-            # Create blast for email-campaign
-            email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id)
-            EmailCampaignBlast.save(email_campaign_blast)
-            _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
-            list_of_new_email_html_or_text = []
-            # Do not send mail if email_client_id is provided
-            # Loop through each candidate and get new_html and new_text
-            for candidate_id, candidate_address in candidate_ids_and_emails:
-                new_text, new_html = get_new_text_html_subject_and_campaign_send(
-                    campaign.id, candidate_id, candidate_address, current_user, email_campaign_blast.id)[:2]
-                logger.info("Marketing email added through client %s", campaign.email_client_id)
-                resp_dict = dict()
-                resp_dict['new_html'] = new_html
-                resp_dict['new_text'] = new_text
-                resp_dict['email'] = candidate_address
-                list_of_new_email_html_or_text.append(resp_dict)
-            db.session.commit()
+                               error_code=EmailCampaignBase.CustomErrors.NO_VALID_CANDIDATE_FOUND)
 
-            # TODO: This will be needed later
-            # update_candidate_document_on_cloud(user, candidate_ids_and_emails,
-            #                                    new_candidates_only, campaign,
-            #                                    len(list_of_new_email_html_or_text))
-            # Update campaign blast with number of sends
-            _update_blast_sends(email_campaign_blast.id, len(candidate_ids_and_emails), campaign, new_candidates_only)
-            return list_of_new_email_html_or_text
+        notify_admins(campaign, new_candidates_only, candidate_ids_and_emails)
+        # Create blast for email-campaign
+        email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id)
+        EmailCampaignBlast.save(email_campaign_blast)
+        _update_blast_unsubscribed_candidates(email_campaign_blast.id, len(unsubscribed_candidate_ids))
+        list_of_new_email_html_or_text = []
+        # Do not send mail if email_client_id is provided
+        # Loop through each candidate and get new_html and new_text
+        for candidate_id, candidate_address in candidate_ids_and_emails:
+            new_text, new_html = get_new_text_html_subject_and_campaign_send(
+                campaign.id, candidate_id, candidate_address, current_user, email_campaign_blast.id)[:2]
+            logger.info("Marketing email added through client %s", campaign.email_client_id)
+            resp_dict = dict()
+            resp_dict['new_html'] = new_html
+            resp_dict['new_text'] = new_text
+            resp_dict['email'] = candidate_address
+            list_of_new_email_html_or_text.append(resp_dict)
+        db.session.commit()
+
+        # TODO: This will be needed later
+        # update_candidate_document_on_cloud(user, candidate_ids_and_emails,
+        #                                    new_candidates_only, campaign,
+        #                                    len(list_of_new_email_html_or_text))
+        # Update campaign blast with number of sends
+        _update_blast_sends(email_campaign_blast.id, len(candidate_ids_and_emails), campaign, new_candidates_only)
+        return list_of_new_email_html_or_text
     # For each candidate, create URL conversions and send the email via Celery task
     get_smartlist_candidates_via_celery(current_user.id, campaign_id, smartlist_ids, new_candidates_only)
 
@@ -642,17 +640,7 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candi
     # TODO: We should solve that detached instance issue more gracefully.
     candidate = Candidate.get_by_id(candidate_id)
     campaign = EmailCampaign.get_by_id(campaign_id)
-    # Set the email campaign blast fields if they're not defined, like if this just a test
-    if not email_campaign_blast_id:
-        email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
-        if not email_campaign_blast:
-            logger.error("""send_campaign_emails_to_candidate:
-            Must have a previous email_campaign_blast that belongs to this campaign
-            if you don't pass in the email_campaign_blast_id param""")
-            raise InternalServerError('No email campaign blast found for campaign(id:%s). '
-                                      'User(id:%s).' % (campaign.id, campaign.user_id),
-                                      error_code=CampaignException.NO_CAMPAIGN_BLAST_FOUND)
-        email_campaign_blast_id = email_campaign_blast.id
+
     EmailCampaign.session.commit()
     email_campaign_send = EmailCampaignSend(campaign_id=campaign_id, candidate_id=candidate.id,
                                             blast_id=email_campaign_blast_id, ses_message_id=str(uuid.uuid4()))

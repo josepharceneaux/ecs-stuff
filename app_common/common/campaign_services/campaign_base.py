@@ -298,6 +298,8 @@ class CampaignBase(object):
         CAMPAIGN_NOT_FOUND = None
         BLAST_FORBIDDEN = None
         BLAST_NOT_FOUND = None
+        NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN = None
+        NO_VALID_CANDIDATE_FOUND = None
 
     @abstractmethod
     def get_campaign_type(self):

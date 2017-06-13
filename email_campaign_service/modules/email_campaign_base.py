@@ -6,10 +6,12 @@ from email_campaign_service.common.campaign_services.campaign_utils import Campa
 from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_FORBIDDEN,
                                                                   EMAIL_CAMPAIGN_BLAST_FORBIDDEN,
                                                                   EMAIL_CAMPAIGN_NOT_FOUND,
-                                                                  EMAIL_CAMPAIGN_BLAST_NOT_FOUND)
+                                                                  EMAIL_CAMPAIGN_BLAST_NOT_FOUND,
+                                                                  NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN,
+                                                                  NO_VALID_CANDIDATE_FOUND)
 
 
-# TODO: Will complete class base strucure in GET-2500
+# TODO: Will complete class base structure in GET-2500
 class EmailCampaignBase(CampaignBase):
     """
     Class containing methods to create/schedule an email-campaign and send that to candidates.
@@ -33,6 +35,8 @@ class EmailCampaignBase(CampaignBase):
         BLAST_FORBIDDEN = EMAIL_CAMPAIGN_BLAST_FORBIDDEN
         CAMPAIGN_NOT_FOUND = EMAIL_CAMPAIGN_NOT_FOUND
         BLAST_NOT_FOUND = EMAIL_CAMPAIGN_BLAST_NOT_FOUND
+        NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN = NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
+        NO_VALID_CANDIDATE_FOUND = NO_VALID_CANDIDATE_FOUND
 
     def get_campaign_type(self):
         """

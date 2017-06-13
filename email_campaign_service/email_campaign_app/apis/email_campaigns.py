@@ -80,7 +80,8 @@ from email_campaign_service.common.models.misc import UrlConversion, Activity
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, ActivityApiUrl)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignSend)
-from email_campaign_service.common.error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
+from email_campaign_service.common.error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound,
+                                                          InternalServerError)
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response, get_pagination_params,
                                                            SORT_TYPES)
 from email_campaign_service.common.campaign_services.campaign_utils import (CampaignUtils, INVITATION_STATUSES)
@@ -268,7 +269,7 @@ class EmailCampaignSendApi(Resource):
         results_send = send_email_campaign(request.user, email_campaign, new_candidates_only=False)
         if email_client_id:
             if not isinstance(results_send, list):
-                raise InvalidUsage(error_message="Something went wrong, response is not list")
+                raise InternalServerError(error_message="Something went wrong, response is not list")
             data = {
                 'email_campaign_sends': [
                     {
@@ -299,7 +300,7 @@ class EmailCampaignApiUrlRedirect(Resource):
         CampaignBase.pre_process_url_redirect(request.args, request.full_path)
         url_conversion = UrlConversion.query.get(url_conversion_id)
         if not url_conversion:
-            logger.error('No record of url_conversion found for id: %s' % url_conversion_id)
+            logger.error('No record of url_conversion found for id:%s' % url_conversion_id)
             return
         # Update hitcount
         update_hit_count(url_conversion)

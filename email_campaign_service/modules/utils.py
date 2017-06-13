@@ -114,9 +114,9 @@ def do_mergetag_replacements(texts, current_user, requested_object=None, candida
     :rtype: list[> 0](string)
     """
     if not isinstance(current_user, User):
-        raise InvalidUsage('Invalid object passed for user')
+        raise InternalServerError('Invalid object passed for user')
     if requested_object and not isinstance(requested_object, (Candidate, User)):
-        raise InvalidUsage('Invalid object passed')
+        raise InternalServerError('Invalid object passed')
 
     first_name = "John"
     last_name = "Doe"

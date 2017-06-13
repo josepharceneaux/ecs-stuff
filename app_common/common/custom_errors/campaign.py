@@ -24,6 +24,8 @@ INVALID_DATETIME_VALUE = ("Expecting datetime value to be in future", 1412)
 INVALID_DATETIME_FORMAT = ("Expecting ISO8601_FORMAT of datetime", 1413)
 SMARTLIST_FORBIDDEN = ("Smartlist doesn't belongs to user's domain", 1414)
 SMARTLIST_NOT_FOUND = ("Smartlist not found", 1415)
+NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN = ("No smartlist is associated with the campaign", 1416)
+NO_VALID_CANDIDATE_FOUND = ("No candidate with email(s) found for smartlist(s) associated with the campaign", 1417)
 
 # Blasts 1421-1430
 EMAIL_CAMPAIGN_BLAST_FORBIDDEN = ("Requested blast doesn't belongs to user's domain", 1421)
