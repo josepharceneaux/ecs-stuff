@@ -28,7 +28,7 @@ from email_campaign_service.common.routes import EmailCampaignApiUrl, UserServic
 from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_FORBIDDEN,
                                                                   EMAIL_CAMPAIGN_NOT_FOUND,
                                                                   NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN,
-                                                                  NO_VALID_CANDIDATE_FOUND)
+                                                                  NO_VALID_CANDIDATE_FOUND, SMARTLIST_NOT_FOUND)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailCampaignSmartlist)
@@ -74,7 +74,8 @@ class TestSendCampaign(object):
         email_campaign = campaign_with_and_without_client
         smartlist_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(email_campaign.id, smartlist_ids_only=True)
         CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL % email_campaign.id,
-                                                                  access_token_first, smartlist_ids[0])
+                                                                  access_token_first, smartlist_ids[0],
+                                                                  expected_error_code=SMARTLIST_NOT_FOUND[1])
 
     def test_campaign_send_with_no_smartlist_candidate(self, access_token_first, email_campaign_user1_domain1_in_db,
                                                        talent_pipeline):

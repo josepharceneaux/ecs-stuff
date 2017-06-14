@@ -229,8 +229,9 @@ class TestCreateCampaign(object):
         """
         campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL, access_token_first,
-                                                                  campaign_data['list_ids'][0], campaign_data,
-                                                                  expected_error_code=SMARTLIST_NOT_FOUND[1])
+                                                                  campaign_data['list_ids'][0],
+                                                                  expected_error_code=SMARTLIST_NOT_FOUND[1],
+                                                                  data=campaign_data)
 
     def test_create_email_campaign_with_smartlist_id_of_other_domain(self, access_token_first, smartlist_other_in_db):
         """

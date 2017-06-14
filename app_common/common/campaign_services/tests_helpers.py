@@ -836,15 +836,15 @@ class CampaignsTestsHelpers(object):
 
     @classmethod
     @contract
-    def send_request_with_deleted_smartlist(cls, method, url, token, smartlist_id, data, expected_error_code):
+    def send_request_with_deleted_smartlist(cls, method, url, token, smartlist_id, expected_error_code, data=None):
         """
         This helper method sends HTTP request to given url and verifies that API raised InvalidUsage 400 error.
         :param http_method method: POST or PUT
         :param string url: target api url
         :param string token: access token
         :param int | long smartlist_id: smartlist id
-        :param dict data: request body
         :param int expected_error_code: Expected error code
+        :param dict|None data: request body
         """
         delete_smartlist(smartlist_id, token)
         response = send_request(method, url, token, data=data)
