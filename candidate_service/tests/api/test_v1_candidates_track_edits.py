@@ -47,8 +47,8 @@ class TestTrackCandidateEdits(object):
 
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
-        assert candidate_edits[0]['old_value'] in old_candidate_dict['full_name']
-        assert candidate_edits[0]['new_value'] in new_candidate_dict['full_name']
+        assert [edit for edit in candidate_edits if edit['field_name'] == 'formatted_name'][0]['old_value'] == old_candidate_dict['full_name']
+        assert [edit for edit in candidate_edits if edit['field_name'] == 'formatted_name'][0]['new_value'] == new_candidate_dict['full_name']
 
 
 class TestTrackCandidateAddressEdits(object):
@@ -80,6 +80,7 @@ class TestTrackCandidateAddressEdits(object):
 
         # Retrieve Candidate Edits
         edit_resp = send_request('get', CandidateApiUrl.CANDIDATE_EDIT % candidate_id, access_token_first)
+        assert edit_resp.status_code == 200, 'status must be 200. found: {}'.format(edit_resp.status_code)
         print response_info(edit_resp)
 
         candidate_edits = edit_resp.json()['candidate']['edits']

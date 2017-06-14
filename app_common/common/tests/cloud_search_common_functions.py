@@ -217,4 +217,5 @@ def assert_results(candidate_ids, response):
     print resultant_candidate_ids
 
     # Test whether every element in the set candidate_ids is in resultant_candidate_ids.
-    assert set(candidate_ids) == set(resultant_candidate_ids)
+    assert set(candidate_ids) == set(resultant_candidate_ids), 'expected: {}, found: {}'.format(
+        set(candidate_ids), set(resultant_candidate_ids))

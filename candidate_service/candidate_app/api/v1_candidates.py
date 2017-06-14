@@ -18,6 +18,7 @@ from flask import request
 from flask_restful import Resource
 
 # Validators
+from candidate_service.modules.mergehub import MergeHub
 from candidate_service.modules.validators import is_user_permitted_to_archive_candidate
 
 # JSON Schemas
@@ -321,7 +322,6 @@ class CandidatesResource(Resource):
                 tags=candidate_dict.get('tags', []),
                 title=title
             )
-
             if multiple_candidates:
                 try:
                     resp_dict = create_or_update_candidate_from_params(**candidate_data)
