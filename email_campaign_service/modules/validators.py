@@ -67,13 +67,13 @@ def validate_data_to_schedule_campaign(campaign_data):
         start_datetime_obj = DatetimeUtils.get_datetime_obj_if_format_is_valid(start_datetime,
                                                                                error_code=INVALID_DATETIME_FORMAT[1])
         if not DatetimeUtils(start_datetime_obj).is_in_future():
-            raise UnprocessableEntity('`start_datetime` must be in future. Given %s' % start_datetime,
+            raise UnprocessableEntity('`start_datetime` must be in future. Given {}'.format(start_datetime),
                                       error_code=INVALID_DATETIME_VALUE[1])
     if end_datetime:
         end_datetime_obj = DatetimeUtils.get_datetime_obj_if_format_is_valid(end_datetime,
                                                                              error_code=INVALID_DATETIME_FORMAT[1])
         if not DatetimeUtils(end_datetime_obj).is_in_future():
-            raise UnprocessableEntity('`end_datetime` must be in future. Given %s' % end_datetime,
+            raise UnprocessableEntity('`end_datetime` must be in future. Given {}'.format(end_datetime),
                                       error_code=INVALID_DATETIME_VALUE[1])
 
     if start_datetime and end_datetime and start_datetime_obj > end_datetime_obj:

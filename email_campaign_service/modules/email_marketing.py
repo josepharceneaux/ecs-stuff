@@ -214,10 +214,7 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
             new_text, new_html = get_new_text_html_subject_and_campaign_send(
                 campaign.id, candidate_id, candidate_address, current_user, email_campaign_blast.id)[:2]
             logger.info("Marketing email added through client %s", campaign.email_client_id)
-            resp_dict = dict()
-            resp_dict['new_html'] = new_html
-            resp_dict['new_text'] = new_text
-            resp_dict['email'] = candidate_address
+            resp_dict = dict(new_html=new_html, new_text=new_text, email=candidate_address)
             list_of_new_email_html_or_text.append(resp_dict)
         db.session.commit()
 

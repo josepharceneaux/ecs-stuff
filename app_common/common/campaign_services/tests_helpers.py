@@ -28,8 +28,7 @@ from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..utils.test_utils import (get_fake_dict, get_and_assert_zero,
-                                delete_smartlist, fake, search_candidates,
-                                get_smartlist_candidates)
+                                delete_smartlist, fake, search_candidates)
 from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl,
                       EmailCampaignApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
@@ -48,7 +47,7 @@ class CampaignsTestsHelpers(object):
     # This list is used to update/delete a campaign, e.g. sms-campaign with invalid id
     INVALID_IDS = [fake.word(), 0, None, dict(), list(), '', '        ']
     # This list is used to create/update a campaign, e.g. sms-campaign with invalid name and body_text.
-    INVALID_STRING = INVALID_IDS[1:]
+    INVALID_STRINGS = INVALID_IDS[1:]
     # This list is used to schedule/reschedule a campaign e.g. sms-campaign with invalid frequency Id.
     INVALID_FREQUENCY_IDS = copy.copy(INVALID_IDS)
     # Remove 0 from list as it is valid frequency_id and replace it with sys.maxint
@@ -646,7 +645,7 @@ class CampaignsTestsHelpers(object):
     @contract(talent_pipeline=TalentPipeline)
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None, emails_list=False,
                                         create_phone=False, assert_candidates=True, smartlist_name=fake.word(),
-                                        candidate_ids=None, timeout=600):
+                                        candidate_ids=None, timeout=300):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -757,7 +756,7 @@ class CampaignsTestsHelpers(object):
         :param string field: Field in campaign data
         :param int|None expected_error_code: Expected error code
         """
-        for invalid_campaign_name in CampaignsTestsHelpers.INVALID_STRING:
+        for invalid_campaign_name in CampaignsTestsHelpers.INVALID_STRINGS:
             print "Iterating {} as {}".format(invalid_campaign_name, field)
             old_value = campaign_data[field]
             campaign_data[field] = invalid_campaign_name
@@ -797,7 +796,7 @@ class CampaignsTestsHelpers(object):
     @staticmethod
     @contract
     def campaign_schedule_or_reschedule_with_invalid_frequency_id(method, url, access_token, scheduler_data,
-                                                                  expected_error_code=None):
+                                                                  expected_error_code):
         """
         This creates or updates a campaign with unexpected fields present in the data and
         asserts that we get invalid usage error from respective API. Data passed should be a dictionary
@@ -806,15 +805,15 @@ class CampaignsTestsHelpers(object):
         :param string url: URL on which we are supposed to make HTTP request
         :param string access_token: Access token of user
         :param dict scheduler_data: Data to be passed in HTTP request to schedule/reschedule given campaign
-        :param tuple|None expected_error_code: Expected error code
+        :param int expected_error_code: Expected error code
         """
         for invalid_frequency_id in CampaignsTestsHelpers.INVALID_FREQUENCY_IDS:
             print "Iterating `%s` as frequency_id" % invalid_frequency_id
             scheduler_data['frequency_id'] = invalid_frequency_id
             response = send_request(method, url, access_token, data=scheduler_data)
             error = CampaignsTestsHelpers.assert_non_ok_response(response)
-            assert error['code'] in expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
-                                                                                                    error['code'])
+            assert error['code'] == expected_error_code, \
+                'Expecting error_code:{}, found:{}'.format(expected_error_code, error['code'])
 
     @staticmethod
     @contract
@@ -835,22 +834,23 @@ class CampaignsTestsHelpers(object):
             response = send_request('delete', url, access_token, data={'ids': invalid_item})
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
-    @staticmethod
+    @classmethod
     @contract
-    def send_request_with_deleted_smartlist(method, url, token, smartlist_id, data=None, expected_error_code=None):
+    def send_request_with_deleted_smartlist(cls, method, url, token, smartlist_id, data, expected_error_code):
         """
         This helper method sends HTTP request to given url and verifies that API raised InvalidUsage 400 error.
         :param http_method method: POST or PUT
         :param string url: target api url
         :param string token: access token
         :param int | long smartlist_id: smartlist id
-        :param dict|None data: request body
-        :param int|None expected_error_code: Expected error code
+        :param dict data: request body
+        :param int expected_error_code: Expected error code
         """
         delete_smartlist(smartlist_id, token)
-        resp = send_request(method, url, token, data=data)
-        assert resp.status_code == requests.codes.BAD
-        assert 'deleted' in resp.json()['error']['message']
+        response = send_request(method, url, token, data=data)
+        error = cls.assert_non_ok_response(response)
+        assert error['code'] == expected_error_code, \
+            'Expecting error_code:{}, found:{}'.format(expected_error_code, error['code'])
 
     @staticmethod
     @contract

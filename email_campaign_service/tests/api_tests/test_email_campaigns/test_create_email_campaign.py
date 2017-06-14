@@ -232,8 +232,7 @@ class TestCreateCampaign(object):
                                                                   campaign_data['list_ids'][0], campaign_data,
                                                                   expected_error_code=SMARTLIST_NOT_FOUND[1])
 
-    def test_create_email_campaign_with_smartlist_id_of_other_domain(self, access_token_first,
-                                                                     smartlist_other_in_db):
+    def test_create_email_campaign_with_smartlist_id_of_other_domain(self, access_token_first, smartlist_other_in_db):
         """
         This is a test to create email-campaign with deleted smartlist id. It should result in
         Resource not found error.
@@ -248,8 +247,7 @@ class TestCreateCampaign(object):
         """
         campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
         CampaignsTestsHelpers.campaign_schedule_or_reschedule_with_invalid_frequency_id(
-            self.HTTP_METHOD, self.URL, access_token_first, campaign_data, expected_error_code=(MISSING_FIELD[1],
-                                                                                                INVALID_INPUT[1]))
+            self.HTTP_METHOD, self.URL, access_token_first, campaign_data, expected_error_code=INVALID_INPUT[1])
 
     def test_create_campaign_with_invalid_datetime_format(self, access_token_first, smartlist_user1_domain1_in_db):
         """

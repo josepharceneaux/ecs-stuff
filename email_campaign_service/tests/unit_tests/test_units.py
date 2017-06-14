@@ -53,7 +53,7 @@ def test_mergetag_replacements(user_first, candidate_first):
         assert 'Invalid' in error.message
 
     # Test with non-list item as first argument
-    for invalid_param in CampaignsTestsHelpers.INVALID_STRING:
+    for invalid_param in CampaignsTestsHelpers.INVALID_STRINGS:
         try:
             do_mergetag_replacements(invalid_param, user_first)
             assert None, 'It should raise ContractNotRespected exception for param:%s' % invalid_param
