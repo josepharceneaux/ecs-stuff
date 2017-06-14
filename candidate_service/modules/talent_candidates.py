@@ -32,7 +32,8 @@ from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
     EmailCampaignSendUrlConversion
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product, CustomFieldCategory
+from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product, \
+    CustomFieldCategory, CustomField
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.user import User, Permission
@@ -1412,23 +1413,23 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
         # Remove empty values
         custom_field_dict = {k: v for k, v in custom_field_dict.items() if v}
 
-        # TODO: Product decided to punt subcategory feature to a later time -Amir
-        # if custom_field_dict.get('custom_field_subcategory_id'):
-        #     if custom_field_dict['custom_field_category_id'] is None:
-        #         raise InvalidUsage("No Custom Field Category Provided",
-        #                           custom_error.NO_CUSTOM_FIELD_CATEGORY_PROVIDED)
-
+        custom_field_id = custom_field_dict.get('custom_field_id')
         custom_field_category_id = custom_field_dict.get('custom_field_category_id')
 
         if custom_field_category_id:
             # Custom field category ID must be recognized
-            cf_category = CustomFieldCategory.get(custom_field_category_id)
+            cf_category = CustomFieldCategory.get(custom_field_category_id)  # type: CustomFieldCategory
             if not cf_category:
                 raise NotFoundError("Custom field category ID not recognized")
 
             # Custom field category must belong to custom field
-            if cf_category.custom_field_id != custom_field_dict['custom_field_id']:
+            if custom_field_id and cf_category.custom_field_id != custom_field_id:
                 raise ForbiddenError("Custom field category does not belong to custom field")
+            # Match custom field category to custom field if cf-id is not provided
+            elif not custom_field_id:
+                custom_field_obj = CustomField.get(cf_category.custom_field_id)
+                if not custom_field_obj or (custom_field_obj and custom_field_obj.domain_id != request.user.domain_id):
+                    raise ForbiddenError("Custom field category does not belong to user's domain")
 
         candidate_custom_field_id = custom_field.get('id')
 
@@ -1468,6 +1469,12 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                 custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
                 custom_field_id = custom_field_dict.get('custom_field_id')
 
+                # Making sure no candidate_custom_field should be added without it's parent custom_field
+                if not custom_field_id:
+                    raise InvalidUsage(
+                        error_message='No custom_field_id provided.',
+                        error_code=custom_error.NO_CUSTOM_FIELD_ID_PROVIDED
+                    )
                 # TODO: Product decided to punt subcategory feature to a later time -Amir
                 # custom_field_subcategory_id = custom_field_dict.get('custom_field_subcategory_id')
 
