@@ -11,17 +11,19 @@ from flask import Blueprint
 from flask_restful import Resource
 
 # Application Specific
+from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.models.user import Permission
 from email_campaign_service.common.error_handling import InvalidUsage
-from email_campaign_service.common.utils.handy_functions import get_valid_json_data
+from email_campaign_service.common.utils.handy_functions import get_valid_json_data, validate_required_fields
 from email_campaign_service.common.routes import (EmailCampaignApi, EmailCampaignApiUrl)
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response,
                                                            get_pagination_params)
-from email_campaign_service.common.utils.validators import validate_and_return_immutable_value
 from email_campaign_service.common.utils.auth_utils import (require_oauth, require_all_permissions)
 from email_campaign_service.common.models.email_campaign import (UserEmailTemplate, EmailTemplateFolder)
 from email_campaign_service.modules.validators import validate_domain_id_for_email_templates
+from email_campaign_service.common.custom_errors.campaign import (MISSING_FIELD, INVALID_INPUT,
+                                                                  INVALID_REQUEST_BODY, DUPLICATE_TEMPLATE_FOLDER_NAME)
 
 # Blueprint for email-templates API
 template_blueprint = Blueprint('email_templates', __name__)
@@ -67,25 +69,34 @@ class TemplateFolders(Resource):
                     404 (Referenced email-template-folder not found)
                     500 (Internal server error)
         """
-        # TODO: Add JSON schema validation
-        data = get_valid_json_data(request)
+        # TODO: Add JSON schema validation, GET-2559
+        data = request.get_json(silent=True)
+        if not data:
+            raise InvalidUsage(INVALID_REQUEST_BODY[0], INVALID_REQUEST_BODY[1])
+        parent_id = None
         folder_name = data.get('name')
-        if not folder_name:
-            raise InvalidUsage('Folder name must be provided.')
-        if not isinstance(folder_name, basestring):
-            raise InvalidUsage('Invalid input: Folder name must be a valid string.')
+        # Validation of required fields
+        validate_required_fields(data, ('name', ), error_code=MISSING_FIELD[1])
+
+        # Validation of folder name
+        if not isinstance(folder_name, basestring) or not str(folder_name).strip():
+            raise InvalidUsage('Invalid input: Folder name must be a valid string.', error_code=INVALID_INPUT[1])
+
         domain_id = request.user.domain_id
         # Check if the name already exists under same domain
         duplicate = EmailTemplateFolder.get_by_name_and_domain_id(folder_name, domain_id)
         if duplicate:
-            raise InvalidUsage('Template folder with name=%s already exists' % folder_name)
-        parent_id = data.get('parent_id')
-        if parent_id:
+            raise InvalidUsage(DUPLICATE_TEMPLATE_FOLDER_NAME[0], error_code=DUPLICATE_TEMPLATE_FOLDER_NAME[1])
+        if 'parent_id' in data:
+            parent_id = data['parent_id']
             # Validate parent_id is valid
-            EmailTemplateFolder.get_valid_template_folder(parent_id, request.user)
+            EmailTemplateFolder.get_valid_template_folder(parent_id, request.user.domain_id)
         # If is_immutable value is not passed, make it as 0
         is_immutable = data.get('is_immutable', 0)
-        is_immutable = validate_and_return_immutable_value(is_immutable)
+
+        if is_immutable is None or is_immutable not in (0, 1):
+            raise InvalidUsage(error_message='Invalid input: is_immutable should be integer with value 0 or 1',
+                               error_code=INVALID_INPUT[1])
         # Create EmailTemplateFolder object
         template_folder = EmailTemplateFolder(name=folder_name, domain_id=domain_id, parent_id=parent_id,
                                               is_immutable=is_immutable)
@@ -167,7 +178,7 @@ class TemplateFolder(Resource):
                     404 (Requested email-template-folder not found)
                     500 (Internal server error)
         """
-        template_folder = EmailTemplateFolder.get_valid_template_folder(folder_id, request.user)
+        template_folder = EmailTemplateFolder.get_valid_template_folder(folder_id, request.user.domain_id)
         return {"email_template_folder": template_folder.to_json()}, codes.OK
 
     @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CAMPAIGNS)
@@ -193,7 +204,7 @@ class TemplateFolder(Resource):
                     404 (Requested email-template-folder not found)
                     500 (Internal server error)
         """
-        template_folder = EmailTemplateFolder.get_valid_template_folder(folder_id, request.user)
+        template_folder = EmailTemplateFolder.get_valid_template_folder(folder_id, request.user.domain_id)
         # Delete the requested template-folder
         EmailTemplateFolder.delete(template_folder)
         return '', codes.NO_CONTENT
@@ -245,7 +256,7 @@ class TemplatesInFolder(Resource):
                     404 (Requested email-template-folder not found)
                     500 (Internal server error)
         """
-        template_folder = EmailTemplateFolder.get_valid_template_folder(folder_id, request.user)
+        template_folder = EmailTemplateFolder.get_valid_template_folder(folder_id, request.user.domain_id)
         return {"email_templates": [template.to_json() for template in template_folder.user_email_template]}, codes.OK
 
 
@@ -334,7 +345,7 @@ class EmailTemplates(Resource):
                     404 (Requested email-template-folder not found)
                     500 (Internal server error)
         """
-        # TODO: Add JSON schema validation
+        # TODO: Add JSON schema validation, GET-2559
         data = get_valid_json_data(request)
         template_name = data.get('name')
         if not template_name:
@@ -349,10 +360,13 @@ class EmailTemplates(Resource):
         template_folder_id = data.get('template_folder_id')
         if template_folder_id:
             # Validate parent_id is valid
-            EmailTemplateFolder.get_valid_template_folder(template_folder_id, request.user)
+            EmailTemplateFolder.get_valid_template_folder(template_folder_id, request.user.domain_id)
         # If is_immutable value is not passed, make it as 0
         is_immutable = data.get('is_immutable', 0)
-        is_immutable = validate_and_return_immutable_value(is_immutable)
+        if is_immutable is None or str(is_immutable) not in ('0', '1'):
+            raise InvalidUsage(error_message='Invalid input: is_immutable should be integer with value 0 or 1',
+                               error_code=INVALID_INPUT[1])
+
         # Create UserEmailTemplate object
         template = UserEmailTemplate(user_id=request.user.id, type=0,
                                      name=template_name, body_html=template_html_body,

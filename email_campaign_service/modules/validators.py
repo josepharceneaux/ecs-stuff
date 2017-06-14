@@ -108,7 +108,7 @@ def validate_and_format_request_data(data, current_user):
     validate_required_fields(data, EmailCampaignBase.REQUIRED_FIELDS, error_code=MISSING_FIELD[1])
 
     # Raise errors if invalid input of string inputs
-    if filter(lambda item: not isinstance(item, basestring) or str(item).strip() == '', [name, subject, body_html]):
+    if filter(lambda item: not isinstance(item, basestring) or not str(item).strip(), [name, subject, body_html]):
         raise InvalidUsage("Expecting `name`, `subject` and `body_html` as non-empty string",
                            error_code=INVALID_INPUT[1])
     if not frequency_id:

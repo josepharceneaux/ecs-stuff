@@ -38,7 +38,7 @@ EMAIL_CAMPAIGN_SEND_FORBIDDEN = ("Requested blast doesn't belongs to user's doma
 EMAIL_CAMPAIGN_SEND_NOT_FOUND = ("Requested blast not found", 1432)
 
 # Clients 1441-1450
-EMAIL_CLIENT_FORBIDDEN = ("Email client not found", 1441)
+EMAIL_CLIENT_FORBIDDEN = ("Email client does not belong to user`s domain", 1441)
 EMAIL_CLIENT_NOT_FOUND = ("Email client not found", 1442)
 
 # Email templates custom errors, range 1451-1470

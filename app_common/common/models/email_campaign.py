@@ -1,7 +1,7 @@
 # Standard imports
 from datetime import datetime
 
-# Thrid party
+# Third party
 from contracts import contract
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import LONGTEXT
@@ -16,8 +16,8 @@ from ..utils.validators import (raise_if_not_instance_of,
 from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError,
                               InvalidUsage, NotFoundError)
 from ..custom_errors.campaign import (EMAIL_CAMPAIGN_SEND_FORBIDDEN, EMAIL_CAMPAIGN_FORBIDDEN,
-                                      EMAIL_CAMPAIGN_SEND_NOT_FOUND, EMAIL_CAMPAIGN_NOT_FOUND)
-
+                                      EMAIL_CAMPAIGN_SEND_NOT_FOUND, EMAIL_CAMPAIGN_NOT_FOUND,
+                                      TEMPLATE_FOLDER_NOT_FOUND, TEMPLATE_FOLDER_FORBIDDEN)
 
 __author__ = 'jitesh'
 
@@ -580,7 +580,7 @@ class EmailTemplateFolder(db.Model):
         return cls.query.filter_by(name=folder_name, domain_id=domain_id).first()
 
     @classmethod
-    def get_valid_template_folder(cls, template_folder_id, user):
+    def get_valid_template_folder(cls, template_folder_id, domain_id):
         """
         This validates given template_folder_id is int or long greater than 0.
         It raises Invalid Usage error in case of invalid template_folder_id.
@@ -588,18 +588,23 @@ class EmailTemplateFolder(db.Model):
         It raises Forbidden error if requested template folder does not belong to user's domain.
         It returns EmailTemplateFolder object if above validation does not raise any error.
         :param int|long template_folder_id: Id of email-template-folder
-        :param User user: User object of logged-in user
+        :param int|long domain_id: Id of domain of logged-in user
         :rtype: EmailTemplateFolder
         """
-        raise_if_not_positive_int_or_long(template_folder_id)
+        # Inline import to avoid circular dependency
+        from ..campaign_services.validators import raise_if_dict_values_are_not_int_or_long
+        raise_if_dict_values_are_not_int_or_long(dict(template_folder_id=template_folder_id))
+        assert domain_id and domain_id > 0, "Expecting positive value for folder_id. Found:{}".format(domain_id)
+
         # Get template-folder object from database
         template_folder = cls.get_by_id(template_folder_id)
         if not template_folder:
-            raise ResourceNotFound('Email template folder(id:%s) not found' % template_folder_id)
+            raise ResourceNotFound('Email template folder(id:%s) not found' % template_folder_id,
+                                   error_code=TEMPLATE_FOLDER_NOT_FOUND[1])
         # Verify owned by same domain
-        if not template_folder.domain_id == user.domain_id:
-            raise ForbiddenError("Email template folder(id:%d) is not owned by user(id:%d)'s domain(id:%d)"
-                                 % (template_folder_id, user.id, user.domain_id))
+        if not template_folder.domain_id == domain_id:
+            raise ForbiddenError("Email template folder does not belong to user's domain",
+                                 error_code=TEMPLATE_FOLDER_FORBIDDEN[1])
         return template_folder
 
 
