@@ -14,9 +14,7 @@ import pycountry
 import simplejson as json
 from flask import request, has_request_context
 from nameparser import HumanName
-
 from candidate_service.candidate_app import logger
-from candidate_service.common.constants import HIGH
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 from candidate_service.common.models.associations import CandidateAreaOfInterest
@@ -34,22 +32,22 @@ from candidate_service.common.models.db import db
 from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
     EmailCampaignSendUrlConversion
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product, CustomFieldCategory
+from candidate_service.common.models.misc import AreaOfInterest, UrlConversion, Product, \
+    CustomFieldCategory, CustomField
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.user import User, Permission
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.utils.handy_functions import purge_dict
-from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name, get_country_code_from_name
+from candidate_service.common.utils.iso_standards import (get_country_name, get_subdivision_name,
+                                                          get_country_code_from_name)
 from candidate_service.common.utils.talent_s3 import get_s3_url
 from candidate_service.common.utils.validators import sanitize_zip_code, is_number, parse_phone_number
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
-from candidate_service.modules.validators import (
-    does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
-    get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
-    do_phones_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
-    get_education_degree_if_exists, do_emails_exist, remove_duplicates,
-    validate_cf_category_and_subcategory_ids)
+from candidate_service.modules.validators import (does_candidate_cf_exist, get_work_experience_if_exists,
+                                                  does_experience_bullet_exist,
+                                                  do_phones_exist, does_preferred_location_exist, does_skill_exist,
+                                                  does_social_network_exist, do_emails_exist, remove_duplicates)
 from track_changes import track_edits, track_areas_of_interest_edits
 
 
@@ -1355,23 +1353,23 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
         # Remove empty values
         custom_field_dict = {k: v for k, v in custom_field_dict.items() if v}
 
-        # TODO: Product decided to punt subcategory feature to a later time -Amir
-        # if custom_field_dict.get('custom_field_subcategory_id'):
-        #     if custom_field_dict['custom_field_category_id'] is None:
-        #         raise InvalidUsage("No Custom Field Category Provided",
-        #                           custom_error.NO_CUSTOM_FIELD_CATEGORY_PROVIDED)
-
+        custom_field_id = custom_field_dict.get('custom_field_id')
         custom_field_category_id = custom_field_dict.get('custom_field_category_id')
 
         if custom_field_category_id:
             # Custom field category ID must be recognized
-            cf_category = CustomFieldCategory.get(custom_field_category_id)
+            cf_category = CustomFieldCategory.get(custom_field_category_id)  # type: CustomFieldCategory
             if not cf_category:
                 raise NotFoundError("Custom field category ID not recognized")
 
             # Custom field category must belong to custom field
-            if cf_category.custom_field_id != custom_field_dict['custom_field_id']:
+            if custom_field_id and cf_category.custom_field_id != custom_field_id:
                 raise ForbiddenError("Custom field category does not belong to custom field")
+            # Match custom field category to custom field if cf-id is not provided
+            elif not custom_field_id:
+                custom_field_obj = CustomField.get(cf_category.custom_field_id)
+                if not custom_field_obj or (custom_field_obj and custom_field_obj.domain_id != request.user.domain_id):
+                    raise ForbiddenError("Custom field category does not belong to user's domain")
 
         candidate_custom_field_id = custom_field.get('id')
 
@@ -1411,6 +1409,12 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                 custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
                 custom_field_id = custom_field_dict.get('custom_field_id')
 
+                # Making sure no candidate_custom_field should be added without it's parent custom_field
+                if not custom_field_id:
+                    raise InvalidUsage(
+                        error_message='No custom_field_id provided.',
+                        error_code=custom_error.NO_CUSTOM_FIELD_ID_PROVIDED
+                    )
                 # TODO: Product decided to punt subcategory feature to a later time -Amir
                 # custom_field_subcategory_id = custom_field_dict.get('custom_field_subcategory_id')
 
@@ -2678,3 +2682,31 @@ class CandidateAddUpdateUtils(object):
             db.session.add(CandidateEducationDegreeBullet(**bullet_dict))
             track_edits(update_dict=bullet_dict, table_name='candidate_education_degree_bullet',
                         candidate_id=self.candidate_id, user_id=self.user_id)
+
+
+# TODO: Combine `remove_nulls` and `remove_null_and_empty_string` into one function/class
+def remove_nulls(dict_data):
+    """
+    Function will create a dict object from dict_data without the None values
+    :type dict_data: dict
+    :rtype: dict
+    """
+    return {k: v.strip() if isinstance(v, basestring) else v for k, v in dict_data.items() if v is not None}
+
+
+def remove_null_and_empty_string(dict_data):
+    """
+    Function will create a dict object form dict_data without the None values and the empty string values
+    :type dict_data: dict
+    :rtype: dict
+    """
+    r = dict()
+    for k, v in dict_data.items():
+        if isinstance(v, basestring):
+            v = v.strip()
+            if v != '':
+                r[k] = v
+        elif v is not None:
+            r[k] = v
+    return r
+

@@ -790,7 +790,7 @@ class TestCreateCandidateAddress(object):
         candidate_dict = get_resp.json()['candidate']
         assert candidate_dict['addresses'][0]['zip_code'] is None
 
-    def test_with_poorly_formatted_data(self, access_token_first, user_first, talent_pool):
+    def test_with_poorly_formatted_data(self, access_token_first, talent_pool):
         """
         Test:  Create candidate address with whitespaces, None values, etc.
         Expect: 201; server should clean up data before adding to db

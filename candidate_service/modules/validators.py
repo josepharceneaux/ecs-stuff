@@ -236,8 +236,7 @@ def validate_string_list(key, values):
             if urllib.unquote(values) == values:
                 values = urllib.quote(values).replace('%7C', '|')
 
-        parsed_values = values.split(',')
-        values = [urllib.unquote(parsed_value).strip().replace("'", r"\'") for parsed_value in parsed_values]
+        values = [parsed_value.strip().replace("'", r"\'") for parsed_value in urllib.unquote(values).split(',')]
         return values[0] if values.__len__() == 1 else values
     elif ',' in values or isinstance(values, list):
         if ',' in values:

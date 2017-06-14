@@ -443,6 +443,7 @@ def define_and_send_request(access_token, request, url, data=None):
                       data=json.dumps(data))
 
 
+# TODO: must be improved & unit-tested - Amir
 def purge_dict(dictionary, strip=True, keep_false=True, remove_empty_strings_only=False):
     """
     Function will "remove" dict's keys with empty values
