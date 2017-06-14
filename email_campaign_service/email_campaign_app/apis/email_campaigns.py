@@ -300,7 +300,7 @@ class EmailCampaignApiUrlRedirect(Resource):
         CampaignBase.pre_process_url_redirect(request.args, request.full_path)
         url_conversion = UrlConversion.query.get(url_conversion_id)
         if not url_conversion:
-            logger.error('No record of url_conversion found for id:%s' % url_conversion_id)
+            logger.error('No record of url_conversion found for id:{}'.format(url_conversion_id))
             return
         # Update hitcount
         update_hit_count(url_conversion)

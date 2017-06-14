@@ -119,7 +119,8 @@ def validate_smartlist_ids(smartlist_ids, current_user, error_code=None, resourc
     if not isinstance(smartlist_ids, list):
         raise InvalidUsage('Include smartlist id(s) in a list.', error_code=error_code)
     # Validate all items are valid integer or long
-    if filter(lambda smartlist_id: not isinstance(smartlist_id, (int, long)) or smartlist_id <= 0, smartlist_ids):
+    if [smartlist_id for smartlist_id in smartlist_ids if (not isinstance(smartlist_id, (int, long))
+                                                           or smartlist_id <= 0)]:
         raise InvalidUsage("`list_ids` should be a list of integers", error_code=error_code)
 
     # Validation for duplicate `list_ids`

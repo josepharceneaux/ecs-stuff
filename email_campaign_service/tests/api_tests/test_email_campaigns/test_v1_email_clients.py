@@ -87,7 +87,7 @@ class TestCreateEmailClients(object):
         In this test, we will test endpoint with invalid format of fields which will cause 400 error.
         """
         email_client_data = data_for_creating_email_clients()[0]
-        invalid_key_values = [(key, CampaignsTestsHelpers.INVALID_STRING) for key in email_client_data]
+        invalid_key_values = [(key, CampaignsTestsHelpers.INVALID_STRINGS) for key in email_client_data]
         for key, values in invalid_key_values:
             for value in values:
                 if key not in EMAIL_CLIENTS_SCHEMA['required'] and value in (None, '', '        '):

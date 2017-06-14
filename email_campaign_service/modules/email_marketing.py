@@ -60,7 +60,8 @@ from email_campaign_service.common.inter_service_calls.candidate_pool_service_ca
 from email_campaign_service.common.inter_service_calls.candidate_service_calls import \
     get_candidate_subscription_preference
 from email_campaign_service.common.custom_errors.campaign import (INVALID_REQUEST_BODY, INVALID_INPUT,
-                                                                  ERROR_SENDING_EMAIL)
+                                                                  ERROR_SENDING_EMAIL, SMARTLIST_NOT_FOUND,
+                                                                  SMARTLIST_FORBIDDEN)
 
 
 def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
@@ -189,7 +190,9 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
         raise InvalidUsage(EmailCampaignBase.CustomErrors.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN[0],
                            error_code=EmailCampaignBase.CustomErrors.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN[1])
     # Validation for list ids belonging to same domain
-    validate_smartlist_ids(smartlist_ids, current_user)
+    validate_smartlist_ids(smartlist_ids, current_user, error_code=INVALID_INPUT[1],
+                           resource_not_found_error_code=SMARTLIST_NOT_FOUND[1],
+                           forbidden_error_code=SMARTLIST_FORBIDDEN[1])
 
     if campaign.email_client_id:  # gt plugin code starts here.
 
@@ -214,10 +217,7 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
             new_text, new_html = get_new_text_html_subject_and_campaign_send(
                 campaign.id, candidate_id, candidate_address, current_user, email_campaign_blast.id)[:2]
             logger.info("Marketing email added through client %s", campaign.email_client_id)
-            resp_dict = dict()
-            resp_dict['new_html'] = new_html
-            resp_dict['new_text'] = new_text
-            resp_dict['email'] = candidate_address
+            resp_dict = dict(new_html=new_html, new_text=new_text, email=candidate_address)
             list_of_new_email_html_or_text.append(resp_dict)
         db.session.commit()
 
