@@ -37,14 +37,7 @@ def remove_duplicates(collection):
     :type collection: list
     :rtype: list[dict]
     """
-    seen = set()
-    unique_items = []
-    for dict_data in collection:
-        t = tuple(dict_data.items())
-        if t not in seen:
-            seen.add(t)
-            unique_items.append(dict_data)
-    return unique_items
+    return [i for n, i in enumerate(collection) if i not in collection[n + 1:]]
 
 
 def get_json_if_exist(_request):

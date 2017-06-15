@@ -2,7 +2,6 @@
 Test cases for CandidateResource/patch()
 """
 # Candidate Service app instance
-
 import pycountry
 
 from candidate_sample_data import (fake, generate_single_candidate_data, GenerateCandidateData)
@@ -351,6 +350,89 @@ class TestUpdateCandidate(object):
         print response_info(get_resp)
         assert len(get_resp.json()['candidate']['educations']) == 1
 
+    def test_update_with_matching_education(self, access_token_first, talent_pool):
+        """
+        Test: Attempt to add matching educations (with similar name) to candidate's records
+        """
+        data = GenerateCandidateData.educations([talent_pool.id])
+        education_data = {
+            'school_name': 'westvalley', 'school_type': 'college', 'city': fake.city(),
+            'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean(),
+            'degrees': [{
+                'type': 'ms', 'title': 'masters of science', 'start_year': 2002, 'start_month': 11,
+                'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
+                    {
+                        'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
+                    }]
+            }]
+        }
+        data['candidates'][0]['educations'] = [education_data]
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        assert create_resp.status_code == 201, 'status_code should be 201, found: {}'.format(create_resp.status_code)
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        assert get_resp.status_code == 200, 'expected: 200, found: {}'.format(get_resp.status_code)
+        candidate_dict = get_resp.json()['candidate']
+        candidate_existing_education = candidate_dict['educations'][-1]
+        education_data['school_name'] = 'westvallee'
+        data['candidates'][0]['id'] = candidate_id
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        assert update_resp.status_code == 200, 'status_code should be 200, found: {}'.format(update_resp.status_code)
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % update_resp.json()['candidates'][0]['id'], access_token_first)
+        assert get_resp.status_code == 200, 'expected: 200, found: {}'.format(get_resp.status_code)
+        candidate_dict_updated = get_resp.json()['candidate']
+        educations_count = len(candidate_dict_updated['educations'])
+        assert educations_count == 1, 'no duplicate education should be added, ' \
+                                      'found {} educations instead of 1'.format(educations_count)
+        candidate_updated_education = candidate_dict_updated['educations'][-1]
+        assert candidate_existing_education['id'] == candidate_updated_education['id'], \
+            'expected: {}, found: {}'.format(candidate_existing_education['id'], candidate_updated_education['id'])
+        assert 'westvallee' == candidate_updated_education['school_name'], \
+            'expected: {}, found: {}'.format('westvallee', candidate_updated_education['school_name'])
+
+    def test_update_with_matching_degree(self, access_token_first, talent_pool):
+        """
+        Test: Attempt to add matching educations (with similar name) to candidate's records
+        """
+        data = GenerateCandidateData.educations([talent_pool.id])
+        education_data = {
+            'school_name': 'westvalley', 'school_type': 'college', 'city': fake.city(),
+            'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean(),
+            'degrees': [{
+                'type': 'ms', 'title': 'master of science', 'start_year': 2002, 'start_month': 11,
+                'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
+                    {
+                        'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
+                    }]
+            }]
+        }
+        data['candidates'][0]['educations'] = [education_data]
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        assert create_resp.status_code == 201, 'status_code should be 201, found: {}'.format(create_resp.status_code)
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        assert get_resp.status_code == 200, 'expected: 200, found: {}'.format(get_resp.status_code)
+        candidate_dict = get_resp.json()['candidate']
+        candidate_existing_education = candidate_dict['educations'][0]
+        existing_degree = candidate_dict['educations'][0]['degrees'][0]
+        data['candidates'][0]['id'] = candidate_id
+        education_data['degrees'][0]['title'] = 'M.Sc'
+        data['candidates'][0]['educations'][0] = dict(id=candidate_existing_education['id'],
+                                                      degrees=education_data['degrees'])
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        assert update_resp.status_code == 200, 'status_code should be 200, found: {}'.format(update_resp.status_code)
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % update_resp.json()['candidates'][0]['id'], access_token_first)
+        assert get_resp.status_code == 200, 'expected: 200, found: {}'.format(get_resp.status_code)
+        candidate_dict_updated = get_resp.json()['candidate']
+        degrees_count = len(candidate_dict_updated['educations'][0]['degrees'])
+        assert degrees_count == 1, 'no duplicate degree should be added, ' \
+                                   'found {} degrees instead of 1'.format(degrees_count)
+        updated_degree = candidate_dict_updated['educations'][0]['degrees'][-1]
+        assert existing_degree['id'] == updated_degree['id'], \
+            'expected: {}, found: {}'.format(existing_degree['id'], updated_degree['id'])
+        assert 'M.Sc' == updated_degree['title'], \
+            'expected: {}, found: {}'.format('M.Sc', updated_degree['title'])
+
     def test_add_duplicate_educations_degrees(self, access_token_first, candidate_first):
         """
         Test: Attempt to add identical education degrees to candidate's records
@@ -360,7 +442,7 @@ class TestUpdateCandidate(object):
             'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean(),
             'degrees': [
                 {
-                    'type': 'ms', 'title': 'masters of science', 'start_year': 2002, 'start_month': 11,
+                    'type': 'ms', 'title': 'master of science', 'start_year': 2002, 'start_month': 11,
                     'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
                     {
                         'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
@@ -369,7 +451,7 @@ class TestUpdateCandidate(object):
 
                 },
                 {
-                    'type': 'ms', 'title': 'masters of science', 'start_year': 2002, 'start_month': 11,
+                    'type': 'ms', 'title': 'master of science', 'start_year': 2002, 'start_month': 11,
                     'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
                     {
                         'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
@@ -666,6 +748,74 @@ class TestUpdateCandidateAddress(object):
         assert updated_address['subdivision'] == \
                pycountry.subdivisions.get(code=data['candidates'][0]['addresses'][0]['subdivision_code']).name
         assert updated_address['zip_code'] == data['candidates'][0]['addresses'][0]['zip_code']
+
+    def test_update_an_existing_address_with_same_address_without_address_id(self, access_token_first, talent_pool):
+        """
+        Test:   Update an existing CandidateAddress with same address without passing address id. It will not
+        add another duplicate but will update existing one
+        Expect: 200
+        """
+        # Create Candidate
+        data = GenerateCandidateData.addresses([talent_pool.id])
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+
+        # Retrieve Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        candidate_dict = get_resp.json()['candidate']
+        existing_addresses = candidate_dict['addresses']
+
+        # Update candidate with existing address but without passing address id
+        updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(updated_resp)
+        # Retrieve Candidate after update
+        resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        updated_candidate_dict = resp.json()['candidate']
+        updated_addresses = updated_candidate_dict['addresses']
+        assert len(existing_addresses) == len(updated_addresses), 'expected: {}, found: {}'.format(
+            len(existing_addresses), len(updated_addresses))
+        assert existing_addresses[0]['id'] == updated_addresses[0]['id'], 'expected: {}, found: {}'.format(
+            existing_addresses[0]['id'], updated_addresses[0]['id']
+        )
+        assert updated_addresses[0]['address_line_1'] == existing_addresses[0]['address_line_1']
+        assert updated_addresses[0]['city'] == existing_addresses[0]['city']
+        assert updated_addresses[0]['subdivision'] == existing_addresses[0]['subdivision']
+        assert updated_addresses[0]['zip_code'] == existing_addresses[0]['zip_code']
+
+    def test_update_an_existing_address_with_similar_address_without_address_id(self, access_token_first, talent_pool):
+        """
+        Test:   Update an existing CandidateAddress with similar/matching address without passing address id.
+        It will not add another duplicate but will update existing one
+        Expect: 200
+        """
+        # Create Candidate
+        data = GenerateCandidateData.addresses([talent_pool.id])
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+
+        # Retrieve Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        candidate_dict = get_resp.json()['candidate']
+        existing_addresses = candidate_dict['addresses']
+
+        # Update address_line_1
+        data['candidates'][0]['addresses'][0]['address_line_1'] += 'st'
+        # Update candidate with existing address but without passing address id
+        updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(updated_resp)
+        # Retrieve Candidate after update
+        resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        updated_candidate_dict = resp.json()['candidate']
+        updated_addresses = updated_candidate_dict['addresses']
+        assert len(existing_addresses) == len(updated_addresses), 'expected: {}, found: {}'.format(
+            len(existing_addresses), len(updated_addresses))
+        assert existing_addresses[0]['id'] == updated_addresses[0]['id'], 'expected: {}, found: {}'.format(
+            existing_addresses[0]['id'], updated_addresses[0]['id']
+        )
+        assert updated_addresses[0]['address_line_1'] == existing_addresses[0]['address_line_1']
+        assert updated_addresses[0]['city'] == existing_addresses[0]['city']
+        assert updated_addresses[0]['subdivision'] == existing_addresses[0]['subdivision']
+        assert updated_addresses[0]['zip_code'] == existing_addresses[0]['zip_code']
 
     def test_update_candidate_current_address(self, access_token_first, talent_pool):
         """

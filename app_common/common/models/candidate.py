@@ -1,9 +1,14 @@
+import re
+
 from contracts import contract
+from fuzzywuzzy import fuzz
 from sqlalchemy import and_, desc
+
+from ..constants import DEGREES, EXACT, HIGH, ADDRESS_NOTATIONS
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
-from ..error_handling import InternalServerError,  NotFoundError
+from ..error_handling import InternalServerError,  NotFoundError, InvalidUsage
 from ..utils.validators import raise_if_not_positive_int_or_long
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT, SMALLINT
 from associations import ReferenceEmail
@@ -1067,6 +1072,45 @@ class CandidateAddress(db.Model):
     def __repr__(self):
         return "<CandidateAddress (id = %r)>" % self.id
 
+    def __eq__(self, other, weight=HIGH):
+        if self.id and other.id:
+            return self.id == other.id
+        # match address_line_1 with 90 % precision
+        address_line_1_match = self.match_address_line_1(self.address_line_1, other.address_line_1,
+                                                         weight=weight)
+        city_match = self.city == other.city
+        zip_code_match = self.zip_code == other.zip_code
+        return (address_line_1_match and city_match) or (address_line_1_match and zip_code_match)
+
+    @staticmethod
+    def match_address_line_1(address1, address2, weight=EXACT):
+        """
+        This method matches given two address_line_1 values with given criteria.
+
+        Here is criteria:
+            "155 national" would match to "155 national st" and "155 national street"
+            "155 national ave" is a match to "155 national avenue"
+        :param str address1: first value of address_line_1
+        :param str address2: second value of address_line_1
+        :param int weight: comparison weight, 100 for exact match, default 100
+        :return: boolean
+        :rtype: bool
+        """
+        address1 = (address1 or '').lower().strip()
+        address2 = (address2 or '').lower().strip()
+        address_type = ADDRESS_NOTATIONS[0]
+        val1 = re.sub('|'.join(address_type), '', address1)
+        val2 = re.sub('|'.join(address_type), '', address2)
+        if fuzz.ratio(val1, val2) >= weight:
+            return True
+        for address_type in ADDRESS_NOTATIONS[1:]:
+            if re.findall('|'.join(address_type), address1) and re.findall('|'.join(address_type), address2):
+                val1 = re.sub('|'.join(address_type), '', address1)
+                val2 = re.sub('|'.join(address_type), '', address2)
+                if fuzz.ratio(val1, val2) >= weight:
+                    return True
+        return False
+
     @classmethod
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
@@ -1101,6 +1145,13 @@ class CandidateEducation(db.Model):
 
     def __repr__(self):
         return "<CandidateEducation (id = %r)>" % self.id
+
+    def __eq__(self, other, weight=HIGH):
+        if self.id and other.id:
+            return self.id == other.id
+        same_school = fuzz.ratio(self.school_name, other.school_name) >= weight
+        same_city = self.city == other.city
+        return same_school and same_city
 
     @classmethod
     def get_by_id(cls, _id):
@@ -1144,6 +1195,21 @@ class CandidateEducationDegree(db.Model):
 
     def __repr__(self):
         return "<CandidateEducationDegree (candidate_education_id=' %r')>" % self.candidate_education_id
+
+    def __eq__(self, other, weight=HIGH):
+        degree_fields = ["degree_type", "start_year", "start_month", "end_year", "end_month"]
+        if self.id and other.id:
+            return self.id == other.id
+        is_same_title = False
+        for degree_titles in DEGREES:
+            degree_titles = [val.lower() for val in degree_titles]
+            old_title = (self.degree_title or '').lower()
+            new_title = (self.degree_title or '').lower()
+            if (old_title in degree_titles and new_title in degree_titles) \
+                    or fuzz.ratio(old_title, new_title) >= weight:
+                is_same_title = True
+
+        return is_same_title and all(getattr(self, key) == getattr(other, key) for key in degree_fields)
 
 
 class CandidateEducationDegreeBullet(db.Model):
