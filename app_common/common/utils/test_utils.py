@@ -6,6 +6,7 @@ import uuid
 import json
 import operator
 from time import sleep
+from random import randint
 from datetime import datetime, timedelta
 
 # 3rd party imports
@@ -21,9 +22,10 @@ from ..tests.app import test_app
 from ..error_codes import ErrorCodes
 from ..redis_cache import redis_store2
 from ..routes import SocialNetworkApiUrl
-from handy_functions import send_request, random_word
 from ..error_handling import NotFoundError
+from ..utils.api_utils import MAX_PAGE_SIZE
 from ..talent_config_manager import TalentConfigKeys
+from handy_functions import send_request, random_word
 from ..models.user import UserSocialNetworkCredential
 from ..custom_contracts import define_custom_contracts
 from ..constants import SLEEP_TIME, SLEEP_INTERVAL, RETRY_ATTEMPTS, EVENTBRITE
@@ -33,8 +35,8 @@ from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
 define_custom_contracts()
 fake = Faker()
 
-PAGINATION_INVALID_FIELDS = ['/?page=%s' % fake.random_int(-99, 0), '/?per_page=%s' % fake.random_int(51,),
-                             '/?sort_type=ASER', '/?sort_type=DSCEE', '/?sort_by=id']
+INVALID_PAGINATION_PARAMS = ['/?page=%s' % fake.random_int(-99, 0), '/?per_page=%s' % randint(MAX_PAGE_SIZE + 1,
+                                                                                              2 * MAX_PAGE_SIZE)]
 PAGINATION_EXCEPT_SINGLE_FIELD = ['/?page=1&sort_type=ASC&?sort_by=%s', '/?per_page=2&sort_type=ASC&?sort_by=%s',
                                   '/?page=1&per_page=2&?sort_by=%s']
 
@@ -436,13 +438,13 @@ def get_smartlist_candidates(smartlist_id, token, expected_status=(200,), count=
     :type expected_status: tuple[int]
     :rtype dict
     """
-
     response = send_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % smartlist_id, token)
     print('common_tests : get_smartlist_candidates: ', response.content)
     assert response.status_code in expected_status
     response = response.json()
     if count:
-        assert len(response['candidates']) == count
+        assert len(response['candidates']) == count,\
+            'Expecting {} candidates, Found:{}'.format(count, len(response['candidates']))
     return response
 
 

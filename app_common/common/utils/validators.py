@@ -278,6 +278,5 @@ def raise_if_not_positive_int_or_long(value):
     :type value: int | long
     :exception: Invalid Usage
     """
-
     if not isinstance(value, (int, long)) or value <= 0:
         raise InvalidUsage('value must be positive int | long greater than 0')

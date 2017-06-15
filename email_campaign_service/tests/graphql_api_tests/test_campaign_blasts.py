@@ -2,6 +2,7 @@
 Here we have tests for getting blasts of an email-campaign
 """
 # Third Party
+import pytest
 import requests
 
 # Application Specific
@@ -14,6 +15,7 @@ from email_campaign_service.common.models.email_campaign import EmailCampaignBla
 __author__ = 'basit'
 
 
+@pytest.mark.skipif(True, reason='graphQL has low priority for now')
 class TestCampaignBlasts(object):
     """
     This contains tests to get blasts of an email-campaign

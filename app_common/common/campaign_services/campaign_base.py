@@ -261,6 +261,7 @@ class CampaignBase(object):
 
     # Child classes will set value of this.
     REQUIRED_FIELDS = ()
+    CAMPAIGN_TYPE = None
 
     def __init__(self, user_id, campaign_id=None):
         """
@@ -288,6 +289,17 @@ class CampaignBase(object):
         if campaign_id:
             self.campaign = self.get_campaign_if_domain_is_valid(campaign_id, self.user,
                                                                  self.campaign_type)
+
+    class CustomErrors(object):
+        """
+        This contains custom error codes
+        """
+        CAMPAIGN_FORBIDDEN = None
+        CAMPAIGN_NOT_FOUND = None
+        BLAST_FORBIDDEN = None
+        BLAST_NOT_FOUND = None
+        NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN = None
+        NO_VALID_CANDIDATE_FOUND = None
 
     @abstractmethod
     def get_campaign_type(self):
@@ -531,65 +543,58 @@ class CampaignBase(object):
         return scheduled_task, oauth_header
 
     @classmethod
-    def get_campaign_if_domain_is_valid(cls, campaign_id, current_user, campaign_type):
+    @contract
+    def get_campaign_if_domain_is_valid(cls, campaign_id, current_user):
         """
         This function returns campaign object if campaign lies in the domain of logged-in user.
         Otherwise it raises the Forbidden error.
-        :param campaign_id: id of campaign form getTalent database
-        :param current_user: logged in user's object
-        :type campaign_id: int | long
-        :type current_user: User
+        :param positive campaign_id: id of campaign form getTalent database
+        :param type(t) current_user: logged in user's object
         :exception: ForbiddenError
         :return: Campaign obj if campaign belongs to user's domain
-        :rtype: SmsCampaign or some other campaign obj
         """
-        raise_if_not_instance_of(campaign_id, (int, long))
-        CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         raise_if_not_instance_of(current_user, User)
-        campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user.domain_id, campaign_type)
+        campaign_model = get_model(cls.CAMPAIGN_TYPE, cls.CAMPAIGN_TYPE)
+        campaign_obj = campaign_model.query.get(campaign_id)
+        if not campaign_obj:
+            raise ResourceNotFound('%s(id=%s) not found.' % (cls.CAMPAIGN_TYPE, campaign_id),
+                                   error_code=cls.CustomErrors.CAMPAIGN_NOT_FOUND[1])
         domain_id_of_campaign = cls.get_domain_id_of_campaign(campaign_obj, current_user.domain_id)
-        if domain_id_of_campaign == current_user.domain_id:
-            return campaign_obj
-        else:
+        if domain_id_of_campaign != current_user.domain_id:
             raise ForbiddenError('%s(id:%s) does not belong to user(id:%s)`s domain.'
-                                 % (campaign_obj.__tablename__, campaign_obj.id, current_user.id))
+                                 % (campaign_obj.__tablename__, campaign_obj.id, current_user.id),
+                                 error_code=cls.CustomErrors.CAMPAIGN_FORBIDDEN[1])
+        return campaign_obj
 
     @classmethod
-    def get_valid_blast_obj(cls, requested_campaign_id, blast_id, current_user, campaign_type):
+    @contract
+    def get_valid_blast_obj(cls, requested_campaign_id, blast_id, current_user):
         """
         This gets the blast object from SmsCampaignBlast or EmailCampaignBlast database table
         depending on campaign_type. If no object is found corresponding to given blast_id,
         it raises ResourceNotFound.
         If campaign_id associated with blast_obj is not same as the requested campaign id,
         it raises forbidden error.
-        :param requested_campaign_id: Id of requested campaign object
-        :param blast_id: Id of blast object of a particular campaign
-        :param current_user: logged-in user's object
-        :param campaign_type: Type of campaign. e.g. sms_camapign | email_campaign etc
-        :type requested_campaign_id: int | long
-        :type blast_id: int | long
-        :type current_user: User
-        :type campaign_type: str
+        :param positive requested_campaign_id: Id of requested campaign object
+        :param positive blast_id: Id of blast object of a particular campaign
+        :param type(t) current_user: logged-in user's object
         :exception: ResourceNotFound
         :exception: ForbiddenError
         :return: campaign blast object
-        :rtype: SmsCampaignBlast | EmailCampaignBlast
         """
-        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=requested_campaign_id,
-                                                      blast_id=blast_id))
         raise_if_not_instance_of(current_user, User)
-        raise_if_not_instance_of(campaign_type, basestring)
         # Validate that campaign belongs to user's domain
-        campaign = cls.get_campaign_if_domain_is_valid(requested_campaign_id, current_user,
-                                                       campaign_type)
-        blast_model = get_model(campaign_type, campaign_type + '_blast')
+        campaign = cls.get_campaign_if_domain_is_valid(requested_campaign_id, current_user)
+        blast_model = get_model(cls.CAMPAIGN_TYPE, cls.CAMPAIGN_TYPE + '_blast')
         blast_obj = blast_model.get_by_id(blast_id)
         if not blast_obj:
             raise ResourceNotFound("Blast(id:%s) for %s(id:%s) does not exist in database."
-                                   % (blast_id, campaign_type, campaign.id))
+                                   % (blast_id, cls.CAMPAIGN_TYPE, campaign.id),
+                                   error_code=cls.CustomErrors.BLAST_NOT_FOUND[1])
         if not blast_obj.campaign_id == requested_campaign_id:
             raise ForbiddenError("Blast(id:%s) is not associated with %s(id:%s)."
-                                 % (blast_id, campaign_type, requested_campaign_id))
+                                 % (blast_id, cls.CAMPAIGN_TYPE, requested_campaign_id),
+                                 error_code=cls.CustomErrors.BLAST_FORBIDDEN[1])
         return blast_obj
 
     @staticmethod

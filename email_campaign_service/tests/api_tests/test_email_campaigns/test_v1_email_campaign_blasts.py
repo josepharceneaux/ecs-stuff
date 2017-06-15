@@ -11,7 +11,11 @@ import requests
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_FORBIDDEN,
+                                                                  EMAIL_CAMPAIGN_NOT_FOUND,
+                                                                  INVALID_VALUE_OF_PAGINATION_PARAM)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.common.utils.test_utils import INVALID_PAGINATION_PARAMS
 from email_campaign_service.tests.modules.handy_functions import create_campaign_blast_and_sends
 
 
@@ -139,11 +143,26 @@ class TestEmailCampaignBlasts(object):
         some other user. It should result in 'forbidden' error.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            self.HTTP_METHOD, self.URL % email_campaign_user1_domain2_in_db.id, access_token_first)
+            self.HTTP_METHOD, self.URL % email_campaign_user1_domain2_in_db.id, access_token_first,
+            expected_error_code=EMAIL_CAMPAIGN_FORBIDDEN[1]
+        )
 
-    def test_with_invalid_campaign_id(self, access_token_first):
+    def test_get_with_invalid_campaign_id(self, access_token_first):
         """
         This is a test to get the blasts of a campaign which does not exist in database.
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaign, self.HTTP_METHOD,
-                                                               self.URL, access_token_first)
+                                                               self.URL, access_token_first,
+                                                               expected_error_code=EMAIL_CAMPAIGN_NOT_FOUND[1])
+
+    # TODO: GET-1608: Add test for large value of param "page"
+    def test_get_blasts_with_paginated_response_using_invalid_per_page(self, access_token_first,
+                                                                       email_campaign_user1_domain1_in_db):
+        """
+        Test GET API of getting blasts of email_campaign using paginated response. Here we use invalid value of "per_page" to
+        be 1) greater than maximum allowed value 2) Negative. It should result in invalid usage error.
+        """
+        for page_param in INVALID_PAGINATION_PARAMS:
+            url = '{}?per_page={}'.format(self.URL % email_campaign_user1_domain1_in_db.id, page_param)
+            CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, url, access_token_first,
+                                                             expected_error_code=INVALID_VALUE_OF_PAGINATION_PARAM[1])

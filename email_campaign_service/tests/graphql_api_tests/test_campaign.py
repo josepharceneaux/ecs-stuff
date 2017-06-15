@@ -2,6 +2,7 @@
 Here we have tests for getting single campaigns in user's domain
 """
 # Third Party
+import pytest
 import requests
 
 # Application Specific
@@ -14,6 +15,7 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 __author__ = 'basit'
 
 
+@pytest.mark.skipif(True, reason='graphQL has low priority for now')
 class TestCampaignGet(object):
     """
     This contains tests to get single email-campaigns

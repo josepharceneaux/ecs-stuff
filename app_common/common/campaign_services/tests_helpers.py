@@ -23,11 +23,14 @@ from ..models.misc import (Frequency, Activity)
 from ..utils.datetime_utils import DatetimeUtils
 from campaign_utils import get_model, CampaignUtils
 from ..utils.validators import raise_if_not_instance_of
+from ..custom_errors.campaign import NOT_NON_ZERO_NUMBER
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..tests.fake_testing_data_generator import FakeCandidatesData
-from ..utils.test_utils import (get_fake_dict, get_and_assert_zero, delete_smartlist, fake)
-from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl, EmailCampaignApiUrl)
+from ..utils.test_utils import (get_fake_dict, get_and_assert_zero,
+                                delete_smartlist, fake, search_candidates)
+from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl,
+                      EmailCampaignApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
                               ResourceNotFound, UnprocessableEntity, InternalServerError)
 from ..inter_service_calls.candidate_pool_service_calls import (create_smartlist_from_api,
@@ -44,7 +47,7 @@ class CampaignsTestsHelpers(object):
     # This list is used to update/delete a campaign, e.g. sms-campaign with invalid id
     INVALID_IDS = [fake.word(), 0, None, dict(), list(), '', '        ']
     # This list is used to create/update a campaign, e.g. sms-campaign with invalid name and body_text.
-    INVALID_STRING = INVALID_IDS[1:]
+    INVALID_STRINGS = INVALID_IDS[1:]
     # This list is used to schedule/reschedule a campaign e.g. sms-campaign with invalid frequency Id.
     INVALID_FREQUENCY_IDS = copy.copy(INVALID_IDS)
     # Remove 0 from list as it is valid frequency_id and replace it with sys.maxint
@@ -54,29 +57,55 @@ class CampaignsTestsHelpers(object):
 
     @classmethod
     @contract
-    def request_for_forbidden_error(cls, method, url, access_token, data=None):
+    def request_for_forbidden_error(cls, method, url, access_token, data=None, expected_error_code=None):
         """
         This should get forbidden error because requested campaign does not belong to logged-in user's domain.
         :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict|None data: Data to be send in HTTP request
+        :param int|None expected_error_code: Expected error code
         """
         response = send_request(method, url, access_token, data=data)
-        cls.assert_non_ok_response(response, expected_status_code=ForbiddenError.http_status_code())
+        error = cls.assert_non_ok_response(response, expected_status_code=ForbiddenError.http_status_code())
+        assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                                error['code'])
 
     @classmethod
     @contract
-    def request_for_resource_not_found_error(cls, method, url, access_token, data=None):
+    def request_for_resource_not_found_error(cls, method, url, access_token, data=None, expected_error_code=None):
         """
         This should get Resource not found error because requested resource has been deleted.
         :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict|None data: Data to be posted
+        :param int|None expected_error_code: Expected error code
         """
         response = send_request(method, url, access_token, data=data)
-        cls.assert_non_ok_response(response, expected_status_code=ResourceNotFound.http_status_code())
+        error = cls.assert_non_ok_response(response, expected_status_code=ResourceNotFound.http_status_code())
+        assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                                error['code'])
+
+    @classmethod
+    @contract
+    def request_with_invalid_input(cls, method, url, access_token, data=None, is_json=True,
+                                   expected_status_code=InvalidUsage.http_status_code(), expected_error_code=None):
+        """
+        This should get Invalid Usage error because we are requesting with invalid input.
+        :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        :param dict|None data: Data to be posted
+        :param bool is_json: If True it means data is already in JSON form
+        :param int expected_status_code: Expected status code
+        :param int|None expected_error_code: Expected error code
+        """
+        response = send_request(method, url, access_token, is_json=is_json, data=data)
+        error = cls.assert_non_ok_response(response, expected_status_code=expected_status_code)
+        assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                                error['code'])
+        return response
 
     @classmethod
     @contract
@@ -111,7 +140,7 @@ class CampaignsTestsHelpers(object):
         :param dict|None data: Data to be posted
         """
         response = send_request(method, url, access_token, data)
-        assert response.ok
+        assert response.ok, response.text
 
     @classmethod
     @contract
@@ -145,7 +174,8 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def request_with_past_start_and_end_datetime(method, url, access_token, data):
+    def request_with_past_start_and_end_datetime(method, url, access_token, data, expected_status_code=None,
+                                                 expected_error_code=None):
         """
         Here we pass start_datetime and end_datetime with invalid value i.e. in past, to schedule
         a campaign. Then we assert that we get InvalidUsage error in response.
@@ -153,14 +183,21 @@ class CampaignsTestsHelpers(object):
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict data: Data to be posted
+        :param int|None expected_status_code: Expected status code
+        :param int|None expected_error_code: Expected error code
         """
-        _assert_invalid_datetime(method, url, access_token, data, 'start_datetime')
+        _assert_invalid_datetime(method, url, access_token, data, 'start_datetime',
+                                 expected_status_code=expected_status_code,
+                                 expected_error_code=expected_error_code)
         if not data['frequency_id'] or not data['frequency_id'] == Frequency.ONCE:
-            _assert_invalid_datetime(method, url, access_token, data, 'end_datetime')
+            _assert_invalid_datetime(method, url, access_token, data, 'end_datetime',
+                                     expected_status_code=expected_status_code,
+                                     expected_error_code=expected_error_code)
 
     @staticmethod
     @contract
-    def missing_fields_in_schedule_data(method, url, access_token, data):
+    def missing_fields_in_schedule_data(method, url, access_token, data, expected_status_code=None,
+                                        expected_error_code=None):
         """
         Here we try to schedule a campaign with missing required fields and assert that we get
         InvalidUsage error in response.
@@ -168,27 +205,37 @@ class CampaignsTestsHelpers(object):
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict data: Data to be posted
+        :param int|None expected_status_code: Expected status code
+        :param int|None expected_error_code: Expected error code
         """
         # Test missing start_datetime field which is mandatory to schedule a campaign
-        _assert_api_response_for_missing_field(method, url, access_token, data, 'start_datetime')
+        _assert_api_response_for_missing_field(method, url, access_token, data, 'start_datetime',
+                                               expected_status_code=expected_status_code,
+                                               expected_error_code=expected_error_code)
         # If periodic job, need to test for end_datetime as well
         if not data['frequency_id'] or not data['frequency_id'] == Frequency.ONCE:
-            _assert_api_response_for_missing_field(method, url, access_token, data, 'end_datetime')
+            _assert_api_response_for_missing_field(method, url, access_token, data, 'end_datetime',
+                                                   expected_status_code=expected_status_code,
+                                                   expected_error_code=expected_error_code)
 
     @staticmethod
     @contract
-    def invalid_datetime_format(method, url, access_token, data):
+    def invalid_datetime_format(method, url, access_token, data, expected_error_code=None):
         """
         Here we pass start_datetime and end_datetime in invalid format to schedule a campaign.
         :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict data: Data to be posted
+        :param int|None expected_error_code: Expected error code
         """
-        assert_invalid_datetime_format(method, url, access_token, data, 'start_datetime')
+        assert_invalid_datetime_format(method, url, access_token, data, 'start_datetime',
+                                       expected_error_code=expected_error_code)
+
         # It means it is periodic, so end_datetime will also be required
         if not data['frequency_id'] == Frequency.ONCE:
-            assert_invalid_datetime_format(method, url, access_token, data, 'end_datetime')
+            assert_invalid_datetime_format(method, url, access_token, data, 'end_datetime',
+                                           expected_error_code=expected_error_code)
 
     @staticmethod
     @contract
@@ -215,7 +262,7 @@ class CampaignsTestsHelpers(object):
 
     @classmethod
     @contract
-    def request_with_invalid_resource_id(cls, model, method, url, access_token, data=None):
+    def request_with_invalid_resource_id(cls, model, method, url, access_token, expected_error_code=None, data=None):
         """
         This makes HTTP request (as specified by method) on given URL.
         It creates two invalid ids for requested resource, 0 and some large number(non-existing id)
@@ -225,6 +272,7 @@ class CampaignsTestsHelpers(object):
         :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
+        :param positive|None expected_error_code: Expected custom error code
         :param dict|None data: Data to be posted
         """
         assert db.Model in model.__mro__
@@ -232,7 +280,12 @@ class CampaignsTestsHelpers(object):
         invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
         for _id, status_code in invalid_id_and_status_code:
             response = send_request(method, url % _id, access_token, data)
-            assert response.status_code == status_code
+            cls.assert_non_ok_response(response, expected_status_code=status_code)
+            error_resp = response.json()['error']
+            if status_code  == ResourceNotFound.http_status_code():
+                assert error_resp['code'] == expected_error_code
+            elif status_code == InvalidUsage.http_status_code():
+                assert error_resp['code'] == NOT_NON_ZERO_NUMBER[1]
 
     @staticmethod
     def get_last_id(model):
@@ -297,18 +350,20 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def campaign_send_with_no_smartlist(url, access_token, campaign_id):
+    def campaign_send_with_no_smartlist(url, access_token, campaign_id, expected_error_code):
         """
         This is the test to send a campaign which has no smartlist associated  with it.
         It should get Invalid usage error. Custom error should be NoSmartlistAssociatedWithCampaign.
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param positive campaign_id: Id of campaign
+        :param int expected_error_code: Expected error code
         """
         response = send_request('post', url % campaign_id, access_token)
         assert response.status_code == InvalidUsage.http_status_code(), 'It should be invalid usage error(400)'
         error_resp = response.json()['error']
-        assert error_resp['code'] == CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
+        assert error_resp['code'] == expected_error_code, "Expecting:{}, Found:{}".format(expected_error_code,
+                                                                                          error_resp['code'])
 
     @classmethod
     @contract
@@ -366,10 +421,11 @@ class CampaignsTestsHelpers(object):
         if campaign_service_urls and campaign_service_urls not in (PushCampaignApiUrl, SmsCampaignApiUrl,
                                                                    EmailCampaignApiUrl):
             raise InternalServerError('see docs for valid value of campaign_service_urls')
-        response_post = send_request('post', url, access_token)
+        response_post = send_request('post', url % campaign_id, access_token)
         assert response_post.status_code == requests.codes.OK, response_post.text
         assert getattr(campaign_service_urls, 'SENDS')
         get_and_assert_zero(getattr(campaign_service_urls, 'SENDS') % campaign_id, 'sends', access_token)
+        return response_post
 
     @staticmethod
     @contract
@@ -395,7 +451,7 @@ class CampaignsTestsHelpers(object):
         :param string entity: Name of expected entity
         :param bool check_count: If True, will check number of objects
         """
-        assert response.status_code == requests.codes.OK, 'Response should be "OK" (200)'
+        assert response.status_code == requests.codes.OK, 'Expecting:200, Found:{}'.format(response.status_code)
         json_response = response.json()
         assert entity in json_response
         if check_count:
@@ -451,7 +507,7 @@ class CampaignsTestsHelpers(object):
             blasts = blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
         assert blasts
         if count and isinstance(count, int):
-            assert len(blasts) == count
+            assert len(blasts) == count, "Expecting blasts count:{}, Found:{}".format(count, len(blasts))
         return blasts
 
     @staticmethod
@@ -527,9 +583,7 @@ class CampaignsTestsHelpers(object):
         else:
             response = send_request('get', blast_url, access_token)
             blast_sends = response.json()['blast']['sends']
-        print 'Expected Sends:%d' % expected_count
-        print 'Received Sends:%d' % blast_sends
-        assert blast_sends == expected_count
+        assert blast_sends == expected_count, "Expecting sends count:{}, Found:{}".format(expected_count, blast_sends)
 
     @staticmethod
     @contract
@@ -612,7 +666,9 @@ class CampaignsTestsHelpers(object):
             candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                                  return_candidate_ids_only=True)
             if assert_candidates:
-                time.sleep(30)
+                retry(search_candidates, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                      args=(candidate_ids, access_token))
+        time.sleep(10)
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
@@ -622,7 +678,7 @@ class CampaignsTestsHelpers(object):
         if assert_candidates:
             attempts = timeout / 3 + 1
             retry(assert_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
-                  args=(smartlist_id, len(candidate_ids), access_token), retry_exceptions=(AssertionError,))
+                  retry_exceptions=(AssertionError,), args=(smartlist_id, len(candidate_ids), access_token))
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         return smartlist_id, candidate_ids
 
@@ -685,7 +741,8 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def campaign_create_or_update_with_invalid_string(method, url, access_token, campaign_data, field):
+    def campaign_create_or_update_with_invalid_string(method, url, access_token, campaign_data, field,
+                                                      expected_error_code=None):
         """
         This creates or updates a campaign with unexpected fields present in the data and
         asserts that we get invalid usage error from respective API. Data passed should be a dictionary
@@ -695,17 +752,22 @@ class CampaignsTestsHelpers(object):
         :param string access_token: Access token of user
         :param dict campaign_data: Data to be passed in HTTP request
         :param string field: Field in campaign data
+        :param int|None expected_error_code: Expected error code
         """
-        for invalid_campaign_name in CampaignsTestsHelpers.INVALID_STRING:
-            print "Iterating %s as campaign name/body_text" % invalid_campaign_name
+        for invalid_campaign_name in CampaignsTestsHelpers.INVALID_STRINGS:
+            print "Iterating {} as {}".format(invalid_campaign_name, field)
+            old_value = campaign_data[field]
             campaign_data[field] = invalid_campaign_name
             response = send_request(method, url, access_token, data=campaign_data)
-            CampaignsTestsHelpers.assert_non_ok_response(response)
+            error = CampaignsTestsHelpers.assert_non_ok_response(response)
+            assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                                    error['code'])
+            campaign_data[field] = old_value
 
     @staticmethod
     @contract
     def campaign_create_or_update_with_invalid_smartlist(method, url, access_token, campaign_data,
-                                                         key='smartlist_ids'):
+                                                         key='smartlist_ids', expected_error_code=None):
         """
         This creates or updates a campaign with invalid lists and asserts that we get invalid usage error from
         respective API. Data passed should be a dictionary.
@@ -713,7 +775,9 @@ class CampaignsTestsHelpers(object):
         :param string method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL on which we are supposed to make HTTP request
         :param string access_token: Access token of user
+        :param string key: Name of key in the data
         :param dict campaign_data: Data to be passed in HTTP request
+        :param int|None expected_error_code: Expected error code
         """
         # This list is used to create/update a campaign, e.g. sms-campaign with invalid smartlist ids.
         invalid_lists = [[item] for item in CampaignsTestsHelpers.INVALID_IDS]
@@ -723,11 +787,14 @@ class CampaignsTestsHelpers(object):
             print "Iterating %s" % invalid_list
             campaign_data[key] = invalid_list
             response = send_request(method, url, access_token, data=campaign_data)
-            CampaignsTestsHelpers.assert_non_ok_response(response)
+            error = CampaignsTestsHelpers.assert_non_ok_response(response)
+            assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                                    error['code'])
 
     @staticmethod
     @contract
-    def campaign_schedule_or_reschedule_with_invalid_frequency_id(method, url, access_token, scheduler_data):
+    def campaign_schedule_or_reschedule_with_invalid_frequency_id(method, url, access_token, scheduler_data,
+                                                                  expected_error_code):
         """
         This creates or updates a campaign with unexpected fields present in the data and
         asserts that we get invalid usage error from respective API. Data passed should be a dictionary
@@ -736,12 +803,15 @@ class CampaignsTestsHelpers(object):
         :param string url: URL on which we are supposed to make HTTP request
         :param string access_token: Access token of user
         :param dict scheduler_data: Data to be passed in HTTP request to schedule/reschedule given campaign
+        :param int expected_error_code: Expected error code
         """
         for invalid_frequency_id in CampaignsTestsHelpers.INVALID_FREQUENCY_IDS:
-            print "Iterating %s as frequency_id" % invalid_frequency_id
+            print "Iterating `%s` as frequency_id" % invalid_frequency_id
             scheduler_data['frequency_id'] = invalid_frequency_id
             response = send_request(method, url, access_token, data=scheduler_data)
-            CampaignsTestsHelpers.assert_non_ok_response(response)
+            error = CampaignsTestsHelpers.assert_non_ok_response(response)
+            assert error['code'] == expected_error_code, \
+                'Expecting error_code:{}, found:{}'.format(expected_error_code, error['code'])
 
     @staticmethod
     @contract
@@ -762,39 +832,46 @@ class CampaignsTestsHelpers(object):
             response = send_request('delete', url, access_token, data={'ids': invalid_item})
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
-    @staticmethod
+    @classmethod
     @contract
-    def send_request_with_deleted_smartlist(method, url, token, smartlist_id, data=None):
+    def send_request_with_deleted_smartlist(cls, method, url, token, smartlist_id, expected_error_code, data=None):
         """
         This helper method sends HTTP request to given url and verifies that API raised InvalidUsage 400 error.
         :param http_method method: POST or PUT
         :param string url: target api url
         :param string token: access token
         :param int | long smartlist_id: smartlist id
+        :param int expected_error_code: Expected error code
         :param dict|None data: request body
         """
         delete_smartlist(smartlist_id, token)
-        resp = send_request(method, url, token, data=data)
-        assert resp.status_code == requests.codes.BAD
-        assert 'deleted' in resp.json()['error']['message']
+        response = send_request(method, url, token, data=data)
+        error = cls.assert_non_ok_response(response)
+        assert error['code'] == expected_error_code, \
+            'Expecting error_code:{}, found:{}'.format(expected_error_code, error['code'])
 
     @staticmethod
     @contract
-    def start_datetime_greater_than_end_datetime(method, url, access_token):
+    def start_datetime_greater_than_end_datetime(method, url, access_token, data={}, expected_status_code=None,
+                                                 expected_error_code=None):
         """
         Here we pass start_datetime greater than end_datetime to schedule a campaign. API raised InvalidUsage 400 error.
         :param http_method method: Name of HTTP method: GET or POST
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
+        :param dict data: Data to be sent in the request
+        :param int|None expected_status_code: Expected status code
+        :param int|None expected_error_code: Expected error code
         """
-        data = {}
         start_datetime = datetime.utcnow() + timedelta(minutes=50)
         end_datetime = datetime.utcnow() + timedelta(minutes=40)
         data['start_datetime'] = DatetimeUtils.to_utc_str(start_datetime)
         data['end_datetime'] = DatetimeUtils.to_utc_str(end_datetime)
         data['frequency_id'] = Frequency.DAILY
-        resp = send_request(method, url, access_token, data=data)
-        assert resp.status_code == requests.codes.BAD
+        response = send_request(method, url, access_token, data=data)
+        error = CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=expected_status_code)
+        assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                                error['code'])
 
     @staticmethod
     def base_campaign_data():
@@ -874,7 +951,8 @@ def get_invalid_fake_dict():
 
 
 @contract
-def _assert_api_response_for_missing_field(method, url, access_token, data, field_to_remove):
+def _assert_api_response_for_missing_field(method, url, access_token, data, field_to_remove,
+                                           expected_status_code=None, expected_error_code=None):
     """
     This function removes the field from data as specified by field_to_remove, and
     then POSTs data on given URL. It then asserts that removed filed is in error_message.
@@ -883,11 +961,15 @@ def _assert_api_response_for_missing_field(method, url, access_token, data, fiel
     :param string access_token: access access_token of user
     :param dict data: Data to be posted
     :param string field_to_remove: Name of field we want to remove from given data
+    :param int|None expected_status_code: Expected status code
+    :param int|None expected_error_code: Expected error code
     """
     removed_value = data[field_to_remove]
     del data[field_to_remove]
     response = send_request(method, url, access_token, data)
-    error = CampaignsTestsHelpers.assert_non_ok_response(response)
+    error = CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=expected_status_code)
+    assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                            error['code'])
     assert field_to_remove in error['message'], '%s should be in error_message' % field_to_remove
     # assign removed field again
     data[field_to_remove] = removed_value
@@ -895,7 +977,7 @@ def _assert_api_response_for_missing_field(method, url, access_token, data, fiel
 
 # TODO: Move to common/utils/test_utils.py
 @contract
-def assert_invalid_datetime_format(method, url, access_token, data, key):
+def assert_invalid_datetime_format(method, url, access_token, data, key, expected_error_code=None):
     """
     Here we modify field of data as specified by param 'key' and then assert the invalid usage
     error in response of HTTP request.
@@ -904,17 +986,21 @@ def assert_invalid_datetime_format(method, url, access_token, data, key):
     :param string access_token: access access_token of user
     :param dict data: Data to be posted
     :param string key: Name of field we want to make invalidly formatted
+    :param int|None expected_error_code: Expected error code
     """
     str_datetime = str(datetime.utcnow())
     old_value = data[key]
     data[key] = str_datetime  # Invalid datetime format
     response = send_request(method, url, access_token, data)
-    CampaignsTestsHelpers.assert_non_ok_response(response)
+    error = CampaignsTestsHelpers.assert_non_ok_response(response)
+    assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                            error['code'])
     data[key] = old_value
 
 
 @contract
-def _assert_invalid_datetime(method, url, access_token, data, key):
+def _assert_invalid_datetime(method, url, access_token, data, key, expected_status_code=None,
+                             expected_error_code=None):
     """
     Here we set datetime field of data to as specified by param 'key' to past and then assert
     the invalid usage error in response of HTTP request.
@@ -923,11 +1009,16 @@ def _assert_invalid_datetime(method, url, access_token, data, key):
     :param string access_token: access access_token of user
     :param dict data: Data to be posted
     :param string key: Name of field we want to assert invalidity on
+    :param int|None expected_status_code: Expected status code
+    :param int|None expected_error_code: Expected error code
     """
     old_value = data[key]
     data[key] = DatetimeUtils.to_utc_str(datetime.utcnow() - timedelta(hours=10))  # Past datetime
     response = send_request(method, url, access_token, data)
-    CampaignsTestsHelpers.assert_non_ok_response(response)
+    error = CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=expected_status_code)
+    assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
+                                                                                            error['code'])
+
     data[key] = old_value
 
 
@@ -942,7 +1033,9 @@ def _assert_unauthorized(method, url, access_token, data=None):
      """
     response = send_request(method, url, access_token, data)
     assert response.status_code == UnauthorizedError.http_status_code(), \
-        'It should not be authorized (401)'
+        'Expecting:401, Found:{}'.format(response.status_code)
+    assert response.json()['error']['code'] == 11, \
+        'Expecting error_code:11, Found:{}'.format(response.json()['error']['code'])
 
 
 @contract

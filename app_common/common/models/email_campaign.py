@@ -1,16 +1,23 @@
+# Standard imports
 from datetime import datetime
 
+# Thrid party
 from contracts import contract
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy import or_, desc, extract, and_
+
+# Application Specific
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
+from ..utils.talentbot_utils import OWNED, get_paginated_objects
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
-from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage, NotFoundError)
-from ..utils.talentbot_utils import OWNED, NUMBER_OF_ROWS_PER_PAGE, get_paginated_objects
+from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError,
+                              InvalidUsage, NotFoundError)
+from ..custom_errors.campaign import (EMAIL_CAMPAIGN_SEND_FORBIDDEN, EMAIL_CAMPAIGN_FORBIDDEN,
+                                      EMAIL_CAMPAIGN_SEND_NOT_FOUND, EMAIL_CAMPAIGN_NOT_FOUND)
 
-from sqlalchemy.dialects.mysql import LONGTEXT
 
 __author__ = 'jitesh'
 
@@ -121,16 +128,18 @@ class EmailCampaign(db.Model):
         """
         This searches email-campaign by email_campaign_id in user's domain.
         It raises 404 error if campaign is not found in database.
-        It raises 403 error if camapign does not belonf to user's domian.
+        It raises 403 error if camapign does not belong to user's domian.
         :type email_campaign_id: int|long
         :type domain_id: int|long
         :rtype: EmailCampaign|None
         """
         email_campaign = cls.get_by_id(email_campaign_id)
         if not email_campaign:
-            raise ResourceNotFound("Email campaign with id: %s does not exist" % email_campaign_id)
+            raise ResourceNotFound("Email campaign with id: %s does not exist" % email_campaign_id,
+                                   error_code=EMAIL_CAMPAIGN_NOT_FOUND[1])
         if not email_campaign.user.domain_id == domain_id:
-            raise ForbiddenError("Email campaign doesn't belongs to user's domain")
+            raise ForbiddenError(EMAIL_CAMPAIGN_FORBIDDEN[0],
+                                 error_code=EMAIL_CAMPAIGN_FORBIDDEN[1])
         return email_campaign
 
     @classmethod
@@ -388,11 +397,12 @@ class EmailCampaignSend(db.Model):
         send_obj = EmailCampaignSend.get_by_id(send_id)
         if not send_obj:
             raise ResourceNotFound("Send object(id:%s) for email-campaign(id:%s) does not "
-                                   "exist in database."
-                                   % (send_id, requested_campaign_id))
+                                   "exist in database." % (send_id, requested_campaign_id),
+                                   error_code=EMAIL_CAMPAIGN_SEND_NOT_FOUND[1])
         if not send_obj.campaign_id == requested_campaign_id:
             raise ForbiddenError("Send object(id:%s) is not associated with email-campaign(id:%s)."
-                                 % (send_id, requested_campaign_id))
+                                 % (send_id, requested_campaign_id),
+                                 error_code=EMAIL_CAMPAIGN_SEND_FORBIDDEN[1])
         return send_obj
 
     @classmethod

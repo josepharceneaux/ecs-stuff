@@ -10,6 +10,7 @@ Functions in this file are
 """
 # Packages
 from contracts import contract
+from collections import Counter
 
 # Database Models
 from ..models.user import User
@@ -22,6 +23,7 @@ from ..models.email_campaign import EmailCampaignBlast
 
 # Common utils
 from ..utils.datetime_utils import DatetimeUtils
+from ..custom_errors.campaign import NOT_NON_ZERO_NUMBER
 from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
 from ..utils.handy_functions import (find_missing_items, get_valid_json_data)
 
@@ -101,32 +103,41 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
     return campaign_blast_obj.campaign
 
 
-def validate_smartlist_ids(smartlist_ids, current_user):
+def validate_smartlist_ids(smartlist_ids, current_user, error_code=None, resource_not_found_error_code=None,
+                           forbidden_error_code=None):
     """
     This validates smartlist_ids on following criterion.
     1- If any of the smartlist_ids does not belong to user's domain, it raises ForbiddenError exception.
     2- If any of the smartlist_ids is not found in database, it raises ResourceNotFound exception.
     3- If any of the smartlist_ids is invalid (e.g. not int | long), it raises InvalidUsage exception.
-    :param smartlist_ids: List of Ids of smartlists
-    :param current_user: logged-in user's object
-    :type smartlist_ids: list
-    :type current_user: User
+    :param list smartlist_ids: List of Ids of smartlists
+    :param User current_user: logged-in user's object
+    :param int|None error_code: Custom error code
+    :param int|None resource_not_found_error_code: Custom error code for Smartlist not found
+    :param int|None forbidden_error_code: Custom error code for Smartlist is forbidden
     """
     if not isinstance(smartlist_ids, list):
-        raise InvalidUsage('Include smartlist id(s) in a list.')
+        raise InvalidUsage('Include smartlist id(s) in a list.', error_code=error_code)
+    # Validate all items are valid integer or long
+    if [smartlist_id for smartlist_id in smartlist_ids if (not isinstance(smartlist_id, (int, long))
+                                                           or smartlist_id <= 0)]:
+        raise InvalidUsage("`list_ids` should be a list of integers", error_code=error_code)
+
+    # Validation for duplicate `list_ids`
+    if [item for item, count in Counter(smartlist_ids).items() if count > 1]:
+        raise InvalidUsage('Duplicate `list_ids` found in data.', error_code=error_code)
+
     for smartlist_id in smartlist_ids:
-        if not isinstance(smartlist_id, (int, long)) or not smartlist_id > 0:
-            raise InvalidUsage('Include smartlist id as int|long')
         smartlist = Smartlist.get_by_id(smartlist_id)
         if not smartlist:
             raise ResourceNotFound('validate_smartlist_ids: Smartlist(id:%s) not found in database.'
-                                   % str(smartlist_id))
+                                   % str(smartlist_id), error_code=resource_not_found_error_code)
         if not smartlist.user.domain_id == current_user.domain_id:
             raise ForbiddenError("validate_smartlist_ids: Smartlist(id:%s) do not belong to "
-                                 "user's domain'" % str(smartlist_id))
+                                 "user's domain'" % str(smartlist_id), forbidden_error_code)
         if smartlist.is_hidden:
             raise InvalidUsage('Associated Smartlist (id: %s) is deleted and can not be accessed'
-                               % smartlist.id)
+                               % smartlist.id, error_code=resource_not_found_error_code)
 
 
 def validate_form_data(form_data, current_user, required_fields=('name', 'body_text', 'smartlist_ids')):
@@ -154,18 +165,15 @@ def validate_form_data(form_data, current_user, required_fields=('name', 'body_t
     validate_smartlist_ids(form_data['smartlist_ids'], current_user)
 
 
+@contract
 def raise_if_dict_values_are_not_int_or_long(data):
     """
-    This validates if values in given dict are int or long. If not, it raises Invalid usage
-    error.
-    :param data: data to validate
-    :type data: dict
+    This validates if values in given dict are int or long. If not, it raises Invalid usage error.
+    :param dict data: data to validate
     """
-    if not isinstance(data, dict):
-        raise InvalidUsage('Include data as dictionary.')
     for key, value in data.iteritems():
         if not isinstance(value, (int, long)) or not value:
-            raise InvalidUsage('Include %s as int|long. It cannot be 0.' % key)
+            raise InvalidUsage('Include %s as int|long. It cannot be 0.' % key, error_code=NOT_NON_ZERO_NUMBER[1])
 
 
 @contract

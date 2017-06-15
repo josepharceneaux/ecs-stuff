@@ -25,6 +25,10 @@ from email_campaign_service.modules.utils import do_mergetag_replacements
 from email_campaign_service.common.models.misc import (UrlConversion, Activity)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.routes import EmailCampaignApiUrl, UserServiceApiUrl
+from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN_FORBIDDEN,
+                                                                  EMAIL_CAMPAIGN_NOT_FOUND,
+                                                                  NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN,
+                                                                  NO_VALID_CANDIDATE_FOUND, SMARTLIST_NOT_FOUND)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailCampaignSmartlist)
@@ -59,7 +63,8 @@ class TestSendCampaign(object):
         Custom error should be NoSmartlistAssociatedWithCampaign.
         """
         CampaignsTestsHelpers.campaign_send_with_no_smartlist(self.URL, access_token_first,
-                                                              campaign_id=email_campaign_user1_domain1_in_db.id)
+                                                              email_campaign_user1_domain1_in_db.id,
+                                                              NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN[1])
 
     def test_campaign_send_with_deleted_smartlist(self, access_token_first, campaign_with_and_without_client):
         """
@@ -69,7 +74,8 @@ class TestSendCampaign(object):
         email_campaign = campaign_with_and_without_client
         smartlist_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(email_campaign.id, smartlist_ids_only=True)
         CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL % email_campaign.id,
-                                                                  access_token_first, smartlist_ids[0])
+                                                                  access_token_first, smartlist_ids[0],
+                                                                  expected_error_code=SMARTLIST_NOT_FOUND[1])
 
     def test_campaign_send_with_no_smartlist_candidate(self, access_token_first, email_campaign_user1_domain1_in_db,
                                                        talent_pipeline):
@@ -95,14 +101,16 @@ class TestSendCampaign(object):
         """
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
                                                           self.URL % email_campaign_user1_domain2_in_db.id,
-                                                          access_token_first)
+                                                          access_token_first,
+                                                          expected_error_code=EMAIL_CAMPAIGN_FORBIDDEN[1])
 
     def test_campaign_send_with_invalid_campaign_id(self, access_token_first):
         """
         This is a test to send a campaign which does not exists in database.
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaign, self.HTTP_METHOD, self.URL,
-                                                               access_token_first)
+                                                               access_token_first,
+                                                               expected_error_code=EMAIL_CAMPAIGN_NOT_FOUND[1])
 
     def test_send_old_archived_campaign(self, access_token_first, email_campaign_of_user_first):
         """
@@ -114,7 +122,8 @@ class TestSendCampaign(object):
         email_campaign_of_user_first.update(is_hidden=1)
         CampaignsTestsHelpers.request_for_resource_not_found_error(self.HTTP_METHOD,
                                                                    self.URL % email_campaign_of_user_first.id,
-                                                                   access_token_first)
+                                                                   access_token_first,
+                                                                   expected_error_code=EMAIL_CAMPAIGN_NOT_FOUND[1])
         db.session.commit()
         # Assert that scheduled task has been removed
         assert not email_campaign_of_user_first.scheduler_task_id
@@ -125,24 +134,27 @@ class TestSendCampaign(object):
         """
         campaign_id = email_campaign_of_user_first.id
         data = {'is_hidden': True}
-        CampaignsTestsHelpers.request_for_ok_response('patch',
-                                                      EmailCampaignApiUrl.CAMPAIGN % campaign_id,
+        # We are using PATCH so that campaign also gets unscheduled
+        CampaignsTestsHelpers.request_for_ok_response('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id,
                                                       access_token_first, data)
         CampaignsTestsHelpers.request_for_resource_not_found_error(self.HTTP_METHOD, self.URL % campaign_id,
-                                                                   access_token_first)
+                                                                   access_token_first,
+                                                                   expected_error_code=EMAIL_CAMPAIGN_NOT_FOUND[1])
 
-    def test_campaign_send_with_one_smartlist_one_candidate_with_no_email(self, headers,
+    def test_campaign_send_with_one_smartlist_one_candidate_with_no_email(self, access_token_first,
                                                                           campaign_with_candidate_having_no_email):
         """
         User auth token is valid, campaign has one smartlist associated. Smartlist has one
         candidate having no email associated. So, sending email campaign should fail.
         """
-        response = requests.post(self.URL % campaign_with_candidate_having_no_email.id, headers=headers)
-        CampaignsTestsHelpers.assert_campaign_failure(response, campaign_with_candidate_having_no_email,
-                                                      requests.codes.OK)
-        if not campaign_with_candidate_having_no_email.email_client_id:
-            json_resp = response.json()
-            assert str(campaign_with_candidate_having_no_email.id) in json_resp['message']
+        campaign_id = campaign_with_candidate_having_no_email.id
+        response = CampaignsTestsHelpers.campaign_test_with_no_valid_candidate(self.URL, access_token_first,
+                                                                               campaign_id, EmailCampaignApiUrl)
+        json_response = response.json()
+        assert str(campaign_id) in json_response['message']
+
+        if campaign_with_candidate_having_no_email.email_client_id:
+            assert json_response['error']['code'] == NO_VALID_CANDIDATE_FOUND[1]
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(self, headers, user_first,
                                                                          email_campaign_of_user_first):
@@ -358,8 +370,7 @@ class TestSendCampaign(object):
         response = requests.post(self.URL % campaign['id'], headers=headers)
         assert_campaign_send(response, campaign, user_first.id, blast_sends=1)
 
-    def test_campaign_send_with_unsubscribed_candidate(self, headers, user_first,
-                                                       campaign_with_unsubscribed_candidate):
+    def test_campaign_send_with_unsubscribed_candidate(self, headers, user_first, campaign_with_unsubscribed_candidate):
         """
         We try to send campaign to a smartlist which contains 2 candidates. One of the candidate has unsubscribed
         toc campaigns, So, campaign should only be sent to 1 candidate.

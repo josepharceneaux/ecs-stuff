@@ -15,6 +15,7 @@ from email_campaign_service.modules.email_clients import SMTP
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.modules.utils import do_mergetag_replacements
 from email_campaign_service.common.models.candidate import CandidateEmail
+from email_campaign_service.tests.modules import CAMPAIGN_REQUIRED_FIELDS
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, GraphqlServiceApiUrl)
@@ -110,7 +111,7 @@ def email_campaign_user1_domain2_in_db(user_from_diff_domain):
     return create_email_campaign_in_db(user_id=user_from_diff_domain.id)
 
 
-@pytest.fixture()
+@pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
 def campaign_with_candidate_having_no_email(access_token_first, talent_pipeline):
     """
     This creates a campaign which has candidates associated having no email
@@ -319,7 +320,7 @@ def template_id(domain_id):
     return template['id']
 
 
-@pytest.fixture(params=['name', 'subject', 'body_html', 'frequency_id', 'list_ids'])
+@pytest.fixture(params=CAMPAIGN_REQUIRED_FIELDS)
 def invalid_data_for_campaign_creation(request):
     """
     This function returns the data to create an email campaign. It also removes a required

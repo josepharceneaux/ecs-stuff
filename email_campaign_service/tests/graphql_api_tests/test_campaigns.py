@@ -2,6 +2,7 @@
 Here we have tests for getting multiple campaigns in user's domain
 """
 # Third Party
+import pytest
 import requests
 
 # Application Specific
@@ -12,6 +13,7 @@ from email_campaign_service.common.models.email_campaign import EmailCampaign
 __author__ = 'basit'
 
 
+@pytest.mark.skipif(True, reason='graphQL has low priority for now')
 class TestCampaignsGet(object):
     """
     This contains tests to get multiple email-campaigns

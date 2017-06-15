@@ -19,6 +19,8 @@ from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
 from email_campaign_service.common.models.email_campaign import EmailClientCredentials
+from email_campaign_service.common.custom_errors.campaign import (EMAIL_CLIENT_NOT_FOUND,
+                                                                  EMAIL_CLIENT_FORBIDDEN)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules import EMAIL_CLIENTS_ALL_FIELDS, EMAIL_CLIENTS_OPTIONAL_FIELDS
 from email_campaign_service.tests.modules.handy_functions import (data_for_creating_email_clients,
@@ -85,7 +87,7 @@ class TestCreateEmailClients(object):
         In this test, we will test endpoint with invalid format of fields which will cause 400 error.
         """
         email_client_data = data_for_creating_email_clients()[0]
-        invalid_key_values = [(key, CampaignsTestsHelpers.INVALID_STRING) for key in email_client_data]
+        invalid_key_values = [(key, CampaignsTestsHelpers.INVALID_STRINGS) for key in email_client_data]
         for key, values in invalid_key_values:
             for value in values:
                 if key not in EMAIL_CLIENTS_SCHEMA['required'] and value in (None, '', '        '):
@@ -233,19 +235,21 @@ class TestGetEmailClientsWithId(object):
             email_clients_data = response.json()['email_client_credentials']
             assert_email_client_fields(email_clients_data, user_first.id)
 
-    def test_get_email_clients_from_user_of_some_other_domain(self, email_clients, headers_other):
+    def test_get_email_clients_from_user_of_some_other_domain(self, email_clients, access_token_other):
         """
         We have created 3 email clients in the fixture email_clients.
         Here we GET only email-clients from endpoint using user of some other domain. It should result in
         Forbidden error.
         """
         for email_client_id in email_clients:
-            response = requests.get(self.URL % email_client_id, headers=headers_other)
-            assert response.status_code == codes.FORBIDDEN
+            CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD, self.URL % email_client_id,
+                                                              access_token_other,
+                                                              expected_error_code=EMAIL_CLIENT_FORBIDDEN[1])
 
     def test_get_email_clients_with_invalid_id(self, access_token_first):
         """
         Here we GET only email-clients from endpoint using 0 and non-existing id.
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(EmailClientCredentials,
-                                                               self.HTTP_METHOD, self.URL, access_token_first)
+                                                               self.HTTP_METHOD, self.URL, access_token_first,
+                                                               expected_error_code=EMAIL_CLIENT_NOT_FOUND[1])

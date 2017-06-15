@@ -2,6 +2,7 @@
 Here we have tests for getting particular send of an email-campaign
 """
 # Third Party
+import pytest
 import requests
 
 # Application Specific
@@ -14,6 +15,7 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaignSe
 __author__ = 'basit'
 
 
+@pytest.mark.skipif(True, reason='graphQL has low priority for now')
 class TestCampaignSend(object):
     """
     This contains tests to get particular send of an email-campaign
