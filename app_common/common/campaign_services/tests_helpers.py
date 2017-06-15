@@ -507,7 +507,7 @@ class CampaignsTestsHelpers(object):
             blasts = blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
         assert blasts
         if count and isinstance(count, int):
-            assert len(blasts) == count
+            assert len(blasts) == count, "Expecting blasts count:{}, Found:{}".format(count, len(blasts))
         return blasts
 
     @staticmethod
@@ -583,9 +583,7 @@ class CampaignsTestsHelpers(object):
         else:
             response = send_request('get', blast_url, access_token)
             blast_sends = response.json()['blast']['sends']
-        print 'Expected Sends:%d' % expected_count
-        print 'Received Sends:%d' % blast_sends
-        assert blast_sends == expected_count
+        assert blast_sends == expected_count, "Expecting sends count:{}, Found:{}".format(expected_count, blast_sends)
 
     @staticmethod
     @contract
