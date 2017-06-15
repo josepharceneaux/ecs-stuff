@@ -95,7 +95,7 @@ class TestCreateEmailTemplateFolders(object):
 
         data = {'name': fake.word()}
         for key in ('parent_id', 'is_immutable'):
-            for invalid_value in CampaignsTestsHelpers.INVALID_STRING:
+            for invalid_value in CampaignsTestsHelpers.INVALID_STRINGS:
                 data[key] = invalid_value
                 print "Iterating key:{}, value:{}".format(key, invalid_value)
                 CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL,
