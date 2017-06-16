@@ -14,7 +14,7 @@ from email_campaign_service.common.custom_errors.campaign import (TEMPLATES_FEAT
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
-class TestGetEmailTemplateFolder(object):
+class TestGETEmailTemplateFolder(object):
     """
     This contains tests for accessing single template folder
     """

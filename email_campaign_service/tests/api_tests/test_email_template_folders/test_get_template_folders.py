@@ -11,7 +11,7 @@ from email_campaign_service.common.custom_errors.campaign import TEMPLATES_FEATU
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
-class TestGetTemplateFolders(object):
+class TestGETTemplateFolders(object):
     """
     This contains tests for getting template folders.
     """

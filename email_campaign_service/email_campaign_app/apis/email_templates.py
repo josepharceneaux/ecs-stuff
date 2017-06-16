@@ -23,7 +23,8 @@ from email_campaign_service.common.utils.auth_utils import (require_oauth, requi
 from email_campaign_service.common.models.email_campaign import (UserEmailTemplate, EmailTemplateFolder)
 from email_campaign_service.modules.validators import validate_domain_id_for_email_templates
 from email_campaign_service.common.custom_errors.campaign import (MISSING_FIELD, INVALID_INPUT,
-                                                                  INVALID_REQUEST_BODY, DUPLICATE_TEMPLATE_FOLDER_NAME)
+                                                                  INVALID_REQUEST_BODY, DUPLICATE_TEMPLATE_FOLDER_NAME,
+                                                                  INVALID_VALUE_OF_PAGINATION_PARAM)
 
 # Blueprint for email-templates API
 template_blueprint = Blueprint('email_templates', __name__)
@@ -307,7 +308,7 @@ class EmailTemplates(Resource):
                     401 (Unauthorized to access getTalent)
                     500 (Internal server error)
         """
-        page, per_page = get_pagination_params(request)
+        page, per_page = get_pagination_params(request, error_code=INVALID_VALUE_OF_PAGINATION_PARAM[1])
         domain_id = request.user.domain_id
         # Get all email campaigns from logged in user's domain
         query = UserEmailTemplate.query_by_domain_id(domain_id)
@@ -346,7 +347,7 @@ class EmailTemplates(Resource):
                     500 (Internal server error)
         """
         # TODO: Add JSON schema validation, GET-2559
-        data = get_valid_json_data(request)
+        data = get_valid_json_data(request, error_code=INVALID_REQUEST_BODY[1])
         template_name = data.get('name')
         if not template_name:
             raise InvalidUsage('Template name is empty')

@@ -17,7 +17,7 @@ from email_campaign_service.common.custom_errors.campaign import (TEMPLATES_FEAT
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
-class TestGetEmailTemplatesInFolders(object):
+class TestGETEmailTemplatesInFolders(object):
     """
     Here are the tests of /v1/email-template-folders/:id/email-templates
     """

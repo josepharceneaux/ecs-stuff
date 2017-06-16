@@ -424,6 +424,14 @@ def email_template(headers_for_email_templates, user_first):
 
 
 @pytest.fixture()
+def email_template_other(headers_other_for_email_templates, user_from_diff_domain):
+    """
+    Here we create email-template-folder in other domain
+    """
+    return add_email_template(headers_other_for_email_templates, user_from_diff_domain)
+
+
+@pytest.fixture()
 def email_template_folders_bulk(headers_for_email_templates):
     # Check with creating 20 template-folders
     for _ in xrange(20):
