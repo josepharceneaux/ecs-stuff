@@ -1,5 +1,5 @@
 """
-    Test Email Template API: Contains tests for Email Template Folders endpoints
+    Test Email Template API: Contains tests for creating Email Template Folder.
 """
 # Third Party
 import pytest
