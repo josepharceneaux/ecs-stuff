@@ -86,7 +86,7 @@ class TestCreateEmailTemplateFolders(object):
         This test is to certify that create email template folder with invalid data_types isn't possible.
         It should result in 400 bad request.
         """
-        for folder_name in CampaignsTestsHelpers.INVALID_STRING:
+        for folder_name in CampaignsTestsHelpers.INVALID_STRINGS:
             data = {'name': folder_name}
             print "Iterating key:{}, value:{}".format('name', folder_name)
             CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL,

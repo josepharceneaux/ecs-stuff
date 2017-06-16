@@ -2,7 +2,6 @@
 This module contains tests for updating an email campaign
 """
 import pytest
-from requests import codes
 from email_campaign_service.common.models.db import db
 from candidate_service.tests.unit_tests.test_utilities import fake
 from email_campaign_service.common.routes import EmailCampaignApiUrl
@@ -11,7 +10,7 @@ from email_campaign_service.common.custom_errors.campaign import (EMAIL_CAMPAIGN
                                                                   EMAIL_CAMPAIGN_NOT_FOUND, INVALID_REQUEST_BODY,
                                                                   INVALID_INPUT)
 from email_campaign_service.tests.modules.handy_functions import get_campaign_or_campaigns
-from email_campaign_service.common.campaign_services.tests_helpers import (CampaignsTestsHelpers, send_request)
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 class TestCampaignUpdate(object):
