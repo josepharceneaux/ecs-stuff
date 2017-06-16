@@ -127,11 +127,14 @@ def validate_and_format_request_data(data, current_user):
         if not email_client:
             raise InvalidUsage("`email_client_id` is not valid id.")
 
+    #  TODO: Add custom error code in GET-2573
     # In case user wants to send email-campaign with its own account
     if email_client_credentials_id:
         email_client_credentials = EmailClientCredentials.get_by_id(email_client_credentials_id)
         if not EmailClientBase.is_outgoing(email_client_credentials.host):
             raise InvalidUsage("Selected email-client must be of type `outgoing`")
+
+    #  TODO: Add custom error code in GET-2556
     # Validation for base_campaign_id
     if base_campaign_id:
         validate_base_campaign_id(base_campaign_id, current_user.domain_id)
