@@ -39,21 +39,20 @@ def _get_host_name(service_name, port_number):
     :return:  A string that looks like https://auth-service.gettalent.com%s
     """
     env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
-    if env == TalentEnvs.DEV:
-        # This looks like http://127.0.0.1:8001 (for auth service)
-        return LOCAL_HOST + ':' + str(port_number) + '%s'
-    elif env == TalentEnvs.JENKINS:
-        return 'http://jenkins.gettalent.com' + ':' + str(port_number) + '%s'
-    elif env == TalentEnvs.QA:
-        # This looks like:  https://auth-service-staging.gettalent.com%s
-        return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
-    elif env == TalentEnvs.PROD:
-        # This looks like: https://auth-service.gettalent.com%s
-        return 'https://' + service_name + TALENT_DOMAIN + '%s'
+
+    environment_base_urls = {
+        TalentEnvs.DEV: '{}:{}%s'.format(LOCAL_HOST, str(port_number)), # This looks like http://127.0.0.1:8001 (for auth service)
+        TalentEnvs.JENKINS: 'http://jenkins.gettalent.com:{}%s'.format(str(port_number)),
+        TalentEnvs.AWS_JENKINS: 'http://aws-jenkins.gettalent.com:{}%s'.format(str(port_number)),
+        TalentEnvs.QA: 'https://{}-staging{}%s'.format(service_name, TALENT_DOMAIN), # This looks like:  https://auth-service-staging.gettalent.com%s
+        TalentEnvs.PROD: 'https://{}{}%s'.format(service_name, TALENT_DOMAIN) # This looks like: https://auth-service.gettalent.com%s
+    }
+
+    if env in environment_base_urls.keys():
+        return environment_base_urls[env]
     else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: "
-                        "Should be %s, %s, %s or %s"
-                        % (TalentEnvs.DEV, TalentEnvs.JENKINS, TalentEnvs.QA, TalentEnvs.PROD))
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be {}".format(", ".join(environment_base_urls.keys())))
+
 
 
 def get_web_app_url():

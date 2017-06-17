@@ -80,7 +80,7 @@ class TalentEnvs(object):
     """
     DEV = 'dev'
     JENKINS = 'jenkins'
-    AWS_JENKINS = 'awsjenkins'
+    AWS_JENKINS = 'aws-jenkins'
     QA = 'qa'
     PROD = 'prod'
 
