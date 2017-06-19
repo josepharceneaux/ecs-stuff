@@ -10,7 +10,8 @@ from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import UserEmailTemplate
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.custom_errors.campaign import (EMAIL_TEMPLATE_NOT_FOUND,
-                                                                  EMAIL_TEMPLATE_FORBIDDEN)
+                                                                  EMAIL_TEMPLATE_FORBIDDEN,
+                                                                  TEMPLATES_FEATURE_NOT_ALLOWED)
 from email_campaign_service.tests.modules.handy_functions import request_to_email_template_resource
 
 
@@ -23,7 +24,7 @@ class TestDeleteEmailTemplate(object):
 
     def test_with_invalid_token(self):
         """
-        Here we try to create email-template-folder with invalid access token.
+        Here we try to delete email-template with invalid access token.
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL % fake.random_int(2, ))
 

@@ -27,14 +27,14 @@ class TestUPDATEEmailTemplate(object):
 
     def test_with_invalid_token(self):
         """
-        Here we try to create email-template-folder with invalid access token.
+        Here we try to update email-template with invalid access token.
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL % fake.random_int(2, ))
 
     def test_update_with_invalid_data(self, email_template, headers_for_email_templates,
                                       access_token_first_for_email_templates):
         """
-        Trying to create email template with 1) no data and 2) Non-JSON data. It should result in invalid usage error.
+        Trying to update email template with 1) no data and 2) Non-JSON data. It should result in invalid usage error.
         """
         for data in (email_template, None):
             CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL % email_template['id'],

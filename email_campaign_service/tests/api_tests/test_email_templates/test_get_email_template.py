@@ -23,7 +23,7 @@ class TestGETEmailTemplate(object):
 
     def test_with_invalid_token(self):
         """
-        Here we try to create email-template-folder with invalid access token.
+        Here we try to get email-template with invalid access token.
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL % fake.random_int(2,))
 
