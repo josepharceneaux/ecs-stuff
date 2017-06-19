@@ -30,13 +30,13 @@ class TestGETEmailTemplatesInFolders(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL % fake.random_int(2, ))
 
-    def test_get_templates_in_a_folder(self, create_email_template_folder, headers_for_email_templates,
+    def test_get_templates_in_a_folder(self, email_template_folder, headers_for_email_templates,
                                        headers_same_for_email_templates, access_token_other):
         """
         Test for getting email-templates associated with a template folder.
         We have not created any email-templates, so there should not exist any email-template in template-folder
         """
-        template_folder_id, _ = create_email_template_folder
+        template_folder_id, _ = email_template_folder
         for auth_header in (headers_for_email_templates, headers_same_for_email_templates):
             response = requests.get(url=self.URL % template_folder_id, headers=auth_header)
             assert response.status_code == requests.codes.OK, response.text
@@ -48,14 +48,14 @@ class TestGETEmailTemplatesInFolders(object):
                                                           access_token_other,
                                                           expected_error_code=TEMPLATES_FEATURE_NOT_ALLOWED[1])
 
-    def test_get_saved_templates_in_a_folder(self, create_email_template_folder, headers_for_email_templates,
+    def test_get_saved_templates_in_a_folder(self, email_template_folder, headers_for_email_templates,
                                              headers_same_for_email_templates,
                                              access_token_other, email_templates_bulk):
         """
         Test for getting saved email-templates associated with a template folder.
         Here we are using fixture "email_templates_bulk" to create 10 email-templates in template folder.
         """
-        template_folder_id, _ = create_email_template_folder
+        template_folder_id, _ = email_template_folder
         for auth_header in (headers_for_email_templates, headers_same_for_email_templates):
             response = requests.get(url=self.URL % template_folder_id, headers=auth_header)
             assert response.status_code == requests.codes.OK, response.text
@@ -67,14 +67,14 @@ class TestGETEmailTemplatesInFolders(object):
                                                           access_token_other,
                                                           expected_error_code=TEMPLATES_FEATURE_NOT_ALLOWED[1])
 
-    def test_get_with_user_of_other_valid_domain(self, create_email_template_folder,
+    def test_get_with_user_of_other_valid_domain(self, email_template_folder,
                                                  access_token_other_for_email_templates):
         """
         Test for deleting email template folder with user of some other domain.
         It should result in Forbidden error.
         """
         # Get Template Folder Id
-        template_folder_id, _ = create_email_template_folder
+        template_folder_id, _ = email_template_folder
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD, self.URL % template_folder_id,
                                                           access_token_other_for_email_templates,
                                                           expected_error_code=TEMPLATE_FOLDER_FORBIDDEN[1])

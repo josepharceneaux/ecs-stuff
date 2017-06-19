@@ -182,13 +182,12 @@ class TestCreateCampaign(object):
         """
         campaign_data = create_scheduled_email_campaign_data(smartlist_id=smartlist_user1_domain1_in_db['id'])
         for field in ('name', 'subject', 'body_html'):
-            CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD, self.URL,
-                                                                                access_token_first, campaign_data,
-                                                                                field=field,
-                                                                                expected_error_code=INVALID_INPUT[1])
+            CampaignsTestsHelpers.request_with_invalid_string(self.HTTP_METHOD, self.URL,
+                                                              access_token_first, campaign_data,
+                                                              field=field, expected_error_code=INVALID_INPUT[1])
 
-    def test_create_email_campaign_with_missing_required_fields(self, access_token_first,
-                                                                invalid_data_for_campaign_creation):
+    def test_create_email_campaign_without_required_fields(self, access_token_first,
+                                                           invalid_data_for_campaign_creation):
         """
         Here we try to create an email-campaign with missing required fields. It should
         result in invalid usage error for each missing field.

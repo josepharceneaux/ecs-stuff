@@ -399,7 +399,7 @@ def headers_same_for_email_templates(user_same_domain, dummy_kaiser_domain_id, h
 
 
 @pytest.fixture()
-def create_email_template_folder(headers_for_email_templates, user_first):
+def email_template_folder(headers_for_email_templates, user_first):
     """
     Here we create email-template-folder
     """
@@ -442,12 +442,12 @@ def email_template_folders_bulk(headers_for_email_templates):
 
 
 @pytest.fixture()
-def email_templates_bulk(headers_for_email_templates, user_first, create_email_template_folder):
+def email_templates_bulk(headers_for_email_templates, user_first, email_template_folder):
     """
     Here we create 10 email-templates to test pagination.
     """
     email_template_ids = []
-    template_folder_id, _ = create_email_template_folder
+    template_folder_id, _ = email_template_folder
     for _ in xrange(1, 11):
         template = add_email_template(headers_for_email_templates, user_first, template_folder_id=template_folder_id)
         email_template_ids.append(template['id'])

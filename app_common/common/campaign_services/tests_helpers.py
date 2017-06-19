@@ -53,7 +53,11 @@ class CampaignsTestsHelpers(object):
     # Remove 0 from list as it is valid frequency_id and replace it with sys.maxint
     INVALID_FREQUENCY_IDS[1] = sys.maxint
     # Invalid values for required text field
-    INVALID_TEXT_VALUES = ['', '  ', 0,  {}, [], None, True]
+    INVALID_TEXT_VALUES = ['', '  ', 0, {}, [], None, True]
+    # Invalid values for boolean field
+    INVALID_BOOLEANS = [fake.word(), None, dict(), list(), '', '        ']
+    # Invalid values for integers
+    INVALID_INTEGERS = [fake.word(), -99, 0, None, dict(), list(), '', '        ']
 
     @classmethod
     @contract
@@ -106,6 +110,71 @@ class CampaignsTestsHelpers(object):
         assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
                                                                                                 error['code'])
         return response
+
+    @staticmethod
+    @contract
+    def request_with_invalid_string(method, url, access_token, data, field, expected_error_code=None):
+        """
+        This creates or updates a resource with unexpected fields present in the data and
+        asserts that we get invalid usage error from respective API. Data passed should be a dictionary
+        here.
+        :param string method: Name of HTTP method. e.g. 'get', 'post' etc
+        :param string url: URL on which we are supposed to make HTTP request
+        :param string access_token: Access token of user
+        :param dict data: Data to be passed in HTTP request
+        :param string field: Field in campaign data
+        :param int|None expected_error_code: Expected error code
+        """
+        for invalid_string in CampaignsTestsHelpers.INVALID_STRINGS:
+            print "Iterating {} as {}".format(invalid_string, field)
+            old_value = data[field]
+            data[field] = invalid_string
+            CampaignsTestsHelpers.request_with_invalid_input(method, url, access_token, data,
+                                                             expected_error_code=expected_error_code)
+            data[field] = old_value
+
+    @staticmethod
+    @contract
+    def request_with_invalid_integer(method, url, access_token, data, field, expected_error_code=None):
+        """
+        This creates or updates a resource with invalid integer value of given field in the data and
+        asserts that we get invalid usage error from respective API. Data passed should be a dictionary
+        here.
+        :param string method: Name of HTTP method. e.g. 'get', 'post' etc
+        :param string url: URL on which we are supposed to make HTTP request
+        :param string access_token: Access token of user
+        :param dict data: Data to be passed in HTTP request
+        :param string field: Field in campaign data
+        :param int|None expected_error_code: Expected error code
+        """
+        for invalid_string in CampaignsTestsHelpers.INVALID_INTEGERS:
+            print "Iterating {} as {}".format(invalid_string, field)
+            old_value = data[field]
+            data[field] = invalid_string
+            CampaignsTestsHelpers.request_with_invalid_input(method, url, access_token, data,
+                                                             expected_error_code=expected_error_code)
+            data[field] = old_value
+
+    @staticmethod
+    @contract
+    def request_with_invalid_boolean(method, url, access_token, data, field, expected_error_code=None):
+        """
+        This creates or updates a resource with invalid value of boolean field present in data.
+        It then asserts that we get invalid usage error from respective API.
+        :param string method: Name of HTTP method. e.g. 'get', 'post' etc
+        :param string url: URL on which we are supposed to make HTTP request
+        :param string access_token: Access token of user
+        :param dict data: Data to be passed in HTTP request
+        :param string field: Field in campaign data
+        :param int|None expected_error_code: Expected error code
+        """
+        for invalid_boolean in CampaignsTestsHelpers.INVALID_BOOLEANS:
+            print "Iterating {} as {}".format(invalid_boolean, field)
+            old_value = data[field]
+            data[field] = invalid_boolean
+            CampaignsTestsHelpers.request_with_invalid_input(method, url, access_token, data,
+                                                             expected_error_code=expected_error_code)
+            data[field] = old_value
 
     @classmethod
     @contract
@@ -282,7 +351,7 @@ class CampaignsTestsHelpers(object):
             response = send_request(method, url % _id, access_token, data)
             cls.assert_non_ok_response(response, expected_status_code=status_code)
             error_resp = response.json()['error']
-            if status_code  == ResourceNotFound.http_status_code():
+            if status_code == ResourceNotFound.http_status_code():
                 assert error_resp['code'] == expected_error_code
             elif status_code == InvalidUsage.http_status_code():
                 assert error_resp['code'] == NOT_NON_ZERO_NUMBER[1]
@@ -738,31 +807,6 @@ class CampaignsTestsHelpers(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should result in bad request error because unexpected data was given.'
         assert 'unexpected_key' in response.json()['error']['message']
-
-    @staticmethod
-    @contract
-    def campaign_create_or_update_with_invalid_string(method, url, access_token, campaign_data, field,
-                                                      expected_error_code=None):
-        """
-        This creates or updates a campaign with unexpected fields present in the data and
-        asserts that we get invalid usage error from respective API. Data passed should be a dictionary
-        here.
-        :param string method: Name of HTTP method. e.g. 'get', 'post' etc
-        :param string url: URL on which we are supposed to make HTTP request
-        :param string access_token: Access token of user
-        :param dict campaign_data: Data to be passed in HTTP request
-        :param string field: Field in campaign data
-        :param int|None expected_error_code: Expected error code
-        """
-        for invalid_campaign_name in CampaignsTestsHelpers.INVALID_STRINGS:
-            print "Iterating {} as {}".format(invalid_campaign_name, field)
-            old_value = campaign_data[field]
-            campaign_data[field] = invalid_campaign_name
-            response = send_request(method, url, access_token, data=campaign_data)
-            error = CampaignsTestsHelpers.assert_non_ok_response(response)
-            assert error['code'] == expected_error_code, 'Expecting error_code:{}, found:{}'.format(expected_error_code,
-                                                                                                    error['code'])
-            campaign_data[field] = old_value
 
     @staticmethod
     @contract

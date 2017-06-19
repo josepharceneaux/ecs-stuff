@@ -64,13 +64,13 @@ class TestCreateEmailTemplateFolders(object):
         assert template_folder_name, 'Expecting non-empty string of folder_name'
 
     @pytest.mark.qa
-    def test_create_email_template_folder_with_same_name(self, create_email_template_folder,
+    def test_create_email_template_folder_with_same_name(self, email_template_folder,
                                                          access_token_first_for_email_templates):
         """
         This test makes sure that email template folder is not created with same
         name which already exist. It should return 400 bad request.
         """
-        template_folder_id, template_folder_name = create_email_template_folder
+        template_folder_id, template_folder_name = email_template_folder
         data = {'name': template_folder_name, 'is_immutable': 1}
         CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL,
                                                          access_token_first_for_email_templates,
@@ -81,21 +81,23 @@ class TestCreateEmailTemplateFolders(object):
         This test is to certify that create email template folder with invalid data_types isn't possible.
         It should result in 400 bad request.
         """
-        for folder_name in CampaignsTestsHelpers.INVALID_STRINGS:
-            data = {'name': folder_name}
-            print "Iterating key:{}, value:{}".format('name', folder_name)
-            CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL,
-                                                             access_token_first_for_email_templates, data,
-                                                             expected_error_code=INVALID_INPUT[1])
+        data = {'name': fake.word(), 'parent_id': fake.random_int()}
 
-        data = {'name': fake.word()}
-        for key in ('parent_id', 'is_immutable'):
-            for invalid_value in CampaignsTestsHelpers.INVALID_STRINGS:
-                data[key] = invalid_value
-                print "Iterating key:{}, value:{}".format(key, invalid_value)
-                CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL,
-                                                                 access_token_first_for_email_templates, data,
-                                                                 expected_error_code=NOT_NON_ZERO_NUMBER[1])
+        CampaignsTestsHelpers.request_with_invalid_string(self.HTTP_METHOD, self.URL,
+                                                          access_token_first_for_email_templates, data,
+                                                          field='name', expected_error_code=INVALID_INPUT[1])
+
+        CampaignsTestsHelpers.request_with_invalid_integer(self.HTTP_METHOD, self.URL,
+                                                           access_token_first_for_email_templates, data,
+                                                           field='parent_id',
+                                                           expected_error_code=INVALID_INPUT[1])
+
+        del data['parent_id']
+        data['is_immutable'] = 1
+        CampaignsTestsHelpers.request_with_invalid_boolean(self.HTTP_METHOD, self.URL,
+                                                           access_token_first_for_email_templates,
+                                                           data, field='is_immutable',
+                                                           expected_error_code=INVALID_INPUT[1])
 
     @pytest.mark.qa
     def test_create_email_template_folder_with_non_existing_parent_id(self, access_token_first_for_email_templates):
@@ -110,13 +112,13 @@ class TestCreateEmailTemplateFolders(object):
                                                                    expected_error_code=TEMPLATE_FOLDER_NOT_FOUND[1])
 
     @pytest.mark.qa
-    def test_create_email_template_folder_with_parent_id_of_other_domain(self, create_email_template_folder,
+    def test_create_email_template_folder_with_parent_id_of_other_domain(self, email_template_folder,
                                                                          access_token_other_for_email_templates):
         """
         This test is to assure that email template folder can't be created through
         parent_id of the other domain folder. It should result in 403.
         """
-        template_folder_id, template_folder_name = create_email_template_folder
+        template_folder_id, template_folder_name = email_template_folder
         data = {'name': fake.sentence(), 'is_immutable': 1, 'parent_id': template_folder_id}
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD, self.URL,
                                                           access_token_other_for_email_templates, data,

@@ -46,6 +46,7 @@ TEMPLATES_FEATURE_NOT_ALLOWED = ("You are not allowed to view this feature", 145
 DUPLICATE_TEMPLATE_FOLDER_NAME = ("Template folder with given name already exists", 1452)
 TEMPLATE_FOLDER_FORBIDDEN = ("Requested template folder is not owned by user's domain", 1453)
 TEMPLATE_FOLDER_NOT_FOUND = ("Requested template folder not found", 1454)
+DUPLICATE_TEMPLATE_NAME = ("Email template with given name already exists", 1455)
 
 # Base campaign custom errors, range 1471-1480
 BASE_CAMPAIGN_ORPHANED = ("Requested Base campaign is orphaned", 1471)

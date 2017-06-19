@@ -26,7 +26,7 @@ class TestDeleteTemplateFolder(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL % fake.random_int(2, ))
 
-    def test_delete_email_template_folder(self, headers_for_email_templates, create_email_template_folder):
+    def test_delete_email_template_folder(self, headers_for_email_templates, email_template_folder):
         """
         Test for deleting email template folder with user who created the folder.
         It creates a test folder by user_first and deletes that by the user_same_domain of same domain.
@@ -35,10 +35,10 @@ class TestDeleteTemplateFolder(object):
         a response of 204 (NO_CONTENT) must be returned.
         """
         # Get Template Folder Id
-        template_folder_id, template_folder_name = create_email_template_folder
+        template_folder_id, template_folder_name = email_template_folder
         assert_and_delete_template_folder(template_folder_id, headers_for_email_templates)
 
-    def test_delete_email_template_folder_with_user_of_same_domain(self, create_email_template_folder,
+    def test_delete_email_template_folder_with_user_of_same_domain(self, email_template_folder,
                                                                    headers_same_for_email_templates):
         """
         Test for deleting email template folder with another user of same domain.
@@ -48,29 +48,29 @@ class TestDeleteTemplateFolder(object):
         a response of 204 (NO_CONTENT) must be returned.
         """
         # Get Template Folder Id
-        template_folder_id, template_folder_name = create_email_template_folder
+        template_folder_id, template_folder_name = email_template_folder
         assert_and_delete_template_folder(template_folder_id, headers_same_for_email_templates)
 
-    def test_delete_email_template_folder_with_user_of_other_domain(self, create_email_template_folder,
+    def test_delete_email_template_folder_with_user_of_other_domain(self, email_template_folder,
                                                                     access_token_other):
         """
         Test for deleting email template folder with user of some other domain.
         It should result in Forbidden error.
         """
         # Get Template Folder Id
-        template_folder_id, _ = create_email_template_folder
+        template_folder_id, _ = email_template_folder
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD, self.URL % template_folder_id,
                                                           access_token_other,
                                                           expected_error_code=TEMPLATES_FEATURE_NOT_ALLOWED[1])
 
-    def test_delete_email_template_folder_with_user_of_other_valid_domain(self, create_email_template_folder,
+    def test_delete_email_template_folder_with_user_of_other_valid_domain(self, email_template_folder,
                                                                           access_token_other_for_email_templates):
         """
         Test for deleting email template folder with user of some other domain.
         It should result in Forbidden error.
         """
         # Get Template Folder Id
-        template_folder_id, _ = create_email_template_folder
+        template_folder_id, _ = email_template_folder
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD, self.URL % template_folder_id,
                                                           access_token_other_for_email_templates,
                                                           expected_error_code=TEMPLATE_FOLDER_FORBIDDEN[1])

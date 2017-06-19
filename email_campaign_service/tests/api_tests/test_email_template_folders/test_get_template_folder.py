@@ -29,14 +29,14 @@ class TestGETEmailTemplateFolder(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL % fake.random_int(2, ))
 
-    def test_get_email_template_folder_with_user_of_other_domain(self, create_email_template_folder,
+    def test_get_email_template_folder_with_user_of_other_domain(self, email_template_folder,
                                                                  access_token_other):
         """
         Test for retrieving email template folder with user of some other domain.
         It should result in Forbidden error.
         """
         # Get Template Folder Id
-        template_folder_id, _ = create_email_template_folder
+        template_folder_id, _ = email_template_folder
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD, self.URL % template_folder_id,
                                                           access_token_other,
                                                           expected_error_code=TEMPLATES_FEATURE_NOT_ALLOWED[1])
@@ -51,23 +51,23 @@ class TestGETEmailTemplateFolder(object):
                                                                expected_error_code=TEMPLATE_FOLDER_NOT_FOUND[1]
                                                                )
 
-    def test_get_folder_of_some_other_valid_domain(self, create_email_template_folder,
+    def test_get_folder_of_some_other_valid_domain(self, email_template_folder,
                                                    access_token_other_for_email_templates):
         """
         Test for retrieving email template folder with user of some other domain.
         It should result in Forbidden error.
         """
-        folder_id, _ = create_email_template_folder
+        folder_id, _ = email_template_folder
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD, self.URL % folder_id,
                                                           access_token_other_for_email_templates,
                                                           expected_error_code=TEMPLATE_FOLDER_FORBIDDEN[1]
                                                           )
 
-    def test_get_valid_email_template_folder(self, create_email_template_folder, headers_for_email_templates):
+    def test_get_valid_email_template_folder(self, email_template_folder, headers_for_email_templates):
         """
         Test for retrieving valid email template folder. It should not result in any error.
         """
-        folder_id, folder_name = create_email_template_folder
+        folder_id, folder_name = email_template_folder
         response = requests.get(self.URL % folder_id, headers=headers_for_email_templates)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY, check_count=False)
         json_resp = response.json()[self.ENTITY]
