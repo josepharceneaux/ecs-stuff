@@ -421,7 +421,7 @@ class EmailTemplate(Resource):
                     500 (Internal server error)
         """
         template = UserEmailTemplate.get_valid_email_template(template_id, request.user)
-        data = get_valid_json_data(request)
+        data = get_valid_json_data(request, INVALID_REQUEST_BODY[1])
         updated_data = {'body_html': data.get('body_html') or template.body_html,
                         'body_text': data.get('body_text') or template.body_text}
         template.update(**updated_data)

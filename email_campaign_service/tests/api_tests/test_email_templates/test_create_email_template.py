@@ -29,6 +29,12 @@ class TestEmailTemplates(object):
     ENTITY = 'email_templates'
     HTTP_METHOD = 'post'
 
+    def test_with_invalid_token(self):
+        """
+        Here we try to create email-template-folder with invalid access token.
+        """
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
+
     def test_creation_with_invalid_data(self, user_first, headers_for_email_templates,
                                         access_token_first_for_email_templates):
         """

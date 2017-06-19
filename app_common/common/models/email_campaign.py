@@ -17,7 +17,8 @@ from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerEr
                               InvalidUsage, NotFoundError)
 from ..custom_errors.campaign import (EMAIL_CAMPAIGN_SEND_FORBIDDEN, EMAIL_CAMPAIGN_FORBIDDEN,
                                       EMAIL_CAMPAIGN_SEND_NOT_FOUND, EMAIL_CAMPAIGN_NOT_FOUND,
-                                      TEMPLATE_FOLDER_NOT_FOUND, TEMPLATE_FOLDER_FORBIDDEN)
+                                      TEMPLATE_FOLDER_NOT_FOUND, TEMPLATE_FOLDER_FORBIDDEN,
+                                      EMAIL_TEMPLATE_NOT_FOUND, EMAIL_TEMPLATE_FORBIDDEN)
 
 __author__ = 'jitesh'
 
@@ -540,16 +541,20 @@ class UserEmailTemplate(db.Model):
         :param User user: User object of logged-in user
         :rtype: UserEmailTemplate
         """
-        raise_if_not_positive_int_or_long(email_template_id)
+        # Had to be here to avoid circular import issue
+        from ..campaign_services.validators import raise_if_dict_values_are_not_int_or_long
+        raise_if_dict_values_are_not_int_or_long(dict(email_template_id=email_template_id))
         # Get email-template object from database
         email_template = cls.get_by_id(email_template_id)
         if not email_template:
-            raise ResourceNotFound('Email template(id:%d) not found' % email_template_id)
+            raise ResourceNotFound('Email template(id:%d) not found' % email_template_id,
+                                   EMAIL_TEMPLATE_NOT_FOUND[1])
         # Verify owned by same domain
         template_owner_user = email_template.user
         if template_owner_user.domain_id != user.domain_id:
             raise ForbiddenError('Email template(id:%d) is not owned by domain(id:%d)'
-                                 % (email_template_id, user.domain_id))
+                                 % (email_template_id, user.domain_id),
+                                 error_code=EMAIL_TEMPLATE_FORBIDDEN[1])
         return email_template
 
 

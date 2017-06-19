@@ -47,6 +47,8 @@ DUPLICATE_TEMPLATE_FOLDER_NAME = ("Template folder with given name already exist
 TEMPLATE_FOLDER_FORBIDDEN = ("Requested template folder is not owned by user's domain", 1453)
 TEMPLATE_FOLDER_NOT_FOUND = ("Requested template folder not found", 1454)
 DUPLICATE_TEMPLATE_NAME = ("Email template with given name already exists", 1455)
+EMAIL_TEMPLATE_FORBIDDEN = ("Requested email template is not owned by user's domain", 1456)
+EMAIL_TEMPLATE_NOT_FOUND = ("Requested email template not found", 1457)
 
 # Base campaign custom errors, range 1471-1480
 BASE_CAMPAIGN_ORPHANED = ("Requested Base campaign is orphaned", 1471)

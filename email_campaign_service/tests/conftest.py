@@ -363,6 +363,15 @@ def access_token_first_for_email_templates(user_first, dummy_kaiser_domain_id, a
 
 
 @pytest.fixture()
+def access_token_same_for_email_templates(user_same_domain, dummy_kaiser_domain_id, access_token_same):
+    """
+    Returns headers for "user_fist" to access email-templates APIs.
+    """
+    user_same_domain.update(domain_id=dummy_kaiser_domain_id)
+    return access_token_same
+
+
+@pytest.fixture()
 def access_token_other_for_email_templates(user_from_diff_domain, access_token_other):
     """
     Returns headers for "user_from_diff_domain" to access email-templates APIs.

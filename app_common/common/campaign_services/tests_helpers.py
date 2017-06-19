@@ -352,9 +352,11 @@ class CampaignsTestsHelpers(object):
             cls.assert_non_ok_response(response, expected_status_code=status_code)
             error_resp = response.json()['error']
             if status_code == ResourceNotFound.http_status_code():
-                assert error_resp['code'] == expected_error_code
+                assert error_resp['code'] == expected_error_code, \
+                    "Expecting error_code:{}, Found:{}".format(expected_error_code, error_resp['code'])
             elif status_code == InvalidUsage.http_status_code():
-                assert error_resp['code'] == NOT_NON_ZERO_NUMBER[1]
+                assert error_resp['code'] == NOT_NON_ZERO_NUMBER[1], \
+                    "Expecting error_code:{}, Found:{}".format(NOT_NON_ZERO_NUMBER[1], error_resp['code'])
 
     @staticmethod
     def get_last_id(model):
