@@ -205,7 +205,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         This is a test to update SMS campaign with invalid campaign name. Status code should be 400 and
         campaign should not be updated.
         """
-        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD,
+        CampaignsTestsHelpers.request_with_invalid_string(self.HTTP_METHOD,
                                                                             self.URL % sms_campaign_of_user_first['id'],
                                                                             access_token_first,
                                                                             campaign_valid_data.copy(), 'name')
@@ -216,7 +216,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         This is a test to update SMS campaign with invalid body_text. Status code should be 400 and
         campaign should not be updated.
         """
-        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD,
+        CampaignsTestsHelpers.request_with_invalid_string(self.HTTP_METHOD,
                                                                             self.URL % sms_campaign_of_user_first['id'],
                                                                             access_token_first,
                                                                             campaign_valid_data.copy(), 'body_text')

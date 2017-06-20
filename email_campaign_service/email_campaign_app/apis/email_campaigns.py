@@ -75,7 +75,7 @@ from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.utils.validators import is_number
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.base_campaign import BaseCampaign
-from email_campaign_service.common.utils.handy_functions import send_request
+from email_campaign_service.common.utils.handy_functions import send_request, get_valid_json_data
 from email_campaign_service.common.models.misc import UrlConversion, Activity
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, ActivityApiUrl)
@@ -147,9 +147,7 @@ class EmailCampaigns(Resource):
             list_ids: smartlist ids to which emails will be sent
         """
         # Get and validate request data
-        data = request.get_json(silent=True)
-        if not data:
-            raise InvalidUsage(INVALID_REQUEST_BODY[0], INVALID_REQUEST_BODY[1])
+        data = get_valid_json_data(request, error_code=INVALID_REQUEST_BODY[1])
         data = validate_and_format_request_data(data, request.user)
 
         campaign = create_email_campaign(user_id=request.user.id,

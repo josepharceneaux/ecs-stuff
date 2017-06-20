@@ -65,11 +65,6 @@ EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS = [{'from': fake.safe_email()}, {'from': fake
                                           datetime.utcnow() + timedelta(minutes=20)),
                                        'end_datetime': DatetimeUtils.to_utc_str(datetime.utcnow()
                                                                                 + timedelta(minutes=40))}]
-EMAIL_TEMPLATE_INVALID_DATA_TYPES = [{'name': fake.random_number(), 'is_immutable': 1},
-                                     {'name': fake.word(), 'is_immutable': fake.random_int(2, )},
-                                     {'name': fake.word(), 'is_immutable': fake.word()}, {'name': fake.word(),
-                                                                                          'is_immutable': ON,
-                                                                                          'parent_id': fake.word()}]
 
 SPECIAL_CHARACTERS = '!@#$%^&*()_+'
 TEST_MAIL_DATA = {
@@ -360,12 +355,9 @@ def create_template_folder(headers):
     :return: template_folder_id, template_folder_name
     :rtype: tuple[int, str]
     """
-    template_folder_name = 'test_template_folder_%i' % datetime.now().microsecond
-
-    data = {'name': template_folder_name,
-            'is_immutable': ON}
-    response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
-                             headers=headers)
+    template_folder_name = 'test_template_folder_{}'.format(datetime.now().microsecond)
+    data = {'name': template_folder_name, 'is_immutable': ON}
+    response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data), headers=headers)
     assert response.status_code == requests.codes.CREATED, response.text
     response_obj = response.json()
     template_folder_id = response_obj["id"]

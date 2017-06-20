@@ -386,19 +386,18 @@ def create_oauth_headers(oauth_token=None, user_id=None):
         return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}
 
 
-def validate_json_header(request):
+def validate_json_header(request, error_code=None):
     """
     Proper header should be {'content-type': 'application/json'} for POSTing
-    some data on SMS campaign API.
+    some data on an API.
     If header of request is not proper, it raises InvalidUsage exception
-    :return:
     """
     if JSON_CONTENT_TYPE_HEADER['content-type'] not in request.content_type:
         raise InvalidUsage('Invalid header provided. Kindly send request with JSON data '
-                           'and application/json content-type header')
+                           'and application/json content-type header', error_code=error_code)
 
 
-def get_valid_json_data(req):
+def get_valid_json_data(req, error_code=None):
     """
     This first verifies that request has proper JSON content-type header
     and raise invalid usage error in case it doesn't has. From given request,
@@ -406,18 +405,16 @@ def get_valid_json_data(req):
     1) not JSON serializable
     2) not in dict format
     3) empty
-    :param req:
-    :return:
     """
-    validate_json_header(req)
+    validate_json_header(req, error_code=error_code)
     try:
         data = req.get_json()
     except BadRequest:
-        raise InvalidUsage('Given data is not JSON serializable.')
+        raise InvalidUsage('Given data is not JSON serializable.', error_code=error_code)
     if not isinstance(data, dict):
-        raise InvalidUsage('Invalid POST data. Kindly send valid JSON data.')
+        raise InvalidUsage('Invalid POST data. Kindly send valid JSON data.', error_code=error_code)
     if not data:
-        raise InvalidUsage('No data provided.')
+        raise InvalidUsage('No data provided.', error_code=error_code)
     return data
 
 

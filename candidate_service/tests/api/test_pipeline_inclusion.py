@@ -95,20 +95,20 @@ class TestSearchCandidatePipeline(object):
 
         # Search & assert result with first candidate created
         candidate_id = candidate_ids[-1]
-        retry(assert_result, sleeptime=3, attempts=10, sleepscale=1,
+        retry(assert_result, sleeptime=3, attempts=20, sleepscale=1,
               args=(candidate_id, access_token_first),
               retry_exceptions=(AssertionError,))
 
         # Search & assert result with middle candidate created
         candidate_id = candidate_ids[len(candidate_ids) / 2]
-        retry(assert_result, sleeptime=3, attempts=10, sleepscale=1,
+        retry(assert_result, sleeptime=3, attempts=20, sleepscale=1,
               args=(candidate_id, access_token_first),
               retry_exceptions=(AssertionError,))
 
         # # Search & assert result with last candidate created
         candidate_id = candidate_ids[0]
         # Assert on results
-        retry(assert_result, sleeptime=3, attempts=10, sleepscale=1,
+        retry(assert_result, sleeptime=3, attempts=20, sleepscale=1,
               args=(candidate_id, access_token_first),
               retry_exceptions=(AssertionError,))
 

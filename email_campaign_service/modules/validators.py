@@ -5,33 +5,33 @@
 
     Here are the validator functions used in email-campaign-service
 """
-
 # Standard Library
-import datetime
 from functools import wraps
-from collections import Counter
 
 # Third Party
 import requests
 from flask import request
 
 # Application Specific
-from email_campaign_service.common.utils.handy_functions import find_missing_items, validate_required_fields
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.misc import Frequency
-from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
 from email_campaign_service.modules.email_clients import EmailClientBase
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.modules.email_campaign_base import EmailCampaignBase
 from email_campaign_service.common.models.user import (User, ForbiddenError, Domain)
+from email_campaign_service.common.utils.handy_functions import validate_required_fields
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity)
 from email_campaign_service.common.campaign_services.validators import validate_smartlist_ids
 from email_campaign_service.common.talent_config_manager import (TalentConfigKeys, TalentEnvs)
 from email_campaign_service.common.custom_errors.campaign import (TEMPLATES_FEATURE_NOT_ALLOWED,
                                                                   MISSING_FIELD, INVALID_DATETIME_VALUE,
                                                                   INVALID_INPUT, INVALID_DATETIME_FORMAT,
-                                                                  SMARTLIST_NOT_FOUND, SMARTLIST_FORBIDDEN)
+                                                                  SMARTLIST_NOT_FOUND, SMARTLIST_FORBIDDEN,
+                                                                  DUPLICATE_TEMPLATE_FOLDER_NAME,
+                                                                  DUPLICATE_TEMPLATE_NAME)
 from email_campaign_service.common.campaign_services.validators import validate_base_campaign_id
-from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient)
+from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient,
+                                                                 EmailTemplateFolder, UserEmailTemplate)
 
 
 def validate_data_to_schedule_campaign(campaign_data):
@@ -108,7 +108,7 @@ def validate_and_format_request_data(data, current_user):
     validate_required_fields(data, EmailCampaignBase.REQUIRED_FIELDS, error_code=MISSING_FIELD[1])
 
     # Raise errors if invalid input of string inputs
-    if filter(lambda item: not isinstance(item, basestring) or str(item).strip() == '', [name, subject, body_html]):
+    if [item for item in (name, subject, body_html) if not (isinstance(item, basestring) and str(item).strip())]:
         raise InvalidUsage("Expecting `name`, `subject` and `body_html` as non-empty string",
                            error_code=INVALID_INPUT[1])
     if not frequency_id:
@@ -127,11 +127,14 @@ def validate_and_format_request_data(data, current_user):
         if not email_client:
             raise InvalidUsage("`email_client_id` is not valid id.")
 
+    # TODO: Add custom error code in GET-2573
     # In case user wants to send email-campaign with its own account
     if email_client_credentials_id:
         email_client_credentials = EmailClientCredentials.get_by_id(email_client_credentials_id)
         if not EmailClientBase.is_outgoing(email_client_credentials.host):
             raise InvalidUsage("Selected email-client must be of type `outgoing`")
+
+    # TODO: Add custom error code in GET-2556
     # Validation for base_campaign_id
     if base_campaign_id:
         validate_base_campaign_id(base_campaign_id, current_user.domain_id)
@@ -166,6 +169,97 @@ def get_or_set_valid_value(required_value, required_instance, default):
     if not isinstance(required_value, required_instance):
         required_value = default
     return required_value
+
+
+def validate_and_format_data_for_template_folder_creation(data, domain_id):
+    """
+    Validates the data for creation of email-template-folder
+    :param dict data: Data received from UI
+    :param int|long domain_id: Id of domain of logged-in user
+    :return: Dictionary of formatted data
+    :rtype: dict
+    """
+    parent_id = None
+    folder_name = data.get('name')
+    # Validation of required fields
+    validate_required_fields(data, ('name',), error_code=MISSING_FIELD[1])
+
+    # Validation of folder name
+    if not isinstance(folder_name, basestring) or not str(folder_name).strip():
+        raise InvalidUsage('Invalid input: Folder name must be a valid string.', error_code=INVALID_INPUT[1])
+
+    # Check if the name already exists under same domain
+    duplicate = EmailTemplateFolder.get_by_name_and_domain_id(folder_name, domain_id)
+    if duplicate:
+        raise InvalidUsage(DUPLICATE_TEMPLATE_FOLDER_NAME[0], error_code=DUPLICATE_TEMPLATE_FOLDER_NAME[1])
+    if 'parent_id' in data:
+        parent_id = data['parent_id']
+        # Validate parent_id is valid
+        if parent_id is None or not isinstance(parent_id, (int, long)) \
+                or (isinstance(parent_id, (int, long)) and parent_id <= 0):
+            raise InvalidUsage('Expecting parent_id to be positive integer', INVALID_INPUT[1])
+
+        EmailTemplateFolder.get_valid_template_folder(parent_id, request.user.domain_id)
+    # If is_immutable value is not passed, make it as 0
+    is_immutable = data.get('is_immutable', 0)
+
+    if is_immutable is None or is_immutable not in (0, 1):
+        raise InvalidUsage(error_message='Invalid input: is_immutable should be integer with value 0 or 1',
+                           error_code=INVALID_INPUT[1])
+
+    # strip whitespaces and return data
+    return {
+        'name': folder_name.strip(),
+        'parent_id': parent_id,
+        'is_immutable': is_immutable
+    }
+
+
+def validate_and_format_data_for_email_template_creation(data, domain_id):
+    """
+    Validates the data for creation of email-template-folder
+    :param dict data: Data received from UI
+    :param int|long domain_id: Id of domain of logged-in user
+    :return: Dictionary of formatted data
+    :rtype: dict
+    """
+    # Validation of required fields
+    validate_required_fields(data, ('name', 'body_html'), error_code=MISSING_FIELD[1])
+    template_name = data['name']
+    body_html = data['body_html']
+    template_folder_id = None
+    # Raise errors if invalid input of string inputs
+    if [item for item in (template_name, body_html) if not (isinstance(item, basestring) and str(item).strip())]:
+        raise InvalidUsage("Expecting `name` and `body_html` as non-empty string", error_code=INVALID_INPUT[1])
+
+    # Check if the name is already exists in the domain
+    existing_template = UserEmailTemplate.get_by_name_and_domain_id(template_name, domain_id)
+    if existing_template:
+        raise InvalidUsage('Email template with name=%s already exists in the domain.' % template_name,
+                           error_code=DUPLICATE_TEMPLATE_NAME[1])
+    if 'template_folder_id' in data:
+        template_folder_id = data['template_folder_id']
+        if template_folder_id is None or not isinstance(template_folder_id, (int, long)) \
+                or (isinstance(template_folder_id, (int, long)) and template_folder_id <= 0):
+            raise InvalidUsage('Expecting template_folder_id to be positive integer', INVALID_INPUT[1])
+        # Validate parent_id is valid
+        EmailTemplateFolder.get_valid_template_folder(template_folder_id, domain_id)
+
+    # If is_immutable value is not passed, make it as 0
+    is_immutable = data.get('is_immutable', 0)
+
+    if is_immutable is None or is_immutable not in (0, 1):
+        raise InvalidUsage(error_message='Invalid input: is_immutable should be integer with value 0 or 1',
+                           error_code=INVALID_INPUT[1])
+
+    # strip whitespaces and return data
+    return {
+        'name': template_name.strip(),
+        'body_html': body_html.strip(),
+        'body_text': data.get('body_text'),
+        'template_folder_id': template_folder_id,
+        'is_immutable': is_immutable
+    }
 
 
 def validate_domain_id_for_email_templates():
