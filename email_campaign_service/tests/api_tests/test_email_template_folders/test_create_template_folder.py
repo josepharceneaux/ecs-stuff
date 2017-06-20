@@ -63,7 +63,6 @@ class TestCreateEmailTemplateFolders(object):
         assert template_folder_id and template_folder_id > 0, 'Expecting positive folder_id'
         assert template_folder_name, 'Expecting non-empty string of folder_name'
 
-    @pytest.mark.qa
     def test_create_email_template_folder_with_same_name(self, email_template_folder,
                                                          access_token_first_for_email_templates):
         """
@@ -99,7 +98,6 @@ class TestCreateEmailTemplateFolders(object):
                                                            data, field='is_immutable',
                                                            expected_error_code=INVALID_INPUT[1])
 
-    @pytest.mark.qa
     def test_create_email_template_folder_with_non_existing_parent_id(self, access_token_first_for_email_templates):
         """
         This test is to  certify that email template folder can't be created by using
@@ -111,7 +109,6 @@ class TestCreateEmailTemplateFolders(object):
                                                                    access_token_first_for_email_templates, data,
                                                                    expected_error_code=TEMPLATE_FOLDER_NOT_FOUND[1])
 
-    @pytest.mark.qa
     def test_create_email_template_folder_with_parent_id_of_other_domain(self, email_template_folder,
                                                                          access_token_other_for_email_templates):
         """

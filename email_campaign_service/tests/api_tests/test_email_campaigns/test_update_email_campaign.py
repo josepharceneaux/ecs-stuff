@@ -36,7 +36,6 @@ class TestCampaignUpdate(object):
                                                              access_token_first, data=data, is_json=False,
                                                              expected_error_code=INVALID_REQUEST_BODY[1])
 
-    @pytest.mark.qa
     def test_update_email_campaign_with_allowed_parameter(self, access_token_first, email_campaign_user1_domain1_in_db):
         """
          The test is to make sure that email campaign update functionality with allowed parameters/fields
@@ -50,7 +49,6 @@ class TestCampaignUpdate(object):
             email_campaign = get_campaign_or_campaigns(access_token_first, campaign_id=campaign_id)
             assert email_campaign['is_hidden'] == param
 
-    @pytest.mark.qa
     def test_update_email_campaign_with_invalid_data(self, access_token_first, email_campaign_user1_domain1_in_db):
         """
          This test to make sure that update email campaign with invalid data is not

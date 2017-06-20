@@ -115,7 +115,6 @@ class TestCreateCampaign(object):
                                                                                         campaign_blast[0]['id']),
                                                  access_token=access_token_first)
 
-    @pytest.mark.qa
     def test_create_email_campaign_with_optional_parameters(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         The test is to examine that the email-campaign is created with optional parameter or not.
@@ -131,7 +130,6 @@ class TestCreateCampaign(object):
             assert 'campaign' in resp_object
             assert resp_object['campaign']['id']
 
-    @pytest.mark.qa
     def test_create_email_campaign_except_single_parameter(self, access_token_first, smartlist_user1_domain1_in_db):
         """
         Here we provide valid data to create an email-campaign with all parameter except single parameter.

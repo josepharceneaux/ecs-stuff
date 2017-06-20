@@ -98,8 +98,8 @@ class CampaignsTestsHelpers(object):
         """
         This should get Invalid Usage error because we are requesting with invalid input.
         :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
-        :param string url: URL to to make HTTP request
-        :param string access_token: access access_token of user
+        :param string url: URL to make HTTP request
+        :param string access_token: access token of user
         :param dict|None data: Data to be posted
         :param bool is_json: If True it means data is already in JSON form
         :param int expected_status_code: Expected status code
