@@ -53,7 +53,7 @@ class CampaignsTestsHelpers(object):
     # Remove 0 from list as it is valid frequency_id and replace it with sys.maxint
     INVALID_FREQUENCY_IDS[1] = sys.maxint
     # Invalid values for required text field
-    INVALID_TEXT_VALUES = ('', '  ', 0, {}, [], None, True)
+    INVALID_TEXT_VALUES = ['', '  ', 0, {}, [], None, True]
     # Invalid values for boolean field
     INVALID_BOOLEANS = (fake.word(), None, dict(), list(), '', '        ')
     # Invalid values for integers
