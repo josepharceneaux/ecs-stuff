@@ -54,13 +54,13 @@ class TestEmailTemplates(object):
         # Add Email template
         template_data = data_to_create_email_template(headers_for_email_templates, user_first, EMAIL_TEMPLATE_BODY)
         response = post_to_email_template_resource(headers_for_email_templates, data=template_data)
-        assert response.status_code == codes.CREATED
+        assert response.status_code == codes.CREATED, response.text
         json_response = response.json()
         assert 'id' in json_response
 
         # GET created email-template and assert on fields
         response = requests.get(EmailCampaignApiUrl.TEMPLATES, headers=headers_for_email_templates)
-        assert response.ok
+        assert response.ok, response.text
         email_templates = response.json()[self.ENTITY]
         assert len(email_templates) == 1
         # Pick first record and assert expected field values
@@ -103,14 +103,13 @@ class TestEmailTemplates(object):
         """
         data = dict(name=fake.name(), body_html=EMAIL_TEMPLATE_BODY)
         for key, value in data.iteritems():
-            missing_key = key
             missing_data = data.copy()
             del missing_data[key]
             response = CampaignsTestsHelpers.request_with_invalid_input(self.HTTP_METHOD, self.URL,
                                                                         access_token_first_for_email_templates,
                                                                         missing_data,
                                                                         expected_error_code=MISSING_FIELD[1])
-            assert missing_key in response.json()['error']['message']
+            assert key in response.json()['error']['message']
 
     def test_creation_with_invalid_data_types(self, access_token_first_for_email_templates):
         """
@@ -122,9 +121,8 @@ class TestEmailTemplates(object):
                     is_immutable=0)
         for field in ('name', 'body_html'):
             CampaignsTestsHelpers.request_with_invalid_string(self.HTTP_METHOD, self.URL,
-                                                              access_token_first_for_email_templates,
-                                                              data.copy(), field=field,
-                                                              expected_error_code=INVALID_INPUT[1])
+                                                              access_token_first_for_email_templates, data,
+                                                              field=field, expected_error_code=INVALID_INPUT[1])
 
         CampaignsTestsHelpers.request_with_invalid_integer(self.HTTP_METHOD, self.URL,
                                                            access_token_first_for_email_templates, data,
@@ -133,7 +131,7 @@ class TestEmailTemplates(object):
 
         del data['template_folder_id']
         CampaignsTestsHelpers.request_with_invalid_boolean(self.HTTP_METHOD, self.URL,
-                                                           access_token_first_for_email_templates, data,
+                                                           access_token_first_for_email_templates, data.copy(),
                                                            field='is_immutable', expected_error_code=INVALID_INPUT[1])
 
     def test_creation_with_not_owned_folder_id(self, headers_for_email_templates, user_first,
@@ -144,7 +142,7 @@ class TestEmailTemplates(object):
         """
         template_data = data_to_create_email_template(headers_for_email_templates, user_first, EMAIL_TEMPLATE_BODY)
         response = post_to_email_template_resource(headers_for_email_templates, data=template_data)
-        assert response.status_code == codes.CREATED
+        assert response.status_code == codes.CREATED, response.text
         json_response = response.json()
         assert 'id' in json_response
 

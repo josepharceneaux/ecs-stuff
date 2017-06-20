@@ -181,7 +181,7 @@ class TestCreateCampaign(object):
         campaign_data = create_scheduled_email_campaign_data(smartlist_id=smartlist_user1_domain1_in_db['id'])
         for field in ('name', 'subject', 'body_html'):
             CampaignsTestsHelpers.request_with_invalid_string(self.HTTP_METHOD, self.URL,
-                                                              access_token_first, campaign_data,
+                                                              access_token_first, campaign_data.copy(),
                                                               field=field, expected_error_code=INVALID_INPUT[1])
 
     def test_create_email_campaign_without_required_fields(self, access_token_first,
@@ -216,7 +216,7 @@ class TestCreateCampaign(object):
         campaign_data = create_scheduled_email_campaign_data()
         CampaignsTestsHelpers.campaign_create_or_update_with_invalid_smartlist(self.HTTP_METHOD, self.URL,
                                                                                access_token_first,
-                                                                               campaign_data, key='list_ids',
+                                                                               campaign_data, field='list_ids',
                                                                                expected_error_code=INVALID_INPUT[1])
 
     def test_create_email_campaign_with_deleted_smartlist_id(self, access_token_first, smartlist_user1_domain1_in_db):
@@ -252,7 +252,8 @@ class TestCreateCampaign(object):
         This is a test to schedule a campaign with invalid datetime formats. It should result in invalid usage error.
         """
         campaign_data = create_scheduled_email_campaign_data(smartlist_user1_domain1_in_db['id'])
-        CampaignsTestsHelpers.invalid_datetime_format(self.HTTP_METHOD, self.URL, access_token_first, campaign_data,
+        CampaignsTestsHelpers.invalid_datetime_format(self.HTTP_METHOD, self.URL, access_token_first,
+                                                      campaign_data.copy(),
                                                       expected_error_code=INVALID_DATETIME_FORMAT[1])
 
     def test_create_periodic_email_campaign_with_missing_start_and_end_datetime(self, access_token_first,
